@@ -10,6 +10,7 @@ from agentc.catalog import Catalog
 from agentc_langchain.chat import Callback
 from langchain import hub
 from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.tools import Tool
 from langchain_openai.chat_models import ChatOpenAI
 from tools import hello_tool
 
@@ -30,7 +31,7 @@ llm = ChatOpenAI(model="gpt-4o", temperature=0, callbacks=[Callback(span=applica
 
 # 4. Create a simple agent
 tool_result = catalog.find("tool", name="hello_tool")
-tools = [tool_result.func]
+tools = [Tool(name=tool_result.meta.name, func=tool_result.func, description=tool_result.meta.description)]
 
 # Get the prompt to use - you can use any prompt from the Langchain Hub
 prompt = hub.pull("hwchase17/react")

@@ -40,3 +40,15 @@ This repository provides a quickstart guide for using the Agent Catalog with Cap
     ```bash
     poetry run python main.py
     ```
+
+2.  **Run the examples:**
+    ```bash
+    # LangGraph
+    poetry run python examples/langgraph_example.py
+
+    # LangChain
+    poetry run python examples/langchain_example.py
+
+    # LlamaIndex
+    poetry run python examples/llamaindex_example.py
+    ```
