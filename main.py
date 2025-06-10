@@ -4,7 +4,7 @@ import os
 
 from agentc.catalog import Catalog
 from langchain_openai.chat_models import ChatOpenAI
-from agentc_langchain.agent import ReActAgent
+from agentc_langgraph.agent import ReActAgent
 from langchain_core.messages import SystemMessage
 from tools import hello_tool
 

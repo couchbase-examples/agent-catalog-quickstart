@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "quickstart"
+version = "0.1.0"
+description = "A quickstart for Agent Catalog."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.0.1"
+langchain-openai = "*"
+agentc = { path = "agent-catalog/libs/agentc", develop = true }
+agentc-core = { path = "agent-catalog/libs/agentc_core", develop = true }
+agentc-cli = { path = "agent-catalog/libs/agentc_cli", develop = true }
+agentc-langchain = { path = "agent-catalog/libs/agentc_integrations/langchain", develop = true }
+agentc-langgraph = { path = "agent-catalog/libs/agentc_integrations/langgraph", develop = true }
+agentc-llamaindex = { path = "agent-catalog/libs/agentc_integrations/llamaindex", develop = true }
+langchain = "*"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api" 
