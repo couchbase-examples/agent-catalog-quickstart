@@ -1,0 +1,5 @@
+this is the repo for agent catalog and for the quickstart just create a new folder called quickstart. Start by doing ls -R to know the heirarchy of the app
+
+the root directory is the quickstart itself. while agent-catalog is downloaded at the root directory as well
+
+lets not start with notebook creation. lets create, run and finetune regular scripts and then i'll create the notebook manually later. some basic files are already created. although i am not sure if they will be 
