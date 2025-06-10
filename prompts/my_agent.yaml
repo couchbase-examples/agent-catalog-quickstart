@@ -1,4 +1,8 @@
-system: |
+record_kind: prompt
+name: my_agent
+description: A simple agent that can say hello.
+
+content: |
   You are a helpful assistant.
   You have access to the following tools:
   {tools}

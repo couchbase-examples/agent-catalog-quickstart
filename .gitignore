@@ -1,6 +1,17 @@
 # The repo itself
 agent-catalog/
 
+# The quickstart folder
+.agent-catalog/
+.agent-activity/
+.model-cache/
+
+# VS Code and Cursor stuff
+.vscode/
+.cursorignore
+.cursorindexingignore
+.qodo/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
