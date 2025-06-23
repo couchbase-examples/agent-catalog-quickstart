@@ -1,0 +1,77 @@
+-- Flight Information Lookup Tool using SQL++
+-- Searches flight data from travel-sample bucket
+/*
+name: lookup_flight_info
+
+description: >
+  Look up flight information including schedules, availability, and pricing
+  between specified airports on given dates.
+
+input:
+  type: object
+  properties:
+    source_airport:
+      type: string
+      description: "IATA code for departure airport (e.g., SFO)"
+    destination_airport:
+      type: string
+      description: "IATA code for arrival airport (e.g., LAX)"
+    departure_date:
+      type: string
+      format: date
+      description: "Departure date in YYYY-MM-DD format"
+    return_date:
+      type: string
+      format: date
+      description: "Optional return date for round-trip flights"
+  required: ["source_airport", "destination_airport"]
+
+secrets:
+  - couchbase:
+      conn_string: CB_CONN_STRING
+      username: CB_USERNAME
+      password: CB_PASSWORD
+      certificate: CB_CERTIFICATE
+*/
+
+WITH flight_routes AS (
+  SELECT 
+    r.airline,
+    r.sourceairport,
+    r.destinationairport,
+    r.equipment,
+    r.distance,
+    a1.airportname AS source_name,
+    a1.city AS source_city,
+    a2.airportname AS dest_name, 
+    a2.city AS dest_city
+  FROM 
+    `travel-sample`.inventory.route r
+  JOIN 
+    `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
+  JOIN 
+    `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
+  WHERE 
+    r.sourceairport = $source_airport AND
+    r.destinationairport = $destination_airport
+)
+SELECT 
+  airline,
+  sourceairport,
+  destinationairport,
+  source_name,
+  source_city,
+  dest_name,
+  dest_city,
+  equipment,
+  distance,
+  CASE 
+    WHEN distance < 500 THEN "Short-haul"
+    WHEN distance < 1500 THEN "Medium-haul"
+    ELSE "Long-haul"
+  END AS flight_type,
+  -- Estimated flight time based on distance
+  ROUND(distance / 500, 1) AS estimated_hours
+FROM flight_routes
+ORDER BY airline
+LIMIT 20;

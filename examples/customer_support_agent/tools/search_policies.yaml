@@ -1,0 +1,57 @@
+# Policy Search Tool for Customer Support
+record_kind: semantic_search
+
+name: search_policies
+
+description: >
+  Search airline policies, terms of service, and regulatory information
+  to provide accurate policy guidance to customers.
+
+input:
+  type: object
+  properties:
+    policy_query:
+      type: string
+      description: "Description of the policy question or situation"
+    policy_type:
+      type: string
+      enum: ["cancellation", "refund", "baggage", "change", "delay", "general"]
+      description: "Type of policy to search for"
+    airline:
+      type: string
+      description: "Specific airline code if policy is airline-specific"
+  required: ["policy_query"]
+
+annotations:
+  domain: "policies"
+  compliance: "regulatory"
+  gdpr_compliant: "true"
+
+secrets:
+  - couchbase:
+      conn_string: CB_CONN_STRING
+      username: CB_USERNAME
+      password: CB_PASSWORD
+      certificate: CB_CERTIFICATE
+
+vector_search:
+  bucket: customer-support
+  scope: policies
+  collection: documents
+  index: policy_vector_index
+  vector_field: policy_embedding
+  text_field: policy_text
+  
+  embedding_model:
+    name: sentence-transformers/all-MiniLM-L12-v2
+    
+  num_candidates: 8
+
+# Additional metadata to include in policy results
+metadata_fields:
+  - policy_id
+  - policy_type
+  - airline_code
+  - effective_date
+  - last_updated
+  - regulatory_source

@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "customer-support-agent"
+version = "0.1.0"
+description = "Enhanced customer support agent with vector search and Agent Catalog integration"
+authors = ["Agent Catalog Team"]
+readme = "README.md"
+packages = [{include = "customer_support_agent"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+langchain = "^0.2.0"
+langgraph = "^0.1.0"
+agentc-core = {path = "../../agent-catalog/libs/agentc_core", develop = true}
+agentc-langgraph = {path = "../../agent-catalog/libs/agentc_integrations/langgraph", develop = true}
+couchbase = "^4.0.0"
+pydantic = "^2.0.0"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+black = "^23.0.0"
+ruff = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "DTZ", "EM", "ISC", "ICN", "G", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+ignore = ["S101", "COM812", "ISC001"]
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
