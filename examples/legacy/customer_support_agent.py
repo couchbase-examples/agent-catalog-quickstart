@@ -10,18 +10,16 @@ This example demonstrates a sophisticated customer support system that combines:
 Based on the LangGraph customer support tutorial but enhanced with Agent Catalog capabilities.
 """
 import os
-import dotenv
-import getpass
 from typing import Annotated, List, Dict, Any
 from typing_extensions import TypedDict
 
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
 import agentc
+from agentc_langgraph import AgentCatalogToolNode, AgentCatalogAgent
 
 
 class CustomerSupportState(TypedDict):
@@ -54,27 +52,24 @@ class CustomerSupportAgent:
         # Define the graph
         workflow = StateGraph(CustomerSupportState)
         
-        # Create mock tools for demonstration
-        def search_knowledge_base(query: str) -> str:
-            """Search the knowledge base for customer support information"""
-            return f"📋 Knowledge Base Result for '{query}': Found relevant support articles about your inquiry."
+        # Create agent with Agent Catalog integration
+        agent = AgentCatalogAgent(
+            catalog=self.catalog,
+            prompt_name="customer_support_assistant",
+            model_name="capella-claude-sonnet",  # Using Capella model
+            temperature=0.1
+        )
         
-        def lookup_flight_info(source: str, destination: str) -> str:
-            """Look up flight information between airports"""
-            return f"✈️ Flight Info: Found flights from {source} to {destination}. Please check our website for current schedules."
-        
-        def search_policies(policy_type: str) -> str:
-            """Search for airline policies"""
-            return f"🛡️ Policy Info: Here are the relevant policies for {policy_type}. Please refer to our terms and conditions."
-        
-        def update_customer_context(customer_id: str, context: dict) -> str:
-            """Update customer context"""
-            return f"👤 Updated context for customer {customer_id}"
-        
-        tools = [search_knowledge_base, lookup_flight_info, search_policies, update_customer_context]
-        
-        # Create tool node with available tools
-        tool_node = ToolNode(tools)
+        # Create tool node with Agent Catalog tools
+        tool_node = AgentCatalogToolNode(
+            catalog=self.catalog,
+            tool_names=[
+                "search_knowledge_base",
+                "lookup_flight_info", 
+                "search_policies",
+                "update_customer_context"
+            ]
+        )
         
         # Add nodes
         workflow.add_node("assistant", self._assistant_node)
@@ -94,28 +89,28 @@ class CustomerSupportAgent:
     def _assistant_node(self, state: CustomerSupportState):
         """Assistant node that processes user input and decides on actions"""
         
-
+        # Get the customer support prompt from Agent Catalog
+        prompt = self.catalog.find_prompt("customer_support_assistant")
         
-        # Initialize LLM
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
+        # Prepare context for the assistant
+        context = {
+            "customer_id": state.get("customer_id", ""),
+            "conversation_history": state["messages"][-5:],  # Last 5 messages
+            "current_context": state.get("context", {}),
+            "resolved": state.get("resolved", False)
+        }
         
-        # Create system message for customer support
-        system_prompt = """You are a professional customer support agent for TravelCorp Airlines. 
-        You help customers with flight bookings, cancellations, policies, and travel questions.
+        # Use Agent Catalog agent to generate response
+        agent = AgentCatalogAgent(
+            catalog=self.catalog,
+            prompt_name="customer_support_assistant",
+            model_name="capella-claude-sonnet"
+        )
         
-        Be helpful, empathetic, and solution-focused. Use the available tools when you need specific information:
-        - search_knowledge_base: for general support topics
-        - lookup_flight_info: for flight schedules and routes  
-        - search_policies: for airline policies and rules
-        - update_customer_context: to save customer preferences
-        
-        Always provide clear, actionable responses to help resolve customer issues."""
-        
-        # Prepare messages with system prompt
-        messages = [SystemMessage(content=system_prompt)] + state["messages"]
-        
-        # Get response from LLM
-        response = llm.invoke(messages)
+        response = agent.invoke({
+            "messages": state["messages"],
+            "context": context
+        })
         
         return {"messages": [response]}
     
@@ -182,18 +177,16 @@ def create_sample_tools_and_prompts(catalog: agentc.Catalog):
 def main():
     """Main function to run the customer support agent demo"""
     
-    # Load environment variables
-    dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True))
-    
-    # Set up OpenAI API key if not present
-    if not os.getenv("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = getpass.getpass("Please provide your OPENAI_API_KEY: ")
-    
     print("🚀 Enhanced Customer Support Agent with Vector Search")
     print("=" * 60)
     
-    # Initialize Agent Catalog
-    catalog = agentc.Catalog()
+    # Initialize Agent Catalog with Capella connection
+    catalog = agentc.Catalog(
+        # Configuration would typically come from .env or config
+        bucket=os.getenv("AGENT_CATALOG_BUCKET", "customer-support"),
+        scope=os.getenv("AGENT_CATALOG_SCOPE", "support"), 
+        collection=os.getenv("AGENT_CATALOG_COLLECTION", "agents")
+    )
     
     # Set up sample tools and prompts
     create_sample_tools_and_prompts(catalog)

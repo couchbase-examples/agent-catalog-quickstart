@@ -1,0 +1,545 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Enhanced Customer Support Agent with Vector Search and Agent Catalog\n",
+    "\n",
+    "This notebook demonstrates a sophisticated customer support system that combines:\n",
+    "- **Vector search** for knowledge base retrieval\n",
+    "- **Multi-tool agent architecture** using LangGraph\n",
+    "- **Agent Catalog** prompts and tools\n",
+    "- **Capella AI Services** integration\n",
+    "\n",
+    "Based on the LangGraph customer support tutorial but enhanced with Agent Catalog capabilities.\n",
+    "\n",
+    "## Table of Contents\n",
+    "1. [Setup and Dependencies](#setup)\n",
+    "2. [Environment Configuration](#environment)\n",
+    "3. [State Management](#state)\n",
+    "4. [Customer Support Agent Class](#agent)\n",
+    "5. [Graph Construction](#graph)\n",
+    "6. [Tool Integration](#tools)\n",
+    "7. [Running Conversations](#conversations)\n",
+    "8. [Demo Scenarios](#demo)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Setup and Dependencies {#setup}\n",
+    "\n",
+    "First, let's import all the necessary libraries and modules. This customer support agent uses:\n",
+    "- **LangChain** for LLM integration\n",
+    "- **LangGraph** for building conversational workflows\n",
+    "- **Agent Catalog** for tool and prompt management\n",
+    "- **OpenAI** as the language model provider"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import dotenv\n",
+    "import getpass\n",
+    "from typing import Annotated, List, Dict, Any\n",
+    "from typing_extensions import TypedDict\n",
+    "\n",
+    "from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage\n",
+    "from langchain_openai import ChatOpenAI\n",
+    "from langgraph.graph import StateGraph, END\n",
+    "from langgraph.graph.message import add_messages\n",
+    "from langgraph.prebuilt import ToolNode\n",
+    "\n",
+    "import agentc\n",
+    "\n",
+    "print(\"✅ All dependencies imported successfully!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Environment Configuration {#environment}\n",
+    "\n",
+    "Let's set up the environment variables needed for the customer support agent. This includes API keys for OpenAI and any other services we'll be using."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Load environment variables from .env file\n",
+    "dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True))\n",
+    "\n",
+    "# Set up OpenAI API key if not present\n",
+    "if not os.getenv(\"OPENAI_API_KEY\"):\n",
+    "    os.environ[\"OPENAI_API_KEY\"] = getpass.getpass(\"Please provide your OPENAI_API_KEY: \")\n",
+    "    \n",
+    "print(\"🔑 Environment variables configured!\")\n",
+    "print(f\"OpenAI API Key present: {'✅' if os.getenv('OPENAI_API_KEY') else '❌'}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. State Management {#state}\n",
+    "\n",
+    "The `CustomerSupportState` class defines the structure of our conversation state. This includes:\n",
+    "- **messages**: The conversation history\n",
+    "- **customer_id**: Unique identifier for the customer\n",
+    "- **context**: Additional customer context and preferences\n",
+    "- **current_intent**: The customer's current intent or goal\n",
+    "- **resolved**: Whether the customer's issue has been resolved"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class CustomerSupportState(TypedDict):\n",
+    "    \"\"\"State for the customer support conversation\"\"\"\n",
+    "    messages: Annotated[List[BaseMessage], add_messages]\n",
+    "    customer_id: str\n",
+    "    context: Dict[str, Any]\n",
+    "    current_intent: str\n",
+    "    resolved: bool\n",
+    "\n",
+    "print(\"📋 CustomerSupportState class defined!\")\n",
+    "print(\"State includes: messages, customer_id, context, current_intent, resolved\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. Customer Support Agent Class {#agent}\n",
+    "\n",
+    "The main `CustomerSupportAgent` class orchestrates the entire customer support workflow. It includes:\n",
+    "- **Vector search capabilities** using Couchbase Vector Search\n",
+    "- **Policy lookup** and flight information retrieval\n",
+    "- **Multi-step conversation handling**\n",
+    "- **Context-aware responses** using Agent Catalog prompts"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class CustomerSupportAgent:\n",
+    "    \"\"\"\n",
+    "    Enhanced customer support agent with vector search capabilities.\n",
+    "    \n",
+    "    Features:\n",
+    "    - Knowledge base semantic search using Couchbase Vector Search\n",
+    "    - Policy lookup and flight information retrieval\n",
+    "    - Multi-step conversation handling\n",
+    "    - Context-aware responses using Agent Catalog prompts\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    def __init__(self, catalog: agentc.Catalog):\n",
+    "        self.catalog = catalog\n",
+    "        self.graph = self._build_graph()\n",
+    "        print(\"🤖 CustomerSupportAgent initialized!\")\n",
+    "    \n",
+    "    def _assistant_node(self, state: CustomerSupportState):\n",
+    "        \"\"\"Assistant node that processes user input and decides on actions\"\"\"\n",
+    "        \n",
+    "        # Initialize LLM with specific parameters for customer support\n",
+    "        llm = ChatOpenAI(model=\"gpt-4o-mini\", temperature=0.1)\n",
+    "        \n",
+    "        # Create system message for customer support\n",
+    "        system_prompt = \"\"\"You are a professional customer support agent for TravelCorp Airlines. \n",
+    "        You help customers with flight bookings, cancellations, policies, and travel questions.\n",
+    "        \n",
+    "        Be helpful, empathetic, and solution-focused. Use the available tools when you need specific information:\n",
+    "        - search_knowledge_base: for general support topics\n",
+    "        - lookup_flight_info: for flight schedules and routes  \n",
+    "        - search_policies: for airline policies and rules\n",
+    "        - update_customer_context: to save customer preferences\n",
+    "        \n",
+    "        Always provide clear, actionable responses to help resolve customer issues.\"\"\"\n",
+    "        \n",
+    "        # Prepare messages with system prompt\n",
+    "        messages = [SystemMessage(content=system_prompt)] + state[\"messages\"]\n",
+    "        \n",
+    "        # Get response from LLM\n",
+    "        response = llm.invoke(messages)\n",
+    "        \n",
+    "        return {\"messages\": [response]}\n",
+    "    \n",
+    "    def _should_continue(self, state: CustomerSupportState):\n",
+    "        \"\"\"Determine if conversation should continue or end\"\"\"\n",
+    "        last_message = state[\"messages\"][-1]\n",
+    "        \n",
+    "        # Check if assistant wants to use tools\n",
+    "        if hasattr(last_message, 'tool_calls') and last_message.tool_calls:\n",
+    "            return \"continue\"\n",
+    "        \n",
+    "        # Check if issue is resolved\n",
+    "        if state.get(\"resolved\", False):\n",
+    "            return \"end\"\n",
+    "            \n",
+    "        return \"end\"\n",
+    "\n",
+    "print(\"🏗️ CustomerSupportAgent class structure defined!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. Graph Construction {#graph}\n",
+    "\n",
+    "The `_build_graph` method creates the conversational workflow using LangGraph. This defines:\n",
+    "- **Nodes**: Assistant and Tools\n",
+    "- **Edges**: Flow between nodes\n",
+    "- **Conditional logic**: When to use tools vs. end conversation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Add the graph building method to our CustomerSupportAgent class\n",
+    "def _build_graph(self) -> StateGraph:\n",
+    "    \"\"\"Build the conversation graph with assistant and tools nodes\"\"\"\n",
+    "    \n",
+    "    # Define the graph\n",
+    "    workflow = StateGraph(CustomerSupportState)\n",
+    "    \n",
+    "    # Create mock tools for demonstration\n",
+    "    def search_knowledge_base(query: str) -> str:\n",
+    "        \"\"\"Search the knowledge base for customer support information\"\"\"\n",
+    "        return f\"📋 Knowledge Base Result for '{query}': Found relevant support articles about your inquiry.\"\n",
+    "    \n",
+    "    def lookup_flight_info(source: str, destination: str) -> str:\n",
+    "        \"\"\"Look up flight information between airports\"\"\"\n",
+    "        return f\"✈️ Flight Info: Found flights from {source} to {destination}. Please check our website for current schedules.\"\n",
+    "    \n",
+    "    def search_policies(policy_type: str) -> str:\n",
+    "        \"\"\"Search for airline policies\"\"\"\n",
+    "        return f\"🛡️ Policy Info: Here are the relevant policies for {policy_type}. Please refer to our terms and conditions.\"\n",
+    "    \n",
+    "    def update_customer_context(customer_id: str, context: dict) -> str:\n",
+    "        \"\"\"Update customer context\"\"\"\n",
+    "        return f\"👤 Updated context for customer {customer_id}\"\n",
+    "    \n",
+    "    tools = [search_knowledge_base, lookup_flight_info, search_policies, update_customer_context]\n",
+    "    \n",
+    "    # Create tool node with available tools\n",
+    "    tool_node = ToolNode(tools)\n",
+    "    \n",
+    "    # Add nodes\n",
+    "    workflow.add_node(\"assistant\", self._assistant_node)\n",
+    "    workflow.add_node(\"tools\", tool_node)\n",
+    "    \n",
+    "    # Add edges\n",
+    "    workflow.set_entry_point(\"assistant\")\n",
+    "    workflow.add_conditional_edges(\n",
+    "        \"assistant\",\n",
+    "        self._should_continue,\n",
+    "        {\"continue\": \"tools\", \"end\": END}\n",
+    "    )\n",
+    "    workflow.add_edge(\"tools\", \"assistant\")\n",
+    "    \n",
+    "    return workflow.compile()\n",
+    "\n",
+    "# Add this method to our class\n",
+    "CustomerSupportAgent._build_graph = _build_graph\n",
+    "\n",
+    "print(\"🔗 Graph building method added to CustomerSupportAgent!\")\n",
+    "print(\"Graph includes: assistant node, tools node, conditional edges\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Tool Integration {#tools}\n",
+    "\n",
+    "Let's define the tools that our customer support agent can use. These tools simulate real-world integrations:\n",
+    "\n",
+    "1. **search_knowledge_base**: Semantic search through support documentation\n",
+    "2. **lookup_flight_info**: Query flight schedules and availability\n",
+    "3. **search_policies**: Find relevant airline policies\n",
+    "4. **update_customer_context**: Save customer preferences and context"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def create_sample_tools_and_prompts(catalog: agentc.Catalog):\n",
+    "    \"\"\"Create sample tools and prompts for the customer support agent\"\"\"\n",
+    "    \n",
+    "    # This would typically be done through agentc CLI, but showing structure here\n",
+    "    print(\"📋 Setting up Agent Catalog tools and prompts...\")\n",
+    "    \n",
+    "    # Sample tools that would be created:\n",
+    "    # 1. search_knowledge_base.yaml (semantic search)\n",
+    "    # 2. lookup_flight_info.sqlpp (SQL++ query) \n",
+    "    # 3. search_policies.yaml (semantic search)\n",
+    "    # 4. update_customer_context.py (Python function)\n",
+    "    \n",
+    "    # Sample prompts:\n",
+    "    # 1. customer_support_assistant.yaml (main assistant prompt)\n",
+    "    \n",
+    "    print(\"🔧 Tools and prompts configured in Agent Catalog\")\n",
+    "    \n",
+    "    # Display tool descriptions\n",
+    "    tools_info = {\n",
+    "        \"search_knowledge_base\": \"Semantic search through support documentation using vector embeddings\",\n",
+    "        \"lookup_flight_info\": \"SQL++ queries against flight database for schedules and availability\",\n",
+    "        \"search_policies\": \"Vector search through airline policies and terms of service\",\n",
+    "        \"update_customer_context\": \"Python function to update customer preferences in database\"\n",
+    "    }\n",
+    "    \n",
+    "    print(\"\\n🛠️ Available Tools:\")\n",
+    "    for tool, description in tools_info.items():\n",
+    "        print(f\"  • {tool}: {description}\")\n",
+    "\n",
+    "print(\"🔧 Tool setup function defined!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. Running Conversations {#conversations}\n",
+    "\n",
+    "The `run_conversation` method orchestrates a complete customer support interaction. It:\n",
+    "- Initializes the conversation state\n",
+    "- Processes the customer's initial message\n",
+    "- Streams through the graph nodes\n",
+    "- Displays the conversation flow"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def run_conversation(self, customer_id: str, initial_message: str):\n",
+    "    \"\"\"Run a customer support conversation\"\"\"\n",
+    "    \n",
+    "    initial_state = CustomerSupportState(\n",
+    "        messages=[HumanMessage(content=initial_message)],\n",
+    "        customer_id=customer_id,\n",
+    "        context={},\n",
+    "        current_intent=\"\",\n",
+    "        resolved=False\n",
+    "    )\n",
+    "    \n",
+    "    print(f\"🎯 Customer Support Agent Started for Customer: {customer_id}\")\n",
+    "    print(f\"📝 Initial Message: {initial_message}\")\n",
+    "    print(\"-\" * 60)\n",
+    "    \n",
+    "    # Run the conversation\n",
+    "    for step in self.graph.stream(initial_state):\n",
+    "        for node, output in step.items():\n",
+    "            if node == \"assistant\":\n",
+    "                message = output[\"messages\"][-1]\n",
+    "                print(f\"🤖 Assistant: {message.content}\")\n",
+    "            elif node == \"tools\":\n",
+    "                print(f\"🔧 Tools executed: {len(output.get('messages', []))} results\")\n",
+    "                \n",
+    "    print(\"-\" * 60)\n",
+    "    print(\"✅ Conversation completed\")\n",
+    "\n",
+    "# Add this method to our class\n",
+    "CustomerSupportAgent.run_conversation = run_conversation\n",
+    "\n",
+    "print(\"💬 Conversation runner method added to CustomerSupportAgent!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 8. Demo Scenarios {#demo}\n",
+    "\n",
+    "Now let's create and run our customer support agent with some realistic scenarios. We'll test different types of customer inquiries to demonstrate the agent's capabilities."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Initialize the system\n",
+    "print(\"🚀 Enhanced Customer Support Agent with Vector Search\")\n",
+    "print(\"=\" * 60)\n",
+    "\n",
+    "# Initialize Agent Catalog\n",
+    "catalog = agentc.Catalog()\n",
+    "\n",
+    "# Set up sample tools and prompts\n",
+    "create_sample_tools_and_prompts(catalog)\n",
+    "\n",
+    "# Create the customer support agent\n",
+    "agent = CustomerSupportAgent(catalog)\n",
+    "\n",
+    "print(\"\\n✅ Customer Support Agent ready for demo!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Scenario 1: Flight Cancellation Policy Inquiry\n",
+    "\n",
+    "A customer needs information about cancellation policies for an upcoming trip."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"🎭 Scenario 1: Flight Cancellation Policy Inquiry\")\n",
+    "print(\"=\" * 50)\n",
+    "\n",
+    "agent.run_conversation(\n",
+    "    customer_id=\"CUST_001\",\n",
+    "    initial_message=\"Hi, I need help finding information about flight cancellation policies for my upcoming trip to Paris.\"\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Scenario 2: Flight Search and Booking\n",
+    "\n",
+    "A customer is looking for flight options between specific airports."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"\\n🎭 Scenario 2: Flight Search and Booking\")\n",
+    "print(\"=\" * 50)\n",
+    "\n",
+    "agent.run_conversation(\n",
+    "    customer_id=\"CUST_002\",\n",
+    "    initial_message=\"I'm looking for flights from SFO to JFK next week. Can you help me find options and pricing?\"\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Scenario 3: Flight Disruption and Rebooking\n",
+    "\n",
+    "A customer experienced a flight delay and needs rebooking assistance."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"\\n🎭 Scenario 3: Flight Disruption and Rebooking\")\n",
+    "print(\"=\" * 50)\n",
+    "\n",
+    "agent.run_conversation(\n",
+    "    customer_id=\"CUST_003\",\n",
+    "    initial_message=\"My flight was delayed and I missed my connection. What are my options for rebooking?\"\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Summary and Next Steps\n",
+    "\n",
+    "This notebook demonstrated a comprehensive customer support agent that combines:\n",
+    "\n",
+    "### Key Features Implemented:\n",
+    "- **🤖 Conversational AI**: Using GPT-4 for natural language understanding\n",
+    "- **🔧 Tool Integration**: Multiple tools for different support functions\n",
+    "- **📊 State Management**: Tracking conversation context and customer information\n",
+    "- **🔄 Workflow Orchestration**: LangGraph for managing conversation flow\n",
+    "\n",
+    "### Real-World Enhancements:\n",
+    "To deploy this in production, you would:\n",
+    "\n",
+    "1. **Replace mock tools** with real integrations:\n",
+    "   - Connect `search_knowledge_base` to Couchbase Vector Search\n",
+    "   - Implement `lookup_flight_info` with actual flight APIs\n",
+    "   - Connect `search_policies` to your policy database\n",
+    "   - Implement `update_customer_context` with your CRM system\n",
+    "\n",
+    "2. **Add authentication and security**:\n",
+    "   - Customer authentication\n",
+    "   - API rate limiting\n",
+    "   - Data encryption\n",
+    "\n",
+    "3. **Implement monitoring and analytics**:\n",
+    "   - Conversation logging\n",
+    "   - Performance metrics\n",
+    "   - Customer satisfaction tracking\n",
+    "\n",
+    "4. **Scale the infrastructure**:\n",
+    "   - Load balancing\n",
+    "   - Database optimization\n",
+    "   - Caching strategies\n",
+    "\n",
+    "### Agent Catalog Benefits:\n",
+    "- **🎯 Centralized Management**: All prompts and tools in one place\n",
+    "- **🔄 Version Control**: Track changes to prompts and tools\n",
+    "- **🧪 A/B Testing**: Test different prompt variations\n",
+    "- **📈 Analytics**: Monitor tool usage and effectiveness\n",
+    "\n",
+    "This architecture provides a solid foundation for building production-ready customer support systems with AI agents!"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
