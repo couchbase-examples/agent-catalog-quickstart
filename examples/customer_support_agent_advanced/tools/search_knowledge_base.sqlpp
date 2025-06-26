@@ -1,0 +1,45 @@
+-- Knowledge Base Search Tool using SQL++
+-- Searches hotel data from travel-sample as knowledge proxy
+/*
+name: search_knowledge_base
+
+description: >
+  Search the customer support knowledge base using hotel descriptions from travel-sample 
+  as a proxy for knowledge articles, using text-based search.
+
+input:
+  type: object
+  properties:
+    query:
+      type: string
+      description: "Customer's question or issue description"
+    max_results:
+      type: integer
+      default: 5
+      description: "Maximum number of results to return"
+  required: ["query"]
+
+secrets:
+  - couchbase:
+      conn_string: CB_CONN_STRING
+      username: CB_USERNAME  
+      password: CB_PASSWORD
+      certificate: CB_CERTIFICATE
+*/
+
+SELECT 
+  h.name AS article_title,
+  h.description AS article_content,
+  h.city,
+  h.country,
+  "knowledge_base" AS source
+FROM `travel-sample`.inventory.hotel h
+WHERE LOWER(h.description) LIKE LOWER(CONCAT('%', $query, '%'))
+   OR LOWER(h.name) LIKE LOWER(CONCAT('%', $query, '%'))
+ORDER BY 
+  CASE 
+    WHEN LOWER(h.name) LIKE LOWER(CONCAT('%', $query, '%')) THEN 1
+    ELSE 2
+  END,
+  h.name
+LIMIT IFMISSINGORNULL($max_results, 5);

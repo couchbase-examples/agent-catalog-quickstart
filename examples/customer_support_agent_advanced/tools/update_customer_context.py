@@ -5,59 +5,13 @@ This tool manages customer context and interaction history
 to provide personalized support experiences.
 """
 
+import agentc
 import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-# Agent Catalog tool metadata
-TOOL_METADATA = {
-    "name": "update_customer_context",
-    "description": "Update and manage customer context, preferences, and interaction history for personalized support",
-    "input": {
-        "type": "object",
-        "properties": {
-            "customer_id": {
-                "type": "string",
-                "description": "Unique customer identifier"
-            },
-            "context_update": {
-                "type": "object",
-                "properties": {
-                    "preferences": {
-                        "type": "object",
-                        "description": "Customer preferences (seating, meals, etc.)"
-                    },
-                    "interaction_type": {
-                        "type": "string",
-                        "enum": ["inquiry", "complaint", "booking", "modification", "cancellation"]
-                    },
-                    "resolution_status": {
-                        "type": "string", 
-                        "enum": ["pending", "in_progress", "resolved", "escalated"]
-                    },
-                    "satisfaction_score": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5,
-                        "description": "Customer satisfaction rating (1-5)"
-                    },
-                    "notes": {
-                        "type": "string",
-                        "description": "Additional notes about the interaction"
-                    }
-                }
-            }
-        },
-        "required": ["customer_id", "context_update"]
-    },
-    "annotations": {
-        "privacy": "pii_handling",
-        "retention": "customer_data",
-        "gdpr_compliant": "true"
-    }
-}
 
-
+@agentc.catalog.tool
 def update_customer_context(customer_id: str, context_update: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update customer context and return the updated customer profile.
@@ -131,6 +85,7 @@ def update_customer_context(customer_id: str, context_update: Dict[str, Any]) ->
     }
 
 
+@agentc.catalog.tool
 def get_customer_insights(customer_id: str) -> Dict[str, Any]:
     """
     Get insights about customer behavior and preferences.

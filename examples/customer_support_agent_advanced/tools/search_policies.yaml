@@ -1,11 +1,11 @@
-# Policy Search Tool for Customer Support
+# Policy Search Tool for Customer Support - YAML format
 record_kind: semantic_search
 
 name: search_policies
 
 description: >
-  Search airline policies, terms of service, and regulatory information
-  to provide accurate policy guidance to customers.
+  Search airline policies using semantic search on airline data from travel-sample.
+  This demonstrates YAML-based tool configuration.
 
 input:
   type: object
@@ -17,15 +17,12 @@ input:
       type: string
       enum: ["cancellation", "refund", "baggage", "change", "delay", "general"]
       description: "Type of policy to search for"
-    airline:
-      type: string
-      description: "Specific airline code if policy is airline-specific"
   required: ["policy_query"]
 
 annotations:
   domain: "policies"
+  format: "yaml_demo"
   compliance: "regulatory"
-  gdpr_compliant: "true"
 
 secrets:
   - couchbase:
@@ -35,23 +32,14 @@ secrets:
       certificate: CB_CERTIFICATE
 
 vector_search:
-  bucket: customer-support
-  scope: policies
-  collection: documents
-  index: policy_vector_index
-  vector_field: policy_embedding
-  text_field: policy_text
+  bucket: travel-sample
+  scope: inventory
+  collection: airline
+  index: airline_vector_index
+  vector_field: name_embedding
+  text_field: name
   
   embedding_model:
     name: sentence-transformers/all-MiniLM-L12-v2
     
-  num_candidates: 8
-
-# Additional metadata to include in policy results
-metadata_fields:
-  - policy_id
-  - policy_type
-  - airline_code
-  - effective_date
-  - last_updated
-  - regulatory_source
+  num_candidates: 5
