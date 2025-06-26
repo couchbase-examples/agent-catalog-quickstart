@@ -17,7 +17,7 @@ dotenv.load_dotenv()
 
 class CustomerSupportGraph(agentc_langgraph.graph.GraphRunnable):
     """Customer support conversation graph using Agent Catalog."""
-    
+
     @staticmethod
     def build_starting_state(customer_id: str, initial_message: str) -> CustomerSupportState:
         """Build the initial state for the conversation."""
@@ -28,24 +28,21 @@ class CustomerSupportGraph(agentc_langgraph.graph.GraphRunnable):
             resolved=False,
             tool_results=[],
             interaction_history=[],
-            previous_node=None
+            previous_node=None,
         )
 
     def compile(self) -> langgraph.graph.graph.CompiledGraph:
         """Compile the LangGraph workflow."""
-        
+
         # Build the customer support agent with catalog integration
-        support_agent = CustomerSupportAgent(
-            catalog=self.catalog,
-            span=self.span
-        )
+        support_agent = CustomerSupportAgent(catalog=self.catalog, span=self.span)
 
         # Create a simple workflow graph for customer support
         workflow = langgraph.graph.StateGraph(CustomerSupportState)
-        
+
         # Add the customer support agent node
         workflow.add_node("customer_support", support_agent)
-        
+
         # Set entry point and simple flow
         workflow.set_entry_point("customer_support")
         workflow.add_edge("customer_support", langgraph.graph.END)

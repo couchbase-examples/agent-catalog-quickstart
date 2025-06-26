@@ -16,9 +16,9 @@ cluster = Cluster(
     ClusterOptions(
         authenticator=PasswordAuthenticator(
             username=os.getenv("CB_USERNAME", "kaustav"),
-            password=os.getenv("CB_PASSWORD", "password")
+            password=os.getenv("CB_PASSWORD", "password"),
         )
-    )
+    ),
 )
 
 bucket = cluster.bucket("travel-sample")
@@ -39,6 +39,8 @@ try:
     print("Available routes in travel-sample:")
     print("=" * 50)
     for row in result:
-        print(f"{row['sourceairport']} → {row['destinationairport']}: {row['source_name']} to {row['dest_name']}")
+        print(
+            f"{row['sourceairport']} → {row['destinationairport']}: {row['source_name']} to {row['dest_name']}"
+        )
 except Exception as e:
     print(f"Error querying routes: {e}")
