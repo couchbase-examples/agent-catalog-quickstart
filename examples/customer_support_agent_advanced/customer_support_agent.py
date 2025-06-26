@@ -33,7 +33,7 @@ if __name__ == "__main__":
     test_scenarios = [
         {
             "customer_id": "CUST_001",
-            "message": "Hi, I need to find flights from SFO to LAX for next week. Please show me all available options with different airlines.",
+            "message": "Hi, I need to find flights from ABE to ATL for next week. Please show me all available options with different airlines and give me at least 5 choices.",
             "description": "Flight search with multiple airlines - SQL++ tool demonstration"
         },
         {
@@ -43,8 +43,18 @@ if __name__ == "__main__":
         },
         {
             "customer_id": "CUST_003",
-            "message": "I'm looking for flights from JFK to LAX. What options do you have?",
-            "description": "Cross-country flight search - SQL++ tool with different airports"
+            "message": "I'm looking for flights from ABI to DFW. What options do you have? Please show me multiple airlines.",
+            "description": "Regional flight search - SQL++ tool with multiple results"
+        },
+        {
+            "customer_id": "CUST_004",
+            "message": "Can you help me find flights from ABE to ORD? I want to compare at least 5 different options.",
+            "description": "Multi-option flight search - demonstrating comprehensive results"
+        },
+        {
+            "customer_id": "CUST_005",
+            "message": "I need flights from ABE to PHL. Please show me all available airlines and pricing options.",
+            "description": "Short-haul flight search with multiple results"
         }
     ]
     

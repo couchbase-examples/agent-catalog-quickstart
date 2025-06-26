@@ -13,11 +13,11 @@ def test_flight_tool():
     
     # Test actual routes from travel-sample database
     test_routes = [
-        ("ATL", "LAX", "Atlanta to Los Angeles"),
-        ("SFO", "JFK", "San Francisco to New York"), 
-        ("LHR", "CDG", "London Heathrow to Paris"),
-        ("DEN", "PHX", "Denver to Phoenix"),
-        ("BOS", "ORD", "Boston to Chicago")
+        ("ABE", "ATL", "Lehigh Valley to Atlanta"),
+        ("ABE", "ORD", "Lehigh Valley to Chicago"), 
+        ("ABI", "DFW", "Abilene to Dallas"),
+        ("ABE", "PHL", "Lehigh Valley to Philadelphia"),
+        ("ABE", "CLT", "Lehigh Valley to Charlotte")
     ]
     
     catalog = agentc.Catalog()
