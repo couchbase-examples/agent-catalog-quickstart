@@ -34,40 +34,57 @@ secrets:
       certificate: CB_CERTIFICATE
 */
 
-SELECT 
-  r.airline,
-  r.sourceairport,
-  r.destinationairport,
-  r.equipment,
-  r.distance,
-  a1.airportname AS source_name,
-  a1.city AS source_city,
-  a1.country AS source_country,
-  a2.airportname AS dest_name, 
-  a2.city AS dest_city,
-  a2.country AS dest_country,
-  CASE 
-    WHEN r.distance < 500 THEN "Short-haul"
-    WHEN r.distance < 1500 THEN "Medium-haul"
-    ELSE "Long-haul"
-  END AS flight_type,
-  ROUND(r.distance / 500, 1) AS estimated_hours,
-  -- Generate flight numbers based on airline
-  r.airline || LPAD(FLOOR(RANDOM() * 999 + 100), 3, '0') AS flight_number,
-  -- Generate estimated pricing based on distance and type
-  CASE 
-    WHEN r.distance < 500 THEN ROUND(200 + RANDOM() * 200, 0)
-    WHEN r.distance < 1500 THEN ROUND(400 + RANDOM() * 300, 0)
-    ELSE ROUND(800 + RANDOM() * 500, 0)
-  END AS estimated_price
-FROM 
-  `travel-sample`.inventory.route r
-JOIN 
-  `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
-JOIN 
-  `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
-WHERE 
-  r.sourceairport = $source_airport AND
-  r.destinationairport = $destination_airport
+WITH flight_options AS (
+  SELECT 
+    r.airline,
+    r.sourceairport,
+    r.destinationairport,
+    r.equipment,
+    r.distance,
+    a1.airportname AS source_name,
+    a1.city AS source_city,
+    a1.country AS source_country,
+    a2.airportname AS dest_name, 
+    a2.city AS dest_city,
+    a2.country AS dest_country,
+    CASE 
+      WHEN r.distance < 500 THEN "Short-haul"
+      WHEN r.distance < 1500 THEN "Medium-haul"
+      ELSE "Long-haul"
+    END AS flight_type,
+    ROUND(r.distance / 500, 1) AS estimated_hours
+  FROM 
+    `travel-sample`.inventory.route r
+  JOIN 
+    `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
+  JOIN 
+    `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
+  WHERE 
+    r.sourceairport = $source_airport AND
+    r.destinationairport = $destination_airport
+),
+expanded_flights AS (
+  SELECT fo.*,
+    -- Generate multiple flight options per route with different times and prices
+    time_slot,
+    CASE 
+      WHEN time_slot = 1 THEN "06:00"
+      WHEN time_slot = 2 THEN "10:30" 
+      WHEN time_slot = 3 THEN "14:15"
+      WHEN time_slot = 4 THEN "18:45"
+      ELSE "21:30"
+    END AS departure_time,
+    -- Generate flight numbers based on airline and time slot
+    fo.airline || LPAD(FLOOR(RANDOM() * 900 + 100 + time_slot * 10), 3, '0') AS flight_number,
+    -- Generate varied pricing based on distance, time, and random factor
+    CASE 
+      WHEN fo.distance < 500 THEN ROUND(180 + time_slot * 20 + RANDOM() * 100, 0)
+      WHEN fo.distance < 1500 THEN ROUND(350 + time_slot * 30 + RANDOM() * 200, 0)
+      ELSE ROUND(700 + time_slot * 50 + RANDOM() * 300, 0)
+    END AS estimated_price
+  FROM flight_options fo
+  CROSS JOIN [1, 2, 3, 4, 5] AS time_slot
+)
+SELECT * FROM expanded_flights
 ORDER BY estimated_price
 LIMIT 10;
