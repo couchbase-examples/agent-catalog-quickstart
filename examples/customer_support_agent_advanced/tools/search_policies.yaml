@@ -15,8 +15,8 @@ input:
       description: "Description of the policy question or situation"
     policy_type:
       type: string
-      enum: ["cancellation", "refund", "baggage", "change", "delay", "general"]
-      description: "Type of policy to search for"
+      description: "Type of policy to search for (cancellation, refund, baggage, change, delay, or general)"
+      default: "general"
   required: ["policy_query"]
 
 annotations:
