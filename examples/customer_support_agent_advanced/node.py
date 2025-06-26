@@ -28,8 +28,10 @@ class CustomerSupportAgent(agentc_langgraph.agent.ReActAgent):
     
     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
         """Initialize the customer support agent."""
+        import os
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         chat_model = langchain_openai.chat_models.ChatOpenAI(
-            model="gpt-4o-mini", 
+            model=model_name, 
             temperature=0.1
         )
         

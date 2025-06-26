@@ -29,11 +29,49 @@ if __name__ == "__main__":
     # Parameters can be set with environment variables (e.g., bucket = $AGENT_CATALOG_BUCKET).
     catalog = agentc.Catalog()
 
-    # Build starting state and run the customer support graph
-    initial_state = graph.CustomerSupportGraph.build_starting_state(
-        customer_id="DEMO_CUSTOMER",
-        initial_message="Hi, I need help finding flights from SFO to LAX for next week."
-    )
+    # Test scenarios to demonstrate comprehensive Agent Catalog functionality
+    test_scenarios = [
+        {
+            "customer_id": "CUST_001",
+            "message": "Hi, I need to find flights from SFO to LAX for next week. Please show me all available options with different airlines.",
+            "description": "Flight search with multiple airlines - SQL++ tool demonstration"
+        },
+        {
+            "customer_id": "CUST_002", 
+            "message": "What are your cancellation and refund policies for airline tickets?",
+            "description": "Policy search - YAML semantic search tool demonstration"
+        },
+        {
+            "customer_id": "CUST_003",
+            "message": "I'm looking for flights from JFK to LAX. What options do you have?",
+            "description": "Cross-country flight search - SQL++ tool with different airports"
+        }
+    ]
     
-    # Start the customer support application
-    graph.CustomerSupportGraph(catalog=catalog).invoke(input=initial_state)
+    print(f"\n🎯 Running {len(test_scenarios)} comprehensive test scenarios:")
+    print("=" * 60)
+    
+    for i, scenario in enumerate(test_scenarios, 1):
+        print(f"\n📋 Scenario {i}: {scenario['description']}")
+        print("-" * 50)
+        
+        # Build and run each scenario
+        initial_state = graph.CustomerSupportGraph.build_starting_state(
+            customer_id=scenario["customer_id"],
+            initial_message=scenario["message"]
+        )
+        
+        result = graph.CustomerSupportGraph(catalog=catalog).invoke(input=initial_state)
+        
+        print(f"✅ Scenario {i} completed\n")
+    
+    print("🎉 COMPREHENSIVE TUTORIAL COMPLETED!")
+    print("=" * 60)
+    print("This demonstrated:")
+    print("✅ Agent Catalog + LangGraph + Couchbase integration")
+    print("✅ Mixed tool formats: SQL++, YAML, and Python tools")
+    print("✅ Real flight data from multiple airport pairs") 
+    print("✅ Multiple airline options and comprehensive results")
+    print("✅ Policy search with semantic matching")
+    print("✅ Professional customer support conversation flow")
+    print("=" * 60)
