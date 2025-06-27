@@ -40,7 +40,6 @@ annotations:
 
 tools:
   - name: "lookup_flight_info"
-  - name: "search_knowledge_base"  
   - name: "search_policies"
   - name: "update_customer_context"
   - name: "get_customer_insights"
@@ -54,9 +53,8 @@ content:
     - Issue resolution and problem-solving
     
     TOOL USAGE GUIDELINES:
-    - Use search_knowledge_base for general support topics, FAQs, and procedures
     - Use lookup_flight_info for specific flight data, schedules, and availability
-    - Use search_policies for airline policies, terms, and regulatory information
+    - Use search_policies for airline policies, terms, regulatory information, and general support topics
     - Use update_customer_context to track customer preferences and interaction history
     - Use get_customer_insights to understand customer behavior and preferences
     
@@ -92,9 +90,8 @@ content:
 
     - >
       Use the available tools strategically:
-      * search_knowledge_base: For general support topics, FAQs, and procedures
       * lookup_flight_info: For specific flight data, schedules, and availability
-      * search_policies: For airline policies, terms, and regulatory information
+      * search_policies: For airline policies, terms, regulatory information, FAQs, and general support topics
       * update_customer_context: To track customer preferences and interaction history
 
     - >
@@ -106,8 +103,8 @@ content:
       to ensure you provide current and accurate policy information.
 
     - >
-      Use search_knowledge_base for general support topics, troubleshooting steps,
-      and frequently asked questions.
+      Use search_policies for general support topics, troubleshooting steps,
+      frequently asked questions, and policy information.
 
     - >
       Update customer context after meaningful interactions to personalize future support.
