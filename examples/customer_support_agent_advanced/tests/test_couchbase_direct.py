@@ -131,18 +131,149 @@ def test_hotel_search(query: str):
         return []
 
 
+def explore_available_routes():
+    """Explore what routes are actually available in the database"""
+    try:
+        cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING"),
+            couchbase.options.ClusterOptions(
+                authenticator=couchbase.auth.PasswordAuthenticator(
+                    username=os.getenv("CB_USERNAME"), password=os.getenv("CB_PASSWORD")
+                )
+            ),
+        )
+
+        # Find routes starting with ABE
+        query = """
+        SELECT DISTINCT r.sourceairport, r.destinationairport, a1.airportname AS source_name, a2.airportname AS dest_name
+        FROM `travel-sample`.inventory.route r
+        JOIN `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
+        JOIN `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
+        WHERE r.sourceairport = 'ABE' OR r.sourceairport = 'ABI'
+        ORDER BY r.sourceairport, r.destinationairport
+        """
+
+        result = cluster.query(query)
+        
+        routes = []
+        for row in result:
+            routes.append(row)
+
+        print(f"✅ Found {len(routes)} routes from ABE/ABI airports:")
+        for route in routes:
+            print(f"   {route['sourceairport']} → {route['destinationairport']}: {route['source_name']} to {route['dest_name']}")
+
+        return routes
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return []
+
+
+def test_simplified_query(source_airport: str, destination_airport: str):
+    """Test the simplified SQL++ query structure"""
+    try:
+        cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING"),
+            couchbase.options.ClusterOptions(
+                authenticator=couchbase.auth.PasswordAuthenticator(
+                    username=os.getenv("CB_USERNAME"), password=os.getenv("CB_PASSWORD")
+                )
+            ),
+        )
+
+        # Test the simplified query structure
+        query = """
+        SELECT 
+          r.airline,
+          r.sourceairport,
+          r.destinationairport,
+          r.equipment,
+          r.distance,
+          a1.airportname AS source_name,
+          a1.city AS source_city,
+          a1.country AS source_country,
+          a2.airportname AS dest_name, 
+          a2.city AS dest_city,
+          a2.country AS dest_country,
+          CASE 
+            WHEN r.distance < 500 THEN "Short-haul"
+            WHEN r.distance < 1500 THEN "Medium-haul"
+            ELSE "Long-haul"
+          END AS flight_type,
+          ROUND(r.distance / 500, 1) AS estimated_hours,
+          CASE 
+            WHEN r.airline = 'DL' THEN "08:30"
+            WHEN r.airline = 'AF' THEN "12:15"
+            WHEN r.airline = 'KL' THEN "16:45"
+            ELSE "20:00"
+          END AS departure_time,
+          r.airline || "123" AS flight_number,
+          CASE 
+            WHEN r.distance < 500 THEN 200 + 20
+            WHEN r.distance < 1500 THEN 400 + 30  
+            ELSE 800 + 50
+          END AS estimated_price
+        FROM 
+          `travel-sample`.inventory.route r
+        JOIN 
+          `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
+        JOIN 
+          `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
+        WHERE 
+          r.sourceairport = $source_airport AND
+          r.destinationairport = $destination_airport
+        LIMIT 5
+        """
+
+        result = cluster.query(
+            query,
+            couchbase.options.QueryOptions(
+                named_parameters={
+                    "source_airport": source_airport,
+                    "destination_airport": destination_airport,
+                }
+            ),
+        )
+
+        flights = []
+        for row in result:
+            flights.append(row)
+
+        print(f"✅ Simplified query found {len(flights)} flights from {source_airport} to {destination_airport}")
+        for i, flight in enumerate(flights, 1):
+            print(
+                f"{i}. {flight['airline']} - {flight['equipment']} - {flight['distance']} miles - {flight['flight_type']} - ${flight['estimated_price']} at {flight['departure_time']}"
+            )
+
+        return flights
+
+    except Exception as e:
+        print(f"❌ Simplified query error: {e}")
+        return []
+
+
 if __name__ == "__main__":
     print("🧪 Testing Direct Couchbase Connection")
     print("=" * 50)
 
+    print("\n🔍 Exploring Available Routes:")
+    explore_available_routes()
+
     print("\n1. Testing Flight Lookup (SFO → LAX):")
     test_flight_lookup("SFO", "LAX")
 
-    print("\n2. Testing Flight Lookup (SFO → JFK):")
-    test_flight_lookup("SFO", "JFK")
+    print("\n2. Testing Flight Lookup (ABE → ATL) if available:")
+    test_flight_lookup("ABE", "ATL")
+    
+    print("\n3. Testing Flight Lookup (ABI → DFW) if available:")
+    test_flight_lookup("ABI", "DFW")
 
-    print("\n3. Testing Hotel Search (knowledge base proxy):")
+    print("\n4. Testing Hotel Search (knowledge base proxy):")
     test_hotel_search("luxury")
 
-    print("\n4. Testing Hotel Search (policy proxy):")
+    print("\n5. Testing Simplified Query (ABE → ATL):")
+    test_simplified_query("ABE", "ATL")
+
+    print("\n6. Testing Hotel Search (policy proxy):")
     test_hotel_search("business")

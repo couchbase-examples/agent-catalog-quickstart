@@ -1,28 +1,33 @@
-# Policy Search Tool for Customer Support - YAML format
+# Policy Information Search Tool - YAML format
+# Uses airline data from travel-sample as a basis for policy information
 record_kind: semantic_search
 
 name: search_policies
 
 description: >
-  Search airline policies using semantic search on airline data from travel-sample.
-  This demonstrates YAML-based tool configuration.
+  Search for airline policy information and general support topics using airline data 
+  from travel-sample. This tool searches airline information that can be used to 
+  provide policy guidance and customer support responses.
 
 input:
   type: object
   properties:
     policy_query:
       type: string
-      description: "Description of the policy question or situation"
-    policy_type:
+      description: "Customer's policy question or support inquiry"
+    airline_filter:
       type: string
-      description: "Type of policy to search for (cancellation, refund, baggage, change, delay, or general)"
-      default: "general"
+      description: "Optional airline code to filter results (e.g., 'AA', 'DL')"
+    max_results:
+      type: integer
+      default: 3
+      description: "Maximum number of results to return"
   required: ["policy_query"]
 
 annotations:
-  domain: "policies"
-  format: "yaml_demo"
-  compliance: "regulatory"
+  domain: "customer_support"
+  format: "yaml_semantic_search"
+  data_source: "travel_sample_airlines"
 
 secrets:
   - couchbase:
@@ -35,11 +40,19 @@ vector_search:
   bucket: travel-sample
   scope: inventory
   collection: airline
-  index: airline_vector_index
-  vector_field: name_embedding
+  index: airline_semantic_index
+  vector_field: airline_name_embedding
   text_field: name
   
   embedding_model:
     name: sentence-transformers/all-MiniLM-L12-v2
     
-  num_candidates: 5
+  num_candidates: 10
+
+# Additional fields to include in search results
+metadata_fields:
+  - iata
+  - icao
+  - callsign
+  - country
+  - type
