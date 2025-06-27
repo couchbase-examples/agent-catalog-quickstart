@@ -60,15 +60,55 @@ SELECT
     WHEN r.airline = 'US' THEN "16:45"
     WHEN r.airline = 'AF' THEN "20:00"
     WHEN r.airline = 'KL' THEN "10:30"
-    ELSE "14:00"
+    WHEN r.airline = 'AS' THEN "14:00"
+    WHEN r.airline = 'B6' THEN "15:30"
+    WHEN r.airline = 'VX' THEN "17:00"
+    WHEN r.airline = 'WN' THEN "19:15"
+    ELSE "11:45"
   END AS departure_time,
-  -- Generate flight numbers based on airline
-  r.airline || SUBSTR("000" || TO_STRING(POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 100 + 123), -3) AS flight_number,
+  -- Generate flight numbers based on airline  
+  r.airline || CASE 
+    WHEN r.airline = 'AA' THEN "123"
+    WHEN r.airline = 'DL' THEN "223"
+    WHEN r.airline = 'UA' THEN "323"
+    WHEN r.airline = 'US' THEN "423"
+    WHEN r.airline = 'AF' THEN "523"
+    WHEN r.airline = 'KL' THEN "623"
+    WHEN r.airline = 'AS' THEN "723"
+    WHEN r.airline = 'B6' THEN "823"
+    WHEN r.airline = 'VX' THEN "923"
+    WHEN r.airline = 'WN' THEN "103"
+    ELSE "999"
+  END AS flight_number,
   -- Generate deterministic pricing based on distance and airline
   CASE 
-    WHEN r.distance < 500 THEN 200 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 20)
-    WHEN r.distance < 1500 THEN 400 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 30)
-    ELSE 800 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 50)
+    WHEN r.distance < 500 THEN 200 + CASE 
+      WHEN r.airline = 'AA' THEN 20
+      WHEN r.airline = 'DL' THEN 40
+      WHEN r.airline = 'UA' THEN 60
+      WHEN r.airline = 'US' THEN 80
+      WHEN r.airline = 'AF' THEN 100
+      WHEN r.airline = 'KL' THEN 120
+      ELSE 30
+    END
+    WHEN r.distance < 1500 THEN 400 + CASE 
+      WHEN r.airline = 'AA' THEN 30
+      WHEN r.airline = 'DL' THEN 60
+      WHEN r.airline = 'UA' THEN 90
+      WHEN r.airline = 'US' THEN 120
+      WHEN r.airline = 'AF' THEN 150
+      WHEN r.airline = 'KL' THEN 180
+      ELSE 45
+    END
+    ELSE 800 + CASE 
+      WHEN r.airline = 'AA' THEN 50
+      WHEN r.airline = 'DL' THEN 100
+      WHEN r.airline = 'UA' THEN 150
+      WHEN r.airline = 'US' THEN 200
+      WHEN r.airline = 'AF' THEN 250
+      WHEN r.airline = 'KL' THEN 300
+      ELSE 75
+    END
   END AS estimated_price
 FROM 
   `travel-sample`.inventory.route r
@@ -108,15 +148,55 @@ SELECT
     WHEN r.airline = 'US' THEN "11:00"
     WHEN r.airline = 'AF' THEN "15:30"
     WHEN r.airline = 'KL' THEN "19:45"
-    ELSE "13:15"
+    WHEN r.airline = 'AS' THEN "13:15"
+    WHEN r.airline = 'B6' THEN "16:00"
+    WHEN r.airline = 'VX' THEN "09:30"
+    WHEN r.airline = 'WN' THEN "22:00"
+    ELSE "14:30"
   END AS departure_time,
   -- Different flight numbers
-  r.airline || SUBSTR("000" || TO_STRING(POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 100 + 456), -3) AS flight_number,
+  r.airline || CASE 
+    WHEN r.airline = 'AA' THEN "456"
+    WHEN r.airline = 'DL' THEN "556"
+    WHEN r.airline = 'UA' THEN "656"
+    WHEN r.airline = 'US' THEN "756"
+    WHEN r.airline = 'AF' THEN "856"
+    WHEN r.airline = 'KL' THEN "956"
+    WHEN r.airline = 'AS' THEN "156"
+    WHEN r.airline = 'B6' THEN "256"
+    WHEN r.airline = 'VX' THEN "356"
+    WHEN r.airline = 'WN' THEN "789"
+    ELSE "888"
+  END AS flight_number,
   -- Slightly different pricing
   CASE 
-    WHEN r.distance < 500 THEN 220 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 15)
-    WHEN r.distance < 1500 THEN 420 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 25)
-    ELSE 820 + (POSITION(r.airline IN ["AA","DL","UA","US","AF","KL","AS","B6","VX","WN"]) * 45)
+    WHEN r.distance < 500 THEN 220 + CASE 
+      WHEN r.airline = 'AA' THEN 15
+      WHEN r.airline = 'DL' THEN 35
+      WHEN r.airline = 'UA' THEN 55
+      WHEN r.airline = 'US' THEN 75
+      WHEN r.airline = 'AF' THEN 95
+      WHEN r.airline = 'KL' THEN 115
+      ELSE 25
+    END
+    WHEN r.distance < 1500 THEN 420 + CASE 
+      WHEN r.airline = 'AA' THEN 25
+      WHEN r.airline = 'DL' THEN 55
+      WHEN r.airline = 'UA' THEN 85
+      WHEN r.airline = 'US' THEN 115
+      WHEN r.airline = 'AF' THEN 145
+      WHEN r.airline = 'KL' THEN 175
+      ELSE 40
+    END
+    ELSE 820 + CASE 
+      WHEN r.airline = 'AA' THEN 45
+      WHEN r.airline = 'DL' THEN 95
+      WHEN r.airline = 'UA' THEN 145
+      WHEN r.airline = 'US' THEN 195
+      WHEN r.airline = 'AF' THEN 245
+      WHEN r.airline = 'KL' THEN 295
+      ELSE 70
+    END
   END AS estimated_price
 FROM 
   `travel-sample`.inventory.route r

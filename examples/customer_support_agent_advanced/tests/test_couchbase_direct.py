@@ -170,7 +170,7 @@ def explore_available_routes():
         return []
 
 
-def test_simplified_query(source_airport: str, destination_airport: str):
+def test_corrected_query(source_airport: str, destination_airport: str):
     """Test the simplified SQL++ query structure"""
     try:
         cluster = couchbase.cluster.Cluster(
@@ -182,7 +182,7 @@ def test_simplified_query(source_airport: str, destination_airport: str):
             ),
         )
 
-        # Test the simplified query structure
+        # Test the corrected query with proper CASE statements
         query = """
         SELECT 
           r.airline,
@@ -203,16 +203,41 @@ def test_simplified_query(source_airport: str, destination_airport: str):
           END AS flight_type,
           ROUND(r.distance / 500, 1) AS estimated_hours,
           CASE 
+            WHEN r.airline = 'AA' THEN "06:00"
             WHEN r.airline = 'DL' THEN "08:30"
-            WHEN r.airline = 'AF' THEN "12:15"
-            WHEN r.airline = 'KL' THEN "16:45"
-            ELSE "20:00"
+            WHEN r.airline = 'AF' THEN "20:00"
+            WHEN r.airline = 'KL' THEN "10:30"
+            ELSE "14:00"
           END AS departure_time,
-          r.airline || "123" AS flight_number,
+          r.airline || CASE 
+            WHEN r.airline = 'AA' THEN "123"
+            WHEN r.airline = 'DL' THEN "223"
+            WHEN r.airline = 'AF' THEN "523"
+            WHEN r.airline = 'KL' THEN "623"
+            ELSE "999"
+          END AS flight_number,
           CASE 
-            WHEN r.distance < 500 THEN 200 + 20
-            WHEN r.distance < 1500 THEN 400 + 30  
-            ELSE 800 + 50
+            WHEN r.distance < 500 THEN 200 + CASE 
+              WHEN r.airline = 'AA' THEN 20
+              WHEN r.airline = 'DL' THEN 40
+              WHEN r.airline = 'AF' THEN 100
+              WHEN r.airline = 'KL' THEN 120
+              ELSE 30
+            END
+            WHEN r.distance < 1500 THEN 400 + CASE 
+              WHEN r.airline = 'AA' THEN 30
+              WHEN r.airline = 'DL' THEN 60
+              WHEN r.airline = 'AF' THEN 150
+              WHEN r.airline = 'KL' THEN 180
+              ELSE 45
+            END
+            ELSE 800 + CASE 
+              WHEN r.airline = 'AA' THEN 50
+              WHEN r.airline = 'DL' THEN 100
+              WHEN r.airline = 'AF' THEN 250
+              WHEN r.airline = 'KL' THEN 300
+              ELSE 75
+            END
           END AS estimated_price
         FROM 
           `travel-sample`.inventory.route r
@@ -240,16 +265,16 @@ def test_simplified_query(source_airport: str, destination_airport: str):
         for row in result:
             flights.append(row)
 
-        print(f"✅ Simplified query found {len(flights)} flights from {source_airport} to {destination_airport}")
+        print(f"✅ Corrected query found {len(flights)} flights from {source_airport} to {destination_airport}")
         for i, flight in enumerate(flights, 1):
             print(
-                f"{i}. {flight['airline']} - {flight['equipment']} - {flight['distance']} miles - {flight['flight_type']} - ${flight['estimated_price']} at {flight['departure_time']}"
+                f"{i}. {flight['airline']}{flight['flight_number']} - {flight['equipment']} - {flight['distance']} miles - {flight['flight_type']} - ${flight['estimated_price']} at {flight['departure_time']}"
             )
 
         return flights
 
     except Exception as e:
-        print(f"❌ Simplified query error: {e}")
+        print(f"❌ Corrected query error: {e}")
         return []
 
 
@@ -272,8 +297,8 @@ if __name__ == "__main__":
     print("\n4. Testing Hotel Search (knowledge base proxy):")
     test_hotel_search("luxury")
 
-    print("\n5. Testing Simplified Query (ABE → ATL):")
-    test_simplified_query("ABE", "ATL")
+    print("\n5. Testing Corrected SQL++ Query (ABE → ATL):")
+    test_corrected_query("ABE", "ATL")
 
     print("\n6. Testing Hotel Search (policy proxy):")
     test_hotel_search("business")
