@@ -25,9 +25,9 @@ def get_hotel_details(hotel_name: str) -> str:
         cluster = Cluster(os.environ.get('CB_HOST', 'couchbase://localhost'), options)
         cluster.wait_until_ready(timedelta(seconds=5))
         
-        bucket_name = os.environ.get('CB_BUCKET_NAME', 'hotel-search')
+        bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
         scope_name = os.environ.get('SCOPE_NAME', 'shared')
-        collection_name = os.environ.get('COLLECTION_NAME', 'hotels')
+        collection_name = os.environ.get('COLLECTION_NAME', 'deepseek')
         
         query = f"""
         SELECT RAW content 

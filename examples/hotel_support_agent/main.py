@@ -2,6 +2,7 @@ import os
 import getpass
 import logging
 import time
+import json
 from datetime import timedelta
 
 from dotenv import load_dotenv
@@ -36,10 +37,10 @@ def setup_environment():
         'CB_HOST': 'couchbase://localhost',
         'CB_USERNAME': 'Administrator', 
         'CB_PASSWORD': 'password',
-        'CB_BUCKET_NAME': 'hotel-search',
-        'INDEX_NAME': 'hotel_vector_search',
+        'CB_BUCKET_NAME': 'vector-search-testing',
+        'INDEX_NAME': 'vector_search_deepseek',
         'SCOPE_NAME': 'shared',
-        'COLLECTION_NAME': 'hotels'
+        'COLLECTION_NAME': 'deepseek'
     }
     
     for key, default_value in defaults.items():
@@ -225,69 +226,12 @@ def main():
             os.environ['COLLECTION_NAME']
         )
         
-        index_definition = {
-            "name": os.environ['INDEX_NAME'],
-            "type": "fulltext-index",
-            "params": {
-                "doc_config": {
-                    "docid_prefix_delim": "",
-                    "docid_regexp": "",
-                    "mode": "scope.collection.type_field",
-                    "type_field": "type"
-                },
-                "mapping": {
-                    "default_analyzer": "standard",
-                    "default_datetime_parser": "dateTimeOptional",
-                    "default_field": {
-                        "dynamic": True,
-                        "enabled": False
-                    },
-                    "default_mapping": {
-                        "dynamic": True,
-                        "enabled": False
-                    },
-                    "default_type": "_default",
-                    "docvalues_dynamic": False,
-                    "index_dynamic": True,
-                    "store_dynamic": False,
-                    "type_field": "_type",
-                    "types": {
-                        f"{os.environ['SCOPE_NAME']}.{os.environ['COLLECTION_NAME']}": {
-                            "dynamic": False,
-                            "enabled": True,
-                            "properties": {
-                                "embedding": {
-                                    "dynamic": False,
-                                    "enabled": True,
-                                    "fields": [
-                                        {
-                                            "dims": 1536,
-                                            "index": True,
-                                            "name": "embedding",
-                                            "similarity": "dot_product",
-                                            "type": "vector",
-                                            "vector_index_optimized_for": "recall"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                "store": {
-                    "indexType": "scorch",
-                    "segmentVersion": 16
-                }
-            },
-            "sourceType": "gocbcore",
-            "sourceName": os.environ['CB_BUCKET_NAME'],
-            "sourceParams": {},
-            "planParams": {
-                "maxPartitionsPerPIndex": 1024,
-                "indexPartitions": 1,
-                "numReplicas": 0
-            }
-        }
+        try:
+            with open('deepseek_index.json', 'r') as file:
+                index_definition = json.load(file)
+            logging.info("Loaded vector search index definition from deepseek_index.json")
+        except Exception as e:
+            raise ValueError(f"Error loading index definition: {str(e)}")
         
         setup_vector_search_index(cluster, index_definition)
         

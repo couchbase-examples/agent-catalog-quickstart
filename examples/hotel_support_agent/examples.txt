@@ -1,0 +1,272 @@
+{
+  "title": "Gillingham (Kent)",
+  "name": "Medway Youth Hostel",
+  "address": "Capstone Road, ME7 3JE",
+  "directions": null,
+  "phone": "+44 870 770 5964",
+  "tollfree": null,
+  "email": null,
+  "fax": null,
+  "url": "http://www.yha.org.uk",
+  "checkin": null,
+  "checkout": null,
+  "price": null,
+  "geo": {
+    "lat": 51.35785,
+    "lon": 0.55818,
+    "accuracy": "RANGE_INTERPOLATED"
+  },
+  "type": "hotel",
+  "id": 10025,
+  "country": "United Kingdom",
+  "city": "Medway",
+  "state": null,
+  "reviews": [
+    {
+      "content": "This was our 2nd trip here and we enjoyed it as much or more than last year. Excellent location across from the French Market and just across the street from the streetcar stop. Very convenient to several small but good restaurants. Very clean and well maintained. Housekeeping and other staff are all friendly and helpful. We really enjoyed sitting on the 2nd floor terrace over the entrance and \"people-watching\" on Esplanade Ave., also talking with our fellow guests. Some furniture could use a little updating or replacement, but nothing major.",
+      "ratings": {
+        "Service": 5,
+        "Cleanliness": 5,
+        "Overall": 4,
+        "Value": 4,
+        "Location": 4,
+        "Rooms": 3
+      },
+      "author": "Ozella Sipes",
+      "date": "2013-06-22 18:33:50 +0300"
+    },
+    {
+      "content": "We found the hotel de la Monnaie through Interval and we thought we'd give it a try while we attended a conference in New Orleans. This place was a perfect location and it definitely beat staying downtown at the Hilton with the rest of the attendees. We were right on the edge of the French Quarter withing walking distance of the whole area. The location on Esplanade is more of a residential area so you are near the fun but far enough away to enjoy some quiet downtime. We loved the trolly car right across the street and we took that down to the conference center for the conference days we attended. We also took it up Canal Street and nearly delivered to the WWII museum. From there we were able to catch a ride to the Garden District - a must see if you love old architecture - beautiful old homes(mansions). We at lunch ate Joey K's there and it was excellent. We ate so many places in the French Quarter I can't remember all the names. My husband loved all the NOL foods - gumbo, jambalya and more. I'm glad we found the Louisiana Pizza Kitchen right on the other side of the U.S. Mint (across the street from Monnaie). Small little spot but excellent pizza! The day we arrived was a huge jazz festival going on across the street. However, once in our rooms, you couldn't hear any outside noise. Just the train at night blowin it's whistle! We enjoyed being so close to the French Market and within walking distance of all the sites to see. And you can't pass up the Cafe du Monde down the street - a busy happenning place with the best French dougnuts!!!Delicious! We will defintely come back and would stay here again. We were not hounded to purchase anything. My husband only received one phone call regarding timeshare and the woman was very pleasant. The staff was laid back and friendly. My only complaint was the very firm bed. Other than that, we really enjoyed our stay. Thanks Hotel de la Monnaie!",
+      "ratings": {
+        "Service": 3,
+        "Cleanliness": 4,
+        "Business service (e.g., internet access)": 4,
+        "Check in / front desk": 4,
+        "Overall": 4,
+        "Value": 5,
+        "Rooms": 3,
+        "Location": 4
+      },
+      "author": "Barton Marks",
+      "date": "2015-03-02 19:56:13 +0300"
+    }
+  ],
+  "public_likes": [
+    "Julius Tromp I",
+    "Corrine Hilll",
+    "Jaeden McKenzie",
+    "Vallie Ryan",
+    "Brian Kilback",
+    "Lilian McLaughlin",
+    "Ms. Moses Feeney",
+    "Elnora Trantow"
+  ],
+  "vacancy": true,
+  "description": "40 bed summer hostel about 3 miles from Gillingham, housed in a districtive converted Oast House in a semi-rural setting.",
+  "alias": null,
+  "pets_ok": true,
+  "free_breakfast": true,
+  "free_internet": false,
+  "free_parking": true
+}
+
+
+{
+  "title": "Glasgow",
+  "name": "Glasgow Grand Central",
+  "address": "99 Gordon Street",
+  "directions": "Adjoins onto the side of Central Station",
+  "phone": "+44 (0) 141 240 3700",
+  "tollfree": null,
+  "email": "grandcentralhotel@principal-hayley.com",
+  "fax": null,
+  "url": "http://www.thegrandcentralhotel.co.uk/",
+  "checkin": null,
+  "checkout": null,
+  "price": "from £79",
+  "geo": {
+    "lat": 55.86458,
+    "lon": -4.26655,
+    "accuracy": "ROOFTOP"
+  },
+  "type": "hotel",
+  "id": 10138,
+  "country": "United Kingdom",
+  "city": "Glasgow",
+  "state": null,
+  "reviews": [
+    {
+      "content": "Good location on the edge of the French Quarter, but the hotel is worn and lacks attractiveness. The lobby bar looks like it belongs in a budget motel. The paint on the bathroom door in our room, and that of our fellow travelers, was quite chipped. We have stayed in other Doubletree Hotels and fell well short of the standard of the others. We were only staying 2 nights so we didn't move hotels, but our fellow travelers who were staying in New Orleans 2 more nights moved to another hotel.",
+      "ratings": {
+        "Service": 3,
+        "Cleanliness": 3,
+        "Overall": 3,
+        "Value": 2,
+        "Sleep Quality": 2,
+        "Rooms": 2,
+        "Location": 4
+      },
+      "author": "Nella Ratke",
+      "date": "2013-07-12 12:18:02 +0300"
+    }
+  ],
+  "public_likes": [
+    "Nash Kihn"
+  ],
+  "vacancy": false,
+  "description": "This grandiose olde worlde railway hotel - once one of the city's most prestigious hotels - has been recently refurbished and restored to its former glory.",
+  "alias": "Grand Central Hotel",
+  "pets_ok": false,
+  "free_breakfast": true,
+  "free_internet": false,
+  "free_parking": false
+}
+
+{
+  "title": "Gillingham (Kent)",
+  "name": "The Balmoral Guesthouse",
+  "address": "57-59 Balmoral Road, ME7 4NT",
+  "directions": null,
+  "phone": "+44 1634 853 68",
+  "tollfree": null,
+  "email": null,
+  "fax": null,
+  "url": "http://www.thebalmoral-guesthouse.co.uk",
+  "checkin": null,
+  "checkout": null,
+  "price": "Single room £32 per night",
+  "geo": {
+    "lat": 51.38624,
+    "lon": 0.55078,
+    "accuracy": "RANGE_INTERPOLATED"
+  },
+  "type": "hotel",
+  "id": 10026,
+  "country": "United Kingdom",
+  "city": "Gillingham",
+  "state": null,
+  "reviews": [],
+  "public_likes": [],
+  "vacancy": false,
+  "description": "A recently modernised basic but cheap guesthouse across the road from Gillingham station. No meals, but many rooms have a fridge and hob for cooking.",
+  "alias": null,
+  "pets_ok": true,
+  "free_breakfast": true,
+  "free_internet": true,
+  "free_parking": false
+}
+
+{
+  "title": "Glencoe",
+  "name": "Glencoe Youth Hostel",
+  "address": "Glencoe, PA39 4HX",
+  "directions": null,
+  "phone": "+44 1855 811219",
+  "tollfree": null,
+  "email": "glencoe@syha.org.uk",
+  "fax": null,
+  "url": "http://www.syha.org.uk/hostels-in-scotland/highlands/glencoe.aspx",
+  "checkin": null,
+  "checkout": null,
+  "price": "£17.00",
+  "geo": {
+    "lat": 56.6721,
+    "lon": -5.07389,
+    "accuracy": "ROOFTOP"
+  },
+  "type": "hotel",
+  "id": 10142,
+  "country": "United Kingdom",
+  "city": "Highland",
+  "state": null,
+  "reviews": [
+    {
+      "content": "This has got to be the worse experience I have ever had at a hotel. Our reservation was placed two months in advance for a non-smoking room with two beds from July 2-7, 2010. We are staying five nights at $190 a night and this is what we got, a smoking room with one bed, and was only told at the front desk that it was going to be a smoking room, nothing about the one bed, when she asked us how many beds we needed, oh they provided a roll-a-way, only thing is I had to move the chair into the hallway to fit the bed. The t.v. was older than me and the speaker was shot. the bathroom was so small you have to step into the tub to close the door, no fridge in the room, doors are cheap and horrible. only sheets on the bed no blankets/quilts, plus on top of that, i had to pay $14.95 a night for internet. I will never recommend this hotel! how can you take a reservation and state that it will be held till 10am the following morning, yet not provide what was requested in the reservation? What if someone in my party was allergic to smoke, asthmatic, or worse... we wouldn't have gotten a room? completely unacceptable no wonder I will continue to stay at the comfort suites... free internet, modern amenities(flat screens) oh and $85 a night. unsatisfied doesn't even come close to how I feel. the only good thing out of this whole stay was the hot cookie when I got here and mine wasn't even hot. You can take that cookie and... well i'm sure you can figure out the rest. Thanx for nothing!",
+      "ratings": {
+        "Service": 1,
+        "Cleanliness": 3,
+        "Overall": 1,
+        "Value": 1,
+        "Sleep Quality": 1,
+        "Rooms": 1,
+        "Location": 3
+      },
+      "author": "Kayli Cronin",
+      "date": "2014-04-12 00:12:11 +0300"
+    },
+    {
+      "content": "OK - I booked this place about 8 weeks prior to travel, when the rooms were still $116 for a Saturday night on Doubletree/Hilton site. As the travel date drew close, I would reprice and the rate climbed to over $200. $116 was a bargain, but the place isn't worth $200. I had room 1022 - very small, some mildew on in the closet in the corner, and right down the hall from the housekeeping closets (they banged their doors day and night). The bed was comfortable and the staff was very courteous. I didn't know this when I booked the hotel, but I was thrilled to see it was at the same intersection as Harrah's Casino so I lost $50. The hotel is also right at a trolley car stop on Canal Street. $116 - yep, I'ld stay there again in a heartbeat. $200 - no can do. Book early and tolerate the inconveniences in exchange for a bargain price.",
+      "ratings": {
+        "Service": 4,
+        "Cleanliness": 3,
+        "Overall": 3,
+        "Value": 3,
+        "Sleep Quality": 5,
+        "Rooms": 3,
+        "Location": 5
+      },
+      "author": "Addison Ratke",
+      "date": "2014-10-26 20:19:43 +0300"
+    },
+    {
+      "content": "I was impressed with my room and the great service I received at the front desk. I found the staff helpful and very pleasant. The location was great with easy walking distances to the French Quarter, other points of interest and great restaurants in the immediate area. Room service was on time and my breakfast arrived hot and ready to enjoy. I would recommend this hotel for the start of a great stay in Big Easy.",
+      "ratings": {
+        "Service": 5,
+        "Cleanliness": 4,
+        "Overall": 5,
+        "Value": 5,
+        "Location": 5,
+        "Rooms": 4
+      },
+      "author": "Jamaal Maggio",
+      "date": "2013-09-24 11:08:35 +0300"
+    },
+    {
+      "content": "The hotel is located conveniently on Canal Street at the edge of the French Quarter near the river. When we arrived, the rooms were ready to go and checking was painless, the cookies were awesome! The louge downstairs was a good place to catch a drink before heading out each night. We were within walking distance to everything in the French Quarter and catching a cab in front of the hotel was easy. The trolley has a stop in front of the hotel, Harrah's is next door, the aquarium , the mall and a move theater are all across the street. The hotel restaurant was good, not the best considering it's New Orleans, but good for hotel food. I didn't have a car this trip, but you have to pay for parking in most places in the quarter. The pool is small, but nice to hang out at mid afternoon and there is a small gym for a quick work out. I've staryed in many places in the French Quarter over the years and this is one of the better experiences I have had. I was pleasantly suprizes at how much I liked the location.",
+      "ratings": {
+        "Service": 5,
+        "Cleanliness": 5,
+        "Overall": 4,
+        "Value": 4,
+        "Location": 4,
+        "Rooms": 3
+      },
+      "author": "Ilene Wunsch II",
+      "date": "2012-01-15 08:23:42 +0300"
+    },
+    {
+      "content": "The Doubltree is located near so many attractions, we hardly ever needed a cab the whole time we were there. Clean rooms that were well maintained were a treat to come home to after a long day. I never experienced one issue or problem the entire time I was there, from a warm a welcoming check-in (with a great cookie!) to an efficent check-out. I would certainly reccomend the hotel to anyone I knew that was traveling to the Big Easy.",
+      "ratings": {
+        "Service": 5,
+        "Cleanliness": 5,
+        "Overall": 5,
+        "Value": 5,
+        "Location": 5,
+        "Rooms": 5
+      },
+      "author": "Ms. Aiyana Parker",
+      "date": "2012-06-05 09:48:26 +0300"
+    },
+    {
+      "content": "We stayed at the Doubletree Hotel New Orleans for the first time on February 14, 2009. The good: check in was quick, the rooms were comfortable and very clean. I forgot some amenities and staff were very quick to respond with bringing up what I needed. All staff were very polite. One bad: the walls are paper thin, you can literally hear every word in the rooms next to you and in the hallway. I would stay here again for the ideal location, but if you need a good nights rest, reconsider due to noise.",
+      "ratings": {
+        "Service": 5,
+        "Cleanliness": 5,
+        "Overall": 4,
+        "Value": 5,
+        "Location": 5,
+        "Rooms": 3
+      },
+      "author": "Lowell Raynor",
+      "date": "2014-08-22 21:40:05 +0300"
+    }
+  ],
+  "public_likes": [],
+  "vacancy": false,
+  "description": "62 Family Bunk Rooms.",
+  "alias": null,
+  "pets_ok": false,
+  "free_breakfast": true,
+  "free_internet": true,
+  "free_parking": false
+}
