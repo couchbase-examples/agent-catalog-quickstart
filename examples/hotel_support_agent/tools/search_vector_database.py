@@ -1,38 +1,41 @@
+import agentc
+import couchbase.auth
+import couchbase.cluster
+import couchbase.exceptions
+import couchbase.options
+import dotenv
 import os
-import logging
-from datetime import timedelta
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions
 from langchain_openai import OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
-from agentc.core import tool
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from datetime import timedelta
 
-@tool
+dotenv.load_dotenv()
+
+# Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
+try:
+    cluster = couchbase.cluster.Cluster(
+        os.getenv("CB_HOST", "couchbase://localhost"),
+        couchbase.options.ClusterOptions(
+            authenticator=couchbase.auth.PasswordAuthenticator(
+                username=os.getenv("CB_USERNAME", "Administrator"), 
+                password=os.getenv("CB_PASSWORD", "password")
+            )
+        ),
+    )
+    cluster.wait_until_ready(timedelta(seconds=5))
+except couchbase.exceptions.CouchbaseException as e:
+    print(f"Could not connect to Couchbase cluster: {str(e)}")
+
+@agentc.catalog.tool
 def search_vector_database(query: str) -> str:
-    """Searches the Couchbase vector database for hotels matching the user's query.
-    
-    Args:
-        query: The search query describing hotel preferences, location, amenities, etc.
-        
-    Returns:
-        A formatted string containing relevant hotel search results with details.
-    """
+    """Search for hotels using semantic vector similarity based on user query preferences."""
     try:
-        auth = PasswordAuthenticator(
-            os.environ.get('CB_USERNAME', 'Administrator'), 
-            os.environ.get('CB_PASSWORD', 'password')
-        )
-        options = ClusterOptions(auth)
-        cluster = Cluster(os.environ.get('CB_HOST', 'couchbase://localhost'), options)
-        cluster.wait_until_ready(timedelta(seconds=5))
-        
         embeddings = OpenAIEmbeddings(
             api_key=os.environ['OPENAI_API_KEY'],
             model="text-embedding-3-small"
         )
         
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.environ.get('CB_BUCKET_NAME', 'vector-search-testing'),
             scope_name=os.environ.get('SCOPE_NAME', 'shared'),
@@ -54,5 +57,4 @@ def search_vector_database(query: str) -> str:
         return "\n".join(formatted_results)
         
     except Exception as e:
-        logging.error(f"Error searching vector database: {str(e)}")
         raise RuntimeError(f"Failed to search hotel database: {str(e)}")

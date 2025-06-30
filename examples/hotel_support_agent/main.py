@@ -1,34 +1,31 @@
+import agentc
+import agentc_langchain
+import dotenv
 import os
-import getpass
-import logging
-import time
 import json
+import time
 from datetime import timedelta
 
-from dotenv import load_dotenv
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.options import ClusterOptions
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
-from langchain_core.messages import SystemMessage
-from langgraph.prebuilt import create_react_agent
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain.hub import pull
+from langchain_core.messages import HumanMessage
 
-from agentc.catalog import Catalog
-from agentc_langgraph.graph import Callback
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.getLogger('httpx').setLevel(logging.CRITICAL)
+# Make sure you populate your .env file with the correct credentials!
+dotenv.load_dotenv()
 
 def _set_if_undefined(var: str):
     if os.environ.get(var) is None:
+        import getpass
         os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
 
 def setup_environment():
-    load_dotenv()
-    
     required_vars = ['OPENAI_API_KEY', 'CB_HOST', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET_NAME']
     for var in required_vars:
         _set_if_undefined(var)
@@ -53,7 +50,7 @@ def setup_couchbase_connection():
         options = ClusterOptions(auth)
         cluster = Cluster(os.environ['CB_HOST'], options)
         cluster.wait_until_ready(timedelta(seconds=10))
-        logging.info("Successfully connected to Couchbase")
+        print("Successfully connected to Couchbase")
         return cluster
     except Exception as e:
         raise ConnectionError(f"Failed to connect to Couchbase: {str(e)}")
@@ -62,9 +59,9 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
     try:
         try:
             bucket = cluster.bucket(bucket_name)
-            logging.info(f"Bucket '{bucket_name}' exists")
+            print(f"Bucket '{bucket_name}' exists")
         except Exception:
-            logging.info(f"Creating bucket '{bucket_name}'...")
+            print(f"Creating bucket '{bucket_name}'...")
             bucket_settings = CreateBucketSettings(
                 name=bucket_name,
                 bucket_type='couchbase',
@@ -75,7 +72,7 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
             cluster.buckets().create_bucket(bucket_settings)
             time.sleep(5)
             bucket = cluster.bucket(bucket_name)
-            logging.info(f"Bucket '{bucket_name}' created successfully")
+            print(f"Bucket '{bucket_name}' created successfully")
 
         bucket_manager = bucket.collections()
         
@@ -83,9 +80,9 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
         scope_exists = any(scope.name == scope_name for scope in scopes)
         
         if not scope_exists and scope_name != "_default":
-            logging.info(f"Creating scope '{scope_name}'...")
+            print(f"Creating scope '{scope_name}'...")
             bucket_manager.create_scope(scope_name)
-            logging.info(f"Scope '{scope_name}' created successfully")
+            print(f"Scope '{scope_name}' created successfully")
 
         collections = bucket_manager.get_all_scopes()
         collection_exists = any(
@@ -94,19 +91,21 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
         )
 
         if not collection_exists:
-            logging.info(f"Creating collection '{collection_name}'...")
+            print(f"Creating collection '{collection_name}'...")
             bucket_manager.create_collection(scope_name, collection_name)
-            logging.info(f"Collection '{collection_name}' created successfully")
+            print(f"Collection '{collection_name}' created successfully")
 
         collection = bucket.scope(scope_name).collection(collection_name)
         time.sleep(3)
 
         try:
             cluster.query(f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`").execute()
-            logging.info("Primary index created successfully")
+            print("Primary index created successfully")
         except Exception as e:
-            logging.warning(f"Error creating primary index: {str(e)}")
+            print(f"Warning: Error creating primary index: {str(e)}")
 
+        print(f"Collection setup complete. Using existing documents in the database.")
+        
         return collection
     except Exception as e:
         raise RuntimeError(f"Error setting up collection: {str(e)}")
@@ -119,12 +118,12 @@ def setup_vector_search_index(cluster, index_definition):
         index_name = index_definition["name"]
 
         if index_name not in [index.name for index in existing_indexes]:
-            logging.info(f"Creating vector search index '{index_name}'...")
+            print(f"Creating vector search index '{index_name}'...")
             search_index = SearchIndex.from_json(index_definition)
             scope_index_manager.upsert_index(search_index)
-            logging.info(f"Vector search index '{index_name}' created successfully")
+            print(f"Vector search index '{index_name}' created successfully")
         else:
-            logging.info(f"Vector search index '{index_name}' already exists")
+            print(f"Vector search index '{index_name}' already exists")
     except Exception as e:
         raise RuntimeError(f"Error setting up vector search index: {str(e)}")
 
@@ -189,7 +188,7 @@ def setup_vector_store(cluster):
             model="text-embedding-3-small"
         )
         
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.environ['CB_BUCKET_NAME'],
             scope_name=os.environ['SCOPE_NAME'],
@@ -202,9 +201,9 @@ def setup_vector_store(cluster):
         
         try:
             vector_store.add_texts(texts=hotel_data, batch_size=10)
-            logging.info("Hotel data loaded into vector store successfully")
+            print("Hotel data loaded into vector store successfully")
         except Exception as e:
-            logging.warning(f"Error loading hotel data: {str(e)}. Vector store created but data not loaded.")
+            print(f"Warning: Error loading hotel data: {str(e)}. Vector store created but data not loaded.")
         
         return vector_store
     except Exception as e:
@@ -214,9 +213,11 @@ def main():
     try:
         setup_environment()
         
-        catalog = Catalog()
-        application_span = catalog.Span(name="Hotel Search Agent")
+        # Initialize Agent Catalog
+        catalog = agentc.Catalog()
+        application_span = agentc.Span(name="Hotel Search Agent")
         
+        # Setup Couchbase infrastructure
         cluster = setup_couchbase_connection()
         
         setup_collection(
@@ -229,7 +230,7 @@ def main():
         try:
             with open('deepseek_index.json', 'r') as file:
                 index_definition = json.load(file)
-            logging.info("Loaded vector search index definition from deepseek_index.json")
+            print("Loaded vector search index definition from deepseek_index.json")
         except Exception as e:
             raise ValueError(f"Error loading index definition: {str(e)}")
         
@@ -237,55 +238,50 @@ def main():
         
         setup_vector_store(cluster)
         
+        # Setup LLM with Agent Catalog callback
         llm = ChatOpenAI(
             api_key=os.environ['OPENAI_API_KEY'],
             model="gpt-4o",
             temperature=0,
-            callbacks=[Callback(span=application_span)]
+            callbacks=[agentc_langchain.chat.Callback(span=application_span)]
         )
         
-        tool_result_search = catalog.find("tool", name="search_vector_database")
-        tool_result_details = catalog.find("tool", name="get_hotel_details")
-        tools = [tool_result_search.func, tool_result_details.func]
+        # Load tools from Agent Catalog
+        tool_search = catalog.find("tool", name="search_vector_database")
+        tool_details = catalog.find("tool", name="get_hotel_details")
+        tools = [tool_search.func, tool_details.func]
         
-        system_message = SystemMessage(content="""You are a professional hotel search assistant. 
-        Help users find the perfect hotel based on their requirements including location, budget, amenities, and preferences.
-        Use the available tools to search for hotels and provide detailed information.
-        Always be helpful, accurate, and professional in your responses.""")
+        # Load prompt from Agent Catalog
+        prompt_result = catalog.find("prompt", name="hotel_search_assistant")
         
-        agent_executor = create_react_agent(llm, tools, messages_modifier=system_message)
+        # Create a simple ReAct agent using LangChain
+        react_prompt = pull("hwchase17/react")
+        agent = create_react_agent(llm, tools, react_prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
         
         print("Hotel Search Agent is ready! Type 'exit' to quit.")
+        print("Ask me about hotels - I can search for hotels and provide detailed information!")
         
-        while (user_input := input("\n>> ")) != "exit":
+        while True:
+            user_input = input("\n>> ")
+            if user_input.lower() in ['exit', 'quit', 'bye']:
+                print("Thank you for using the Hotel Search Agent!")
+                break
+                
             if not user_input.strip():
                 continue
                 
             try:
-                events = agent_executor.stream(
-                    {"messages": [("user", user_input)]},
-                )
-                
-                for event in events:
-                    if "event" not in event:
-                        output = event.get("agent", {}).get("messages", [])
-                        if len(output):
-                            print(output[-1].content)
-                        continue
-                    
-                    kind = event["event"]
-                    if kind == "on_chat_model_stream":
-                        content = event["data"]["chunk"].content
-                        if content:
-                            print(content, end="", flush=True)
-                    elif kind == "on_tool_end":
-                        print(f"\nTool output: {event['data']['output']}")
+                response = agent_executor.invoke({
+                    "input": f"Help the user with their hotel search request: {user_input}"
+                })
+                print(f"\nAssistant: {response['output']}")
                         
             except Exception as e:
                 print(f"Error processing request: {str(e)}")
                 
     except Exception as e:
-        logging.error(f"Application error: {str(e)}")
+        print(f"Application error: {str(e)}")
         raise
 
 if __name__ == "__main__":

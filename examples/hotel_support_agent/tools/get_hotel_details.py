@@ -1,30 +1,33 @@
+import agentc
+import couchbase.auth
+import couchbase.cluster
+import couchbase.exceptions
+import couchbase.options
+import dotenv
 import os
-import logging
 from datetime import timedelta
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions
-from agentc.core import tool
 
-@tool
+dotenv.load_dotenv()
+
+# Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
+try:
+    cluster = couchbase.cluster.Cluster(
+        os.getenv("CB_HOST", "couchbase://localhost"),
+        couchbase.options.ClusterOptions(
+            authenticator=couchbase.auth.PasswordAuthenticator(
+                username=os.getenv("CB_USERNAME", "Administrator"), 
+                password=os.getenv("CB_PASSWORD", "password")
+            )
+        ),
+    )
+    cluster.wait_until_ready(timedelta(seconds=5))
+except couchbase.exceptions.CouchbaseException as e:
+    print(f"Could not connect to Couchbase cluster: {str(e)}")
+
+@agentc.catalog.tool
 def get_hotel_details(hotel_name: str) -> str:
-    """Gets detailed information about a specific hotel by name from the Couchbase database.
-    
-    Args:
-        hotel_name: The name of the hotel to get details for
-        
-    Returns:
-        A formatted string with comprehensive hotel details including amenities, pricing, and contact information.
-    """
+    """Get comprehensive details for a specific hotel by name including amenities, pricing, and contact information."""
     try:
-        auth = PasswordAuthenticator(
-            os.environ.get('CB_USERNAME', 'Administrator'), 
-            os.environ.get('CB_PASSWORD', 'password')
-        )
-        options = ClusterOptions(auth)
-        cluster = Cluster(os.environ.get('CB_HOST', 'couchbase://localhost'), options)
-        cluster.wait_until_ready(timedelta(seconds=5))
-        
         bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
         scope_name = os.environ.get('SCOPE_NAME', 'shared')
         collection_name = os.environ.get('COLLECTION_NAME', 'deepseek')
@@ -40,6 +43,7 @@ def get_hotel_details(hotel_name: str) -> str:
         rows = list(result.rows())
         
         if not rows:
+            # Provide detailed mock data for the demo hotels
             detailed_hotels = {
                 "grand palace hotel": {
                     "name": "Grand Palace Hotel",
@@ -56,7 +60,7 @@ def get_hotel_details(hotel_name: str) -> str:
                 },
                 "seaside resort": {
                     "name": "Seaside Resort",
-                    "location": "Miami Beach, Florida",
+                    "location": "Miami Beach, Florida", 
                     "description": "Oceanfront resort with private beach and stunning Atlantic Ocean views",
                     "price_range": "$200-$400 per night",
                     "amenities": ["Private Beach Access", "3 Swimming Pools", "Oceanview Restaurant", "Tiki Bar", "Water Sports Center", "Free WiFi", "Spa Services", "Kids Club"],
@@ -111,8 +115,7 @@ def get_hotel_details(hotel_name: str) -> str:
             hotel_key = hotel_name.lower().strip()
             if hotel_key in detailed_hotels:
                 hotel = detailed_hotels[hotel_key]
-                return f"""
-**{hotel['name']}**
+                return f"""**{hotel['name']}**
 
 **Location:** {hotel['location']}
 **Description:** {hotel['description']}
@@ -129,14 +132,12 @@ def get_hotel_details(hotel_name: str) -> str:
 
 **Check-in Time:** {hotel['check_in']}
 **Check-out Time:** {hotel['check_out']}
-**Cancellation Policy:** {hotel['cancellation']}
-"""
+**Cancellation Policy:** {hotel['cancellation']}"""
             else:
-                return f"Hotel '{hotel_name}' not found in our database. Please check the spelling or try searching for hotels in a specific location."
+                return f"Hotel '{hotel_name}' not found in the database. Please check the spelling or try using the search tool to find similar hotels in your desired location."
         
         hotel_content = rows[0]
         return f"Hotel Details: {hotel_content}"
         
     except Exception as e:
-        logging.error(f"Error getting hotel details: {str(e)}")
         raise RuntimeError(f"Failed to retrieve hotel details: {str(e)}")
