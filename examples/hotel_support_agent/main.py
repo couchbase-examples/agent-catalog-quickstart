@@ -215,7 +215,7 @@ def main():
         
         # Initialize Agent Catalog
         catalog = agentc.Catalog()
-        application_span = agentc.Span(name="Hotel Search Agent")
+        application_span = catalog.Span(name="Hotel Search Agent")
         
         # Setup Couchbase infrastructure
         cluster = setup_couchbase_connection()
@@ -246,39 +246,48 @@ def main():
             callbacks=[agentc_langchain.chat.Callback(span=application_span)]
         )
         
-        # Load tools from Agent Catalog
+        # Load tools from Agent Catalog and convert to LangChain tools
         tool_search = catalog.find("tool", name="search_vector_database")
         tool_details = catalog.find("tool", name="get_hotel_details")
-        tools = [tool_search.func, tool_details.func]
         
-        # Load prompt from Agent Catalog
-        prompt_result = catalog.find("prompt", name="hotel_search_assistant")
+        from langchain_core.tools import Tool
+        tools = [
+            Tool(
+                name=tool_search.meta.name,
+                description=tool_search.meta.description,
+                func=tool_search.func
+            ),
+            Tool(
+                name=tool_details.meta.name, 
+                description=tool_details.meta.description,
+                func=tool_details.func
+            )
+        ]
         
         # Create a simple ReAct agent using LangChain
         react_prompt = pull("hwchase17/react")
         agent = create_react_agent(llm, tools, react_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
         
-        print("Hotel Search Agent is ready! Type 'exit' to quit.")
-        print("Ask me about hotels - I can search for hotels and provide detailed information!")
+        # Test the agent with sample queries
+        print("\nHotel Search Agent is ready!")
+        print("Testing with sample queries...")
         
-        while True:
-            user_input = input("\n>> ")
-            if user_input.lower() in ['exit', 'quit', 'bye']:
-                print("Thank you for using the Hotel Search Agent!")
-                break
-                
-            if not user_input.strip():
-                continue
-                
+        test_queries = [
+            "Find me a luxury hotel with a pool",
+            "I need a beach resort with spa services", 
+            "Get details about Ocean Breeze Resort"
+        ]
+        
+        for query in test_queries:
+            print(f"\n🔍 Query: {query}")
             try:
-                response = agent_executor.invoke({
-                    "input": f"Help the user with their hotel search request: {user_input}"
-                })
-                print(f"\nAssistant: {response['output']}")
-                        
+                response = agent_executor.invoke({"input": query})
+                print(f"✅ Response: {response['output']}")
+                print("-" * 80)
             except Exception as e:
-                print(f"Error processing request: {str(e)}")
+                print(f"❌ Error: {e}")
+                print("-" * 80)
                 
     except Exception as e:
         print(f"Application error: {str(e)}")
