@@ -291,6 +291,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     # Remove extra parameters that aren't in function signature
                                                     valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
+                                                    logger.info(f"Filtered booking args: {parsed_args}")
                                                     
                                                 # Fix parameter names for lookup tool
                                                 elif tool_name == "lookup_flight_info":
@@ -298,6 +299,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                         parsed_args["source_airport"] = parsed_args.pop("departure_airport")
                                                     if "arrival_airport" in parsed_args:
                                                         parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
+                                                    # Remove parameters not accepted by SQL++ tool
+                                                    valid_params = {"source_airport", "destination_airport"}
+                                                    parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
                                                 
                                                 logger.info(f"Final args for {tool_name}: {parsed_args}")
                                                 return func(**parsed_args)
