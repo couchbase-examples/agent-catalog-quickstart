@@ -1,24 +1,23 @@
-import agentc
-import agentc_langchain
-import dotenv
-import os
 import json
+import os
 import time
 from datetime import timedelta
 
+import agentc
+import agentc_langchain
+import dotenv
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain.agents import create_react_agent, AgentExecutor
+from couchbase.options import ClusterOptions
+from langchain.agents import AgentExecutor, create_react_agent
 from langchain.hub import pull
-from langchain_core.messages import HumanMessage
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Make sure you populate your .env file with the correct credentials!
-dotenv.load_dotenv()
+dotenv.load_dotenv(override=True)
 
 def _set_if_undefined(var: str):
     if os.environ.get(var) is None:
@@ -267,7 +266,7 @@ def main():
         # Create a simple ReAct agent using LangChain
         react_prompt = pull("hwchase17/react")
         agent = create_react_agent(llm, tools, react_prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
         
         # Test the agent with sample queries
         print("\nHotel Search Agent is ready!")
