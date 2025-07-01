@@ -6,8 +6,11 @@ A streamlined flight search agent demonstrating Agent Catalog integration
 with LangGraph and Couchbase vector search for flight booking assistance.
 """
 
+import getpass
 import json
+import logging
 import os
+import sys
 import time
 import typing
 from datetime import timedelta
@@ -28,14 +31,18 @@ from couchbase.options import ClusterOptions
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 # Load environment variables
 dotenv.load_dotenv()
 
 
 def _set_if_undefined(var: str):
     if os.environ.get(var) is None:
-        import getpass
-
         os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
 
 
@@ -68,7 +75,7 @@ def setup_couchbase_connection():
         options = ClusterOptions(auth)
         cluster = Cluster(os.environ["CB_CONN_STRING"], options)
         cluster.wait_until_ready(timedelta(seconds=10))
-        print("Successfully connected to Couchbase")
+        logger.info("Successfully connected to Couchbase")
         return cluster
     except Exception as e:
         raise ConnectionError(f"Failed to connect to Couchbase: {str(e)}")
@@ -79,9 +86,9 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
     try:
         try:
             bucket = cluster.bucket(bucket_name)
-            print(f"Bucket '{bucket_name}' exists")
+            logger.info(f"Bucket '{bucket_name}' exists")
         except Exception:
-            print(f"Creating bucket '{bucket_name}'...")
+            logger.info(f"Creating bucket '{bucket_name}'...")
             bucket_settings = CreateBucketSettings(
                 name=bucket_name,
                 bucket_type="couchbase",
@@ -92,7 +99,7 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
             cluster.buckets().create_bucket(bucket_settings)
             time.sleep(5)
             bucket = cluster.bucket(bucket_name)
-            print(f"Bucket '{bucket_name}' created successfully")
+            logger.info(f"Bucket '{bucket_name}' created successfully")
 
         bucket_manager = bucket.collections()
 
@@ -100,9 +107,9 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
         scope_exists = any(scope.name == scope_name for scope in scopes)
 
         if not scope_exists and scope_name != "_default":
-            print(f"Creating scope '{scope_name}'...")
+            logger.info(f"Creating scope '{scope_name}'...")
             bucket_manager.create_scope(scope_name)
-            print(f"Scope '{scope_name}' created successfully")
+            logger.info(f"Scope '{scope_name}' created successfully")
 
         collections = bucket_manager.get_all_scopes()
         collection_exists = any(
@@ -111,9 +118,9 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
         )
 
         if not collection_exists:
-            print(f"Creating collection '{collection_name}'...")
+            logger.info(f"Creating collection '{collection_name}'...")
             bucket_manager.create_collection(scope_name, collection_name)
-            print(f"Collection '{collection_name}' created successfully")
+            logger.info(f"Collection '{collection_name}' created successfully")
 
         collection = bucket.scope(scope_name).collection(collection_name)
         time.sleep(3)
@@ -122,11 +129,11 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
             cluster.query(
                 f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
             ).execute()
-            print("Primary index created successfully")
+            logger.info("Primary index created successfully")
         except Exception as e:
-            print(f"Warning: Error creating primary index: {str(e)}")
+            logger.warning(f"Error creating primary index: {str(e)}")
 
-        print(f"Collection setup complete")
+        logger.info("Collection setup complete")
 
         return collection
     except Exception as e:
@@ -144,12 +151,12 @@ def setup_vector_search_index(cluster, index_definition):
         index_name = index_definition["name"]
 
         if index_name not in [index.name for index in existing_indexes]:
-            print(f"Creating vector search index '{index_name}'...")
+            logger.info(f"Creating vector search index '{index_name}'...")
             search_index = SearchIndex.from_json(index_definition)
             scope_index_manager.upsert_index(search_index)
-            print(f"Vector search index '{index_name}' created successfully")
+            logger.info(f"Vector search index '{index_name}' created successfully")
         else:
-            print(f"Vector search index '{index_name}' already exists")
+            logger.info(f"Vector search index '{index_name}' already exists")
     except Exception as e:
         raise RuntimeError(f"Error setting up vector search index: {str(e)}")
 
@@ -158,8 +165,6 @@ def load_flight_data():
     """Load flight data from our enhanced flight_data.py file."""
     try:
         # Import flight data
-        import sys
-
         sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
         from flight_data import get_all_flight_data
 
@@ -196,10 +201,10 @@ def setup_vector_store(cluster):
 
         try:
             vector_store.add_texts(texts=flight_data, batch_size=10)
-            print("Flight data loaded into vector store successfully")
+            logger.info("Flight data loaded into vector store successfully")
         except Exception as e:
-            print(
-                f"Warning: Error loading flight data: {str(e)}. Vector store created but data not loaded."
+            logger.warning(
+                f"Error loading flight data: {str(e)}. Vector store created but data not loaded."
             )
 
         return vector_store
@@ -244,7 +249,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         if not state["messages"]:
             initial_msg = langchain_core.messages.HumanMessage(content=state["query"])
             state["messages"].append(initial_msg)
-            print(f"🔍 Flight Query: {state['query']}")
+            logger.info(f"Flight Query: {state['query']}")
 
         # Create the ReAct agent with tools from Agent Catalog
         agent = self.create_react_agent(span)
@@ -258,7 +263,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             state["messages"].append(assistant_message)
 
             if hasattr(assistant_message, "content"):
-                print(f"✈️ Response: {assistant_message.content}")
+                logger.info(f"Response: {assistant_message.content}")
 
         # Check if search is complete
         if response.get("structured_response"):
@@ -309,8 +314,8 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
 def run_flight_search_demo():
     """Run an interactive flight search demo."""
 
-    print("\n🛫 Flight Search Agent - Agent Catalog Demo")
-    print("=" * 50)
+    logger.info("Flight Search Agent - Agent Catalog Demo")
+    logger.info("=" * 50)
 
     try:
         # Setup environment
@@ -329,10 +334,10 @@ def run_flight_search_demo():
         try:
             with open("agentcatalog_index.json", "r") as file:
                 index_definition = json.load(file)
-            print("Loaded vector search index definition from agentcatalog_index.json")
+            logger.info("Loaded vector search index definition from agentcatalog_index.json")
         except Exception as e:
-            print(f"Warning: Error loading index definition: {str(e)}")
-            print("Continuing without vector search index...")
+            logger.warning(f"Error loading index definition: {str(e)}")
+            logger.info("Continuing without vector search index...")
 
         if "index_definition" in locals():
             setup_vector_search_index(cluster, index_definition)
@@ -354,15 +359,15 @@ def run_flight_search_demo():
         # Compile the graph
         compiled_graph = flight_graph.compile()
 
-        print("✅ Agent Catalog integration successful")
+        logger.info("Agent Catalog integration successful")
 
         # Interactive flight search loop
         # while True:
-        #     print("\n" + "─" * 40)
+        #     logger.info("─" * 40)
         #     query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
 
         #     if query.lower() in ["quit", "exit", "q"]:
-        #         print("✈️ Thanks for using Flight Search Agent!")
+        #         logger.info("Thanks for using Flight Search Agent!")
         #         break
 
         #     if not query:
@@ -371,7 +376,7 @@ def run_flight_search_demo():
         try:
             # Hardcoded query for demonstration
             query = "Find flights from New York to Los Angeles"
-            print(f"🔍 Flight Query: {query}")
+            logger.info(f"Flight Query: {query}")
 
             # Build starting state
             state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
@@ -381,16 +386,16 @@ def run_flight_search_demo():
 
             # Display results summary
             if result.get("search_results"):
-                print(f"\n📋 Found {len(result['search_results'])} flight options")
+                logger.info(f"Found {len(result['search_results'])} flight options")
 
-            print(f"✅ Search completed: {result.get('resolved', False)}")
+            logger.info(f"Search completed: {result.get('resolved', False)}")
 
         except Exception as e:
-            print(f"❌ Search error: {e}")
+            logger.error(f"Search error: {e}")
 
     except Exception as e:
-        print(f"❌ Initialization error: {e}")
-        print("💡 Ensure Agent Catalog is published: agentc index . && agentc publish")
+        logger.error(f"Initialization error: {e}")
+        logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
 
 
 if __name__ == "__main__":
