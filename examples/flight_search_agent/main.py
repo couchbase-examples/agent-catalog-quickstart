@@ -270,8 +270,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         def create_tool_wrapper(func, tool_name):
                             def wrapper(*args, **kwargs):
                                 try:
-                                    logger.info(f"Tool {tool_name} called with args: {args}, kwargs: {kwargs}")
-                                    
                                     # Handle case where LangChain passes a single string argument
                                     if len(args) == 1 and isinstance(args[0], str) and not kwargs:
                                         try:
@@ -279,7 +277,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                                             # Try to parse as JSON
                                             parsed_args = json.loads(args[0])
-                                            logger.info(f"Parsed JSON args for {tool_name}: {parsed_args}")
                                             
                                             if isinstance(parsed_args, dict):
                                                 # Fix parameter names for booking tool
@@ -291,7 +288,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     # Remove extra parameters that aren't in function signature
                                                     valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
-                                                    logger.info(f"Filtered booking args: {parsed_args}")
                                                     
                                                 # Fix parameter names for lookup tool
                                                 elif tool_name == "lookup_flight_info":
@@ -303,12 +299,10 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     valid_params = {"source_airport", "destination_airport"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
                                                 
-                                                logger.info(f"Final args for {tool_name}: {parsed_args}")
                                                 return func(**parsed_args)
                                             else:
                                                 return func(args[0])
-                                        except (json.JSONDecodeError, TypeError) as e:
-                                            logger.warning(f"JSON parse error for {tool_name}: {e}")
+                                        except (json.JSONDecodeError, TypeError):
                                             # If not JSON, pass as string
                                             return func(args[0])
                                     else:
