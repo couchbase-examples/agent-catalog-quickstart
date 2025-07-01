@@ -29,14 +29,7 @@ input:
 output:
     type: array
     items:
-      type: object
-      properties:
-        airline:
-          type: string
-        route:
-          type: string
-        equipment:
-          type: string
+      type: string
 
 # The "secrets" field defines search keys that will be used to query a "secrets" manager.
 # Note that these values are NOT the secrets themselves, rather they are used to lookup secrets.
@@ -50,11 +43,7 @@ secrets:
         # certificate: CB_CERTIFICATE
 */
 
-SELECT VALUE {
-    "airline": r.airline,
-    "route": r.sourceairport || " to " || r.destinationairport,
-    "equipment": r.equipment
-}
+SELECT VALUE r.airline || " flight from " || r.sourceairport || " to " || r.destinationairport || " using " || r.equipment
 FROM `travel-sample`.inventory.route r
 WHERE r.sourceairport = $source_airport AND r.destinationairport = $destination_airport
 LIMIT 10;

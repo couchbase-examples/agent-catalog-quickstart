@@ -285,6 +285,12 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                         parsed_args["source_airport"] = parsed_args.pop("departure_airport")
                                                     if "arrival_airport" in parsed_args:
                                                         parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
+                                                    # Handle action parameter variations
+                                                    if "retrieve_bookings" in parsed_args:
+                                                        parsed_args["action"] = "retrieve"
+                                                        parsed_args.pop("retrieve_bookings")
+                                                    if "action" in parsed_args and parsed_args["action"] == "retrieve_bookings":
+                                                        parsed_args["action"] = "retrieve"
                                                     # Remove extra parameters that aren't in function signature
                                                     valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class", "action"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
