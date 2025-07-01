@@ -33,31 +33,10 @@ output:
       properties:
         airline:
           type: string
-          description: "Airline code"
-        source_airport:
+        route:
           type: string
-          description: "Departure airport code"
-        destination_airport:
-          type: string
-          description: "Arrival airport code"
         equipment:
           type: string
-          description: "Aircraft type"
-        distance:
-          type: number
-          description: "Flight distance in miles"
-        departure_city:
-          type: string
-          description: "Departure city name"
-        arrival_city:
-          type: string
-          description: "Arrival city name"
-        departure_airport_name:
-          type: string
-          description: "Full departure airport name"
-        arrival_airport_name:
-          type: string
-          description: "Full arrival airport name"
 
 # The "secrets" field defines search keys that will be used to query a "secrets" manager.
 # Note that these values are NOT the secrets themselves, rather they are used to lookup secrets.
@@ -71,26 +50,11 @@ secrets:
         # certificate: CB_CERTIFICATE
 */
 
-FROM
-    `travel-sample`.inventory.route r
-    LEFT JOIN `travel-sample`.inventory.airport a1 ON r.sourceairport = a1.faa
-    LEFT JOIN `travel-sample`.inventory.airport a2 ON r.destinationairport = a2.faa
-WHERE
-    -- Parameters specified in the input field of the tool metadata above correspond to named parameters here.
-    -- The '$' syntax is used to denote a named parameter.
-    -- See https://docs.couchbase.com/server/current/n1ql/n1ql-rest-api/exnamed.html for more details.
-    r.sourceairport = $source_airport AND
-    r.destinationairport = $destination_airport
 SELECT VALUE {
-    "airline"                 : r.airline,
-    "source_airport"          : r.sourceairport,
-    "destination_airport"     : r.destinationairport,
-    "equipment"               : r.equipment,
-    "distance"                : r.distance,
-    "departure_city"          : a1.city,
-    "arrival_city"            : a2.city,
-    "departure_airport_name"  : a1.airportname,
-    "arrival_airport_name"    : a2.airportname
+    "airline": r.airline,
+    "route": r.sourceairport || " to " || r.destinationairport,
+    "equipment": r.equipment
 }
-LIMIT
-    10;
+FROM `travel-sample`.inventory.route r
+WHERE r.sourceairport = $source_airport AND r.destinationairport = $destination_airport
+LIMIT 10;

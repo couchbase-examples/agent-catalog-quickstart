@@ -286,7 +286,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     if "arrival_airport" in parsed_args:
                                                         parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
                                                     # Remove extra parameters that aren't in function signature
-                                                    valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class"}
+                                                    valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class", "action"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
                                                     
                                                 # Fix parameter names for lookup tool
