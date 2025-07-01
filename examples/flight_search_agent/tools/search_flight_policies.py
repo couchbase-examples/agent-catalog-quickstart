@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data.flight_data import FLIGHT_POLICIES
 
 
-@agentc.tool
+@agentc.catalog.tool
 def search_flight_policies(query: str) -> str:
   """Searches flight policies for a given query.
 

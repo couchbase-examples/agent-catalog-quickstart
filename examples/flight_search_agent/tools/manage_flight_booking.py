@@ -4,7 +4,7 @@ import uuid
 import agentc
 
 
-@agentc.tool
+@agentc.catalog.tool
 def manage_flight_booking(
     customer_id: str,
     source_airport: str,
