@@ -38,7 +38,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-dotenv.load_dotenv()
+dotenv.load_dotenv(override=True)
 
 
 def _set_if_undefined(var: str):
