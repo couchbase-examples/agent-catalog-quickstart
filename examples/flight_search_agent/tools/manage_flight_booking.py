@@ -6,10 +6,10 @@ import agentc
 
 @agentc.catalog.tool
 def manage_flight_booking(
-    customer_id: str,
     source_airport: str,
     destination_airport: str,
     departure_date: str,
+    customer_id: str = "DEMO_USER",
     return_date: str = None,
     passengers: int = 1,
     flight_class: str = "economy",

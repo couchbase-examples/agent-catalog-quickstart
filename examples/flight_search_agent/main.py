@@ -266,11 +266,26 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 try:
                     tool_obj = self.catalog.find("tool", name=tool_name)
                     if tool_obj and hasattr(tool_obj, 'func'):
-                        # Create a wrapper function to handle any type issues
+                        # Create a wrapper function to handle argument parsing and type issues
                         def create_tool_wrapper(func, name):
                             def wrapper(*args, **kwargs):
                                 try:
-                                    return func(*args, **kwargs)
+                                    # Handle case where LangChain passes a single string argument
+                                    if len(args) == 1 and isinstance(args[0], str) and not kwargs:
+                                        try:
+                                            import json
+                                            # Try to parse as JSON
+                                            parsed_args = json.loads(args[0])
+                                            if isinstance(parsed_args, dict):
+                                                return func(**parsed_args)
+                                            else:
+                                                return func(args[0])
+                                        except (json.JSONDecodeError, TypeError):
+                                            # If not JSON, pass as string
+                                            return func(args[0])
+                                    else:
+                                        # Normal function call
+                                        return func(*args, **kwargs)
                                 except Exception as e:
                                     logger.error(f"Tool {name} execution error: {e}")
                                     return f"Error executing {name}: {str(e)}"
