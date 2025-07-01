@@ -27,7 +27,7 @@ def manage_flight_booking(
         # Handle retrieval action
         if action.lower() == "retrieve":
             return _retrieve_bookings(customer_id)
-        
+
         # Handle booking action (default)
         if not source_airport or not destination_airport or not departure_date:
             return "Error: Source airport, destination airport, and departure date are required for booking."
@@ -41,7 +41,7 @@ def manage_flight_booking(
                 dep_date = datetime.date.today()
             else:
                 dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
-            
+
             if dep_date < datetime.date.today():
                 return "Error: Departure date must be in the future."
         except ValueError:
@@ -68,7 +68,7 @@ def manage_flight_booking(
             "passengers": passengers,
             "flight_class": flight_class.title(),
             "total_price": total_price,
-            "booking_time": datetime.datetime.now().isoformat()
+            "booking_time": datetime.datetime.now().isoformat(),
         }
         _save_booking(booking_data)
 
@@ -111,10 +111,10 @@ def _save_booking(booking_data):
                     line = line.strip()
                     if line:
                         bookings.append(json.loads(line))
-        
+
         # Add new booking
         bookings.append(booking_data)
-        
+
         # Write all bookings back
         with open(session_file, "w") as f:
             for booking in bookings:
@@ -130,7 +130,7 @@ def _retrieve_bookings(customer_id):
     try:
         if not os.path.exists(session_file):
             return "No bookings found. You haven't made any bookings yet."
-        
+
         bookings = []
         with open(session_file, "r") as f:
             for line in f:
@@ -139,10 +139,10 @@ def _retrieve_bookings(customer_id):
                     booking = json.loads(line)
                     if booking.get("customer_id") == customer_id:
                         bookings.append(booking)
-        
+
         if not bookings:
             return f"No bookings found for customer {customer_id}."
-        
+
         # Format bookings for display
         result = f"Your Current Bookings ({len(bookings)} found):\n\n"
         for i, booking in enumerate(bookings, 1):
@@ -154,8 +154,8 @@ def _retrieve_bookings(customer_id):
             result += f"  Class: {booking['flight_class']}\n"
             result += f"  Total: ${booking['total_price']:.2f}\n"
             result += f"  Booked: {booking['booking_time'][:10]}\n\n"
-        
+
         return result.strip()
-        
+
     except Exception as e:
         return f"Error retrieving bookings: {str(e)}"

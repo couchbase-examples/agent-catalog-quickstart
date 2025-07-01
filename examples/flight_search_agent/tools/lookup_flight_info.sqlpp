@@ -43,7 +43,12 @@ secrets:
         # certificate: CB_CERTIFICATE
 */
 
-SELECT VALUE r.airline || " flight from " || r.sourceairport || " to " || r.destinationairport || " using " || r.equipment
-FROM `travel-sample`.inventory.route r
-WHERE r.sourceairport = $source_airport AND r.destinationairport = $destination_airport
-LIMIT 10;
+FROM
+    `travel-sample`.inventory.route r
+WHERE
+    r.sourceairport = $source_airport AND
+    r.destinationairport = $destination_airport
+SELECT VALUE
+    r.airline || " flight from " || r.sourceairport || " to " || r.destinationairport || " using " || r.equipment
+LIMIT
+    10;
