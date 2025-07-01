@@ -11,24 +11,6 @@ tools:
   - name: "manage_flight_booking"
   - name: "search_flight_policies"
 
-output:
-  type: object
-  properties:
-    search_complete:
-      type: boolean
-      description: "Whether the flight search has been completed"
-    flight_results:
-      type: array
-      items:
-        type: object
-      description: "List of flight options found"
-    booking_status:
-      type: string
-      enum: ["pending", "confirmed", "cancelled", "error"]
-      description: "Status of any booking requests"
-    next_steps:
-      type: string
-      description: "Recommended next steps for the customer"
 
 content: >
   You are a professional flight search assistant helping customers find and book flights.

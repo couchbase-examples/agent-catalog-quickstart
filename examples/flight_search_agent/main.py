@@ -251,28 +251,52 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             state["messages"].append(initial_msg)
             logger.info(f"Flight Query: {state['query']}")
 
-        # Create the ReAct agent with tools from Agent Catalog
-        agent = self.create_react_agent(span)
+        try:
+            # Get tools from Agent Catalog
+            tools = []
+            tool_names = ["lookup_flight_info", "manage_flight_booking", "search_flight_policies"]
 
-        # Run the agent with the current state
-        response = agent.invoke(input=state, config=config)
+            for tool_name in tool_names:
+                try:
+                    tool = self.catalog.get_tool(tool_name, span=span)
+                    if tool:
+                        tools.append(tool)
+                        logger.info(f"Loaded tool: {tool_name}")
+                except Exception as e:
+                    logger.warning(f"Could not load tool {tool_name}: {e}")
 
-        # Extract the assistant's response
-        if response.get("messages"):
-            assistant_message = response["messages"][-1]
-            state["messages"].append(assistant_message)
+            if not tools:
+                logger.error("No tools loaded from catalog")
+                error_msg = langchain_core.messages.AIMessage(
+                    content="I'm unable to access my flight search tools right now. Please try again later."
+                )
+                state["messages"].append(error_msg)
+                state["resolved"] = True
+                return state
 
-            if hasattr(assistant_message, "content"):
-                logger.info(f"Response: {assistant_message.content}")
+            # Create agent with tools
+            agent_with_tools = self.chat_model.bind_tools(tools)
 
-        # Check if search is complete
-        if response.get("structured_response"):
-            structured = response["structured_response"]
-            state["resolved"] = structured.get("search_complete", True)
+            # Get response from the model
+            messages = state["messages"]
+            response = agent_with_tools.invoke(messages)
 
-            # Store search results
-            if "flight_results" in structured:
-                state["search_results"] = structured["flight_results"]
+            # Add response to messages
+            state["messages"].append(response)
+
+            if hasattr(response, "content"):
+                logger.info(f"Response: {response.content}")
+
+            # Simple completion check
+            state["resolved"] = True
+
+        except Exception as e:
+            logger.error(f"Agent invocation error: {e}")
+            error_msg = langchain_core.messages.AIMessage(
+                content=f"I encountered an error while processing your request: {str(e)}"
+            )
+            state["messages"].append(error_msg)
+            state["resolved"] = True
 
         return state
 
