@@ -1,0 +1,39 @@
+record_kind: semantic_search
+
+name: search_flight_policies
+
+description: >
+  Search flight policies and travel information using semantic similarity 
+  to help customers with booking rules, cancellations, and travel guidelines.
+
+input:
+  type: object
+  properties:
+    query:
+      type: string
+      description: "Natural language query about flight policies or travel rules"
+  required: ["query"]
+
+secrets:
+  - couchbase:
+      conn_string: CB_CONN_STRING
+      username: CB_USERNAME
+      password: CB_PASSWORD
+      certificate: CB_CERTIFICATE
+      
+  - embedding_model:
+      auth: OPENAI_API_KEY
+
+vector_search:
+  bucket: travel-sample
+  scope: inventory
+  collection: airline
+  index: airline_policies_index
+  vector_field: description_vector
+  text_field: content
+  
+  embedding_model:
+    name: text-embedding-3-small
+    base_url: https://api.openai.com/v1/embeddings
+    
+  num_candidates: 5

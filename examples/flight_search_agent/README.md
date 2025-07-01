@@ -1,6 +1,6 @@
-# Customer Support Agent: Agent Catalog + LangGraph + Couchbase Tutorial
+# Flight Search Agent
 
-This comprehensive tutorial demonstrates the integration of **Agent Catalog**, **LangGraph**, and **Couchbase** to build a sophisticated customer support system with mixed tool formats and real data.
+A professional flight search agent built with Agent Catalog and LangGraph, demonstrating seamless integration of SQL++, semantic search, and Python tools for comprehensive flight booking assistance.
 
 ## 🎯 What This Tutorial Demonstrates
 

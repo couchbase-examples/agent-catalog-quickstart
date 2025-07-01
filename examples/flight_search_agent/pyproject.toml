@@ -1,15 +1,15 @@
 [tool.poetry]
-name = "customer-support-agent"
+name = "flight-search-agent"
 version = "0.1.0"
-description = "Enhanced customer support agent with vector search and Agent Catalog integration"
+description = "Flight search agent with Agent Catalog integration and LangGraph workflow"
 authors = ["Agent Catalog Team"]
 readme = "README.md"
-packages = [{include = "customer_support_agent"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 langchain = "^0.2.0"
-langgraph = "^0.1.0"
+langchain-openai = "^0.1.0"
+langgraph = "^0.4.1"
 agentc-core = {path = "../../agent-catalog/libs/agentc_core", develop = true}
 agentc-langgraph = {path = "../../agent-catalog/libs/agentc_integrations/langgraph", develop = true}
 couchbase = "^4.0.0"
