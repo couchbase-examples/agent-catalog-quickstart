@@ -265,12 +265,22 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             for tool_name, description in tool_configs:
                 try:
                     tool_obj = self.catalog.find("tool", name=tool_name)
-                    if tool_obj:
+                    if tool_obj and hasattr(tool_obj, 'func'):
+                        # Create a wrapper function to handle any type issues
+                        def create_tool_wrapper(func, name):
+                            def wrapper(*args, **kwargs):
+                                try:
+                                    return func(*args, **kwargs)
+                                except Exception as e:
+                                    logger.error(f"Tool {name} execution error: {e}")
+                                    return f"Error executing {name}: {str(e)}"
+                            return wrapper
+                        
                         # Convert to LangChain Tool format
                         lc_tool = Tool(
                             name=tool_obj.meta.name,
                             description=tool_obj.meta.description or description,
-                            func=tool_obj.func
+                            func=create_tool_wrapper(tool_obj.func, tool_name)
                         )
                         tools.append(lc_tool)
                         logger.info(f"Loaded tool: {tool_name}")
@@ -286,21 +296,48 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 state["resolved"] = True
                 return state
 
-            # Create agent with tools
-            agent_with_tools = self.chat_model.bind_tools(tools)
-
-            # Get response from the model
-            messages = state["messages"]
-            response = agent_with_tools.invoke(messages)
-
-            # Add response to messages
-            state["messages"].append(response)
-
-            if hasattr(response, "content"):
-                logger.info(f"Response: {response.content}")
-
-            # Simple completion check
-            state["resolved"] = True
+            # Create a proper ReAct agent like hotel support agent
+            from langchain.agents import create_react_agent, AgentExecutor
+            from langchain import hub
+            
+            try:
+                # Get ReAct prompt from hub
+                react_prompt = hub.pull("hwchase17/react")
+                
+                # Create ReAct agent with tools
+                agent = create_react_agent(self.chat_model, tools, react_prompt)
+                agent_executor = AgentExecutor(
+                    agent=agent, 
+                    tools=tools, 
+                    verbose=True, 
+                    handle_parsing_errors=True,
+                    max_iterations=5
+                )
+                
+                # Execute the agent with the query
+                query = state["query"]
+                result = agent_executor.invoke({"input": query})
+                
+                # Create response message
+                response_content = result.get("output", "I was unable to process your flight search request.")
+                response_msg = langchain_core.messages.AIMessage(content=response_content)
+                state["messages"].append(response_msg)
+                
+                logger.info(f"Agent Response: {response_content}")
+                
+                # Mark as resolved
+                state["resolved"] = True
+                
+            except Exception as agent_error:
+                logger.error(f"ReAct agent error: {agent_error}")
+                # Fallback to simple model response
+                fallback_response = self.chat_model.invoke(state["messages"])
+                state["messages"].append(fallback_response)
+                
+                if hasattr(fallback_response, "content"):
+                    logger.info(f"Fallback Response: {fallback_response.content}")
+                
+                state["resolved"] = True
 
         except Exception as e:
             logger.error(f"Agent invocation error: {e}")
@@ -398,36 +435,34 @@ def run_flight_search_demo():
         logger.info("Agent Catalog integration successful")
 
         # Interactive flight search loop
-        # while True:
-        #     logger.info("─" * 40)
-        #     query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
+        while True:
+            logger.info("─" * 40)
+            query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
 
-        #     if query.lower() in ["quit", "exit", "q"]:
-        #         logger.info("Thanks for using Flight Search Agent!")
-        #         break
+            if query.lower() in ["quit", "exit", "q"]:
+                logger.info("Thanks for using Flight Search Agent!")
+                break
 
-        #     if not query:
-        #         continue
+            if not query:
+                continue
 
-        try:
-            # Hardcoded query for demonstration
-            query = "Find flights from New York to Los Angeles"
-            logger.info(f"Flight Query: {query}")
+            try:
+                logger.info(f"Flight Query: {query}")
 
-            # Build starting state
-            state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
+                # Build starting state
+                state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
 
-            # Run the flight search
-            result = compiled_graph.invoke(state)
+                # Run the flight search
+                result = compiled_graph.invoke(state)
 
-            # Display results summary
-            if result.get("search_results"):
-                logger.info(f"Found {len(result['search_results'])} flight options")
+                # Display results summary
+                if result.get("search_results"):
+                    logger.info(f"Found {len(result['search_results'])} flight options")
 
-            logger.info(f"Search completed: {result.get('resolved', False)}")
+                logger.info(f"Search completed: {result.get('resolved', False)}")
 
-        except Exception as e:
-            logger.error(f"Search error: {e}")
+            except Exception as e:
+                logger.error(f"Search error: {e}")
 
     except Exception as e:
         logger.error(f"Initialization error: {e}")
