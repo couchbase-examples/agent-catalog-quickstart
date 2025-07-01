@@ -96,7 +96,7 @@ Thank you for choosing our airline!
         return booking_summary.strip()
 
     except Exception as e:
-        return f"Booking processing error: {str(e)}. Please try again or contact customer service."
+        return f"Booking processing error: {e!s}. Please try again or contact customer service."
 
 
 def _save_booking(booking_data):
@@ -106,7 +106,7 @@ def _save_booking(booking_data):
         # Read existing bookings
         bookings = []
         if os.path.exists(session_file):
-            with open(session_file, "r") as f:
+            with open(session_file) as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -132,7 +132,7 @@ def _retrieve_bookings(customer_id):
             return "No bookings found. You haven't made any bookings yet."
 
         bookings = []
-        with open(session_file, "r") as f:
+        with open(session_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -158,4 +158,4 @@ def _retrieve_bookings(customer_id):
         return result.strip()
 
     except Exception as e:
-        return f"Error retrieving bookings: {str(e)}"
+        return f"Error retrieving bookings: {e!s}"

@@ -75,13 +75,13 @@ def test_vector_search():
                         print(f"  ❌ No results with k={k}")
                         
                 if not any(vector_store.similarity_search_with_score(query, k=k) for k in [1, 3, 5, 10]):
-                    print(f"  ❌ No results found for any k value")
+                    print("  ❌ No results found for any k value")
                     
             except Exception as e:
                 print(f"  ❌ Error during search: {e}")
         
         # Test without score to see if that works
-        print(f"\n🔍 Testing similarity_search (without score)...")
+        print("\n🔍 Testing similarity_search (without score)...")
         try:
             results = vector_store.similarity_search("luxury hotel", k=5)
             if results:

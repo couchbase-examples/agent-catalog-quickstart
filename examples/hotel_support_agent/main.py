@@ -103,7 +103,7 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
         except Exception as e:
             print(f"Warning: Error creating primary index: {str(e)}")
 
-        print(f"Collection setup complete. Using existing documents in the database.")
+        print("Collection setup complete. Using existing documents in the database.")
         
         return collection
     except Exception as e:

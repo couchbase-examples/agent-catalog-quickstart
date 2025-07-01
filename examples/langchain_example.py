@@ -12,7 +12,6 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.tools import Tool
 from langchain_openai.chat_models import ChatOpenAI
-from tools import hello_tool
 
 # 1. Setup Environment
 def _set_if_undefined(var: str):

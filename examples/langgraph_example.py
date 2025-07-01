@@ -9,9 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agentc.catalog import Catalog
 from agentc_langchain.chat import Callback
 from langchain_openai.chat_models import ChatOpenAI
-from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import create_react_agent
-from tools import hello_tool
 
 # 1. Setup Environment
 def _set_if_undefined(var: str):

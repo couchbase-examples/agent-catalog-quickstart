@@ -15,7 +15,7 @@ import getpass
 from typing import Annotated, List, Dict, Any
 from typing_extensions import TypedDict
 
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import HumanMessage, BaseMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages

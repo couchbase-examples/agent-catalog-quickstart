@@ -12,7 +12,6 @@ import logging
 import os
 import sys
 import time
-import typing
 from datetime import timedelta
 
 import agentc
@@ -78,7 +77,7 @@ def setup_couchbase_connection():
         logger.info("Successfully connected to Couchbase")
         return cluster
     except Exception as e:
-        raise ConnectionError(f"Failed to connect to Couchbase: {str(e)}")
+        raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
 
 def setup_collection(cluster, bucket_name, scope_name, collection_name):
@@ -131,13 +130,13 @@ def setup_collection(cluster, bucket_name, scope_name, collection_name):
             ).execute()
             logger.info("Primary index created successfully")
         except Exception as e:
-            logger.warning(f"Error creating primary index: {str(e)}")
+            logger.warning(f"Error creating primary index: {e!s}")
 
         logger.info("Collection setup complete")
 
         return collection
     except Exception as e:
-        raise RuntimeError(f"Error setting up collection: {str(e)}")
+        raise RuntimeError(f"Error setting up collection: {e!s}")
 
 
 def setup_vector_search_index(cluster, index_definition):
@@ -158,7 +157,7 @@ def setup_vector_search_index(cluster, index_definition):
         else:
             logger.info(f"Vector search index '{index_name}' already exists")
     except Exception as e:
-        raise RuntimeError(f"Error setting up vector search index: {str(e)}")
+        raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
 
 def load_flight_data():
@@ -178,7 +177,7 @@ def load_flight_data():
 
         return flight_texts
     except Exception as e:
-        raise ValueError(f"Error loading flight data: {str(e)}")
+        raise ValueError(f"Error loading flight data: {e!s}")
 
 
 def setup_vector_store(cluster):
@@ -204,12 +203,12 @@ def setup_vector_store(cluster):
             logger.info("Flight data loaded into vector store successfully")
         except Exception as e:
             logger.warning(
-                f"Error loading flight data: {str(e)}. Vector store created but data not loaded."
+                f"Error loading flight data: {e!s}. Vector store created but data not loaded."
             )
 
         return vector_store
     except Exception as e:
-        raise ValueError(f"Error setting up vector store: {str(e)}")
+        raise ValueError(f"Error setting up vector store: {e!s}")
 
 
 class FlightSearchState(agentc_langgraph.agent.State):
@@ -218,7 +217,7 @@ class FlightSearchState(agentc_langgraph.agent.State):
     customer_id: str
     query: str
     resolved: bool
-    search_results: typing.List[typing.Dict]
+    search_results: list[dict]
 
 
 class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
@@ -277,7 +276,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                                             # Try to parse as JSON
                                             parsed_args = json.loads(args[0])
-                                            
+
                                             if isinstance(parsed_args, dict):
                                                 # Fix parameter names for booking tool
                                                 if tool_name == "manage_flight_booking":
@@ -294,7 +293,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     # Remove extra parameters that aren't in function signature
                                                     valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class", "action"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
-                                                    
+
                                                 # Fix parameter names for lookup tool
                                                 elif tool_name == "lookup_flight_info":
                                                     if "departure_airport" in parsed_args:
@@ -304,10 +303,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                     # Remove parameters not accepted by SQL++ tool
                                                     valid_params = {"source_airport", "destination_airport"}
                                                     parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
-                                                
+
                                                 return func(**parsed_args)
-                                            else:
-                                                return func(args[0])
+                                            return func(args[0])
                                         except (json.JSONDecodeError, TypeError):
                                             # If not JSON, pass as string
                                             return func(args[0])
@@ -316,7 +314,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                         return func(*args, **kwargs)
                                 except Exception as e:
                                     logger.error(f"Tool {tool_name} execution error: {e}")
-                                    return f"Error executing {tool_name}: {str(e)}"
+                                    return f"Error executing {tool_name}: {e!s}"
 
                             return wrapper
 
@@ -342,8 +340,8 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 return state
 
             # Create a proper ReAct agent like hotel support agent
-            from langchain.agents import create_react_agent, AgentExecutor
             from langchain import hub
+            from langchain.agents import AgentExecutor, create_react_agent
 
             try:
                 # Get ReAct prompt from hub
@@ -389,7 +387,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         except Exception as e:
             logger.error(f"Agent invocation error: {e}")
             error_msg = langchain_core.messages.AIMessage(
-                content=f"I encountered an error while processing your request: {str(e)}"
+                content=f"I encountered an error while processing your request: {e!s}"
             )
             state["messages"].append(error_msg)
             state["resolved"] = True
@@ -452,11 +450,11 @@ def run_flight_search_demo():
         )
 
         try:
-            with open("agentcatalog_index.json", "r") as file:
+            with open("agentcatalog_index.json") as file:
                 index_definition = json.load(file)
             logger.info("Loaded vector search index definition from agentcatalog_index.json")
         except Exception as e:
-            logger.warning(f"Error loading index definition: {str(e)}")
+            logger.warning(f"Error loading index definition: {e!s}")
             logger.info("Continuing without vector search index...")
 
         if "index_definition" in locals():

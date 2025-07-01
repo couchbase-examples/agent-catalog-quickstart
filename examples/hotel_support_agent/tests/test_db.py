@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import json
 from dotenv import load_dotenv
 from couchbase.cluster import Cluster
 from couchbase.auth import PasswordAuthenticator
 from couchbase.options import ClusterOptions
-from datetime import timedelta
 
 load_dotenv()
 

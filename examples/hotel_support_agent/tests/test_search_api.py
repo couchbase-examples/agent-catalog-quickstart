@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import json
 import requests
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
@@ -67,7 +66,7 @@ def test_search_api():
         if response.status_code == 200:
             result = response.json()
             
-            print(f"✅ Search successful!")
+            print("✅ Search successful!")
             print(f"📊 Total hits: {result.get('total_hits', 0)}")
             print(f"📊 Max score: {result.get('max_score', 'N/A')}")
             

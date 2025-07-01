@@ -11,7 +11,6 @@ from agentc_llamaindex.chat import Callback
 from llama_index.core.agent import ReActAgent
 from llama_index.core.tools import FunctionTool
 from llama_index.llms.openai import OpenAI
-from tools import hello_tool
 
 # 1. Setup Environment
 def _set_if_undefined(var: str):
