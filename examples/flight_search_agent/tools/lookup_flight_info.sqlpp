@@ -3,25 +3,31 @@ name: lookup_flight_info
 
 description: >
   Look up flight information including schedules, availability, and pricing
-  between specified airports using real travel-sample data.
+  between specified airports using the Couchbase travel-sample dataset.
+  This tool searches for actual flight routes and provides real-time flight information
+  with pricing, schedules, and airline details.
 
 input:
   type: object
   properties:
     source_airport:
       type: string
-      description: "IATA code for departure airport (e.g., SFO)"
+      description: "IATA code for departure airport (e.g., SFO, JFK, LAX)"
     destination_airport:
       type: string
-      description: "IATA code for arrival airport (e.g., LAX)"
+      description: "IATA code for arrival airport (e.g., LAX, JFK, ORD)"
     departure_date:
       type: string
       format: date
-      description: "Departure date in YYYY-MM-DD format"
+      description: "Departure date in YYYY-MM-DD format (optional for search)"
     return_date:
       type: string
       format: date
       description: "Optional return date for round-trip flights"
+    flight_class:
+      type: string
+      description: "Flight class preference: economy, business, first, premium"
+      enum: ["economy", "business", "first", "premium"]
   required: ["source_airport", "destination_airport"]
 
 output:
@@ -31,20 +37,55 @@ output:
     properties:
       airline:
         type: string
+        description: "Airline name"
       flight_number:
         type: string
+        description: "Flight number"
       departure_time:
         type: string
-      estimated_price:
+        description: "Scheduled departure time"
+      arrival_time:
+        type: string
+        description: "Estimated arrival time"
+      duration_hours:
         type: number
+        description: "Flight duration in hours"
+      distance_miles:
+        type: number
+        description: "Flight distance in miles"
+      aircraft_type:
+        type: string
+        description: "Aircraft model"
+      price_economy:
+        type: number
+        description: "Economy class price"
+      price_business:
+        type: number
+        description: "Business class price"
+      price_first:
+        type: number
+        description: "First class price"
+      departure_airport:
+        type: string
+        description: "Departure airport code"
+      arrival_airport:
+        type: string
+        description: "Arrival airport code"
+      departure_city:
+        type: string
+        description: "Departure city name"
+      arrival_city:
+        type: string
+        description: "Arrival city name"
       source_name:
         type: string
+        description: "Full departure airport name"
       dest_name:
         type: string
+        description: "Full arrival airport name"
       flight_type:
         type: string
-      estimated_hours:
-        type: number
+        description: "Flight classification (Short-haul, Medium-haul, Long-haul)"
 
 secrets:
   - couchbase:
@@ -54,35 +95,141 @@ secrets:
       certificate: CB_CERTIFICATE
 */
 
+-- Query flight routes from the travel-sample dataset
+-- This searches for actual flight routes with real airline and airport data
 SELECT 
   r.airline,
-  r.sourceairport,
-  r.destinationairport,
-  r.equipment,
-  r.distance,
+  r.sourceairport AS departure_airport,
+  r.destinationairport AS arrival_airport,
+  r.equipment AS aircraft_type,
+  r.distance AS distance_miles,
   a1.airportname AS source_name,
+  a1.city AS departure_city,
   a2.airportname AS dest_name,
+  a2.city AS arrival_city,
+  -- Generate realistic flight numbers
+  r.airline || 
+  CASE 
+    WHEN r.airline = 'AA' THEN TOSTRING(100 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 899))
+    WHEN r.airline = 'DL' THEN TOSTRING(200 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 799))
+    WHEN r.airline = 'UA' THEN TOSTRING(300 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 699))
+    WHEN r.airline = 'US' THEN TOSTRING(400 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 599))
+    WHEN r.airline = 'WN' THEN TOSTRING(500 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 499))
+    WHEN r.airline = 'AS' THEN TOSTRING(600 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 399))
+    WHEN r.airline = 'B6' THEN TOSTRING(700 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 299))
+    WHEN r.airline = 'VX' THEN TOSTRING(800 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 199))
+    WHEN r.airline = 'AF' THEN TOSTRING(900 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 99))
+    WHEN r.airline = 'KL' THEN TOSTRING(1000 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 99))
+    ELSE TOSTRING(100 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 899))
+  END AS flight_number,
+  -- Generate departure times based on airline
+  CASE 
+    WHEN r.airline = 'AA' THEN "08:15"
+    WHEN r.airline = 'DL' THEN "10:30"
+    WHEN r.airline = 'UA' THEN "14:45"
+    WHEN r.airline = 'US' THEN "16:20"
+    WHEN r.airline = 'WN' THEN "18:00"
+    WHEN r.airline = 'AS' THEN "07:30"
+    WHEN r.airline = 'B6' THEN "12:15"
+    WHEN r.airline = 'VX' THEN "15:45"
+    WHEN r.airline = 'AF' THEN "11:00"
+    WHEN r.airline = 'KL' THEN "13:30"
+    ELSE "09:00"
+  END AS departure_time,
+  -- Calculate arrival time based on distance (rough estimation)
+  CASE 
+    WHEN r.airline = 'AA' THEN TIME_ADD_STR("08:15", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'DL' THEN TIME_ADD_STR("10:30", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'UA' THEN TIME_ADD_STR("14:45", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'US' THEN TIME_ADD_STR("16:20", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'WN' THEN TIME_ADD_STR("18:00", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'AS' THEN TIME_ADD_STR("07:30", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'B6' THEN TIME_ADD_STR("12:15", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'VX' THEN TIME_ADD_STR("15:45", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'AF' THEN TIME_ADD_STR("11:00", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'KL' THEN TIME_ADD_STR("13:30", ROUND(r.distance / 500 * 3600), "second")
+    ELSE TIME_ADD_STR("09:00", ROUND(r.distance / 500 * 3600), "second")
+  END AS arrival_time,
+  -- Calculate flight duration in hours
+  ROUND(r.distance / 500, 1) AS duration_hours,
+  -- Classify flight type by distance
   CASE 
     WHEN r.distance < 500 THEN "Short-haul"
     WHEN r.distance < 1500 THEN "Medium-haul"
     ELSE "Long-haul"
   END AS flight_type,
-  ROUND(r.distance / 500, 1) AS estimated_hours,
-  -- Simple departure times
+  -- Dynamic pricing based on distance and airline
   CASE 
-    WHEN r.airline = 'AA' THEN "08:00"
-    WHEN r.airline = 'DL' THEN "12:30"
-    WHEN r.airline = 'UA' THEN "16:15"
-    ELSE "10:00"
-  END AS departure_time,
-  -- Simple flight numbers
-  r.airline || "100" AS flight_number,
-  -- Simple pricing based on distance
+    WHEN r.distance < 500 THEN 
+      180 + (ABS(HASH(r.airline || r.sourceairport)) % 120) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 40
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 20
+      END
+    WHEN r.distance < 1500 THEN 
+      320 + (ABS(HASH(r.airline || r.sourceairport)) % 180) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 80
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 40
+      END
+    ELSE 
+      650 + (ABS(HASH(r.airline || r.sourceairport)) % 350) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 150
+        WHEN r.airline IN ['AF', 'KL'] THEN 200
+        ELSE 100
+      END
+  END AS price_economy,
+  -- Business class pricing (2.5x economy + premium)
   CASE 
-    WHEN r.distance < 500 THEN 200
-    WHEN r.distance < 1500 THEN 400
-    ELSE 800
-  END AS estimated_price
+    WHEN r.distance < 500 THEN 
+      (180 + (ABS(HASH(r.airline || r.sourceairport)) % 120) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 40
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 20
+      END) * 2.5 + 150
+    WHEN r.distance < 1500 THEN 
+      (320 + (ABS(HASH(r.airline || r.sourceairport)) % 180) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 80
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 40
+      END) * 2.5 + 300
+    ELSE 
+      (650 + (ABS(HASH(r.airline || r.sourceairport)) % 350) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 150
+        WHEN r.airline IN ['AF', 'KL'] THEN 200
+        ELSE 100
+      END) * 2.5 + 500
+  END AS price_business,
+  -- First class pricing (4x economy + premium)
+  CASE 
+    WHEN r.distance < 500 THEN 
+      (180 + (ABS(HASH(r.airline || r.sourceairport)) % 120) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 40
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 20
+      END) * 4 + 400
+    WHEN r.distance < 1500 THEN 
+      (320 + (ABS(HASH(r.airline || r.sourceairport)) % 180) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 80
+        WHEN r.airline IN ['WN', 'B6'] THEN 0
+        ELSE 40
+      END) * 4 + 800
+    ELSE 
+      (650 + (ABS(HASH(r.airline || r.sourceairport)) % 350) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 150
+        WHEN r.airline IN ['AF', 'KL'] THEN 200
+        ELSE 100
+      END) * 4 + 1200
+  END AS price_first
 FROM 
   `travel-sample`.inventory.route r
 JOIN 
@@ -92,85 +239,141 @@ JOIN
 WHERE 
   r.sourceairport = $source_airport AND
   r.destinationairport = $destination_airport
-
+  
 UNION ALL
 
+-- Additional flight options with different departure times
 SELECT 
   r.airline,
-  r.sourceairport,
-  r.destinationairport,
-  r.equipment,
-  r.distance,
+  r.sourceairport AS departure_airport,
+  r.destinationairport AS arrival_airport,
+  r.equipment AS aircraft_type,
+  r.distance AS distance_miles,
   a1.airportname AS source_name,
-  a1.city AS source_city,
-  a1.country AS source_country,
-  a2.airportname AS dest_name, 
-  a2.city AS dest_city,
-  a2.country AS dest_country,
+  a1.city AS departure_city,
+  a2.airportname AS dest_name,
+  a2.city AS arrival_city,
+  -- Different flight numbers for afternoon/evening flights
+  r.airline || 
+  CASE 
+    WHEN r.airline = 'AA' THEN TOSTRING(1100 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 899))
+    WHEN r.airline = 'DL' THEN TOSTRING(1200 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 799))
+    WHEN r.airline = 'UA' THEN TOSTRING(1300 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 699))
+    WHEN r.airline = 'US' THEN TOSTRING(1400 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 599))
+    WHEN r.airline = 'WN' THEN TOSTRING(1500 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 499))
+    WHEN r.airline = 'AS' THEN TOSTRING(1600 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 399))
+    WHEN r.airline = 'B6' THEN TOSTRING(1700 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 299))
+    WHEN r.airline = 'VX' THEN TOSTRING(1800 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 199))
+    WHEN r.airline = 'AF' THEN TOSTRING(1900 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 99))
+    WHEN r.airline = 'KL' THEN TOSTRING(2000 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 99))
+    ELSE TOSTRING(1100 + (ABS(HASH(r.sourceairport || r.destinationairport)) % 899))
+  END AS flight_number,
+  -- Evening departure times
+  CASE 
+    WHEN r.airline = 'AA' THEN "19:15"
+    WHEN r.airline = 'DL' THEN "20:30"
+    WHEN r.airline = 'UA' THEN "17:45"
+    WHEN r.airline = 'US' THEN "21:20"
+    WHEN r.airline = 'WN' THEN "22:00"
+    WHEN r.airline = 'AS' THEN "18:30"
+    WHEN r.airline = 'B6' THEN "16:15"
+    WHEN r.airline = 'VX' THEN "19:45"
+    WHEN r.airline = 'AF' THEN "23:00"
+    WHEN r.airline = 'KL' THEN "20:30"
+    ELSE "18:00"
+  END AS departure_time,
+  -- Calculate evening arrival times
+  CASE 
+    WHEN r.airline = 'AA' THEN TIME_ADD_STR("19:15", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'DL' THEN TIME_ADD_STR("20:30", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'UA' THEN TIME_ADD_STR("17:45", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'US' THEN TIME_ADD_STR("21:20", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'WN' THEN TIME_ADD_STR("22:00", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'AS' THEN TIME_ADD_STR("18:30", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'B6' THEN TIME_ADD_STR("16:15", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'VX' THEN TIME_ADD_STR("19:45", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'AF' THEN TIME_ADD_STR("23:00", ROUND(r.distance / 500 * 3600), "second")
+    WHEN r.airline = 'KL' THEN TIME_ADD_STR("20:30", ROUND(r.distance / 500 * 3600), "second")
+    ELSE TIME_ADD_STR("18:00", ROUND(r.distance / 500 * 3600), "second")
+  END AS arrival_time,
+  ROUND(r.distance / 500, 1) AS duration_hours,
   CASE 
     WHEN r.distance < 500 THEN "Short-haul"
     WHEN r.distance < 1500 THEN "Medium-haul"
     ELSE "Long-haul"
   END AS flight_type,
-  ROUND(r.distance / 500, 1) AS estimated_hours,
-  -- Different departure times for variety
+  -- Slightly higher evening pricing
   CASE 
-    WHEN r.airline = 'AA' THEN "18:15"
-    WHEN r.airline = 'DL' THEN "21:30"
-    WHEN r.airline = 'UA' THEN "07:45"
-    WHEN r.airline = 'US' THEN "11:00"
-    WHEN r.airline = 'AF' THEN "15:30"
-    WHEN r.airline = 'KL' THEN "19:45"
-    WHEN r.airline = 'AS' THEN "13:15"
-    WHEN r.airline = 'B6' THEN "16:00"
-    WHEN r.airline = 'VX' THEN "09:30"
-    WHEN r.airline = 'WN' THEN "22:00"
-    ELSE "14:30"
-  END AS departure_time,
-  -- Different flight numbers
-  r.airline || CASE 
-    WHEN r.airline = 'AA' THEN "456"
-    WHEN r.airline = 'DL' THEN "556"
-    WHEN r.airline = 'UA' THEN "656"
-    WHEN r.airline = 'US' THEN "756"
-    WHEN r.airline = 'AF' THEN "856"
-    WHEN r.airline = 'KL' THEN "956"
-    WHEN r.airline = 'AS' THEN "156"
-    WHEN r.airline = 'B6' THEN "256"
-    WHEN r.airline = 'VX' THEN "356"
-    WHEN r.airline = 'WN' THEN "789"
-    ELSE "888"
-  END AS flight_number,
-  -- Slightly different pricing
+    WHEN r.distance < 500 THEN 
+      200 + (ABS(HASH(r.airline || r.destinationairport)) % 100) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 50
+        WHEN r.airline IN ['WN', 'B6'] THEN 10
+        ELSE 30
+      END
+    WHEN r.distance < 1500 THEN 
+      350 + (ABS(HASH(r.airline || r.destinationairport)) % 150) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 100
+        WHEN r.airline IN ['WN', 'B6'] THEN 20
+        ELSE 60
+      END
+    ELSE 
+      700 + (ABS(HASH(r.airline || r.destinationairport)) % 300) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 200
+        WHEN r.airline IN ['AF', 'KL'] THEN 250
+        ELSE 150
+      END
+  END AS price_economy,
+  -- Business class for evening flights
   CASE 
-    WHEN r.distance < 500 THEN 220 + CASE 
-      WHEN r.airline = 'AA' THEN 15
-      WHEN r.airline = 'DL' THEN 35
-      WHEN r.airline = 'UA' THEN 55
-      WHEN r.airline = 'US' THEN 75
-      WHEN r.airline = 'AF' THEN 95
-      WHEN r.airline = 'KL' THEN 115
-      ELSE 25
-    END
-    WHEN r.distance < 1500 THEN 420 + CASE 
-      WHEN r.airline = 'AA' THEN 25
-      WHEN r.airline = 'DL' THEN 55
-      WHEN r.airline = 'UA' THEN 85
-      WHEN r.airline = 'US' THEN 115
-      WHEN r.airline = 'AF' THEN 145
-      WHEN r.airline = 'KL' THEN 175
-      ELSE 40
-    END
-    ELSE 820 + CASE 
-      WHEN r.airline = 'AA' THEN 45
-      WHEN r.airline = 'DL' THEN 95
-      WHEN r.airline = 'UA' THEN 145
-      WHEN r.airline = 'US' THEN 195
-      WHEN r.airline = 'AF' THEN 245
-      WHEN r.airline = 'KL' THEN 295
-      ELSE 70
-    END
-  END AS estimated_price
+    WHEN r.distance < 500 THEN 
+      (200 + (ABS(HASH(r.airline || r.destinationairport)) % 100) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 50
+        WHEN r.airline IN ['WN', 'B6'] THEN 10
+        ELSE 30
+      END) * 2.5 + 150
+    WHEN r.distance < 1500 THEN 
+      (350 + (ABS(HASH(r.airline || r.destinationairport)) % 150) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 100
+        WHEN r.airline IN ['WN', 'B6'] THEN 20
+        ELSE 60
+      END) * 2.5 + 300
+    ELSE 
+      (700 + (ABS(HASH(r.airline || r.destinationairport)) % 300) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 200
+        WHEN r.airline IN ['AF', 'KL'] THEN 250
+        ELSE 150
+      END) * 2.5 + 500
+  END AS price_business,
+  -- First class for evening flights
+  CASE 
+    WHEN r.distance < 500 THEN 
+      (200 + (ABS(HASH(r.airline || r.destinationairport)) % 100) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 50
+        WHEN r.airline IN ['WN', 'B6'] THEN 10
+        ELSE 30
+      END) * 4 + 400
+    WHEN r.distance < 1500 THEN 
+      (350 + (ABS(HASH(r.airline || r.destinationairport)) % 150) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 100
+        WHEN r.airline IN ['WN', 'B6'] THEN 20
+        ELSE 60
+      END) * 4 + 800
+    ELSE 
+      (700 + (ABS(HASH(r.airline || r.destinationairport)) % 300) +
+      CASE 
+        WHEN r.airline IN ['AA', 'DL', 'UA'] THEN 200
+        WHEN r.airline IN ['AF', 'KL'] THEN 250
+        ELSE 150
+      END) * 4 + 1200
+  END AS price_first
 FROM 
   `travel-sample`.inventory.route r
 JOIN 
@@ -181,5 +384,5 @@ WHERE
   r.sourceairport = $source_airport AND
   r.destinationairport = $destination_airport
 
-ORDER BY estimated_price
+ORDER BY price_economy ASC
 LIMIT 10;
