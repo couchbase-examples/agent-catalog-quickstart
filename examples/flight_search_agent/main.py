@@ -277,6 +277,18 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                             # Try to parse as JSON
                                             parsed_args = json.loads(args[0])
                                             if isinstance(parsed_args, dict):
+                                                # Fix parameter names for booking tool
+                                                if name == "manage_flight_booking":
+                                                    if "departure_airport" in parsed_args:
+                                                        parsed_args["source_airport"] = parsed_args.pop("departure_airport")
+                                                    if "arrival_airport" in parsed_args:
+                                                        parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
+                                                # Fix parameter names for lookup tool
+                                                elif name == "lookup_flight_info":
+                                                    if "departure_airport" in parsed_args:
+                                                        parsed_args["source_airport"] = parsed_args.pop("departure_airport")
+                                                    if "arrival_airport" in parsed_args:
+                                                        parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
                                                 return func(**parsed_args)
                                             else:
                                                 return func(args[0])

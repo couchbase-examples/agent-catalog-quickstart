@@ -26,11 +26,18 @@ def manage_flight_booking(
 
         # Validate date format and future dates
         try:
-            dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
-            if dep_date <= datetime.date.today():
+            # Handle "tomorrow" and other relative dates
+            if departure_date.lower() == "tomorrow":
+                dep_date = datetime.date.today() + datetime.timedelta(days=1)
+            elif departure_date.lower() == "today":
+                dep_date = datetime.date.today()
+            else:
+                dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
+            
+            if dep_date < datetime.date.today():
                 return "Error: Departure date must be in the future."
         except ValueError:
-            return "Error: Invalid date format. Please use YYYY-MM-DD format."
+            return "Error: Invalid date format. Please use YYYY-MM-DD format or 'tomorrow'."
 
         # Generate booking ID
         booking_id = (
