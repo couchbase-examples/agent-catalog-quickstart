@@ -30,7 +30,7 @@ def get_hotel_details(hotel_name: str) -> str:
     try:
         bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
         scope_name = os.environ.get('SCOPE_NAME', 'shared')
-        collection_name = os.environ.get('COLLECTION_NAME', 'deepseek')
+        collection_name = os.environ.get('COLLECTION_NAME', 'agentcatalog')
         
         query = f"""
         SELECT RAW content 

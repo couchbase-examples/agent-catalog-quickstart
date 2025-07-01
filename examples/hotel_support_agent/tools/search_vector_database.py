@@ -39,9 +39,9 @@ def search_vector_database(query: str) -> str:
             cluster=cluster,
             bucket_name=os.environ.get('CB_BUCKET_NAME', 'vector-search-testing'),
             scope_name=os.environ.get('SCOPE_NAME', 'shared'),
-            collection_name=os.environ.get('COLLECTION_NAME', 'deepseek'),
+            collection_name=os.environ.get('COLLECTION_NAME', 'agentcatalog'),
             embedding=embeddings,
-            index_name=os.environ.get('INDEX_NAME', 'vector_search_deepseek'),
+            index_name=os.environ.get('INDEX_NAME', 'vector_search_agentcatalog'),
         )
         
         search_results = vector_store.similarity_search_with_score(query, k=5)

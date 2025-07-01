@@ -35,9 +35,9 @@ def setup_environment():
         'CB_USERNAME': 'Administrator', 
         'CB_PASSWORD': 'password',
         'CB_BUCKET_NAME': 'vector-search-testing',
-        'INDEX_NAME': 'vector_search_deepseek',
+        'INDEX_NAME': 'vector_search_agentcatalog',
         'SCOPE_NAME': 'shared',
-        'COLLECTION_NAME': 'deepseek'
+        'COLLECTION_NAME': 'agentcatalog'
     }
     
     for key, default_value in defaults.items():
@@ -228,9 +228,9 @@ def main():
         )
         
         try:
-            with open('deepseek_index.json', 'r') as file:
+            with open('agentcatalog_index.json', 'r') as file:
                 index_definition = json.load(file)
-            print("Loaded vector search index definition from deepseek_index.json")
+            print("Loaded vector search index definition from agentcatalog_index.json")
         except Exception as e:
             raise ValueError(f"Error loading index definition: {str(e)}")
         
