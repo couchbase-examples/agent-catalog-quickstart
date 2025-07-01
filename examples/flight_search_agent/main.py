@@ -316,11 +316,12 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                             return wrapper
 
-                        # Convert to LangChain Tool format
+                        # Convert to LangChain Tool format with closure fix
+                        wrapped_func = create_tool_wrapper(tool_obj.func, tool_name)
                         lc_tool = Tool(
                             name=tool_obj.meta.name,
                             description=tool_obj.meta.description or description,
-                            func=create_tool_wrapper(tool_obj.func, tool_name),
+                            func=wrapped_func,
                         )
                         tools.append(lc_tool)
                         logger.info(f"Loaded tool: {tool_name}")
