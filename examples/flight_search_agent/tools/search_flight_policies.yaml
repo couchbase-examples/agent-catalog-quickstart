@@ -25,11 +25,11 @@ secrets:
       auth: OPENAI_API_KEY
 
 vector_search:
-  bucket: travel-sample
-  scope: inventory
-  collection: airline
-  index: airline_policies_index
-  vector_field: description_vector
+  bucket: vector-search-testing
+  scope: shared
+  collection: agentcatalog
+  index: vector_search_agentcatalog
+  vector_field: embedding
   text_field: content
   
   embedding_model:

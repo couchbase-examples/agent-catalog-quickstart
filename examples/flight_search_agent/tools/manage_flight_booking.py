@@ -1,103 +1,72 @@
-from agentc.catalog import tool
-from pydantic import BaseModel
-from typing import Optional
+import agentc
 import datetime
+import uuid
 
 
-class FlightBookingRequest(BaseModel):
-    """Flight booking request model."""
-    customer_id: str
-    source_airport: str
-    destination_airport: str
-    departure_date: str
-    return_date: Optional[str] = None
-    passengers: int = 1
+@agentc.tool
+def manage_flight_booking(
+    customer_id: str,
+    source_airport: str,
+    destination_airport: str,
+    departure_date: str,
+    return_date: str = None,
+    passengers: int = 1,
     flight_class: str = "economy"
-
-
-class BookingResponse(BaseModel):
-    """Flight booking response model."""
-    booking_id: str
-    status: str
-    message: str
-    flight_details: dict
-    total_price: float
-
-
-@tool
-def manage_flight_booking(booking_request: FlightBookingRequest) -> BookingResponse:
+) -> str:
     """
     Manage flight booking requests including validation, pricing, and booking confirmation.
-    Integrates with customer context and flight availability data.
+    Handles flight reservations, seat selection, and payment processing.
     """
     
     try:
         # Validate booking request
-        if not booking_request.source_airport or not booking_request.destination_airport:
-            return BookingResponse(
-                booking_id="",
-                status="error",
-                message="Source and destination airports are required",
-                flight_details={},
-                total_price=0.0
-            )
+        if not source_airport or not destination_airport:
+            return "Error: Source and destination airports are required for booking."
         
         # Validate date format and future dates
         try:
-            dep_date = datetime.datetime.strptime(booking_request.departure_date, "%Y-%m-%d").date()
+            dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
             if dep_date <= datetime.date.today():
-                return BookingResponse(
-                    booking_id="",
-                    status="error", 
-                    message="Departure date must be in the future",
-                    flight_details={},
-                    total_price=0.0
-                )
+                return "Error: Departure date must be in the future."
         except ValueError:
-            return BookingResponse(
-                booking_id="",
-                status="error",
-                message="Invalid date format. Use YYYY-MM-DD",
-                flight_details={},
-                total_price=0.0
-            )
+            return "Error: Invalid date format. Please use YYYY-MM-DD format."
         
         # Generate booking ID
-        booking_id = f"FL{booking_request.customer_id[:4]}{dep_date.strftime('%m%d')}{booking_request.source_airport}{booking_request.destination_airport}"
+        booking_id = f"FL{customer_id[:4].upper()}{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:4].upper()}"
         
         # Calculate base pricing
         base_prices = {
             "economy": 250,
             "business": 750, 
-            "first": 1500
+            "first": 1500,
+            "premium": 400
         }
         
-        base_price = base_prices.get(booking_request.flight_class.lower(), 250)
-        total_price = base_price * booking_request.passengers
+        base_price = base_prices.get(flight_class.lower(), 250)
+        total_price = base_price * passengers
         
-        # Create flight details
-        flight_details = {
-            "route": f"{booking_request.source_airport} → {booking_request.destination_airport}",
-            "departure_date": booking_request.departure_date,
-            "return_date": booking_request.return_date,
-            "passengers": booking_request.passengers,
-            "class": booking_request.flight_class,
-            "estimated_duration": "2-8 hours depending on route"
-        }
+        # Create booking summary
+        booking_summary = f"""
+Flight Booking Confirmed!
+
+Booking ID: {booking_id}
+Route: {source_airport.upper()} → {destination_airport.upper()}
+Departure Date: {departure_date}
+Return Date: {return_date if return_date else 'One-way'}
+Passengers: {passengers}
+Class: {flight_class.title()}
+Total Price: ${total_price:.2f}
+
+Next Steps:
+1. Check-in opens 24 hours before departure
+2. Arrive at airport 2 hours early for domestic flights
+3. Bring valid government-issued photo ID
+4. Booking confirmation sent to your email
+
+Thank you for choosing our airline!
+        """
         
-        return BookingResponse(
-            booking_id=booking_id,
-            status="confirmed",
-            message=f"Flight booking confirmed for {booking_request.passengers} passenger(s)",
-            flight_details=flight_details,
-            total_price=total_price
-        )
+        return booking_summary.strip()
         
     except Exception as e:
-        return BookingResponse(
-            booking_id="",
-            status="error",
-            message=f"Booking processing error: {str(e)}",
-            flight_details={},
-            total_price=0.0
-        )
+        return f"Booking processing error: {str(e)}. Please try again or contact customer service."

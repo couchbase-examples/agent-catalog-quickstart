@@ -1,5 +1,3 @@
--- Flight Information Lookup Tool using SQL++
--- Searches real flight data from travel-sample bucket
 /*
 name: lookup_flight_info
 
@@ -26,6 +24,28 @@ input:
       description: "Optional return date for round-trip flights"
   required: ["source_airport", "destination_airport"]
 
+output:
+  type: array
+  items:
+    type: object
+    properties:
+      airline:
+        type: string
+      flight_number:
+        type: string
+      departure_time:
+        type: string
+      estimated_price:
+        type: number
+      source_name:
+        type: string
+      dest_name:
+        type: string
+      flight_type:
+        type: string
+      estimated_hours:
+        type: number
+
 secrets:
   - couchbase:
       conn_string: CB_CONN_STRING
@@ -41,74 +61,27 @@ SELECT
   r.equipment,
   r.distance,
   a1.airportname AS source_name,
-  a1.city AS source_city,
-  a1.country AS source_country,
-  a2.airportname AS dest_name, 
-  a2.city AS dest_city,
-  a2.country AS dest_country,
+  a2.airportname AS dest_name,
   CASE 
     WHEN r.distance < 500 THEN "Short-haul"
     WHEN r.distance < 1500 THEN "Medium-haul"
     ELSE "Long-haul"
   END AS flight_type,
   ROUND(r.distance / 500, 1) AS estimated_hours,
-  -- Generate deterministic departure times based on airline
+  -- Simple departure times
   CASE 
-    WHEN r.airline = 'AA' THEN "06:00"
-    WHEN r.airline = 'DL' THEN "08:30"
-    WHEN r.airline = 'UA' THEN "12:15"
-    WHEN r.airline = 'US' THEN "16:45"
-    WHEN r.airline = 'AF' THEN "20:00"
-    WHEN r.airline = 'KL' THEN "10:30"
-    WHEN r.airline = 'AS' THEN "14:00"
-    WHEN r.airline = 'B6' THEN "15:30"
-    WHEN r.airline = 'VX' THEN "17:00"
-    WHEN r.airline = 'WN' THEN "19:15"
-    ELSE "11:45"
+    WHEN r.airline = 'AA' THEN "08:00"
+    WHEN r.airline = 'DL' THEN "12:30"
+    WHEN r.airline = 'UA' THEN "16:15"
+    ELSE "10:00"
   END AS departure_time,
-  -- Generate flight numbers based on airline  
-  r.airline || CASE 
-    WHEN r.airline = 'AA' THEN "123"
-    WHEN r.airline = 'DL' THEN "223"
-    WHEN r.airline = 'UA' THEN "323"
-    WHEN r.airline = 'US' THEN "423"
-    WHEN r.airline = 'AF' THEN "523"
-    WHEN r.airline = 'KL' THEN "623"
-    WHEN r.airline = 'AS' THEN "723"
-    WHEN r.airline = 'B6' THEN "823"
-    WHEN r.airline = 'VX' THEN "923"
-    WHEN r.airline = 'WN' THEN "103"
-    ELSE "999"
-  END AS flight_number,
-  -- Generate deterministic pricing based on distance and airline
+  -- Simple flight numbers
+  r.airline || "100" AS flight_number,
+  -- Simple pricing based on distance
   CASE 
-    WHEN r.distance < 500 THEN 200 + CASE 
-      WHEN r.airline = 'AA' THEN 20
-      WHEN r.airline = 'DL' THEN 40
-      WHEN r.airline = 'UA' THEN 60
-      WHEN r.airline = 'US' THEN 80
-      WHEN r.airline = 'AF' THEN 100
-      WHEN r.airline = 'KL' THEN 120
-      ELSE 30
-    END
-    WHEN r.distance < 1500 THEN 400 + CASE 
-      WHEN r.airline = 'AA' THEN 30
-      WHEN r.airline = 'DL' THEN 60
-      WHEN r.airline = 'UA' THEN 90
-      WHEN r.airline = 'US' THEN 120
-      WHEN r.airline = 'AF' THEN 150
-      WHEN r.airline = 'KL' THEN 180
-      ELSE 45
-    END
-    ELSE 800 + CASE 
-      WHEN r.airline = 'AA' THEN 50
-      WHEN r.airline = 'DL' THEN 100
-      WHEN r.airline = 'UA' THEN 150
-      WHEN r.airline = 'US' THEN 200
-      WHEN r.airline = 'AF' THEN 250
-      WHEN r.airline = 'KL' THEN 300
-      ELSE 75
-    END
+    WHEN r.distance < 500 THEN 200
+    WHEN r.distance < 1500 THEN 400
+    ELSE 800
   END AS estimated_price
 FROM 
   `travel-sample`.inventory.route r
