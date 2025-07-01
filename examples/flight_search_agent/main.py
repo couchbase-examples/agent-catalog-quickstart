@@ -252,15 +252,27 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             logger.info(f"Flight Query: {state['query']}")
 
         try:
-            # Get tools from Agent Catalog
+            # Get tools from Agent Catalog using find method like hotel agent
+            from langchain_core.tools import Tool
+            
             tools = []
-            tool_names = ["lookup_flight_info", "manage_flight_booking", "search_flight_policies"]
+            tool_configs = [
+                ("lookup_flight_info", "Find flight routes between airports"),
+                ("manage_flight_booking", "Manage flight booking requests"),
+                ("search_flight_policies", "Search flight policies and guidelines")
+            ]
 
-            for tool_name in tool_names:
+            for tool_name, description in tool_configs:
                 try:
-                    tool = self.catalog.get_tool(tool_name, span=span)
-                    if tool:
-                        tools.append(tool)
+                    tool_obj = self.catalog.find("tool", name=tool_name)
+                    if tool_obj:
+                        # Convert to LangChain Tool format
+                        lc_tool = Tool(
+                            name=tool_obj.meta.name,
+                            description=tool_obj.meta.description or description,
+                            func=tool_obj.func
+                        )
+                        tools.append(lc_tool)
                         logger.info(f"Loaded tool: {tool_name}")
                 except Exception as e:
                     logger.warning(f"Could not load tool {tool_name}: {e}")
