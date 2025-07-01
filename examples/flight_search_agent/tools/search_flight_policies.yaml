@@ -46,6 +46,6 @@ vector_search:
   
   embedding_model:
     name: text-embedding-3-small
-    base_url: https://api.openai.com/v1/embeddings
+    base_url: https://api.openai.com/v1
     
   num_candidates: 5
