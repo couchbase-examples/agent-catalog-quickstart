@@ -254,60 +254,73 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         try:
             # Get tools from Agent Catalog using find method like hotel agent
             from langchain_core.tools import Tool
-            
+
             tools = []
             tool_configs = [
                 ("lookup_flight_info", "Find flight routes between airports"),
                 ("manage_flight_booking", "Manage flight booking requests"),
-                ("search_flight_policies", "Search flight policies and guidelines")
+                ("search_flight_policies", "Search flight policies and guidelines"),
             ]
 
             for tool_name, description in tool_configs:
                 try:
                     tool_obj = self.catalog.find("tool", name=tool_name)
-                    if tool_obj and hasattr(tool_obj, 'func'):
+                    if tool_obj and hasattr(tool_obj, "func"):
                         # Create a wrapper function to handle argument parsing and type issues
-                        def create_tool_wrapper(func, name):
+                        def create_tool_wrapper(func, tool_name):
                             def wrapper(*args, **kwargs):
                                 try:
+                                    logger.info(f"Tool {tool_name} called with args: {args}, kwargs: {kwargs}")
+                                    
                                     # Handle case where LangChain passes a single string argument
                                     if len(args) == 1 and isinstance(args[0], str) and not kwargs:
                                         try:
                                             import json
+
                                             # Try to parse as JSON
                                             parsed_args = json.loads(args[0])
+                                            logger.info(f"Parsed JSON args for {tool_name}: {parsed_args}")
+                                            
                                             if isinstance(parsed_args, dict):
                                                 # Fix parameter names for booking tool
-                                                if name == "manage_flight_booking":
+                                                if tool_name == "manage_flight_booking":
                                                     if "departure_airport" in parsed_args:
                                                         parsed_args["source_airport"] = parsed_args.pop("departure_airport")
                                                     if "arrival_airport" in parsed_args:
                                                         parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
+                                                    # Remove extra parameters that aren't in function signature
+                                                    valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class"}
+                                                    parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
+                                                    
                                                 # Fix parameter names for lookup tool
-                                                elif name == "lookup_flight_info":
+                                                elif tool_name == "lookup_flight_info":
                                                     if "departure_airport" in parsed_args:
                                                         parsed_args["source_airport"] = parsed_args.pop("departure_airport")
                                                     if "arrival_airport" in parsed_args:
                                                         parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
+                                                
+                                                logger.info(f"Final args for {tool_name}: {parsed_args}")
                                                 return func(**parsed_args)
                                             else:
                                                 return func(args[0])
-                                        except (json.JSONDecodeError, TypeError):
+                                        except (json.JSONDecodeError, TypeError) as e:
+                                            logger.warning(f"JSON parse error for {tool_name}: {e}")
                                             # If not JSON, pass as string
                                             return func(args[0])
                                     else:
                                         # Normal function call
                                         return func(*args, **kwargs)
                                 except Exception as e:
-                                    logger.error(f"Tool {name} execution error: {e}")
-                                    return f"Error executing {name}: {str(e)}"
+                                    logger.error(f"Tool {tool_name} execution error: {e}")
+                                    return f"Error executing {tool_name}: {str(e)}"
+
                             return wrapper
-                        
+
                         # Convert to LangChain Tool format
                         lc_tool = Tool(
                             name=tool_obj.meta.name,
                             description=tool_obj.meta.description or description,
-                            func=create_tool_wrapper(tool_obj.func, tool_name)
+                            func=create_tool_wrapper(tool_obj.func, tool_name),
                         )
                         tools.append(lc_tool)
                         logger.info(f"Loaded tool: {tool_name}")
@@ -326,44 +339,46 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             # Create a proper ReAct agent like hotel support agent
             from langchain.agents import create_react_agent, AgentExecutor
             from langchain import hub
-            
+
             try:
                 # Get ReAct prompt from hub
                 react_prompt = hub.pull("hwchase17/react")
-                
+
                 # Create ReAct agent with tools
                 agent = create_react_agent(self.chat_model, tools, react_prompt)
                 agent_executor = AgentExecutor(
-                    agent=agent, 
-                    tools=tools, 
-                    verbose=True, 
+                    agent=agent,
+                    tools=tools,
+                    verbose=True,
                     handle_parsing_errors=True,
-                    max_iterations=5
+                    max_iterations=5,
                 )
-                
+
                 # Execute the agent with the query
                 query = state["query"]
                 result = agent_executor.invoke({"input": query})
-                
+
                 # Create response message
-                response_content = result.get("output", "I was unable to process your flight search request.")
+                response_content = result.get(
+                    "output", "I was unable to process your flight search request."
+                )
                 response_msg = langchain_core.messages.AIMessage(content=response_content)
                 state["messages"].append(response_msg)
-                
+
                 logger.info(f"Agent Response: {response_content}")
-                
+
                 # Mark as resolved
                 state["resolved"] = True
-                
+
             except Exception as agent_error:
                 logger.error(f"ReAct agent error: {agent_error}")
                 # Fallback to simple model response
                 fallback_response = self.chat_model.invoke(state["messages"])
                 state["messages"].append(fallback_response)
-                
+
                 if hasattr(fallback_response, "content"):
                     logger.info(f"Fallback Response: {fallback_response.content}")
-                
+
                 state["resolved"] = True
 
         except Exception as e:
