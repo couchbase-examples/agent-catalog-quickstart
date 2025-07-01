@@ -14,6 +14,18 @@ input:
       description: "Natural language query about flight policies or travel rules"
   required: ["query"]
 
+output:
+  type: array
+  items:
+    type: object
+    properties:
+      content:
+        type: string
+        description: "Flight policy or travel information content"
+      score:
+        type: number
+        description: "Semantic similarity score"
+
 secrets:
   - couchbase:
       conn_string: CB_CONN_STRING
