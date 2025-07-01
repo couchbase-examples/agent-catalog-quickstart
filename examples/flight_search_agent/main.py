@@ -41,23 +41,24 @@ def _set_if_undefined(var: str):
 
 def setup_environment():
     """Setup required environment variables with defaults."""
-    required_vars = ["OPENAI_API_KEY", "CB_HOST", "CB_USERNAME", "CB_PASSWORD", "CB_BUCKET_NAME"]
+    required_vars = ["OPENAI_API_KEY", "CB_CONN_STRING", "CB_USERNAME", "CB_PASSWORD", "CB_BUCKET"]
     for var in required_vars:
         _set_if_undefined(var)
 
     defaults = {
-        "CB_HOST": "couchbase://localhost",
+        "CB_CONN_STRING": "couchbase://localhost",
         "CB_USERNAME": "Administrator",
         "CB_PASSWORD": "password",
-        "CB_BUCKET_NAME": "vector-search-testing",
-        "INDEX_NAME": "vector_search_agentcatalog",
-        "SCOPE_NAME": "shared",
-        "COLLECTION_NAME": "agentcatalog",
+        "CB_BUCKET": "vector-search-testing",
     }
 
     for key, default_value in defaults.items():
         if not os.environ.get(key):
             os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
+
+    os.environ["INDEX_NAME"] = os.getenv("INDEX_NAME", "vector_search_agentcatalog")
+    os.environ["SCOPE_NAME"] = os.getenv("SCOPE_NAME", "shared")
+    os.environ["COLLECTION_NAME"] = os.getenv("COLLECTION_NAME", "agentcatalog")
 
 
 def setup_couchbase_connection():
@@ -65,7 +66,7 @@ def setup_couchbase_connection():
     try:
         auth = PasswordAuthenticator(os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"])
         options = ClusterOptions(auth)
-        cluster = Cluster(os.environ["CB_HOST"], options)
+        cluster = Cluster(os.environ["CB_CONN_STRING"], options)
         cluster.wait_until_ready(timedelta(seconds=10))
         print("Successfully connected to Couchbase")
         return cluster
@@ -136,9 +137,7 @@ def setup_vector_search_index(cluster, index_definition):
     """Setup vector search index for flight data."""
     try:
         scope_index_manager = (
-            cluster.bucket(os.environ["CB_BUCKET_NAME"])
-            .scope(os.environ["SCOPE_NAME"])
-            .search_indexes()
+            cluster.bucket(os.environ["CB_BUCKET"]).scope(os.environ["SCOPE_NAME"]).search_indexes()
         )
 
         existing_indexes = scope_index_manager.get_all_indexes()
@@ -186,7 +185,7 @@ def setup_vector_store(cluster):
 
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
-            bucket_name=os.environ["CB_BUCKET_NAME"],
+            bucket_name=os.environ["CB_BUCKET"],
             scope_name=os.environ["SCOPE_NAME"],
             collection_name=os.environ["COLLECTION_NAME"],
             embedding=embeddings,
@@ -322,7 +321,7 @@ def run_flight_search_demo():
 
         setup_collection(
             cluster,
-            os.environ["CB_BUCKET_NAME"],
+            os.environ["CB_BUCKET"],
             os.environ["SCOPE_NAME"],
             os.environ["COLLECTION_NAME"],
         )
@@ -341,7 +340,12 @@ def run_flight_search_demo():
         setup_vector_store(cluster)
 
         # Initialize Agent Catalog
-        catalog = agentc.Catalog()
+        catalog = agentc.Catalog(
+            conn_string=os.environ["AGENT_CATALOG_CONN_STRING"],
+            username=os.environ["AGENT_CATALOG_USERNAME"],
+            password=os.environ["AGENT_CATALOG_PASSWORD"],
+            bucket=os.environ["AGENT_CATALOG_BUCKET"],
+        )
         application_span = catalog.Span(name="Flight Search Agent")
 
         # Create the flight search graph
@@ -353,32 +357,36 @@ def run_flight_search_demo():
         print("✅ Agent Catalog integration successful")
 
         # Interactive flight search loop
-        while True:
-            print("\n" + "─" * 40)
-            query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
+        # while True:
+        #     print("\n" + "─" * 40)
+        #     query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
 
-            if query.lower() in ["quit", "exit", "q"]:
-                print("✈️ Thanks for using Flight Search Agent!")
-                break
+        #     if query.lower() in ["quit", "exit", "q"]:
+        #         print("✈️ Thanks for using Flight Search Agent!")
+        #         break
 
-            if not query:
-                continue
+        #     if not query:
+        #         continue
 
-            try:
-                # Build starting state
-                state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
+        try:
+            # Hardcoded query for demonstration
+            query = "Find flights from New York to Los Angeles"
+            print(f"🔍 Flight Query: {query}")
 
-                # Run the flight search
-                result = compiled_graph.invoke(state)
+            # Build starting state
+            state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
 
-                # Display results summary
-                if result.get("search_results"):
-                    print(f"\n📋 Found {len(result['search_results'])} flight options")
+            # Run the flight search
+            result = compiled_graph.invoke(state)
 
-                print(f"✅ Search completed: {result.get('resolved', False)}")
+            # Display results summary
+            if result.get("search_results"):
+                print(f"\n📋 Found {len(result['search_results'])} flight options")
 
-            except Exception as e:
-                print(f"❌ Search error: {e}")
+            print(f"✅ Search completed: {result.get('resolved', False)}")
+
+        except Exception as e:
+            print(f"❌ Search error: {e}")
 
     except Exception as e:
         print(f"❌ Initialization error: {e}")
