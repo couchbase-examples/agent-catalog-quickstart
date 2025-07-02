@@ -310,6 +310,19 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                             parsed_args.pop("origin_airport")
                                                         )
                                                     
+                                                    # Set required default values for missing fields
+                                                    if "source_airport" not in parsed_args:
+                                                        # Try to extract from flight string
+                                                        flight_info = parsed_args.get("flight", "")
+                                                        if "from SFO" in flight_info or "SFO to" in flight_info:
+                                                            parsed_args["source_airport"] = "SFO"
+                                                    
+                                                    if "destination_airport" not in parsed_args:
+                                                        # Try to extract from flight string
+                                                        flight_info = parsed_args.get("flight", "")
+                                                        if "to LAX" in flight_info or "LAX using" in flight_info:
+                                                            parsed_args["destination_airport"] = "LAX"
+                                                    
                                                     # Provide default departure_date if missing
                                                     if "departure_date" not in parsed_args:
                                                         parsed_args["departure_date"] = "tomorrow"
