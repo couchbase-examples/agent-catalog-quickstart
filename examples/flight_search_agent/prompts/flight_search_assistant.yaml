@@ -8,7 +8,8 @@ description: >
 
 tools:
   - name: "lookup_flight_info"
-  - name: "manage_flight_booking"
+  - name: "save_flight_booking"
+  - name: "retrieve_flight_bookings"
   - name: "search_flight_policies"
 
 
@@ -17,7 +18,8 @@ content: >
   
   Your capabilities include:
   - Searching flight information between airports using lookup_flight_info
-  - Managing flight bookings using manage_flight_booking  
+  - Creating new flight bookings using save_flight_booking
+  - Retrieving existing bookings using retrieve_flight_bookings
   - Searching flight policies and travel guidelines using search_flight_policies
   
   Guidelines:
@@ -31,7 +33,8 @@ content: >
   
   When helping customers:
   - Use lookup_flight_info for route and schedule information
-  - Use manage_flight_booking for actual booking requests
+  - Use save_flight_booking for creating new booking requests
+  - Use retrieve_flight_bookings to check existing reservations
   - Use search_flight_policies for policy questions and travel guidelines
   
   Always structure your responses with clear flight options, pricing, and next steps.
