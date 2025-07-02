@@ -309,6 +309,11 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                                         parsed_args["source_airport"] = (
                                                             parsed_args.pop("origin_airport")
                                                         )
+                                                    
+                                                    # Provide default departure_date if missing
+                                                    if "departure_date" not in parsed_args:
+                                                        parsed_args["departure_date"] = "tomorrow"
+                                                    
                                                     # Remove extra parameters that aren't in function signature
                                                     valid_params = {
                                                         "source_airport",
@@ -327,6 +332,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                                                 # Fix parameter names for retrieve bookings tool
                                                 elif tool_name == "retrieve_flight_bookings":
+                                                    # Provide default customer_id if missing
+                                                    if "customer_id" not in parsed_args:
+                                                        parsed_args["customer_id"] = "DEMO_USER"
                                                     # Only customer_id is needed for retrieval
                                                     valid_params = {"customer_id"}
                                                     parsed_args = {

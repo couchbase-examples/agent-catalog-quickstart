@@ -102,9 +102,9 @@ def save_flight_booking(
             else:
                 dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
 
-            # Check if date is in the future
+            # Check if date is in the future (allow today for demo purposes)
             if dep_date < datetime.date.today():
-                return "Error: Departure date must be in the future."
+                return f"Error: Departure date must be in the future. Today is {datetime.date.today().strftime('%Y-%m-%d')}. Please use a date like {(datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')} or 'tomorrow'."
         except ValueError:
             return "Error: Invalid date format. Please use YYYY-MM-DD format or 'tomorrow'."
 
