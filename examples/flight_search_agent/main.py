@@ -257,7 +257,8 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             tools = []
             tool_configs = [
                 ("lookup_flight_info", "Find flight routes between airports"),
-                ("manage_flight_booking", "Manage flight booking requests"),
+                ("save_flight_booking", "Save flight booking requests"),
+                ("retrieve_flight_bookings", "Retrieve existing flight bookings"),
                 ("search_flight_policies", "Search flight policies and guidelines"),
             ]
 
@@ -278,31 +279,103 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                             parsed_args = json.loads(args[0])
 
                                             if isinstance(parsed_args, dict):
-                                                # Fix parameter names for booking tool
-                                                if tool_name == "manage_flight_booking":
+                                                # Fix parameter names for save booking tool
+                                                if tool_name == "save_flight_booking":
                                                     if "departure_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = parsed_args.pop("departure_airport")
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("departure_airport")
+                                                        )
                                                     if "arrival_airport" in parsed_args:
-                                                        parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
-                                                    # Handle action parameter variations
-                                                    if "retrieve_bookings" in parsed_args:
-                                                        parsed_args["action"] = "retrieve"
-                                                        parsed_args.pop("retrieve_bookings")
-                                                    if "action" in parsed_args and parsed_args["action"] == "retrieve_bookings":
-                                                        parsed_args["action"] = "retrieve"
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("arrival_airport")
+                                                        )
+                                                    if "from" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("from")
+                                                        )
+                                                    if "to" in parsed_args:
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("to")
+                                                        )
+                                                    if "origin" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("origin")
+                                                        )
+                                                    if "destination" in parsed_args:
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("destination")
+                                                        )
+                                                    if "origin_airport" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("origin_airport")
+                                                        )
                                                     # Remove extra parameters that aren't in function signature
-                                                    valid_params = {"source_airport", "destination_airport", "departure_date", "customer_id", "return_date", "passengers", "flight_class", "action"}
-                                                    parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
+                                                    valid_params = {
+                                                        "source_airport",
+                                                        "destination_airport",
+                                                        "departure_date",
+                                                        "customer_id",
+                                                        "return_date",
+                                                        "passengers",
+                                                        "flight_class",
+                                                    }
+                                                    parsed_args = {
+                                                        k: v
+                                                        for k, v in parsed_args.items()
+                                                        if k in valid_params
+                                                    }
+
+                                                # Fix parameter names for retrieve bookings tool
+                                                elif tool_name == "retrieve_flight_bookings":
+                                                    # Only customer_id is needed for retrieval
+                                                    valid_params = {"customer_id"}
+                                                    parsed_args = {
+                                                        k: v
+                                                        for k, v in parsed_args.items()
+                                                        if k in valid_params
+                                                    }
 
                                                 # Fix parameter names for lookup tool
                                                 elif tool_name == "lookup_flight_info":
+                                                    # Handle all possible parameter name variations
                                                     if "departure_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = parsed_args.pop("departure_airport")
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("departure_airport")
+                                                        )
                                                     if "arrival_airport" in parsed_args:
-                                                        parsed_args["destination_airport"] = parsed_args.pop("arrival_airport")
-                                                    # Remove parameters not accepted by SQL++ tool
-                                                    valid_params = {"source_airport", "destination_airport"}
-                                                    parsed_args = {k: v for k, v in parsed_args.items() if k in valid_params}
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("arrival_airport")
+                                                        )
+                                                    if "from" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("from")
+                                                        )
+                                                    if "to" in parsed_args:
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("to")
+                                                        )
+                                                    if "origin" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("origin")
+                                                        )
+                                                    if "destination" in parsed_args:
+                                                        parsed_args["destination_airport"] = (
+                                                            parsed_args.pop("destination")
+                                                        )
+                                                    if "origin_airport" in parsed_args:
+                                                        parsed_args["source_airport"] = (
+                                                            parsed_args.pop("origin_airport")
+                                                        )
+                                                    # Remove parameters not accepted by the tool
+                                                    valid_params = {
+                                                        "source_airport",
+                                                        "destination_airport",
+                                                    }
+                                                    parsed_args = {
+                                                        k: v
+                                                        for k, v in parsed_args.items()
+                                                        if k in valid_params
+                                                    }
 
                                                 return func(**parsed_args)
                                             return func(args[0])
