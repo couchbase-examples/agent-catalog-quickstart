@@ -3,7 +3,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 import couchbase.auth
 import couchbase.cluster
 import couchbase.options
@@ -38,7 +38,7 @@ def test_vector_search():
         print("✅ OpenAI embeddings initialized")
         
         # Setup vector store
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.environ.get('CB_BUCKET_NAME', 'vector-search-testing'),
             scope_name=os.environ.get('SCOPE_NAME', 'shared'),

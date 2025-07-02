@@ -13,7 +13,7 @@ from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.hub import pull
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Make sure you populate your .env file with the correct credentials!
@@ -187,7 +187,7 @@ def setup_vector_store(cluster):
             model="text-embedding-3-small"
         )
         
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.environ['CB_BUCKET_NAME'],
             scope_name=os.environ['SCOPE_NAME'],

@@ -27,7 +27,7 @@ from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 # Setup logging
@@ -187,7 +187,7 @@ def setup_vector_store(cluster):
             api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
         )
 
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.environ["CB_BUCKET"],
             scope_name=os.environ["SCOPE_NAME"],
