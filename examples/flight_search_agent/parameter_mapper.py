@@ -8,7 +8,7 @@ with LLM-based parameter extraction and mapping.
 import inspect
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 import langchain_openai.chat_models
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -32,18 +32,18 @@ class ParameterMapper:
             "flight_class": ["class", "cabin", "service_class", "ticket_class"],
         }
 
-    def get_function_parameters(self, func) -> Set[str]:
+    def get_function_parameters(self, func) -> set[str]:
         """Extract parameter names from function signature."""
         try:
             sig = inspect.signature(func)
             return set(sig.parameters.keys())
         except Exception as e:
-            logger.error(f"Error getting function parameters: {e}")
+            logger.exception("Error getting function parameters")
             return set()
 
     def map_parameters_smart(
-        self, tool_name: str, raw_args: Dict[str, Any], func
-    ) -> Dict[str, Any]:
+        self, tool_name: str, raw_args: dict[str, Any], func
+    ) -> dict[str, Any]:
         """
         Smart parameter mapping using LLM to understand parameter intent.
 
@@ -74,18 +74,18 @@ class ParameterMapper:
 
             return final_params
 
-        except Exception as e:
-            logger.error(f"Error in smart parameter mapping: {e}")
+        except Exception:
+            logger.exception("Error in smart parameter mapping")
             # Fallback to synonym-based mapping
             return self._fallback_synonym_mapping(raw_args, expected_params)
 
     def _llm_parameter_mapping(
-        self, tool_name: str, raw_args: Dict[str, Any], expected_params: Set[str]
-    ) -> Dict[str, Any]:
+        self, tool_name: str, raw_args: dict[str, Any], expected_params: set[str]
+    ) -> dict[str, Any]:
         """Use LLM to intelligently map parameters."""
 
         system_prompt = f"""
-        You are a parameter mapper for flight booking tools. Map the given parameters to the expected function parameters.
+        You are a parameter mapper for flight booking tools. Map parameters to expected names.
         
         Tool: {tool_name}
         Expected parameters: {list(expected_params)}
@@ -127,13 +127,13 @@ class ParameterMapper:
             mapped_params = json.loads(content)
             return mapped_params
 
-        except Exception as e:
-            logger.error(f"LLM parameter mapping failed: {e}")
+        except Exception:
+            logger.exception("LLM parameter mapping failed")
             return raw_args
 
     def _fallback_synonym_mapping(
-        self, raw_args: Dict[str, Any], expected_params: Set[str]
-    ) -> Dict[str, Any]:
+        self, raw_args: dict[str, Any], expected_params: set[str]
+    ) -> dict[str, Any]:
         """Fallback to synonym-based mapping if LLM fails."""
         mapped = {}
 
@@ -152,7 +152,7 @@ class ParameterMapper:
 
         return mapped
 
-    def _add_tool_defaults(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _add_tool_defaults(self, tool_name: str, params: dict[str, Any]) -> dict[str, Any]:
         """Add tool-specific defaults for single user system."""
 
         if tool_name == "save_flight_booking":
@@ -174,11 +174,11 @@ class ParameterMapper:
 
         return params
 
-    def extract_airports_from_text(self, text: str) -> Dict[str, Optional[str]]:
+    def extract_airports_from_text(self, text: str) -> dict[str, Optional[str]]:
         """Extract airport codes from free text using LLM."""
 
         system_prompt = """
-        Extract airport codes from the given text. Return JSON with source_airport and destination_airport.
+        Extract airport codes from text. Return JSON with source_airport and destination_airport.
         Look for IATA codes (3 letters) or city names. Return null if not found.
         """
 
@@ -197,6 +197,81 @@ class ParameterMapper:
 
             return json.loads(content)
 
-        except Exception as e:
-            logger.error(f"Airport extraction failed: {e}")
+        except Exception:
+            logger.exception("Airport extraction failed")
             return {"source_airport": None, "destination_airport": None}
+
+    def map_positional_args(self, tool_name: str, args: tuple, func) -> dict[str, Any]:
+        """Map positional arguments from ReAct agent to function parameters."""
+        try:
+            expected_params = self.get_function_parameters(func)
+
+            # Map positional args to expected parameter names
+            mapped = {}
+
+            if tool_name == "lookup_flight_info":
+                # Expects source_airport, destination_airport
+                if len(args) >= 2:
+                    mapped["source_airport"] = args[0]
+                    mapped["destination_airport"] = args[1]
+                elif len(args) == 1:
+                    # Try to extract both from single string
+                    airports = self.extract_airports_from_text(args[0])
+                    mapped.update(airports)
+
+            elif tool_name == "save_flight_booking":
+                # Map based on position and add defaults
+                if len(args) >= 2:
+                    mapped["source_airport"] = args[0]
+                    mapped["destination_airport"] = args[1]
+                if len(args) >= 3:
+                    mapped["departure_date"] = args[2]
+
+                # Add defaults for missing parameters
+                mapped = self._add_tool_defaults(tool_name, mapped)
+
+            elif tool_name == "search_flight_policies":
+                # Single query parameter
+                if len(args) >= 1:
+                    mapped["query"] = " ".join(args)
+
+            # Filter to only valid parameters
+            final_mapped = {k: v for k, v in mapped.items() if k in expected_params}
+            return final_mapped
+
+        except Exception:
+            logger.exception("Error mapping positional args for %s", tool_name)
+            return {}
+
+    def map_string_input(self, tool_name: str, input_str: str, func) -> dict[str, Any]:
+        """Map single string input to function parameters."""
+        try:
+            expected_params = self.get_function_parameters(func)
+            mapped = {}
+
+            if tool_name == "lookup_flight_info":
+                # Try to extract airports from string
+                airports = self.extract_airports_from_text(input_str)
+                mapped.update(airports)
+
+            elif tool_name == "save_flight_booking":
+                # Try to extract flight info and add defaults
+                airports = self.extract_airports_from_text(input_str)
+                mapped.update(airports)
+                mapped = self._add_tool_defaults(tool_name, mapped)
+
+            elif tool_name == "search_flight_policies":
+                # Use string as query
+                mapped["query"] = input_str
+
+            elif tool_name == "retrieve_flight_bookings":
+                # No parameters needed for single user system
+                pass
+
+            # Filter to only valid parameters
+            final_mapped = {k: v for k, v in mapped.items() if k in expected_params}
+            return final_mapped
+
+        except Exception:
+            logger.exception("Error mapping string input for %s", tool_name)
+            return {}

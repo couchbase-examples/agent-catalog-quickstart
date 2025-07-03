@@ -29,11 +29,12 @@ from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from langchain_openai import OpenAIEmbeddings
+
 from parameter_mapper import ParameterMapper
 
-# Setup logging
+# Setup logging with debug level for better troubleshooting
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -273,31 +274,105 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         def create_tool_wrapper(func, tool_name):
                             def wrapper(*args, **kwargs):
                                 try:
-                                    # Handle case where LangChain passes a single string argument
-                                    if len(args) == 1 and isinstance(args[0], str) and not kwargs:
+                                    logger.debug(
+                                        f"Tool {tool_name} called with args: {args}, kwargs: {kwargs}"
+                                    )
+
+                                    # Case 1: Handle ReAct agent format with multiple positional args
+                                    if len(args) > 1:
+                                        # ReAct agent passes multiple string arguments like ("SFO", "LAX")
+                                        mapped_args = self.parameter_mapper.map_positional_args(
+                                            tool_name, args, func
+                                        )
+                                        return func(**mapped_args)
+
+                                    # Case 2: Handle single string argument (could be JSON or plain string)
+                                    elif len(args) == 1 and isinstance(args[0], str) and not kwargs:
+                                        input_str = args[0].strip()
+
+                                        # Handle empty string or "None" for tools that take no args
+                                        if not input_str or input_str.lower() in [
+                                            "none",
+                                            "null",
+                                            "",
+                                        ]:
+                                            if tool_name == "retrieve_flight_bookings":
+                                                return func()  # Call with no arguments
+                                            else:
+                                                # For other tools, try with empty dict
+                                                mapped_args = (
+                                                    self.parameter_mapper.map_parameters_smart(
+                                                        tool_name, {}, func
+                                                    )
+                                                )
+                                                return func(**mapped_args)
+
+                                        # Try to parse as JSON first
                                         try:
                                             import json
 
-                                            # Try to parse as JSON
-                                            parsed_args = json.loads(args[0])
+                                            parsed_args = json.loads(input_str)
 
                                             if isinstance(parsed_args, dict):
-                                                # Use intelligent parameter mapping instead of hardcoded if-else
                                                 mapped_args = (
                                                     self.parameter_mapper.map_parameters_smart(
                                                         tool_name, parsed_args, func
                                                     )
                                                 )
                                                 return func(**mapped_args)
-                                            return func(args[0])
                                         except (json.JSONDecodeError, TypeError):
-                                            # If not JSON, pass as string
-                                            return func(args[0])
-                                    else:
-                                        # Normal function call
-                                        return func(*args, **kwargs)
+                                            pass  # Not JSON, continue to other parsing methods
+
+                                        # Handle comma-separated format like "SFO", "LAX"
+                                        if "," in input_str and '"' in input_str:
+                                            try:
+                                                # Parse comma-separated quoted strings
+                                                import ast
+
+                                                # Convert string like '"SFO", "LAX"' to tuple
+                                                formatted_str = f"({input_str})"
+                                                parsed_tuple = ast.literal_eval(formatted_str)
+                                                if isinstance(parsed_tuple, tuple):
+                                                    mapped_args = (
+                                                        self.parameter_mapper.map_positional_args(
+                                                            tool_name, parsed_tuple, func
+                                                        )
+                                                    )
+                                                    return func(**mapped_args)
+                                            except (ValueError, SyntaxError):
+                                                pass
+
+                                        # Fallback: treat as single parameter for search tools
+                                        mapped_args = self.parameter_mapper.map_string_input(
+                                            tool_name, input_str, func
+                                        )
+                                        return func(**mapped_args)
+
+                                    # Case 3: Normal function call with kwargs
+                                    elif kwargs:
+                                        mapped_args = self.parameter_mapper.map_parameters_smart(
+                                            tool_name, kwargs, func
+                                        )
+                                        return func(**mapped_args)
+
+                                    # Case 4: No arguments - for tools like retrieve_flight_bookings
+                                    elif len(args) == 0:
+                                        if tool_name == "retrieve_flight_bookings":
+                                            return func()
+                                        else:
+                                            mapped_args = (
+                                                self.parameter_mapper.map_parameters_smart(
+                                                    tool_name, {}, func
+                                                )
+                                            )
+                                            return func(**mapped_args)
+
+                                    # Default fallback
+                                    return func(*args, **kwargs)
+
                                 except Exception as e:
                                     logger.error(f"Tool {tool_name} execution error: {e}")
+                                    logger.debug(f"Failed with args: {args}, kwargs: {kwargs}")
                                     return f"Error executing {tool_name}: {e!s}"
 
                             return wrapper
