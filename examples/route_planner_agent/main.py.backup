@@ -52,29 +52,27 @@ class RouteDataLoader:
         try:
             # Import the route data
             sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-            from data.route_data import get_travel_knowledge_base
+            from data.route_data import ROUTE_DATA
             
-            travel_data = get_travel_knowledge_base()
             route_texts = []
-            
-            for item in travel_data:
-                # Create a comprehensive text description for each route/POI
-                text = f"{item['title']}. {item['content']}"
+            for route in ROUTE_DATA:
+                # Create a comprehensive text description for each route
+                text = f"Route from {route['start_location']} to {route['end_location']}. "
+                text += f"Distance: {route['distance_km']} km, Duration: {route['duration_hours']} hours. "
+                text += f"Transportation: {route['transportation_mode']}. "
+                text += f"Description: {route['description']} "
                 
-                # Add metadata information
-                metadata = item.get('metadata', {})
-                if metadata.get('distance'):
-                    text += f" Distance: {metadata['distance']}."
-                if metadata.get('duration'):
-                    text += f" Duration: {metadata['duration']}."
-                if metadata.get('cities'):
-                    text += f" Cities: {', '.join(metadata['cities'])}."
-                if metadata.get('transport_mode'):
-                    text += f" Transportation: {metadata['transport_mode']}."
-                if metadata.get('difficulty'):
-                    text += f" Difficulty: {metadata['difficulty']}."
-                if metadata.get('region'):
-                    text += f" Region: {metadata['region']}."
+                if route.get('scenic_highlights'):
+                    text += f"Scenic highlights: {', '.join(route['scenic_highlights'])}. "
+                
+                if route.get('points_of_interest'):
+                    text += f"Points of interest: {', '.join(route['points_of_interest'])}. "
+                
+                if route.get('difficulty_level'):
+                    text += f"Difficulty: {route['difficulty_level']}. "
+                
+                if route.get('best_season'):
+                    text += f"Best season: {route['best_season']}. "
                 
                 route_texts.append(text.strip())
             
@@ -284,19 +282,14 @@ class RouteplannerAgent:
                 logger.warning("No route data loaded")
                 return
             
-            # Check if data already exists by trying to query
+            # Check if data already exists
             try:
                 # Try a simple search to see if data exists
-                from llama_index.core.vector_stores import VectorStoreQuery
-                embed_model = Settings.embed_model
-                query_embedding = embed_model.get_query_embedding("route")
-                
-                query_obj = VectorStoreQuery(
-                    query_embedding=query_embedding,
+                search_results = self.vector_store.query(
+                    query_str="route",
                     similarity_top_k=1
                 )
-                search_results = self.vector_store.query(query_obj)
-                if search_results and len(search_results.nodes) > 0:
+                if search_results and len(search_results) > 0:
                     logger.info("Route data already exists in vector store")
                     return
             except Exception:
@@ -330,26 +323,19 @@ class RouteplannerAgent:
             if not self.vector_store:
                 return "Vector store not initialized"
             
-            from llama_index.core.vector_stores import VectorStoreQuery
-            
-            # Generate query embedding
-            embed_model = Settings.embed_model
-            query_embedding = embed_model.get_query_embedding(query)
-            
-            query_obj = VectorStoreQuery(
-                query_embedding=query_embedding,
+            search_results = self.vector_store.query(
+                query_str=query,
                 similarity_top_k=3
             )
-            search_results = self.vector_store.query(query_obj)
             
-            if not search_results or not search_results.nodes:
+            if not search_results:
                 return "No routes found matching your query"
             
-            response = f"Found {len(search_results.nodes)} relevant routes:\n\n"
-            for i, node in enumerate(search_results.nodes, 1):
-                response += f"{i}. {node.text}\n"
-                if hasattr(node, 'score'):
-                    response += f"   (Relevance score: {node.score:.3f})\n"
+            response = f"Found {len(search_results)} relevant routes:\n\n"
+            for i, result in enumerate(search_results, 1):
+                response += f"{i}. {result.text}\n"
+                if hasattr(result, 'score'):
+                    response += f"   (Relevance score: {result.score:.3f})\n"
                 response += "\n"
             
             return response
