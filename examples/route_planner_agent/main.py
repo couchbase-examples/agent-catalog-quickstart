@@ -220,55 +220,62 @@ class CouchbaseSetup:
 class RouteplannerAgent:
     """Route planner agent using Agent Catalog tools and Couchbase vector store."""
     
-    def __init__(self):
+    def __init__(self, span: agentc.Span):
         """Initialize the route planner agent."""
         self.catalog = None
         self.vector_store = None
         self.couchbase_setup = None
         self.data_loader = None
+        self.application_span = span
         self.setup()
     
     def setup(self):
         """Setup the route planner agent."""
         try:
-            # Setup environment
-            self.couchbase_setup = CouchbaseSetup()
-            self.couchbase_setup.setup_environment()
+            with self.application_span.new("Environment Setup"):
+                # Setup environment
+                self.couchbase_setup = CouchbaseSetup()
+                self.couchbase_setup.setup_environment()
             
-            # Setup Couchbase
-            cluster = self.couchbase_setup.setup_couchbase_connection()
-            collection = self.couchbase_setup.setup_bucket_scope_collection()
-            self.couchbase_setup.setup_vector_search_index()
+            with self.application_span.new("Couchbase Connection"):
+                # Setup Couchbase
+                cluster = self.couchbase_setup.setup_couchbase_connection()
+                collection = self.couchbase_setup.setup_bucket_scope_collection()
+                self.couchbase_setup.setup_vector_search_index()
             
-            # Setup LLM and embeddings with OpenAI
-            Settings.llm = OpenAI(
-                api_key=os.environ["OPENAI_API_KEY"],
-                model="gpt-4o",
-                temperature=0.1
-            )
+            with self.application_span.new("LLM and Embeddings Setup"):
+                # Setup LLM and embeddings with OpenAI
+                Settings.llm = OpenAI(
+                    api_key=os.environ["OPENAI_API_KEY"],
+                    model="gpt-4o",
+                    temperature=0.1
+                )
+                
+                embed_model = OpenAIEmbedding(
+                    api_key=os.environ["OPENAI_API_KEY"],
+                    model="text-embedding-3-small"
+                )
+                Settings.embed_model = embed_model
             
-            embed_model = OpenAIEmbedding(
-                api_key=os.environ["OPENAI_API_KEY"],
-                model="text-embedding-3-small"
-            )
-            Settings.embed_model = embed_model
+            with self.application_span.new("Vector Store Setup"):
+                # Setup vector store
+                self.vector_store = CouchbaseSearchVectorStore(
+                    cluster=cluster,
+                    bucket_name=os.environ["CB_BUCKET_NAME"],
+                    scope_name=os.environ["SCOPE_NAME"],
+                    collection_name=os.environ["COLLECTION_NAME"],
+                    embedding_key="embedding",
+                    index_name=os.environ["INDEX_NAME"],
+                )
             
-            # Setup vector store
-            self.vector_store = CouchbaseSearchVectorStore(
-                cluster=cluster,
-                bucket_name=os.environ["CB_BUCKET_NAME"],
-                scope_name=os.environ["SCOPE_NAME"],
-                collection_name=os.environ["COLLECTION_NAME"],
-                embedding_key="embedding",
-                index_name=os.environ["INDEX_NAME"],
-            )
+            with self.application_span.new("Data Ingestion"):
+                # Load and ingest route data
+                self.data_loader = RouteDataLoader()
+                self.ingest_route_data()
             
-            # Load and ingest route data
-            self.data_loader = RouteDataLoader()
-            self.ingest_route_data()
-            
-            # Setup Agent Catalog
-            self.catalog = agentc.Catalog()
+            with self.application_span.new("Agent Catalog Setup"):
+                # Setup Agent Catalog
+                self.catalog = agentc.Catalog()
             logger.info("Route planner setup complete")
             
         except Exception as e:
@@ -433,7 +440,9 @@ def run_interactive_demo():
     logger.info("=" * 50)
     
     try:
-        planner = RouteplannerAgent()
+        catalog = agentc.Catalog()
+        application_span = catalog.Span(name="Route Planner Agent")
+        planner = RouteplannerAgent(span=application_span)
         logger.info("Route planner initialized successfully!")
         
         logger.info(planner.list_available_tools())
@@ -446,37 +455,42 @@ def run_interactive_demo():
         logger.info("Try asking: 'plan scenic route in California' or 'distance San Francisco to Los Angeles'")
         logger.info("-" * 50)
         
-        while True:
-            user_input = input("\nEnter your request: ").strip()
-            
-            if user_input.lower() in ["quit", "exit", "q"]:
-                logger.info("Thanks for using the Route Planner!")
-                break
-            
-            if user_input.lower() == "tools":
-                logger.info(planner.list_available_tools())
-                continue
-            
-            if user_input.lower().startswith("plan "):
-                query = user_input[5:]  # Remove 'plan ' prefix
-                result = planner.plan_route(query)
-                logger.info(f"Route Planning Results:\n{result}")
-            
-            elif " to " in user_input.lower() and any(word in user_input.lower() for word in ["distance", "from"]):
-                # Parse distance query
-                parts = user_input.lower().replace("distance", "").replace("from", "").strip().split(" to ")
-                if len(parts) == 2:
-                    origin = parts[0].strip()
-                    destination = parts[1].strip()
-                    result = planner.calculate_distance(origin, destination)
-                    logger.info(f"Distance Calculation Results:\n{result}")
-                else:
-                    logger.info("Please use format: 'distance <origin> to <destination>'")
-            
-            else:
-                # Default to route planning
-                result = planner.plan_route(user_input)
-                logger.info(f"Route Planning Results:\n{result}")
+        with application_span.new("Interactive Demo") as span:
+            while True:
+                user_input = input("\nEnter your request: ").strip()
+                
+                if user_input.lower() in ["quit", "exit", "q"]:
+                    logger.info("Thanks for using the Route Planner!")
+                    break
+                
+                with span.new(f"Request: {user_input}") as request_span:
+                    if user_input.lower() == "tools":
+                        logger.info(planner.list_available_tools())
+                        continue
+                    
+                    if user_input.lower().startswith("plan "):
+                        query = user_input[5:]  # Remove 'plan ' prefix
+                        result = planner.plan_route(query)
+                        request_span["result"] = result
+                        logger.info(f"Route Planning Results:\n{result}")
+                    
+                    elif " to " in user_input.lower() and any(word in user_input.lower() for word in ["distance", "from"]):
+                        # Parse distance query
+                        parts = user_input.lower().replace("distance", "").replace("from", "").strip().split(" to ")
+                        if len(parts) == 2:
+                            origin = parts[0].strip()
+                            destination = parts[1].strip()
+                            result = planner.calculate_distance(origin, destination)
+                            request_span["result"] = result
+                            logger.info(f"Distance Calculation Results:\n{result}")
+                        else:
+                            logger.info("Please use format: 'distance <origin> to <destination>'")
+                    
+                    else:
+                        # Default to route planning
+                        result = planner.plan_route(user_input)
+                        request_span["result"] = result
+                        logger.info(f"Route Planning Results:\n{result}")
                 
     except Exception as e:
         logger.error(f"Error in interactive demo: {e}")
@@ -488,17 +502,23 @@ def run_test():
     logger.info("=" * 30)
     
     try:
-        planner = RouteplannerAgent()
+        catalog = agentc.Catalog()
+        application_span = catalog.Span(name="Route Planner Agent Test")
+        planner = RouteplannerAgent(span=application_span)
         
-        # Test distance calculation
-        logger.info("Testing distance calculation...")
-        result = planner.calculate_distance("San Francisco", "Los Angeles")
-        logger.info(f"Distance Test Result: {result}")
+        with application_span.new("Distance Calculation Test") as span:
+            # Test distance calculation
+            logger.info("Testing distance calculation...")
+            result = planner.calculate_distance("San Francisco", "Los Angeles")
+            span["result"] = result
+            logger.info(f"Distance Test Result: {result}")
         
-        # Test route planning
-        logger.info("Testing route planning...")
-        result = planner.plan_route("scenic route in California")
-        logger.info(f"Route Planning Test Result: {result}")
+        with application_span.new("Route Planning Test") as span:
+            # Test route planning
+            logger.info("Testing route planning...")
+            result = planner.plan_route("scenic route in California")
+            span["result"] = result
+            logger.info(f"Route Planning Test Result: {result}")
         
         logger.info("Test completed successfully!")
         

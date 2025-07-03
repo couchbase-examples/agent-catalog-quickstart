@@ -494,31 +494,8 @@ def run_flight_search_demo():
     logger.info("=" * 50)
 
     try:
-        # Setup environment
+        # Setup environment first
         setup_environment()
-
-        # Setup Couchbase infrastructure
-        cluster = setup_couchbase_connection()
-
-        setup_collection(
-            cluster,
-            os.environ["CB_BUCKET"],
-            os.environ["SCOPE_NAME"],
-            os.environ["COLLECTION_NAME"],
-        )
-
-        try:
-            with open("agentcatalog_index.json") as file:
-                index_definition = json.load(file)
-            logger.info("Loaded vector search index definition from agentcatalog_index.json")
-        except Exception as e:
-            logger.warning(f"Error loading index definition: {e!s}")
-            logger.info("Continuing without vector search index...")
-
-        if "index_definition" in locals():
-            setup_vector_search_index(cluster, index_definition)
-
-        setup_vector_store(cluster)
 
         # Initialize Agent Catalog
         catalog = agentc.Catalog(
@@ -529,43 +506,76 @@ def run_flight_search_demo():
         )
         application_span = catalog.Span(name="Flight Search Agent")
 
-        # Create the flight search graph
-        flight_graph = FlightSearchGraph(catalog=catalog, span=application_span)
+        with application_span.new("Couchbase Connection"):
+            # Setup Couchbase infrastructure
+            cluster = setup_couchbase_connection()
 
-        # Compile the graph
-        compiled_graph = flight_graph.compile()
+        with application_span.new("Couchbase Collection Setup"):
+            setup_collection(
+                cluster,
+                os.environ["CB_BUCKET"],
+                os.environ["SCOPE_NAME"],
+                os.environ["COLLECTION_NAME"],
+            )
+
+        with application_span.new("Vector Index Setup"):
+            try:
+                with open("agentcatalog_index.json") as file:
+                    index_definition = json.load(file)
+                logger.info("Loaded vector search index definition from agentcatalog_index.json")
+            except Exception as e:
+                logger.warning(f"Error loading index definition: {e!s}")
+                logger.info("Continuing without vector search index...")
+
+            if "index_definition" in locals():
+                setup_vector_search_index(cluster, index_definition)
+
+        with application_span.new("Vector Store Setup"):
+            setup_vector_store(cluster)
+
+        with application_span.new("Agent Graph Creation"):
+            # Create the flight search graph
+            flight_graph = FlightSearchGraph(catalog=catalog, span=application_span)
+            # Compile the graph
+            compiled_graph = flight_graph.compile()
 
         logger.info("Agent Catalog integration successful")
 
         # Interactive flight search loop
-        while True:
-            logger.info("─" * 40)
-            query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
+        with application_span.new("Query Execution") as span:
+            while True:
+                logger.info("─" * 40)
+                query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
 
-            if query.lower() in ["quit", "exit", "q"]:
-                logger.info("Thanks for using Flight Search Agent!")
-                break
+                if query.lower() in ["quit", "exit", "q"]:
+                    logger.info("Thanks for using Flight Search Agent!")
+                    break
 
-            if not query:
-                continue
+                if not query:
+                    continue
 
-            try:
-                logger.info(f"Flight Query: {query}")
+                with span.new(f"Query: {query}") as query_span:
+                    try:
+                        logger.info(f"Flight Query: {query}")
+                        query_span["query"] = query
 
-                # Build starting state - single user system
-                state = FlightSearchGraph.build_starting_state(query=query)
+                        # Build starting state - single user system
+                        state = FlightSearchGraph.build_starting_state(query=query)
 
-                # Run the flight search
-                result = compiled_graph.invoke(state)
+                        # Run the flight search
+                        result = compiled_graph.invoke(state)
+                        query_span["result"] = result
 
-                # Display results summary
-                if result.get("search_results"):
-                    logger.info(f"Found {len(result['search_results'])} flight options")
 
-                logger.info(f"Search completed: {result.get('resolved', False)}")
+                        # Display results summary
+                        if result.get("search_results"):
+                            logger.info(f"Found {len(result['search_results'])} flight options")
 
-            except Exception as e:
-                logger.error(f"Search error: {e}")
+                        logger.info(f"Search completed: {result.get('resolved', False)}")
+
+                    except Exception as e:
+                        logger.error(f"Search error: {e}")
+                        query_span["error"] = str(e)
 
     except Exception as e:
         logger.error(f"Initialization error: {e}")

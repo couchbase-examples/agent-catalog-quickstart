@@ -210,63 +210,70 @@ def setup_vector_store(cluster):
 
 def main():
     try:
-        setup_environment()
-        
         # Initialize Agent Catalog
         catalog = agentc.Catalog()
         application_span = catalog.Span(name="Hotel Search Agent")
+
+        with application_span.new("Environment Setup"):
+            setup_environment()
         
-        # Setup Couchbase infrastructure
-        cluster = setup_couchbase_connection()
+        with application_span.new("Couchbase Connection"):
+            cluster = setup_couchbase_connection()
         
-        setup_collection(
-            cluster, 
-            os.environ['CB_BUCKET_NAME'], 
-            os.environ['SCOPE_NAME'], 
-            os.environ['COLLECTION_NAME']
-        )
-        
-        try:
-            with open('agentcatalog_index.json', 'r') as file:
-                index_definition = json.load(file)
-            print("Loaded vector search index definition from agentcatalog_index.json")
-        except Exception as e:
-            raise ValueError(f"Error loading index definition: {str(e)}")
-        
-        setup_vector_search_index(cluster, index_definition)
-        
-        setup_vector_store(cluster)
-        
-        # Setup LLM with Agent Catalog callback
-        llm = ChatOpenAI(
-            api_key=os.environ['OPENAI_API_KEY'],
-            model="gpt-4o",
-            temperature=0,
-            callbacks=[agentc_langchain.chat.Callback(span=application_span)]
-        )
-        
-        # Load tools from Agent Catalog and convert to LangChain tools
-        tool_search = catalog.find("tool", name="search_vector_database")
-        tool_details = catalog.find("tool", name="get_hotel_details")
-        
-        from langchain_core.tools import Tool
-        tools = [
-            Tool(
-                name=tool_search.meta.name,
-                description=tool_search.meta.description,
-                func=tool_search.func
-            ),
-            Tool(
-                name=tool_details.meta.name, 
-                description=tool_details.meta.description,
-                func=tool_details.func
+        with application_span.new("Couchbase Collection Setup"):
+            setup_collection(
+                cluster, 
+                os.environ['CB_BUCKET_NAME'], 
+                os.environ['SCOPE_NAME'], 
+                os.environ['COLLECTION_NAME']
             )
-        ]
         
-        # Create a simple ReAct agent using LangChain
-        react_prompt = pull("hwchase17/react")
-        agent = create_react_agent(llm, tools, react_prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+        with application_span.new("Vector Index Setup"):
+            try:
+                with open('agentcatalog_index.json', 'r') as file:
+                    index_definition = json.load(file)
+                print("Loaded vector search index definition from agentcatalog_index.json")
+            except Exception as e:
+                raise ValueError(f"Error loading index definition: {str(e)}")
+            
+            setup_vector_search_index(cluster, index_definition)
+        
+        with application_span.new("Vector Store Setup"):
+            setup_vector_store(cluster)
+        
+        with application_span.new("LLM Setup"):
+            # Setup LLM with Agent Catalog callback
+            llm = ChatOpenAI(
+                api_key=os.environ['OPENAI_API_KEY'],
+                model="gpt-4o",
+                temperature=0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)]
+            )
+        
+        with application_span.new("Tool Loading"):
+            # Load tools from Agent Catalog and convert to LangChain tools
+            tool_search = catalog.find("tool", name="search_vector_database")
+            tool_details = catalog.find("tool", name="get_hotel_details")
+            
+            from langchain_core.tools import Tool
+            tools = [
+                Tool(
+                    name=tool_search.meta.name,
+                    description=tool_search.meta.description,
+                    func=tool_search.func
+                ),
+                Tool(
+                    name=tool_details.meta.name, 
+                    description=tool_details.meta.description,
+                    func=tool_details.func
+                )
+            ]
+        
+        with application_span.new("Agent Creation"):
+            # Create a simple ReAct agent using LangChain
+            react_prompt = pull("hwchase17/react")
+            agent = create_react_agent(llm, tools, react_prompt)
+            agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
         
         # Test the agent with sample queries
         print("\nHotel Search Agent is ready!")
@@ -278,15 +285,19 @@ def main():
             "Get details about Ocean Breeze Resort"
         ]
         
-        for query in test_queries:
-            print(f"\n🔍 Query: {query}")
-            try:
-                response = agent_executor.invoke({"input": query})
-                print(f"✅ Response: {response['output']}")
-                print("-" * 80)
-            except Exception as e:
-                print(f"❌ Error: {e}")
-                print("-" * 80)
+        with application_span.new("Query Execution") as span:
+            for query in test_queries:
+                with span.new(f"Query: {query}") as query_span:
+                    print(f"\n🔍 Query: {query}")
+                    try:
+                        response = agent_executor.invoke({"input": query})
+                        query_span["response"] = response['output']
+                        print(f"✅ Response: {response['output']}")
+                        print("-" * 80)
+                    except Exception as e:
+                        query_span["error"] = str(e)
+                        print(f"❌ Error: {e}")
+                        print("-" * 80)
                 
     except Exception as e:
         print(f"Application error: {str(e)}")
