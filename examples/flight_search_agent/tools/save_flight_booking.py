@@ -76,7 +76,6 @@ def save_flight_booking(
     source_airport: str,
     destination_airport: str,
     departure_date: str,
-    customer_id: str = "DEMO_USER",
     return_date: str = None,
     passengers: int = 1,
     flight_class: str = "economy",
@@ -84,6 +83,7 @@ def save_flight_booking(
     """
     Save a flight booking to Couchbase database.
     Handles flight reservations with validation, pricing, and booking confirmation.
+    Single user system - no customer ID required.
     """
     try:
         # Validate required fields
@@ -108,9 +108,9 @@ def save_flight_booking(
         except ValueError:
             return "Error: Invalid date format. Please use YYYY-MM-DD format or 'tomorrow'."
 
-        # Generate booking ID
+        # Generate booking ID for single user
         booking_id = (
-            f"FL{customer_id[:4].upper()}{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:4].upper()}"
+            f"FL{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:8].upper()}"
         )
 
         # Calculate pricing
@@ -121,7 +121,6 @@ def save_flight_booking(
         # Prepare booking data
         booking_data = {
             "booking_id": booking_id,
-            "customer_id": customer_id,
             "source_airport": source_airport.upper(),
             "destination_airport": destination_airport.upper(),
             "departure_date": departure_date,
@@ -133,10 +132,10 @@ def save_flight_booking(
             "status": "confirmed",
         }
 
-        # Setup collection name with timestamp
+        # Setup collection name - single user system
         bucket_name = os.getenv("CB_BUCKET", "vector-search-testing")
         scope_name = "agentc_bookings"
-        collection_name = f"flight_bookings_{datetime.date.today().strftime('%Y%m%d')}"
+        collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
 
         # Ensure collection exists
         _ensure_collection_exists(bucket_name, scope_name, collection_name)

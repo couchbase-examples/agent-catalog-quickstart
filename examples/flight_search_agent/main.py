@@ -29,6 +29,7 @@ from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from langchain_openai import OpenAIEmbeddings
+from parameter_mapper import ParameterMapper
 
 # Setup logging
 logging.basicConfig(
@@ -212,9 +213,8 @@ def setup_vector_store(cluster):
 
 
 class FlightSearchState(agentc_langgraph.agent.State):
-    """State for flight search conversations."""
+    """State for flight search conversations - single user system."""
 
-    customer_id: str
     query: str
     resolved: bool
     search_results: list[dict]
@@ -228,6 +228,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
+
+        # Initialize parameter mapper for intelligent parameter handling
+        self.parameter_mapper = ParameterMapper(chat_model)
 
         super().__init__(
             chat_model=chat_model,
@@ -266,7 +269,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 try:
                     tool_obj = self.catalog.find("tool", name=tool_name)
                     if tool_obj and hasattr(tool_obj, "func"):
-                        # Create a wrapper function to handle argument parsing and type issues
+                        # Create a wrapper function using intelligent parameter mapping
                         def create_tool_wrapper(func, tool_name):
                             def wrapper(*args, **kwargs):
                                 try:
@@ -279,126 +282,13 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                             parsed_args = json.loads(args[0])
 
                                             if isinstance(parsed_args, dict):
-                                                # Fix parameter names for save booking tool
-                                                if tool_name == "save_flight_booking":
-                                                    if "departure_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("departure_airport")
-                                                        )
-                                                    if "arrival_airport" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("arrival_airport")
-                                                        )
-                                                    if "from" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("from")
-                                                        )
-                                                    if "to" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("to")
-                                                        )
-                                                    if "origin" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("origin")
-                                                        )
-                                                    if "destination" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("destination")
-                                                        )
-                                                    if "origin_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("origin_airport")
-                                                        )
-                                                    
-                                                    # Set required default values for missing fields
-                                                    if "source_airport" not in parsed_args:
-                                                        # Try to extract from flight string
-                                                        flight_info = parsed_args.get("flight", "")
-                                                        if "from SFO" in flight_info or "SFO to" in flight_info:
-                                                            parsed_args["source_airport"] = "SFO"
-                                                    
-                                                    if "destination_airport" not in parsed_args:
-                                                        # Try to extract from flight string
-                                                        flight_info = parsed_args.get("flight", "")
-                                                        if "to LAX" in flight_info or "LAX using" in flight_info:
-                                                            parsed_args["destination_airport"] = "LAX"
-                                                    
-                                                    # Provide default departure_date if missing
-                                                    if "departure_date" not in parsed_args:
-                                                        parsed_args["departure_date"] = "tomorrow"
-                                                    
-                                                    # Remove extra parameters that aren't in function signature
-                                                    valid_params = {
-                                                        "source_airport",
-                                                        "destination_airport",
-                                                        "departure_date",
-                                                        "customer_id",
-                                                        "return_date",
-                                                        "passengers",
-                                                        "flight_class",
-                                                    }
-                                                    parsed_args = {
-                                                        k: v
-                                                        for k, v in parsed_args.items()
-                                                        if k in valid_params
-                                                    }
-
-                                                # Fix parameter names for retrieve bookings tool
-                                                elif tool_name == "retrieve_flight_bookings":
-                                                    # Provide default customer_id if missing
-                                                    if "customer_id" not in parsed_args:
-                                                        parsed_args["customer_id"] = "DEMO_USER"
-                                                    # Only customer_id is needed for retrieval
-                                                    valid_params = {"customer_id"}
-                                                    parsed_args = {
-                                                        k: v
-                                                        for k, v in parsed_args.items()
-                                                        if k in valid_params
-                                                    }
-
-                                                # Fix parameter names for lookup tool
-                                                elif tool_name == "lookup_flight_info":
-                                                    # Handle all possible parameter name variations
-                                                    if "departure_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("departure_airport")
-                                                        )
-                                                    if "arrival_airport" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("arrival_airport")
-                                                        )
-                                                    if "from" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("from")
-                                                        )
-                                                    if "to" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("to")
-                                                        )
-                                                    if "origin" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("origin")
-                                                        )
-                                                    if "destination" in parsed_args:
-                                                        parsed_args["destination_airport"] = (
-                                                            parsed_args.pop("destination")
-                                                        )
-                                                    if "origin_airport" in parsed_args:
-                                                        parsed_args["source_airport"] = (
-                                                            parsed_args.pop("origin_airport")
-                                                        )
-                                                    # Remove parameters not accepted by the tool
-                                                    valid_params = {
-                                                        "source_airport",
-                                                        "destination_airport",
-                                                    }
-                                                    parsed_args = {
-                                                        k: v
-                                                        for k, v in parsed_args.items()
-                                                        if k in valid_params
-                                                    }
-
-                                                return func(**parsed_args)
+                                                # Use intelligent parameter mapping instead of hardcoded if-else
+                                                mapped_args = (
+                                                    self.parameter_mapper.map_parameters_smart(
+                                                        tool_name, parsed_args, func
+                                                    )
+                                                )
+                                                return func(**mapped_args)
                                             return func(args[0])
                                         except (json.JSONDecodeError, TypeError):
                                             # If not JSON, pass as string
@@ -493,11 +383,10 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
     """Flight search conversation graph using Agent Catalog."""
 
     @staticmethod
-    def build_starting_state(customer_id: str, query: str) -> FlightSearchState:
-        """Build the initial state for the flight search."""
+    def build_starting_state(query: str) -> FlightSearchState:
+        """Build the initial state for the flight search - single user system."""
         return FlightSearchState(
             messages=[],
-            customer_id=customer_id,
             query=query,
             resolved=False,
             search_results=[],
@@ -588,8 +477,8 @@ def run_flight_search_demo():
             try:
                 logger.info(f"Flight Query: {query}")
 
-                # Build starting state
-                state = FlightSearchGraph.build_starting_state(customer_id="demo_user", query=query)
+                # Build starting state - single user system
+                state = FlightSearchGraph.build_starting_state(query=query)
 
                 # Run the flight search
                 result = compiled_graph.invoke(state)

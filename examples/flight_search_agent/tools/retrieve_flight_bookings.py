@@ -29,10 +29,10 @@ except couchbase.exceptions.CouchbaseException as e:
 
 
 @agentc.catalog.tool
-def retrieve_flight_bookings(customer_id: str = "DEMO_USER") -> str:
+def retrieve_flight_bookings() -> str:
     """
-    Retrieve all flight bookings for a customer from Couchbase database.
-    Searches across recent booking collections to find customer bookings.
+    Retrieve all flight bookings from Couchbase database.
+    Single user system - retrieves all bookings for the user.
     """
     try:
         bucket_name = os.getenv("CB_BUCKET", "vector-search-testing")
@@ -44,17 +44,16 @@ def retrieve_flight_bookings(customer_id: str = "DEMO_USER") -> str:
 
         for days_back in range(30):
             check_date = today - datetime.timedelta(days=days_back)
-            collection_name = f"flight_bookings_{check_date.strftime('%Y%m%d')}"
+            collection_name = f"user_bookings_{check_date.strftime('%Y%m%d')}"
 
             try:
-                # Try to query this collection
+                # Try to query this collection - single user system
                 query = f"""
                 SELECT VALUE booking
                 FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` booking
-                WHERE booking.customer_id = $customer_id
                 """
 
-                result = cluster.query(query, customer_id=customer_id)
+                result = cluster.query(query)
                 rows = list(result.rows())
                 all_bookings.extend(rows)
 
@@ -63,7 +62,7 @@ def retrieve_flight_bookings(customer_id: str = "DEMO_USER") -> str:
                 continue
 
         if not all_bookings:
-            return f"No bookings found for customer {customer_id}."
+            return "No bookings found."
 
         # Sort bookings by booking time (most recent first)
         all_bookings.sort(key=lambda x: x.get("booking_time", ""), reverse=True)
