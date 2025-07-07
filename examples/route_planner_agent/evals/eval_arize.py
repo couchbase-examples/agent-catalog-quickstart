@@ -29,7 +29,8 @@ import pandas as pd
 # Configuration constants
 SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
 API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
-DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")
+# Note: Developer keys are deprecated in favor of User API Keys
+# DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")  # Deprecated
 PROJECT_NAME = "route-planner-agent-evaluation"
 
 # Import the route planner agent components
@@ -44,10 +45,13 @@ try:
         EvaluationResultColumnNames,
     )
     from arize.experimental.datasets.utils.constants import GENERATIVE
-    from arize.otel import register
+    from phoenix.otel import register
     from openinference.instrumentation.langchain import LangChainInstrumentor
     from openinference.instrumentation.openai import OpenAIInstrumentor
     from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
     from phoenix.evals import (
         QA_PROMPT_RAILS_MAP,
         QA_PROMPT_TEMPLATE,
@@ -128,24 +132,50 @@ class ArizeRoutePlannerEvaluator:
     def _setup_arize_observability(self):
         """Configure Arize observability with OpenTelemetry instrumentation."""
         try:
-            # Setup tracer provider
-            self.tracer_provider = register(
-                space_id=SPACE_ID,
-                api_key=API_KEY,
-                project_name=PROJECT_NAME,
-            )
+            # Setup tracer provider for Phoenix (local only, no remote collector)
+            # Use simple local tracer to avoid connection issues
+            self.tracer_provider = TracerProvider()
             
-            # Instrument LangChain, OpenAI, and LlamaIndex
-            LangChainInstrumentor().instrument(tracer_provider=self.tracer_provider)
-            OpenAIInstrumentor().instrument(tracer_provider=self.tracer_provider)
-            LlamaIndexInstrumentor().instrument(tracer_provider=self.tracer_provider)
+            # Add console span processor for local debugging (optional)
+            console_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+            self.tracer_provider.add_span_processor(console_processor)
+            
+            # Set as global tracer provider
+            trace.set_tracer_provider(self.tracer_provider)
+            
+            print("✅ Local tracing configured successfully")
+            
+            # Instrument LangChain, OpenAI, and LlamaIndex (only if not already instrumented)
+            # Skip instrumentation if auto_instrument was used or if already done
+            instrumentors = [
+                ("LangChain", LangChainInstrumentor),
+                ("OpenAI", OpenAIInstrumentor),
+                ("LlamaIndex", LlamaIndexInstrumentor)
+            ]
+            
+            for name, instrumentor_class in instrumentors:
+                try:
+                    instrumentor = instrumentor_class()
+                    if not instrumentor.is_instrumented_by_opentelemetry:
+                        instrumentor.instrument(tracer_provider=self.tracer_provider)
+                        print(f"✅ {name} instrumented successfully")
+                    else:
+                        print(f"ℹ️ {name} already instrumented, skipping")
+                except Exception as e:
+                    print(f"⚠️ {name} instrumentation failed: {e}")
+                    continue
             
             # Initialize Arize datasets client
-            if DEVELOPER_KEY != "your-developer-key":
-                self.arize_client = ArizeDatasetsClient(
-                    developer_key=DEVELOPER_KEY,
-                    api_key=API_KEY
-                )
+            # Note: Using API_KEY for both parameters as developer keys are deprecated
+            if API_KEY != "your-api-key":
+                try:
+                    self.arize_client = ArizeDatasetsClient(
+                        developer_key=API_KEY,  # Use API key for both
+                        api_key=API_KEY
+                    )
+                except Exception as e:
+                    print(f"⚠️ Could not initialize Arize datasets client: {e}")
+                    self.arize_client = None
             
             print("✅ Arize observability configured successfully")
             
@@ -259,10 +289,16 @@ class ArizeRoutePlannerEvaluator:
             return results_df
             
         try:
+            # Prepare data for evaluation - add reference field and rename columns
+            eval_df = results_df.copy()
+            eval_df["reference"] = eval_df["input"]  # Use input as reference for route planning
+            eval_df["query"] = eval_df["input"]
+            eval_df["response"] = eval_df["output"]
+            
             # Relevance evaluation
             print("🔍 Running Arize relevance evaluation...")
             relevance_eval_df = llm_classify(
-                dataframe=results_df,
+                data=eval_df,
                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
                 model=self.evaluator_llm,
                 rails=self.relevance_rails,
@@ -274,7 +310,7 @@ class ArizeRoutePlannerEvaluator:
             # Correctness evaluation
             print("🎯 Running Arize correctness evaluation...")
             correctness_eval_df = llm_classify(
-                dataframe=results_df,
+                data=eval_df,
                 template=QA_PROMPT_TEMPLATE,
                 model=self.evaluator_llm,
                 rails=self.qa_rails,
