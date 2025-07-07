@@ -6,7 +6,7 @@ authors = [
     {name = "Agent Catalog Team"}
 ]
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
     # LlamaIndex core and integrations
@@ -39,6 +39,14 @@ dev = [
     "ruff>=0.12.1,<0.13.0",
     "ipykernel>=6.29.5,<7.0.0",
     "jupyter>=1.0.0,<2.0.0",
+]
+analysis = [
+    "arize-phoenix[evals]>=7.0.0,<8.0.0",
+    "arize-otel>=0.7.0,<1.0.0",
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
+    "openinference-instrumentation-llama-index>=2.0.0,<3.0.0",
+    "pandas>=2.0.0,<3.0.0",
 ]
 
 [tool.poetry]

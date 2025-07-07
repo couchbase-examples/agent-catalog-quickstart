@@ -1,0 +1,10 @@
+{"input": "Find hotels in New York City", "reference": "List of hotels in New York City with amenities and pricing information"}
+{"input": "I need a luxury hotel with spa services", "reference": "Luxury hotels with spa amenities, pricing, and spa service details"}
+{"input": "Budget hotels under $150 per night", "reference": "Budget-friendly hotel options under $150 with basic amenities"}
+{"input": "Hotels with swimming pool and gym", "reference": "Hotels featuring both swimming pool and gym facilities"}
+{"input": "Pet-friendly hotels in San Francisco", "reference": "Pet-friendly accommodations in San Francisco with pet policies"}
+{"input": "Business hotels with conference rooms", "reference": "Business-oriented hotels with conference and meeting facilities"}
+{"input": "Family hotels with kids activities", "reference": "Family-friendly hotels with children's activities and amenities"}
+{"input": "Hotels near LAX airport", "reference": "Airport hotels near LAX with shuttle services and amenities"}
+{"input": "Boutique hotels with unique character", "reference": "Boutique hotels with distinctive design and personalized service"}
+{"input": "Hotels with accessibility features", "reference": "Accessible hotels with disability-friendly amenities and services"}

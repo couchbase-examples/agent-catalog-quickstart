@@ -423,6 +423,7 @@ class RouteplannerAgent:
             
             tool_names = []
             for tool in tools:
+                print(tool)
                 if hasattr(tool, "meta") and hasattr(tool.meta, "name"):
                     tool_names.append(tool.meta.name)
                 else:

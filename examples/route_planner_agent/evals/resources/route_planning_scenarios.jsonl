@@ -1,0 +1,10 @@
+{"input": "Plan a route from New York to Boston", "reference": "Detailed route from New York to Boston with directions, distance, and travel time"}
+{"input": "I need directions from Los Angeles to San Francisco", "reference": "Turn-by-turn directions from LA to SF with highway information"}
+{"input": "Route from Chicago to Detroit", "reference": "Route options from Chicago to Detroit with distance and duration"}
+{"input": "How do I get from Miami to Orlando?", "reference": "Travel directions from Miami to Orlando with transportation options"}
+{"input": "Plan a road trip from Seattle to Portland to San Francisco", "reference": "Multi-stop itinerary with routes and recommendations for each leg"}
+{"input": "Compare driving vs flying from New York to Los Angeles", "reference": "Transportation comparison with costs, time, and convenience factors"}
+{"input": "Scenic route from Denver to Salt Lake City", "reference": "Scenic highway options with points of interest and beautiful views"}
+{"input": "How far is it from New York to Miami?", "reference": "Distance measurement with driving time and flight duration"}
+{"input": "Points of interest between New York and Boston", "reference": "Tourist attractions, restaurants, and landmarks along the route"}
+{"input": "Best way to travel from Boston to Washington DC", "reference": "Transportation options analysis with recommendations"}

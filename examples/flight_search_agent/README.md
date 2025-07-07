@@ -351,6 +351,69 @@ This demonstrates:
 - Policy searches with semantic matching
 - End-to-end Agent Catalog + LangGraph integration
 
+### Arize AI Evaluation
+
+This project includes comprehensive evaluation using **Arize AI** for production-grade observability and LLM monitoring:
+
+#### Setup Arize Evaluation
+
+```bash
+# Install Arize dependencies (already included in pyproject.toml)
+pip install arize-phoenix[evals] arize-otel openinference-instrumentation-langchain
+
+# Set up Arize environment variables
+export ARIZE_SPACE_ID="your-arize-space-id"
+export ARIZE_API_KEY="your-arize-api-key" 
+export ARIZE_DEVELOPER_KEY="your-arize-developer-key"
+```
+
+#### Run Arize Evaluations
+
+```bash
+# Run comprehensive Arize evaluation
+python evals/eval_short.py comprehensive
+
+# Run specific evaluation types
+python evals/eval_short.py bad_intro      # Test irrelevant queries
+python evals/eval_short.py short_threads  # Test flight search scenarios
+
+# Run unified evaluation across projects
+cd ../../
+python run_evaluations.py --project flight_search --framework arize
+```
+
+#### Arize Features
+
+- **Real-time Observability**: Monitor agent performance in production
+- **LLM-as-Judge Evaluation**: Automated relevance and correctness scoring
+- **Trace Visualization**: See complete agent workflow execution
+- **Performance Metrics**: Track latency, cost, and error rates
+- **Experiment Tracking**: Compare different agent configurations
+
+#### Evaluation Scenarios
+
+The Arize evaluation tests multiple scenarios:
+
+1. **Basic Queries**: Simple flight search requests
+2. **Complex Queries**: Multi-leg flights and specific requirements
+3. **Policy Queries**: Flight policy and guideline questions
+4. **Booking Queries**: Reservation management operations
+5. **Irrelevant Queries**: Non-flight related inputs (should be rejected)
+
+#### Generated Reports
+
+Evaluation results are saved to:
+- `evals/evaluation_report.md` - Comprehensive evaluation summary
+- Arize Dashboard - Interactive visualizations and traces
+
+#### Arize Dashboard Access
+
+After running evaluations, view results in your Arize workspace:
+- **Project Name**: `flight-search-agent-evaluation`
+- **Traces**: End-to-end request visualization
+- **Evaluations**: LLM-based scoring results
+- **Performance**: Latency and cost analysis
+
 ### Creating Custom Evaluations
 
 Create evaluation scripts in the `evals/` directory:

@@ -1,37 +1,42 @@
-[tool.poetry]
+[project]
 name = "hotel-support-agent"
 version = "0.1.0"
 description = "A hotel support agent using Couchbase."
-authors = ["Your Name <you@example.com>"]
+authors = [
+    {name = "Agent Catalog Team"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
 
+dependencies = [
+    "langchain>=0.3.0,<0.4.0",
+    "langgraph>=0.4.1,<0.5.0",
+    "couchbase>=4.0.0,<5.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "langchain-couchbase>=0.2.4,<0.3.0",
+    "langchain-openai>=0.3.13,<0.4.0",
+    "agentc @ ../../agent-catalog/libs/agentc",
+    "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
+    "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0,<8.0.0",
+    "black>=23.0.0,<24.0.0",
+    "ruff>=0.1.0,<0.2.0",
+]
+analysis = [
+    "arize-phoenix[evals]>=7.0.0,<8.0.0",
+    "arize-otel>=0.7.0,<1.0.0",
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
+    "pandas>=2.0.0,<3.0.0",
+]
+
+[tool.poetry]
 package-mode = false
-
-[tool.poetry.dependencies]
-python = "^3.12"
-langchain = "^0.3.0"
-langgraph = "^0.4.1"
-couchbase = "^4.0.0"
-pydantic = "^2.0.0"
-python-dotenv = "^1.0.0"
-langchain-couchbase = "^0.2.4"
-langchain-openai = "^0.3.13"
-
-[tool.poetry.dependencies.agentc]
-path = "../../agent-catalog/libs/agentc"
-develop = true
-
-[tool.poetry.dependencies.agentc_langchain]
-path = "../../agent-catalog/libs/agentc_integrations/langchain"
-develop = true
-
-[tool.poetry.dependencies.agentc_langgraph]
-path = "../../agent-catalog/libs/agentc_integrations/langgraph"
-develop = true
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.0.0"
-black = "^23.0.0"
-ruff = "^0.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
