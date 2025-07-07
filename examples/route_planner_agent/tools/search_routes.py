@@ -49,18 +49,10 @@ def _get_vector_store():
                 "Couchbase cluster is not connected. Please check your connection settings and credentials."
             )
 
-        # Create embedding model for Capella AI
-        import base64
-
-        capella_ai_key = base64.b64encode(
-            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-        ).decode("utf-8")
-
+        # Create embedding model using OpenAI (same as main agent)
         embed_model = OpenAIEmbedding(
-            api_key=capella_ai_key,
-            api_base=os.getenv("CAPELLA_AI_ENDPOINT"),
-            model_name="intfloat/e5-mistral-7b-instruct",
-            embed_batch_size=30,
+            api_key=os.environ["OPENAI_API_KEY"], 
+            model="text-embedding-3-small"
         )
 
         # Configure LlamaIndex to use this embedding model globally
