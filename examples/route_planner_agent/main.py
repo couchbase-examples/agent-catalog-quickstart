@@ -376,21 +376,46 @@ class RouteplannerAgent:
             if not self.catalog:
                 return "Route planner not properly initialized. Please check your configuration."
 
-            # First try to search using vector store
+            # Get relevant route information using vector search
             vector_result = self.search_routes_with_vector_store(query)
 
-            # Then try to use the search_routes tool from Agent Catalog
+            # Try to enhance with tool search results
+            tool_result = ""
             try:
                 tool_obj = self.catalog.find("tool", name="search_routes")
                 if tool_obj and hasattr(tool_obj, "func"):
                     tool_result = tool_obj.func(query=query)
-                    combined_result = f"Vector Search Results:\n{vector_result}\n\nTool Search Results:\n{tool_result}"
-                    return combined_result
-                else:
-                    return vector_result
             except Exception as e:
                 logger.warning(f"Error using search_routes tool: {e}")
-                return vector_result
+
+            # Combine the search results
+            combined_context = f"Vector Search Results:\n{vector_result}"
+            if tool_result:
+                combined_context += f"\n\nTool Search Results:\n{tool_result}"
+
+            # Use LLM to process the search results and answer the user's question
+            llm_prompt = f"""Based on the route information provided below, please answer the user's travel question directly and helpfully.
+
+User Question: {query}
+
+Available Route Information:
+{combined_context}
+
+Please provide a clear, direct answer that addresses the user's specific question. Include relevant details like distances, travel times, transportation options, and recommendations where appropriate. If you can't find specific information to answer the question, say so clearly.
+
+Answer:"""
+
+            # Get LLM response
+            try:
+                if Settings.llm:
+                    llm_response = Settings.llm.complete(llm_prompt)
+                    return str(llm_response.text).strip()
+                else:
+                    # Fallback to raw results if LLM not available
+                    return f"LLM not configured. Raw search results:\n{combined_context}"
+            except Exception as e:
+                logger.warning(f"Error getting LLM response: {e}")
+                return f"Error processing with LLM: {e}\n\nRaw search results:\n{combined_context}"
 
         except Exception as e:
             return f"Error planning route: {e!s}"

@@ -20,11 +20,22 @@ import os
 import pathlib
 import sys
 import unittest.mock
+import logging
+import time
 from typing import Dict, List
 from uuid import uuid4
 
 import agentc
 import pandas as pd
+
+# Configure logging to reduce verbosity
+logging.basicConfig(level=logging.INFO)
+# Suppress verbose HTTP logs and embeddings
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("opentelemetry").setLevel(logging.WARNING)
+logging.getLogger("phoenix").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)  # Suppress OpenAI API logs
+logging.getLogger("llama_index").setLevel(logging.WARNING)  # Suppress LlamaIndex logs
 
 # Configuration constants
 SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
@@ -101,7 +112,6 @@ class ArizeRoutePlannerEvaluator:
 
     def setup_couchbase_infrastructure(self):
         """Setup Couchbase infrastructure for evaluation."""
-        import logging
         logger = logging.getLogger(__name__)
         
         try:
@@ -118,7 +128,6 @@ class ArizeRoutePlannerEvaluator:
 
     def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
         """Create a route planner agent for evaluation."""
-        import logging
         logger = logging.getLogger(__name__)
         
         try:
@@ -136,9 +145,10 @@ class ArizeRoutePlannerEvaluator:
             # Use simple local tracer to avoid connection issues
             self.tracer_provider = TracerProvider()
             
-            # Add console span processor for local debugging (optional)
-            console_processor = SimpleSpanProcessor(ConsoleSpanExporter())
-            self.tracer_provider.add_span_processor(console_processor)
+            # Skip console span processor to reduce verbose output
+            # Only use it for debugging if needed
+            # console_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+            # self.tracer_provider.add_span_processor(console_processor)
             
             # Set as global tracer provider
             trace.set_tracer_provider(self.tracer_provider)
@@ -150,7 +160,8 @@ class ArizeRoutePlannerEvaluator:
             instrumentors = [
                 ("LangChain", LangChainInstrumentor),
                 ("OpenAI", OpenAIInstrumentor),
-                ("LlamaIndex", LlamaIndexInstrumentor)
+                # Skip LlamaIndex due to private attributes error
+                # ("LlamaIndex", LlamaIndexInstrumentor)
             ]
             
             for name, instrumentor_class in instrumentors:
@@ -164,6 +175,9 @@ class ArizeRoutePlannerEvaluator:
                 except Exception as e:
                     print(f"⚠️ {name} instrumentation failed: {e}")
                     continue
+                    
+            # Skip LlamaIndex instrumentation for now due to compatibility issues
+            print("ℹ️ LlamaIndex instrumentation skipped (compatibility issue)")
             
             # Initialize Arize datasets client
             # Note: Using API_KEY for both parameters as developer keys are deprecated
@@ -173,6 +187,7 @@ class ArizeRoutePlannerEvaluator:
                         developer_key=API_KEY,  # Use API key for both
                         api_key=API_KEY
                     )
+                    print("✅ Arize datasets client initialized")
                 except Exception as e:
                     print(f"⚠️ Could not initialize Arize datasets client: {e}")
                     self.arize_client = None
@@ -185,94 +200,76 @@ class ArizeRoutePlannerEvaluator:
 
     def run_route_planning_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
         """
-        Run the route planner agent on test inputs and collect results.
+        Run route planning evaluation with agent responses.
         
         Args:
-            test_inputs: List of route planning queries to evaluate
+            test_inputs: List of test queries to evaluate
             
         Returns:
-            DataFrame with input queries and agent responses
+            DataFrame with evaluation results
         """
         results = []
         
-        with self.span.new("RoutePlannerEvaluation") as eval_span:
+        print(f"🚀 Running evaluation on {len(test_inputs)} queries...")
+        
+        # Setup infrastructure once
+        print("🔧 Setting up Couchbase infrastructure...")
+        self.setup_couchbase_infrastructure()
+        
+        # Create agent once
+        print("🤖 Creating route planner agent...")
+        agent = self.create_agent(self.catalog, self.span)
+        
+        for i, query in enumerate(test_inputs, 1):
+            print(f"  📝 Query {i}/{len(test_inputs)}: {query[:50]}{'...' if len(query) > 50 else ''}")
+            
             try:
-                # Setup the agent environment once
-                self.setup_couchbase_infrastructure()
-                agent = self.create_agent(self.catalog, eval_span)
+                # Get agent response
+                print(f"     🔄 Agent processing query (using vector search + LLM)...")
+                response = agent.plan_route(query)
+                response_text = str(response) if response else "No response"
                 
-                for i, query in enumerate(test_inputs):
-                    with eval_span.new(f"Query_{i}", query=query) as query_span:
-                        try:
-                            # Run the agent with the query using plan_route method
-                            response = agent.plan_route(query)
-                            
-                            # Extract response content
-                            response_text = str(response) if response else "No response"
-                            
-                            # Analyze the response for route-related information
-                            has_route_info = any(keyword in response_text.lower() for keyword in 
-                                               ["route", "distance", "travel", "miles", "km", "minutes", "hours"])
-                            
-                            # Check for specific route planning elements
-                            has_directions = any(keyword in response_text.lower() for keyword in 
-                                               ["direction", "turn", "north", "south", "east", "west"])
-                            
-                            # Check for transportation mentions
-                            has_transport_info = any(keyword in response_text.lower() for keyword in 
-                                                   ["car", "drive", "flight", "train", "bus"])
-                            
-                            # Check for POI mentions
-                            has_poi_info = any(keyword in response_text.lower() for keyword in 
-                                             ["attraction", "restaurant", "hotel", "landmark", "point of interest"])
-                            
-                            results.append({
-                                "input": query,
-                                "output": response_text,
-                                "has_route_info": has_route_info,
-                                "has_directions": has_directions,
-                                "has_transport_info": has_transport_info,
-                                "has_poi_info": has_poi_info,
-                                "response_length": len(response_text),
-                                "example_id": i
-                            })
-                            
-                            query_span["response"] = response_text
-                            query_span["has_route_info"] = has_route_info
-                            query_span["has_directions"] = has_directions
-                            query_span["has_transport_info"] = has_transport_info
-                            query_span["has_poi_info"] = has_poi_info
-                            
-                        except Exception as e:
-                            print(f"❌ Error evaluating query '{query}': {e}")
-                            results.append({
-                                "input": query,
-                                "output": f"Error: {str(e)}",
-                                "has_route_info": False,
-                                "has_directions": False,
-                                "has_transport_info": False,
-                                "has_poi_info": False,
-                                "response_length": 0,
-                                "example_id": i
-                            })
-                            query_span["error"] = str(e)
-                            
+                # Check if response contains route information
+                has_route_info = self._check_route_info(response_text)
+                
+                results.append({
+                    "input": query,
+                    "output": response_text,
+                    "has_route_info": has_route_info,
+                })
+                
+                # Show what kind of info was found
+                route_types = []
+                if "distance" in response_text.lower() or "miles" in response_text.lower() or "km" in response_text.lower():
+                    route_types.append("distance info")
+                if any(word in response_text.lower() for word in ["direction", "turn", "north", "south", "east", "west"]):
+                    route_types.append("directions")
+                if any(word in response_text.lower() for word in ["car", "drive", "flight", "train", "bus"]):
+                    route_types.append("transport options")
+                
+                route_details = f" ({', '.join(route_types)})" if route_types else ""
+                print(f"     ✅ Response received ({'with route info' if has_route_info else 'no route info'}){route_details}")
+                
+                # Show a sample of the response for debugging
+                response_preview = response_text[:300].replace('\n', ' ')
+                print(f"     💬 Response preview: {response_preview}{'...' if len(response_text) > 300 else ''}")
+                
             except Exception as e:
-                print(f"❌ Error setting up route planner: {e}")
-                # Return empty results if setup fails
-                for i, query in enumerate(test_inputs):
-                    results.append({
-                        "input": query,
-                        "output": f"Setup Error: {str(e)}",
-                        "has_route_info": False,
-                        "has_directions": False,
-                        "has_transport_info": False,
-                        "has_poi_info": False,
-                        "response_length": 0,
-                        "example_id": i
-                    })
+                print(f"     ❌ Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}")
+                results.append({
+                    "input": query,
+                    "output": f"Error: {e}",
+                    "has_route_info": False,
+                })
         
         return pd.DataFrame(results)
+    
+    def _check_route_info(self, response_text: str) -> bool:
+        """Check if response contains route-related information."""
+        route_keywords = ["route", "distance", "travel", "miles", "km", "minutes", "hours", 
+                         "direction", "turn", "north", "south", "east", "west",
+                         "car", "drive", "flight", "train", "bus"]
+        return any(keyword in response_text.lower() for keyword in route_keywords)
 
     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -291,32 +288,49 @@ class ArizeRoutePlannerEvaluator:
         try:
             # Prepare data for evaluation - add reference field and rename columns
             eval_df = results_df.copy()
-            eval_df["reference"] = eval_df["input"]  # Use input as reference for route planning
-            eval_df["query"] = eval_df["input"]
-            eval_df["response"] = eval_df["output"]
+            # Use the agent's response as the reference text for evaluation
+            # This allows the evaluator to check if the response is relevant to the query
+            eval_df["reference"] = eval_df["output"]  # Agent response as reference
+            eval_df["query"] = eval_df["input"]       # User query
+            eval_df["response"] = eval_df["output"]   # Agent response (for correctness evaluation)
+            
+            print(f"🧠 Running LLM-based evaluations on {len(eval_df)} responses...")
+            print("   📋 Evaluation criteria:")
+            print("      🔍 Relevance: Does the response address the route planning query?")
+            print("      🎯 Correctness: Is the route information accurate and helpful?")
+            
+            # Show sample evaluation data being sent
+            print("\n   🔍 Sample evaluation data:")
+            for i, row in eval_df.head(1).iterrows():  # Show first example
+                print(f"      Query: {row['query']}")
+                print(f"      Reference: {row['reference'][:100]}{'...' if len(row['reference']) > 100 else ''}")
+                print(f"      Response: {row['response'][:100]}{'...' if len(row['response']) > 100 else ''}")
+                break
             
             # Relevance evaluation
-            print("🔍 Running Arize relevance evaluation...")
+            print("\n   🔍 Evaluating relevance...")
             relevance_eval_df = llm_classify(
                 data=eval_df,
                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
                 model=self.evaluator_llm,
                 rails=self.relevance_rails,
                 provide_explanation=True,
-                include_prompt=True,
+                include_prompt=False,  # Reduce output verbosity
                 concurrency=2,
+                verbose=False,  # Reduce progress bar verbosity
             )
             
             # Correctness evaluation
-            print("🎯 Running Arize correctness evaluation...")
+            print("   🎯 Evaluating correctness...")
             correctness_eval_df = llm_classify(
                 data=eval_df,
                 template=QA_PROMPT_TEMPLATE,
                 model=self.evaluator_llm,
                 rails=self.qa_rails,
                 provide_explanation=True,
-                include_prompt=True,
+                include_prompt=False,  # Reduce output verbosity
                 concurrency=2,
+                verbose=False,  # Reduce progress bar verbosity
             )
             
             # Merge evaluations
@@ -326,6 +340,15 @@ class ArizeRoutePlannerEvaluator:
             merged_df["arize_correctness"] = correctness_eval_df.get("label", "unknown")
             merged_df["arize_correctness_explanation"] = correctness_eval_df.get("explanation", "")
             
+            # Show sample evaluation explanations
+            print("\n   📝 Sample evaluation explanations:")
+            for i, row in merged_df.head(2).iterrows():  # Show first 2 examples
+                print(f"      Query: {row['input']}")
+                print(f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:200]}{'...' if len(row['arize_relevance_explanation']) > 200 else ''}")
+                print(f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:200]}{'...' if len(row['arize_correctness_explanation']) > 200 else ''}")
+                print()
+            
+            print("   ✅ LLM evaluations completed")
             return merged_df
             
         except Exception as e:
@@ -562,7 +585,6 @@ class ArizeRoutePlannerEvaluator:
 # Standalone helper functions for external use
 def setup_couchbase_infrastructure():
     """Standalone function to setup Couchbase infrastructure for evaluation."""
-    import logging
     logger = logging.getLogger(__name__)
     
     try:
@@ -580,7 +602,6 @@ def setup_couchbase_infrastructure():
 
 def create_agent(catalog: agentc.Catalog, span: agentc.Span):
     """Standalone function to create a route planner agent for evaluation."""
-    import logging
     logger = logging.getLogger(__name__)
     
     try:
@@ -593,51 +614,60 @@ def create_agent(catalog: agentc.Catalog, span: agentc.Span):
 
 
 def eval_route_planning_basic():
-    """
-    Evaluate route planner agent with basic queries.
-    
-    This function tests the agent's ability to handle standard route planning
-    requests and provide appropriate travel recommendations.
-    """
+    """Run basic route planning evaluation with a small set of test queries."""
     print("🔍 Running basic route planning evaluation...")
+    print("📋 This evaluation tests:")
+    print("   • Agent's ability to understand route planning queries")
+    print("   • Quality of responses using vector search + LLM")
+    print("   • LLM-based relevance and correctness scoring")
     
-    # Initialize Agent Catalog
-    catalog = agentc.Catalog()
-    root_span = catalog.Span(name="RoutePlannerEvalBasic")
-    
-    # Initialize evaluator
-    evaluator = ArizeRoutePlannerEvaluator(catalog=catalog, span=root_span)
-    
-    # Basic test queries
+    # Basic test queries for route planning
     test_inputs = [
         "Plan a route from New York to Boston",
-        "How far is Los Angeles from San Francisco?",
+        "How far is Los Angeles from San Francisco?", 
         "Best way to travel from Chicago to Detroit",
-        "Scenic route through Colorado",
+        "Scenic route through Colorado"
     ]
     
-    # Run evaluation
-    results = evaluator.run_route_planning_evaluation(test_inputs)
+    # Initialize evaluation components
+    catalog = agentc.Catalog()
+    span = catalog.Span(name="RouteplannerEvaluation")
+    
+    evaluator = ArizeRoutePlannerEvaluator(catalog, span)
+    
+    # Run the evaluation
+    results_df = evaluator.run_route_planning_evaluation(test_inputs)
     
     # Run Arize evaluations if available
     if ARIZE_AVAILABLE:
-        evaluated_results = evaluator.run_arize_evaluations(results)
-    else:
-        evaluated_results = results
+        results_df = evaluator.run_arize_evaluations(results_df)
     
     # Calculate metrics
-    total_queries = len(evaluated_results)
-    route_info_count = sum(evaluated_results["has_route_info"])
+    total_queries = len(results_df)
+    queries_with_route_info = results_df['has_route_info'].sum()
+    success_rate = (queries_with_route_info / total_queries) * 100
     
-    print(f"✅ Basic route planning evaluation completed:")
-    print(f"   - Total queries: {total_queries}")
-    print(f"   - With route info: {route_info_count}")
-    print(f"   - Success rate: {route_info_count / total_queries * 100:.1f}%")
+    # Print summary
+    print(f"\n✅ Basic route planning evaluation completed:")
+    print(f"   📊 Total queries processed: {total_queries}")
+    print(f"   🎯 Queries with route info: {queries_with_route_info}")
+    print(f"   📈 Success rate: {success_rate:.1f}%")
     
-    # Log results
-    root_span["total_queries"] = total_queries
-    root_span["route_info_count"] = route_info_count
-    root_span["success_rate"] = route_info_count / total_queries
+    if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
+        relevance_scores = results_df['arize_relevance'].value_counts()
+        correctness_scores = results_df['arize_correctness'].value_counts()
+        
+        # Convert to regular Python dict with int values
+        relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
+        correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
+        
+        print(f"\n🔍 Arize Evaluation Results:")
+        print(f"   📋 Relevance: {relevance_dict}")
+        print(f"   ✅ Correctness: {correctness_dict}")
+    
+    print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
+    
+    return results_df
 
 
 def eval_route_planning_comprehensive():

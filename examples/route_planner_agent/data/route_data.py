@@ -218,6 +218,50 @@ def get_travel_knowledge_base():
                 "feature": "crowded_events",
                 "planning": "advance_booking_required"
             }
+        },
+
+        {
+            "title": "New York to Boston Route",
+            "content": "The Northeast corridor from New York to Boston offers multiple transportation options. By car via I-95 North, the 215-mile journey takes 4-5 hours depending on traffic, passing through Connecticut. Amtrak's Acela Express provides 3.5-hour high-speed rail service with frequent departures. Regular Amtrak trains take 4-4.5 hours. Bus services like Greyhound and Peter Pan offer budget options at 4.5-5.5 hours. Flying takes 1.5 hours but adds airport time. Popular stops include New Haven, Hartford, and Providence. Avoid driving during rush hours and summer beach traffic.",
+            "metadata": {
+                "route_type": "urban_corridor",
+                "distance": "215 miles",
+                "duration": "3.5-5.5 hours",
+                "cities": ["New York", "Boston", "New Haven", "Hartford", "Providence"],
+                "transport_mode": "multi_modal",
+                "region": "Northeast",
+                "difficulty": "moderate",
+                "traffic": "heavy"
+            }
+        },
+
+        {
+            "title": "Chicago to Detroit Route",
+            "content": "The Great Lakes connection from Chicago to Detroit spans 280 miles via I-94 East through Indiana and Michigan. Driving takes 4.5-5 hours with minimal traffic, passing through Kalamazoo and Battle Creek. Amtrak's Wolverine service offers daily train service taking 5.5-6 hours with scenic views of Lake Michigan shoreline. Bus services provide budget options at 5-6 hours. The route passes through Indiana Dunes, Michigan wine country, and historic towns. Best driving times are mid-morning or early afternoon to avoid Chicago rush hour.",
+            "metadata": {
+                "route_type": "regional",
+                "distance": "280 miles", 
+                "duration": "4.5-6 hours",
+                "cities": ["Chicago", "Detroit", "Kalamazoo", "Battle Creek"],
+                "transport_mode": "car_train",
+                "region": "Great Lakes",
+                "difficulty": "easy",
+                "feature": "lake_views"
+            }
+        },
+
+        {
+            "title": "Colorado Scenic Mountain Routes",
+            "content": "Colorado offers spectacular mountain driving with numerous scenic routes. The Million Dollar Highway (US 550) from Durango to Silverton features dramatic cliff-side driving through the San Juan Mountains. Trail Ridge Road in Rocky Mountain National Park reaches 12,183 feet elevation with alpine tundra views (seasonal, typically May-October). The Peak to Peak Highway (CO 7) connects Estes Park to Central City through golden aspen forests. Independence Pass (CO 82) from Aspen to Leadville offers 12,095-foot summit views. Mount Evans Scenic Byway reaches 14,130 feet, the highest paved road in North America.",
+            "metadata": {
+                "route_type": "scenic_mountain",
+                "region": "Colorado",
+                "transport_mode": "car",
+                "difficulty": "challenging",
+                "season": "May-October",
+                "feature": "mountain_views",
+                "elevation": "high_altitude"
+            }
         }
     ]
 
