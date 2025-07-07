@@ -402,9 +402,23 @@ class RouteplannerAgent:
                     result = tool_obj.func(origin=origin, destination=destination)
                     return str(result)
                 else:
-                    available_tools = list(self.catalog.find_tools())
-                    tool_names = [t.meta.name if hasattr(t, "meta") else str(t) for t in available_tools]
-                    return f"calculate_distance tool not found. Available tools: {tool_names}"
+                    # Use find_tools with proper parameters to avoid None name issue
+                    try:
+                        available_tools = list(self.catalog.find_tools(query="", limit=20))
+                        tool_names = []
+                        for t in available_tools:
+                            try:
+                                if hasattr(t, "meta") and t.meta and hasattr(t.meta, "name"):
+                                    tool_names.append(t.meta.name)
+                                elif hasattr(t, "__name__"):
+                                    tool_names.append(t.__name__)
+                                else:
+                                    tool_names.append(str(t))
+                            except Exception:
+                                tool_names.append("<unknown_tool>")
+                        return f"calculate_distance tool not found. Available tools: {tool_names}"
+                    except Exception as list_error:
+                        return f"calculate_distance tool not found. Error listing tools: {list_error}"
             except Exception as e:
                 return f"Error calculating distance: {e!s}"
                 
@@ -417,21 +431,72 @@ class RouteplannerAgent:
             if not self.catalog:
                 return "Catalog not initialized"
             
-            tools = list(self.catalog.find_tools())
-            if not tools:
-                return "No tools found in catalog"
-            
-            tool_names = []
-            for tool in tools:
-                print(tool)
-                if hasattr(tool, "meta") and hasattr(tool.meta, "name"):
-                    tool_names.append(tool.meta.name)
-                else:
-                    tool_names.append(str(tool))
-            
-            return f"Available tools: {', '.join(tool_names)}"
+            # Use find_tools with empty query and reasonable limit to get all tools
+            # This avoids the None name issue that caused embedding problems
+            try:
+                tools = list(self.catalog.find_tools(query="", limit=20))
+                if not tools:
+                    return "No tools found in catalog"
+                
+                tool_names = []
+                for tool in tools:
+                    try:
+                        if hasattr(tool, "meta") and tool.meta and hasattr(tool.meta, "name"):
+                            tool_names.append(tool.meta.name)
+                        elif hasattr(tool, "__name__"):
+                            tool_names.append(tool.__name__)
+                        else:
+                            tool_names.append(str(tool))
+                    except Exception as e:
+                        tool_names.append(f"<unknown_tool: {e}>")
+                        continue
+                
+                return f"Available tools ({len(tool_names)}): {', '.join(tool_names)}"
+                
+            except Exception as e:
+                logger.error(f"Error calling find_tools: {e}")
+                
+                # Fallback: try to access tools directly from the local catalog
+                try:
+                    if hasattr(self.catalog, '_tool_provider') and hasattr(self.catalog._tool_provider, 'catalog'):
+                        tool_catalog = self.catalog._tool_provider.catalog
+                        if hasattr(tool_catalog, '_tools'):
+                            tools = tool_catalog._tools
+                            tool_names = []
+                            for tool_id, tool_data in tools.items():
+                                try:
+                                    if isinstance(tool_data, dict):
+                                        name = tool_data.get('name') or tool_data.get('meta', {}).get('name') or tool_id
+                                    else:
+                                        name = getattr(tool_data, 'name', str(tool_data))
+                                    tool_names.append(str(name))
+                                except Exception:
+                                    tool_names.append(f"<tool_{tool_id}>")
+                            
+                            if tool_names:
+                                return f"Available tools ({len(tool_names)}): {', '.join(tool_names)}"
+                
+                    # Final fallback: scan local tools directory
+                    tool_names = []
+                    import os
+                    tools_dir = os.path.join(os.path.dirname(__file__), 'tools')
+                    if os.path.exists(tools_dir):
+                        for filename in os.listdir(tools_dir):
+                            if filename.endswith('.py') and not filename.startswith('__'):
+                                tool_name = filename[:-3]  # Remove .py extension
+                                tool_names.append(tool_name)
+                    
+                    if tool_names:
+                        return f"Local tools found ({len(tool_names)}): {', '.join(tool_names)}"
+                    
+                    return f"Error accessing tools: {e}"
+                    
+                except Exception as inner_e:
+                    logger.error(f"Fallback method also failed: {inner_e}")
+                    return f"Error accessing tools: {e}"
             
         except Exception as e:
+            logger.error(f"Error listing tools: {e}")
             return f"Error listing tools: {e}"
 
 

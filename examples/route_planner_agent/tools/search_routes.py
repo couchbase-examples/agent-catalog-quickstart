@@ -19,6 +19,7 @@ from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 dotenv.load_dotenv(override=True)
 
 # Global Couchbase connection
+cluster = None
 try:
     cluster = couchbase.cluster.Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"),
@@ -30,13 +31,21 @@ try:
         ),
     )
     cluster.wait_until_ready(timedelta(seconds=5))
+    print("Successfully connected to Couchbase cluster")
 except couchbase.exceptions.CouchbaseException as e:
     print(f"Could not connect to Couchbase cluster: {e}")
+    cluster = None
+except Exception as e:
+    print(f"Unexpected error connecting to Couchbase: {e}")
+    cluster = None
 
 
 def _get_vector_store():
     """Get vector store instance for route searching."""
     try:
+        if cluster is None:
+            raise RuntimeError("Couchbase cluster is not connected. Please check your connection settings and credentials.")
+        
         # Create embedding model for Capella AI
         import base64
         capella_ai_key = base64.b64encode(
