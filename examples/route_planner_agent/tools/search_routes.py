@@ -13,6 +13,7 @@ import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
+from llama_index.core import Settings
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
@@ -59,13 +60,16 @@ def _get_vector_store():
             embed_batch_size=30
         )
 
+        # Configure LlamaIndex to use this embedding model globally
+        Settings.embed_model = embed_model
+
         vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "route-planner-bucket"),
             scope_name=os.getenv("SCOPE_NAME", "shared"),
             collection_name=os.getenv("COLLECTION_NAME", "route_data"),
             index_name=os.getenv("INDEX_NAME", "route_planner_vector_index"),
-            embedding=embed_model,
+            # Note: LlamaIndex uses Settings.embed_model, not embedding parameter
         )
         return vector_store
     except Exception as e:

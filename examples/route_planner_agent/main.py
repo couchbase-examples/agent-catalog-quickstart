@@ -258,14 +258,14 @@ class RouteplannerAgent:
                 Settings.embed_model = embed_model
             
             with self.application_span.new("Vector Store Setup"):
-                # Setup vector store
+                # Setup vector store (LlamaIndex pattern - no embedding parameter)
                 self.vector_store = CouchbaseSearchVectorStore(
                     cluster=cluster,
                     bucket_name=os.environ["CB_BUCKET_NAME"],
                     scope_name=os.environ["SCOPE_NAME"],
                     collection_name=os.environ["COLLECTION_NAME"],
-                    embedding_key="embedding",
                     index_name=os.environ["INDEX_NAME"],
+                    # Note: LlamaIndex uses Settings.embed_model globally, not embedding_key
                 )
             
             with self.application_span.new("Data Ingestion"):
