@@ -45,10 +45,13 @@ def _get_vector_store():
     """Get vector store instance for route searching."""
     try:
         if cluster is None:
-            raise RuntimeError("Couchbase cluster is not connected. Please check your connection settings and credentials.")
-        
+            raise RuntimeError(
+                "Couchbase cluster is not connected. Please check your connection settings and credentials."
+            )
+
         # Create embedding model for Capella AI
         import base64
+
         capella_ai_key = base64.b64encode(
             f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
         ).decode("utf-8")
@@ -57,7 +60,7 @@ def _get_vector_store():
             api_key=capella_ai_key,
             api_base=os.getenv("CAPELLA_AI_ENDPOINT"),
             model_name="intfloat/e5-mistral-7b-instruct",
-            embed_batch_size=30
+            embed_batch_size=30,
         )
 
         # Configure LlamaIndex to use this embedding model globally
@@ -82,7 +85,7 @@ def search_routes(
     route_type: str = None,
     region: str = None,
     transport_mode: str = None,
-    max_results: int = 5
+    max_results: int = 5,
 ) -> str:
     """
     Search for route information using semantic search.
@@ -101,10 +104,7 @@ def search_routes(
         vector_store = _get_vector_store()
 
         # Perform semantic search
-        search_results = vector_store.query(
-            query_str=query,
-            similarity_top_k=max_results
-        )
+        search_results = vector_store.query(query_str=query, similarity_top_k=max_results)
 
         if not search_results.nodes:
             return f"No routes found matching '{query}'. Try a different search term or broader criteria."
@@ -171,10 +171,7 @@ def search_routes_by_cities(origin: str, destination: str, preferences: str = ""
             search_query += f" {preferences}"
 
         # Use the main search function
-        results = search_routes(
-            query=search_query,
-            max_results=3
-        )
+        results = search_routes(query=search_query, max_results=3)
 
         # Add city-specific header
         header = f"🏙️ **Routes from {origin} to {destination}**\n"
@@ -208,10 +205,7 @@ def search_scenic_routes(region: str = "", activity: str = "") -> str:
             query += f" {region}"
 
         results = search_routes(
-            query=query,
-            route_type="scenic_drive",
-            region=region if region else None,
-            max_results=4
+            query=query, route_type="scenic_drive", region=region if region else None, max_results=4
         )
 
         header = "🌄 **Scenic Route Recommendations**\n"

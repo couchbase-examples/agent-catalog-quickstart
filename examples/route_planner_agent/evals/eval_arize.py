@@ -33,8 +33,8 @@ DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")
 PROJECT_NAME = "route-planner-agent-evaluation"
 
 # Import the route planner agent components
-sys.path.insert(0, os.path.dirname(__file__))
-from main import RouteDataLoader, setup_couchbase_infrastructure, create_agent
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from main import RouteDataLoader, CouchbaseSetup, RouteplannerAgent
 
 # Try to import Arize dependencies with fallback
 try:
@@ -95,6 +95,36 @@ class ArizeRoutePlannerEvaluator:
         else:
             print("⚠️ Arize not available - running basic evaluation only")
 
+    def setup_couchbase_infrastructure(self):
+        """Setup Couchbase infrastructure for evaluation."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            couchbase_setup = CouchbaseSetup()
+            couchbase_setup.setup_environment()
+            cluster = couchbase_setup.setup_couchbase_connection()
+            collection = couchbase_setup.setup_bucket_scope_collection()
+            couchbase_setup.setup_vector_search_index()
+            logger.info("Couchbase infrastructure setup complete for evaluation")
+            return cluster
+        except Exception as e:
+            logger.error(f"Error setting up Couchbase infrastructure: {e}")
+            raise
+
+    def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
+        """Create a route planner agent for evaluation."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            agent = RouteplannerAgent(span=span)
+            logger.info("Route planner agent created for evaluation")
+            return agent
+        except Exception as e:
+            logger.error(f"Error creating agent: {e}")
+            raise
+
     def _setup_arize_observability(self):
         """Configure Arize observability with OpenTelemetry instrumentation."""
         try:
@@ -138,14 +168,14 @@ class ArizeRoutePlannerEvaluator:
         with self.span.new("RoutePlannerEvaluation") as eval_span:
             try:
                 # Setup the agent environment once
-                setup_couchbase_infrastructure()
-                agent = create_agent(self.catalog, eval_span)
+                self.setup_couchbase_infrastructure()
+                agent = self.create_agent(self.catalog, eval_span)
                 
                 for i, query in enumerate(test_inputs):
                     with eval_span.new(f"Query_{i}", query=query) as query_span:
                         try:
-                            # Run the agent with the query
-                            response = agent.chat(query)
+                            # Run the agent with the query using plan_route method
+                            response = agent.plan_route(query)
                             
                             # Extract response content
                             response_text = str(response) if response else "No response"
@@ -491,6 +521,39 @@ class ArizeRoutePlannerEvaluator:
         except Exception as e:
             print(f"❌ Error logging experiment to Arize: {e}")
             return None
+
+
+# Standalone helper functions for external use
+def setup_couchbase_infrastructure():
+    """Standalone function to setup Couchbase infrastructure for evaluation."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        couchbase_setup = CouchbaseSetup()
+        couchbase_setup.setup_environment()
+        cluster = couchbase_setup.setup_couchbase_connection()
+        collection = couchbase_setup.setup_bucket_scope_collection()
+        couchbase_setup.setup_vector_search_index()
+        logger.info("Couchbase infrastructure setup complete for evaluation")
+        return cluster
+    except Exception as e:
+        logger.error(f"Error setting up Couchbase infrastructure: {e}")
+        raise
+
+
+def create_agent(catalog: agentc.Catalog, span: agentc.Span):
+    """Standalone function to create a route planner agent for evaluation."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        agent = RouteplannerAgent(span=span)
+        logger.info("Route planner agent created for evaluation")
+        return agent
+    except Exception as e:
+        logger.error(f"Error creating agent: {e}")
+        raise
 
 
 def eval_route_planning_basic():
