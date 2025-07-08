@@ -196,6 +196,9 @@ def setup_vector_store(cluster):
             index_name=os.environ['INDEX_NAME'],
         )
         
+        # Clear existing data before loading fresh hotel data
+        clear_collection_data(cluster)
+        
         hotel_data = load_hotel_data()
         
         try:
@@ -207,6 +210,22 @@ def setup_vector_store(cluster):
         return vector_store
     except Exception as e:
         raise ValueError(f"Error setting up vector store: {str(e)}")
+
+def clear_collection_data(cluster):
+    """Clear all documents from the collection to start fresh."""
+    try:
+        bucket_name = os.environ['CB_BUCKET_NAME']
+        scope_name = os.environ['SCOPE_NAME']
+        collection_name = os.environ['COLLECTION_NAME']
+        
+        # Delete all documents in the collection
+        delete_query = f"DELETE FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+        result = cluster.query(delete_query)
+        
+        print(f"Cleared existing data from collection {scope_name}.{collection_name}")
+        
+    except Exception as e:
+        print(f"Warning: Could not clear collection data: {str(e)}. Continuing with existing data...")
 
 def main():
     try:
@@ -295,13 +314,14 @@ def main():
                 prompt_content = "You are a helpful hotel search assistant."
             
             # Create a ReAct-style prompt with the catalog content  
-            react_prompt_template = f"""Answer the following questions as best you can. You have access to the following tools:
-
-{{tools}}
+            react_prompt_template = f"""You are a professional hotel search assistant. Your goal is to help users find the perfect hotel accommodation based on their specific needs and preferences.
 
 {prompt_content}
 
-Use the following format:
+You have access to the following tools:
+{{tools}}
+
+Use the following format EXACTLY:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
@@ -311,6 +331,13 @@ Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
+
+IMPORTANT: 
+- Always include "Thought:" before your reasoning
+- Always include "Action:" before the tool name
+- Always include "Action Input:" before the tool input
+- Always include "Final Answer:" before your final response
+- Do NOT add extra text after "Final Answer:"
 
 Begin!
 
@@ -330,8 +357,9 @@ Thought: {{agent_scratchpad}}"""
                 tools=tools, 
                 verbose=True, 
                 handle_parsing_errors=True,
-                max_iterations=3,  # Limit iterations to prevent loops
-                return_intermediate_steps=True  # Better error handling
+                max_iterations=5,  # Increased iterations for complex queries
+                return_intermediate_steps=True,  # Better error handling
+                early_stopping_method="generate"  # Better stopping condition
             )
         
         # Test the agent with sample queries
@@ -354,8 +382,21 @@ Thought: {{agent_scratchpad}}"""
                         print(f"✅ Response: {response['output']}")
                         print("-" * 80)
                     except Exception as e:
-                        query_span["error"] = str(e)
-                        print(f"❌ Error: {e}")
+                        # Handle different types of errors
+                        if "Invalid Format" in str(e) or "parsing" in str(e).lower():
+                            # Try a simpler query format for parsing errors
+                            try:
+                                print(f"⚠️ Parsing error, retrying with simpler format...")
+                                simplified_query = f"Please help me with: {query}"
+                                response = agent_executor.invoke({"input": simplified_query})
+                                query_span["response"] = response['output']
+                                print(f"✅ Response (retry): {response['output']}")
+                            except Exception as retry_error:
+                                query_span["error"] = str(retry_error)
+                                print(f"❌ Error (after retry): {retry_error}")
+                        else:
+                            query_span["error"] = str(e)
+                            print(f"❌ Error: {e}")
                         print("-" * 80)
                 
     except Exception as e:

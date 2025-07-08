@@ -9,15 +9,13 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-    "langchain>=0.3.0,<0.4.0",
     "langchain-openai>=0.3.11,<0.4.0",
     "langgraph>=0.4.1,<0.5.0",
     "agentc-core @ ../../agent-catalog/libs/agentc_core",
     "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
-    "couchbase>=4.0.0,<5.0.0",
     "pydantic>=2.0.0,<3.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
-    "langchain-couchbase>=0.3.0,<0.4.0",
+    "langchain-couchbase>=0.2.4,<0.3.0",
     "arize-phoenix[evals]>=7.0.0,<8.0.0",
     "arize-otel>=0.7.0,<1.0.0",
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",

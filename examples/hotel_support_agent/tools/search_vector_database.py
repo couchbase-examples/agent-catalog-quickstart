@@ -44,13 +44,27 @@ def search_vector_database(query: str) -> str:
             index_name=os.environ.get('INDEX_NAME', 'vector_search_agentcatalog'),
         )
         
-        search_results = vector_store.similarity_search_with_score(query, k=5)
+        search_results = vector_store.similarity_search_with_score(query, k=10)  # Get more results for filtering
         
         if not search_results:
             return "No hotels found matching your criteria. Please try a different search query."
         
-        formatted_results = []
+        # Deduplicate results based on content
+        seen_content = set()
+        unique_results = []
+        
         for doc, score in search_results:
+            content = doc.page_content.strip()
+            if content not in seen_content:
+                seen_content.add(content)
+                unique_results.append((doc, score))
+                
+                # Limit to top 3 unique results for cleaner output
+                if len(unique_results) >= 3:
+                    break
+        
+        formatted_results = []
+        for doc, score in unique_results:
             result_text = f"Match Score: {score:.3f}\nHotel Details: {doc.page_content}\n"
             formatted_results.append(result_text)
         
