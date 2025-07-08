@@ -234,63 +234,64 @@ class CouchbaseSetup:
 class RouteplannerAgent:
     """Route planner agent using Agent Catalog tools and Couchbase vector store."""
 
-    def __init__(self, span: agentc.Span):
-        """Initialize the route planner agent."""
-        self.catalog = None
-        self.vector_store = None
-        self.couchbase_setup = None
-        self.data_loader = None
-        self.application_span = span
-        self.setup()
+    def __init__(self, span=None):
+        self.logger = logging.getLogger(__name__)
+        self.span = span
+        
+        # Initialize catalog and get prompt
+        self.catalog = agentc.Catalog()
+        self.prompt = self.catalog.find("prompt", name="route_planner_assistant")
+        
+        if not self.prompt:
+            raise ValueError("Could not find route_planner_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
+        
+        self.data_loader = RouteDataLoader()
+        self.vector_store = self._setup_vector_store()
+        self.ingest_route_data()
+        
+        # Get tools from prompt - use getattr for safe access
+        self.tools = getattr(self.prompt, 'tools', [])
+        
+        # Use safe attribute access for name from meta
+        prompt_name = getattr(self.prompt.meta, 'name', 'route_planner_assistant') if hasattr(self.prompt, 'meta') else 'route_planner_assistant'
+        self.logger.info(f"✅ RouteplannerAgent initialized with prompt: {prompt_name}")
+        self.logger.info(f"📋 Available tools: {len(self.tools)} tools loaded from catalog")
 
-    def setup(self):
-        """Setup the route planner agent."""
+    def _setup_vector_store(self):
+        """Setup Couchbase vector store."""
         try:
-            with self.application_span.new("Environment Setup"):
-                # Setup environment
-                self.couchbase_setup = CouchbaseSetup()
-                self.couchbase_setup.setup_environment()
-
-            with self.application_span.new("Couchbase Connection"):
-                # Setup Couchbase
-                cluster = self.couchbase_setup.setup_couchbase_connection()
-                collection = self.couchbase_setup.setup_bucket_scope_collection()
-                self.couchbase_setup.setup_vector_search_index()
-
-            with self.application_span.new("LLM and Embeddings Setup"):
-                # Setup LLM and embeddings with OpenAI
-                Settings.llm = OpenAI(
-                    api_key=os.environ["OPENAI_API_KEY"], model="gpt-4o", temperature=0.1
-                )
-
-                embed_model = OpenAIEmbedding(
-                    api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
-                )
-                Settings.embed_model = embed_model
-
-            with self.application_span.new("Vector Store Setup"):
-                # Setup vector store (LlamaIndex pattern - no embedding parameter)
-                self.vector_store = CouchbaseSearchVectorStore(
-                    cluster=cluster,
-                    bucket_name=os.environ["CB_BUCKET_NAME"],
-                    scope_name=os.environ["SCOPE_NAME"],
-                    collection_name=os.environ["COLLECTION_NAME"],
-                    index_name=os.environ["INDEX_NAME"],
-                    # Note: LlamaIndex uses Settings.embed_model globally, not embedding_key
-                )
-
-            with self.application_span.new("Data Ingestion"):
-                # Load and ingest route data
-                self.data_loader = RouteDataLoader()
-                self.ingest_route_data()
-
-            with self.application_span.new("Agent Catalog Setup"):
-                # Setup Agent Catalog
-                self.catalog = agentc.Catalog()
-            logger.info("Route planner setup complete")
-
+            # Setup environment first
+            self.couchbase_setup = CouchbaseSetup()
+            self.couchbase_setup.setup_environment()
+            
+            # Setup Couchbase connection
+            cluster = self.couchbase_setup.setup_couchbase_connection()
+            collection = self.couchbase_setup.setup_bucket_scope_collection()
+            self.couchbase_setup.setup_vector_search_index()
+            
+            # Setup LLM and embeddings
+            Settings.llm = OpenAI(
+                api_key=os.environ["OPENAI_API_KEY"], model="gpt-4o", temperature=0.1
+            )
+            
+            embed_model = OpenAIEmbedding(
+                api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
+            )
+            Settings.embed_model = embed_model
+            
+            vector_store = CouchbaseSearchVectorStore(
+                cluster=cluster,
+                bucket_name=os.environ["CB_BUCKET_NAME"],
+                scope_name=os.environ["SCOPE_NAME"],
+                collection_name=os.environ["COLLECTION_NAME"],
+                index_name=os.environ["INDEX_NAME"],
+            )
+            
+            self.logger.info("✅ Couchbase vector store setup completed")
+            return vector_store
+            
         except Exception as e:
-            logger.error(f"Error setting up route planner: {e}")
+            self.logger.error(f"❌ Failed to setup vector store: {e}")
             raise
 
     def ingest_route_data(self):
@@ -406,41 +407,57 @@ class RouteplannerAgent:
             logger.error(f"Error clearing vector store: {e}")
 
     def plan_route(self, query: str) -> str:
-        """Plan a route based on user query."""
+        """Plan a route based on user query using the LLM with the catalog prompt."""
         try:
-            if not self.catalog:
+            if not self.catalog or not self.prompt:
                 return "Route planner not properly initialized. Please check your configuration."
 
-            # Check vector store status
+            # Get the system prompt from the catalog
+            system_prompt = self.prompt.content
+            
+            # Create a conversational prompt with user query
+            conversation_prompt = f"""{system_prompt}
+
+User Query: {query}
+
+Please help the user with their route planning request. You can use the available tools to search for routes and calculate distances. Provide a comprehensive and helpful response."""
+
+            # Use the LLM to process the request
+            llm = Settings.llm
+            if not llm:
+                return "LLM not properly configured. Please check your setup."
+            
+            logger.info("Using LLM with catalog prompt to process route request")
+            
+            # Create a proper conversation with tool calling capability
+            from llama_index.core.llms import ChatMessage, MessageRole
+            
+            messages = [
+                ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
+                ChatMessage(role=MessageRole.USER, content=query)
+            ]
+            
+            # Get response from LLM
+            response = llm.chat(messages)
+            
+            # For now, also add tool results as additional context
             vector_status = self.check_vector_store_data()
-            logger.info(f"Vector store status: {vector_status}")
-
-            # First search using vector store
             vector_result = self.search_routes_with_vector_store(query)
+            
+            # Enhance response with tool results
+            enhanced_response = f"""{response.message.content}
 
-            # If vector search failed or returned no results, try to reingest data
-            if "No routes found in vector store" in vector_result or "Error searching routes" in vector_result:
-                logger.info("Vector store seems empty or failed. Attempting to reingest data...")
-                self.ingest_route_data()
-                # Try vector search again
-                vector_result = self.search_routes_with_vector_store(query)
+=== Additional Route Information ===
+Vector Store Status: {vector_status}
 
-            # Try to use the search_routes tool from Agent Catalog
-            try:
-                tool_obj = self.catalog.find("tool", name="search_routes")
-                if tool_obj and hasattr(tool_obj, "func"):
-                    logger.info("Using search_routes tool from Agent Catalog")
-                    tool_result = tool_obj.func(query=query)
-                    combined_result = f"=== VECTOR SEARCH RESULTS ===\n{vector_result}\n\n=== TOOL SEARCH RESULTS ===\n{tool_result}"
-                    return combined_result
-                else:
-                    logger.warning("search_routes tool not found in Agent Catalog")
-                    return vector_result
-            except Exception as e:
-                logger.warning(f"Error using search_routes tool: {e}")
-                return vector_result
+=== Relevant Routes Found ===
+{vector_result}
+"""
+            
+            return enhanced_response.strip()
 
         except Exception as e:
+            logger.error(f"Error in plan_route: {e}")
             return f"Error planning route: {e!s}"
 
     def calculate_distance(self, origin: str, destination: str) -> str:
