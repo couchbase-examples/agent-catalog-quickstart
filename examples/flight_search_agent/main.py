@@ -100,8 +100,6 @@ class CouchbaseClient:
             self.cluster.wait_until_ready(timedelta(seconds=10))
             logger.info("Successfully connected to Couchbase")
             return self.cluster
-        except (ConnectionError, TimeoutError) as e:
-            raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
         except Exception as e:
             raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
@@ -117,8 +115,6 @@ class CouchbaseClient:
                 try:
                     self.bucket = self.cluster.bucket(self.bucket_name)
                     logger.info(f"Bucket '{self.bucket_name}' exists")
-                except (ValueError, RuntimeError):
-                    logger.info(f"Creating bucket '{self.bucket_name}'...")
                 except Exception:
                     logger.info(f"Creating bucket '{self.bucket_name}'...")
                     bucket_settings = CreateBucketSettings(
@@ -166,8 +162,6 @@ class CouchbaseClient:
                     f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
                 ).execute()
                 logger.info("Primary index created successfully")
-            except (ValueError, RuntimeError) as e:
-                logger.warning(f"Error creating primary index: {e!s}")
             except Exception as e:
                 logger.warning(f"Error creating primary index: {e!s}")
 
@@ -178,8 +172,6 @@ class CouchbaseClient:
             logger.info(f"Collection setup complete for {scope_name}.{collection_name}")
             return collection
 
-        except (ConnectionError, ValueError, RuntimeError) as e:
-            raise RuntimeError(f"Error setting up collection: {e!s}")
         except Exception as e:
             raise RuntimeError(f"Error setting up collection: {e!s}")
 
@@ -207,8 +199,6 @@ class CouchbaseClient:
                 logger.info(f"Vector search index '{index_name}' created successfully")
             else:
                 logger.info(f"Vector search index '{index_name}' already exists")
-        except (ValueError, RuntimeError) as e:
-            raise RuntimeError(f"Error setting up vector search index: {e!s}")
         except Exception as e:
             raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
@@ -228,8 +218,6 @@ class CouchbaseClient:
                 flight_texts.append(text)
 
             return flight_texts
-        except (ImportError, AttributeError, ValueError) as e:
-            raise ValueError(f"Error loading flight data: {e!s}")
         except Exception as e:
             raise ValueError(f"Error loading flight data: {e!s}")
 
@@ -255,18 +243,12 @@ class CouchbaseClient:
             try:
                 vector_store.add_texts(texts=flight_data, batch_size=10)
                 logger.info("Flight data loaded into vector store successfully")
-            except (ValueError, RuntimeError) as e:
-                logger.warning(
-                    f"Error loading flight data: {e!s}. Vector store created but data not loaded."
-                )
             except Exception as e:
                 logger.warning(
                     f"Error loading flight data: {e!s}. Vector store created but data not loaded."
                 )
 
             return vector_store
-        except (ConnectionError, ValueError, RuntimeError) as e:
-            raise ValueError(f"Error setting up vector store: {e!s}")
         except Exception as e:
             raise ValueError(f"Error setting up vector store: {e!s}")
 
@@ -301,15 +283,11 @@ class CouchbaseClient:
                     )
                     self.cluster.query(delete_query).execute()
                     logger.info(f"Cleared collection '{collection.name}' in scope '{scope_name}'")
-                except (ValueError, RuntimeError) as e:
-                    logger.warning(f"Could not clear collection '{collection.name}': {e}")
                 except Exception as e:
                     logger.warning(f"Could not clear collection '{collection.name}': {e}")
 
             logger.info(f"Cleared all collections in scope '{scope_name}'")
 
-        except (ConnectionError, ValueError, RuntimeError) as e:
-            logger.warning(f"Could not clear scope '{scope_name}': {e}")
         except Exception as e:
             logger.warning(f"Could not clear scope '{scope_name}': {e}")
 
@@ -376,8 +354,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         # Call the original tool with mapped parameters
                         return original_tool.func(**mapped_params)
 
-                    except (ValueError, RuntimeError, TypeError) as e:
-                        return f"Error calling {name}: {e!s}"
                     except Exception as e:
                         return f"Error calling {name}: {e!s}"
 
@@ -476,8 +452,6 @@ def clear_flight_bookings():
         client.clear_scope(scope_name)
         logger.info("Cleared existing flight bookings for fresh test run")
 
-    except (ConnectionError, ValueError, RuntimeError) as e:
-        logger.warning(f"Could not clear bookings: {e}")
     except Exception as e:
         logger.warning(f"Could not clear bookings: {e}")
 
@@ -517,8 +491,6 @@ def setup_flight_search_agent():
                     index_definition = json.load(file)
                 logger.info("Loaded vector search index definition from agentcatalog_index.json")
                 client.setup_vector_search_index(index_definition, os.environ["SCOPE_NAME"])
-            except (FileNotFoundError, ValueError, RuntimeError) as e:
-                logger.warning(f"Error loading index definition: {e!s}")
             except Exception as e:
                 logger.warning(f"Error loading index definition: {e!s}")
                 logger.info("Continuing without vector search index...")
@@ -544,10 +516,6 @@ def setup_flight_search_agent():
 
         return compiled_graph, application_span
 
-    except (ConnectionError, ValueError, RuntimeError) as e:
-        logger.exception(f"Setup error: {e}")
-        logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
-        raise
     except Exception as e:
         logger.exception(f"Setup error: {e}")
         logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
@@ -600,15 +568,10 @@ def run_interactive_demo():
 
                         logger.info(f"Search completed: {result.get('resolved', False)}")
 
-                    except (ValueError, RuntimeError) as e:
-                        logger.exception(f"Search error: {e}")
-                        query_span["error"] = str(e)
                     except Exception as e:
                         logger.exception(f"Search error: {e}")
                         query_span["error"] = str(e)
 
-    except (ConnectionError, ValueError, RuntimeError) as e:
-        logger.exception(f"Demo initialization error: {e}")
     except Exception as e:
         logger.exception(f"Demo initialization error: {e}")
 
@@ -647,9 +610,6 @@ def run_test():
                             logger.info(f"✅ Found {len(result['search_results'])} flight options")
                         logger.info(f"✅ Test {i} completed: {result.get('resolved', False)}")
 
-                    except (ValueError, RuntimeError) as e:
-                        logger.exception(f"❌ Test {i} failed: {e}")
-                        query_span["error"] = str(e)
                     except Exception as e:
                         logger.exception(f"❌ Test {i} failed: {e}")
                         query_span["error"] = str(e)
@@ -658,8 +618,6 @@ def run_test():
 
         logger.info("All tests completed!")
 
-    except (ConnectionError, ValueError, RuntimeError) as e:
-        logger.exception(f"Test error: {e}")
     except Exception as e:
         logger.exception(f"Test error: {e}")
 
