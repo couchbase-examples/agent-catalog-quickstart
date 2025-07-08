@@ -10,6 +10,10 @@ name: hotel_search_assistant
 description: >
   Professional hotel search assistant prompt for helping users find the perfect hotel accommodation based on their specific needs and preferences.
 
+tools:
+  - name: "search_vector_database"
+  - name: "get_hotel_details"
+
 output:
   title: HotelResponse
   description: The response to the user's hotel search query
@@ -60,7 +64,8 @@ content:
 
   response_guidelines:
     - Be professional and helpful in all interactions
-    - Use available tools to get accurate hotel data
+    - Use search_vector_database to find hotels matching user criteria
+    - Use get_hotel_details to provide comprehensive information about recommended hotels
     - Provide comprehensive information about recommended hotels
     - Include relevant details like amenities, pricing, and location
     - Ask follow-up questions when requirements are unclear

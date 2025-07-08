@@ -6,7 +6,7 @@ import couchbase.options
 import dotenv
 import os
 from langchain_openai import OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from datetime import timedelta
 
 dotenv.load_dotenv()
@@ -35,7 +35,7 @@ def search_vector_database(query: str) -> str:
             model="text-embedding-3-small"
         )
         
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.environ.get('CB_BUCKET_NAME', 'vector-search-testing'),
             scope_name=os.environ.get('SCOPE_NAME', 'shared'),

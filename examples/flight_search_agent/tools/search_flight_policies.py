@@ -7,7 +7,7 @@ import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv(override=True)
@@ -36,7 +36,7 @@ def _get_vector_store():
             api_key=os.getenv("OPENAI_API_KEY"), model="text-embedding-3-small"
         )
 
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "vector-search-testing"),
             scope_name=os.getenv("SCOPE_NAME", "shared"),

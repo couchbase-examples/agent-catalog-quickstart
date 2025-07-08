@@ -13,7 +13,7 @@ from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.hub import pull
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Make sure you populate your .env file with the correct credentials!
@@ -187,7 +187,7 @@ def setup_vector_store(cluster):
             model="text-embedding-3-small"
         )
         
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.environ['CB_BUCKET_NAME'],
             scope_name=os.environ['SCOPE_NAME'],
@@ -270,10 +270,69 @@ def main():
             ]
         
         with application_span.new("Agent Creation"):
-            # Create a simple ReAct agent using LangChain
-            react_prompt = pull("hwchase17/react")
-            agent = create_react_agent(llm, tools, react_prompt)
-            agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+            # Get prompt from Agent Catalog
+            hotel_prompt = catalog.find("prompt", name="hotel_search_assistant")
+            if not hotel_prompt:
+                raise ValueError("Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
+            
+            # Create a custom prompt using the catalog prompt content
+            from langchain_core.prompts import PromptTemplate
+            
+            # Extract the content properly from the catalog prompt
+            if hasattr(hotel_prompt, 'content'):
+                if isinstance(hotel_prompt.content, dict):
+                    # Complex YAML structure - extract the instruction content
+                    instructions = []
+                    if 'agent_instructions' in hotel_prompt.content:
+                        instructions.extend(hotel_prompt.content['agent_instructions'])
+                    if 'response_guidelines' in hotel_prompt.content:
+                        instructions.extend(hotel_prompt.content['response_guidelines'])
+                    prompt_content = "\n".join(instructions)
+                else:
+                    # Simple string content
+                    prompt_content = hotel_prompt.content
+            else:
+                prompt_content = "You are a helpful hotel search assistant."
+            
+            # Create a ReAct-style prompt with the catalog content  
+            react_prompt_template = f"""Answer the following questions as best you can. You have access to the following tools:
+
+{{tools}}
+
+{prompt_content}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{{tool_names}}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {{input}}
+Thought: {{agent_scratchpad}}"""
+            
+            custom_prompt = PromptTemplate(
+                template=react_prompt_template,
+                input_variables=["input", "agent_scratchpad"],
+                partial_variables={"tools": "\n".join([f"{tool.name}: {tool.description}" for tool in tools]),
+                                 "tool_names": ", ".join([tool.name for tool in tools])}
+            )
+            
+            agent = create_react_agent(llm, tools, custom_prompt)
+            agent_executor = AgentExecutor(
+                agent=agent, 
+                tools=tools, 
+                verbose=True, 
+                handle_parsing_errors=True,
+                max_iterations=3,  # Limit iterations to prevent loops
+                return_intermediate_steps=True  # Better error handling
+            )
         
         # Test the agent with sample queries
         print("\nHotel Search Agent is ready!")

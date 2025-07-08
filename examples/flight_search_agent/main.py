@@ -27,7 +27,7 @@ from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 from parameter_mapper import ParameterMapper
@@ -189,7 +189,7 @@ def setup_vector_store(cluster):
             api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
         )
 
-        vector_store = CouchbaseSearchVectorStore(
+        vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.environ["CB_BUCKET"],
             scope_name=os.environ["SCOPE_NAME"],
@@ -398,22 +398,57 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 state["resolved"] = True
                 return state
 
-            # Create a proper ReAct agent like hotel support agent
-            from langchain import hub
+            # Get prompt from Agent Catalog instead of hardcoded ReAct
             from langchain.agents import AgentExecutor, create_react_agent
+            from langchain_core.prompts import PromptTemplate
 
             try:
-                # Get ReAct prompt from hub
-                react_prompt = hub.pull("hwchase17/react")
+                # Get prompt from Agent Catalog
+                flight_prompt = self.catalog.find("prompt", name="flight_search_assistant")
+                if not flight_prompt:
+                    raise ValueError(
+                        "Could not find flight_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
+                    )
 
-                # Create ReAct agent with tools
+                # Create a custom prompt using the catalog prompt content
+                catalog_prompt_content = flight_prompt.content
+
+                # Create prompt template that includes the catalog content and ReAct format
+                react_template = """Answer the following questions as best you can. You have access to the following tools:
+
+{tools}
+
+{catalog_content}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought: {agent_scratchpad}"""
+
+                react_prompt = PromptTemplate.from_template(react_template).partial(
+                    catalog_content=catalog_prompt_content
+                )
+
+                # Create ReAct agent with tools and catalog prompt
                 agent = create_react_agent(self.chat_model, tools, react_prompt)
                 agent_executor = AgentExecutor(
                     agent=agent,
                     tools=tools,
                     verbose=True,
                     handle_parsing_errors=True,
-                    max_iterations=5,
+                    max_iterations=3,  # Limit iterations to prevent loops
+                    return_intermediate_steps=True,  # Better error handling
                 )
 
                 # Execute the agent with the query
@@ -565,7 +600,6 @@ def run_flight_search_demo():
                         # Run the flight search
                         result = compiled_graph.invoke(state)
                         query_span["result"] = result
-
 
                         # Display results summary
                         if result.get("search_results"):
