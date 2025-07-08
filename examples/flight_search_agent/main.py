@@ -32,11 +32,17 @@ from langchain_openai import OpenAIEmbeddings
 
 from parameter_mapper import ParameterMapper
 
-# Setup logging with debug level for better troubleshooting
+# Setup logging with essential level only
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Suppress verbose logging from external libraries
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("agentc_core").setLevel(logging.WARNING)
 
 # Load environment variables
 dotenv.load_dotenv(override=True)
@@ -410,35 +416,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         "Could not find flight_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
                     )
 
-                # Create a custom prompt using the catalog prompt content
-                catalog_prompt_content = flight_prompt.content
-
-                # Create prompt template that includes the catalog content and ReAct format
-                react_template = """Answer the following questions as best you can. You have access to the following tools:
-
-{tools}
-
-{catalog_content}
-
-Use the following format:
-
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-Begin!
-
-Question: {input}
-Thought: {agent_scratchpad}"""
-
-                react_prompt = PromptTemplate.from_template(react_template).partial(
-                    catalog_content=catalog_prompt_content
-                )
+                # Create prompt template directly from catalog content
+                # The catalog prompt already contains the proper ReAct format
+                react_prompt = PromptTemplate.from_template(flight_prompt.content)
 
                 # Create ReAct agent with tools and catalog prompt
                 agent = create_react_agent(self.chat_model, tools, react_prompt)
@@ -447,7 +427,7 @@ Thought: {agent_scratchpad}"""
                     tools=tools,
                     verbose=True,
                     handle_parsing_errors=True,
-                    max_iterations=3,  # Limit iterations to prevent loops
+                    max_iterations=5,  # Increase iterations for better completion
                     return_intermediate_steps=True,  # Better error handling
                 )
 
@@ -522,12 +502,8 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         return workflow.compile()
 
 
-def run_flight_search_demo():
-    """Run an interactive flight search demo."""
-
-    logger.info("Flight Search Agent - Agent Catalog Demo")
-    logger.info("=" * 50)
-
+def setup_flight_search_agent():
+    """Common setup function for flight search agent - returns all necessary components."""
     try:
         # Setup environment first
         setup_environment()
@@ -558,12 +534,10 @@ def run_flight_search_demo():
                 with open("agentcatalog_index.json") as file:
                     index_definition = json.load(file)
                 logger.info("Loaded vector search index definition from agentcatalog_index.json")
+                setup_vector_search_index(cluster, index_definition)
             except Exception as e:
                 logger.warning(f"Error loading index definition: {e!s}")
                 logger.info("Continuing without vector search index...")
-
-            if "index_definition" in locals():
-                setup_vector_search_index(cluster, index_definition)
 
         with application_span.new("Vector Store Setup"):
             setup_vector_store(cluster)
@@ -575,11 +549,32 @@ def run_flight_search_demo():
             compiled_graph = flight_graph.compile()
 
         logger.info("Agent Catalog integration successful")
+        
+        return compiled_graph, application_span
+
+    except Exception as e:
+        logger.error(f"Setup error: {e}")
+        logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
+        raise
+
+
+def run_interactive_demo():
+    """Run an interactive flight search demo."""
+    logger.info("Flight Search Agent - Interactive Demo")
+    logger.info("=" * 50)
+
+    try:
+        compiled_graph, application_span = setup_flight_search_agent()
 
         # Interactive flight search loop
         with application_span.new("Query Execution") as span:
+            logger.info("Available commands:")
+            logger.info("- Enter flight search queries (e.g., 'Find flights from NYC to LAX')")
+            logger.info("- 'quit' - Exit the demo")
+            logger.info("Try asking: 'Find cheap flights to Miami' or 'Book a business class flight to Boston'")
+            logger.info("─" * 40)
+            
             while True:
-                logger.info("─" * 40)
                 query = input("🔍 Enter flight search query (or 'quit' to exit): ").strip()
 
                 if query.lower() in ["quit", "exit", "q"]:
@@ -612,12 +607,63 @@ def run_flight_search_demo():
                         query_span["error"] = str(e)
 
     except Exception as e:
-        logger.error(f"Initialization error: {e}")
-        logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
+        logger.error(f"Demo initialization error: {e}")
+
+
+def run_test():
+    """Run a quick test of the flight search agent."""
+    logger.info("Flight Search Agent - Test Mode")
+    logger.info("=" * 40)
+
+    try:
+        compiled_graph, application_span = setup_flight_search_agent()
+
+        # Test queries
+        test_queries = [
+            "Find flights from New York to Los Angeles",
+            "Book a business class flight to Miami", 
+            "What's the baggage policy for American Airlines?"
+        ]
+
+        with application_span.new("Test Queries") as span:
+            for i, query in enumerate(test_queries, 1):
+                with span.new(f"Test {i}: {query}") as query_span:
+                    logger.info(f"\n🔍 Test {i}: {query}")
+                    try:
+                        query_span["query"] = query
+                        state = FlightSearchGraph.build_starting_state(query=query)
+                        result = compiled_graph.invoke(state)
+                        query_span["result"] = result
+                        
+                        if result.get("search_results"):
+                            logger.info(f"✅ Found {len(result['search_results'])} flight options")
+                        logger.info(f"✅ Test {i} completed: {result.get('resolved', False)}")
+                        
+                    except Exception as e:
+                        logger.error(f"❌ Test {i} failed: {e}")
+                        query_span["error"] = str(e)
+                    
+                    logger.info("-" * 50)
+
+        logger.info("All tests completed!")
+
+    except Exception as e:
+        logger.error(f"Test error: {e}")
+
+
+def run_flight_search_demo():
+    """Legacy function - redirects to interactive demo for compatibility."""
+    run_interactive_demo()
 
 
 if __name__ == "__main__":
-    run_flight_search_demo()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "test":
+            run_test()
+        else:
+            run_interactive_demo()
+    else:
+        run_interactive_demo()
 
     # Uncomment the following lines to visualize the LangGraph workflow:
     # compiled_graph.get_graph().draw_mermaid_png(output_file_path="flight_search_graph.png")
