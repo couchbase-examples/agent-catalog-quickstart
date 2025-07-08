@@ -47,6 +47,7 @@ PROJECT_NAME = "route-planner-agent-evaluation"
 # Import the route planner agent components
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from main import RouteDataLoader, CouchbaseSetup, RouteplannerAgent
+from ground_truth import GroundTruthValidator
 
 # Try to import Arize dependencies with fallback
 try:
@@ -96,6 +97,9 @@ class ArizeRoutePlannerEvaluator:
         self.arize_client = None
         self.dataset_id = None
         self.tracer_provider = None
+        
+        # Initialize ground truth validator
+        self.ground_truth_validator = GroundTruthValidator()
         
         # Initialize Arize observability if available
         if ARIZE_AVAILABLE:
@@ -231,11 +235,26 @@ class ArizeRoutePlannerEvaluator:
                 
                 # Check if response contains route information
                 has_route_info = self._check_route_info(response_text)
+                has_directions = self._check_directions(response_text)
+                has_transport_info = self._check_transport_info(response_text)
+                has_poi_info = self._check_poi_info(response_text)
+                response_length = len(response_text)
+                
+                # Run ground truth validation
+                ground_truth_assessment = self.ground_truth_validator.evaluate_response_quality(query, response_text)
                 
                 results.append({
                     "input": query,
                     "output": response_text,
                     "has_route_info": has_route_info,
+                    "has_directions": has_directions,
+                    "has_transport_info": has_transport_info,
+                    "has_poi_info": has_poi_info,
+                    "response_length": response_length,
+                    "ground_truth_quality_score": ground_truth_assessment.get("overall_quality_score", 0.0),
+                    "hallucination_risk": ground_truth_assessment.get("existence_validation", {}).get("hallucination_risk", False),
+                    "appropriate_response": ground_truth_assessment.get("existence_validation", {}).get("appropriate_response", True),
+                    "factual_accuracy_score": ground_truth_assessment.get("factual_validation", {}).get("overall_accuracy_score", 0.0),
                 })
                 
                 # Show what kind of info was found
@@ -256,10 +275,19 @@ class ArizeRoutePlannerEvaluator:
                 
             except Exception as e:
                 print(f"     ❌ Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}")
+                error_text = f"Error: {e}"
                 results.append({
                     "input": query,
-                    "output": f"Error: {e}",
+                    "output": error_text,
                     "has_route_info": False,
+                    "has_directions": False,
+                    "has_transport_info": False,
+                    "has_poi_info": False,
+                    "response_length": len(error_text),
+                    "ground_truth_quality_score": 0.0,
+                    "hallucination_risk": False,
+                    "appropriate_response": False,
+                    "factual_accuracy_score": 0.0,
                 })
         
         return pd.DataFrame(results)
@@ -270,6 +298,24 @@ class ArizeRoutePlannerEvaluator:
                          "direction", "turn", "north", "south", "east", "west",
                          "car", "drive", "flight", "train", "bus"]
         return any(keyword in response_text.lower() for keyword in route_keywords)
+    
+    def _check_directions(self, response_text: str) -> bool:
+        """Check if response contains directional information."""
+        direction_keywords = ["direction", "turn", "north", "south", "east", "west", 
+                            "left", "right", "straight", "highway", "exit", "street"]
+        return any(keyword in response_text.lower() for keyword in direction_keywords)
+    
+    def _check_transport_info(self, response_text: str) -> bool:
+        """Check if response contains transportation information."""
+        transport_keywords = ["car", "drive", "flight", "train", "bus", "subway", "walk",
+                             "taxi", "uber", "lyft", "ferry", "bike", "transport"]
+        return any(keyword in response_text.lower() for keyword in transport_keywords)
+    
+    def _check_poi_info(self, response_text: str) -> bool:
+        """Check if response contains points of interest information."""
+        poi_keywords = ["restaurant", "hotel", "attraction", "park", "museum", "landmark",
+                       "shopping", "gas station", "rest stop", "scenic", "tourist"]
+        return any(keyword in response_text.lower() for keyword in poi_keywords)
 
     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -365,9 +411,9 @@ class ArizeRoutePlannerEvaluator:
         scenarios = {
             "basic_routing": [
                 "Plan a route from New York to Boston",
-                "I need directions from Los Angeles to San Francisco",
-                "Route from Chicago to Detroit",
-                "How do I get from Miami to Orlando?",
+                "How far is Los Angeles from San Francisco?",
+                "Best way to travel from Chicago to Detroit",
+                "Route from San Francisco to Los Angeles",
             ],
             "multi_stop_journeys": [
                 "Plan a road trip from Seattle to Portland to San Francisco",
@@ -382,7 +428,7 @@ class ArizeRoutePlannerEvaluator:
                 "Most efficient transport from Chicago to New York",
             ],
             "scenic_routes": [
-                "Scenic route from Denver to Salt Lake City",
+                "Scenic route through Colorado",
                 "Beautiful drive from San Francisco to Los Angeles",
                 "Scenic highway from Seattle to Vancouver",
                 "Picturesque route through the Rocky Mountains",
@@ -398,6 +444,18 @@ class ArizeRoutePlannerEvaluator:
                 "Attractions along the route from LA to San Francisco",
                 "Restaurants and hotels on the way to Las Vegas",
                 "Tourist spots between Chicago and Detroit",
+            ],
+            "hallucination_tests": [
+                "Plan a route from Atlantis to Mars",
+                "How do I travel from New York to Pluto?",
+                "Distance from Fictional City to Imaginary Town",
+                "Route planning to Narnia",
+            ],
+            "edge_cases": [
+                "Route from nowhere to somewhere",
+                "Plan a trip to [invalid location]",
+                "Travel from X to Y where X and Y don't exist",
+                "How far is it from here to there?",
             ],
             "irrelevant_queries": [
                 "What's the weather like today?",
@@ -430,11 +488,19 @@ class ArizeRoutePlannerEvaluator:
             directions_count = sum(evaluated_results["has_directions"])
             transport_info_count = sum(evaluated_results["has_transport_info"])
             poi_info_count = sum(evaluated_results["has_poi_info"])
+            hallucination_count = sum(evaluated_results["hallucination_risk"])
+            appropriate_responses = sum(evaluated_results["appropriate_response"])
+            avg_ground_truth_score = evaluated_results["ground_truth_quality_score"].mean()
+            avg_factual_score = evaluated_results["factual_accuracy_score"].mean()
             
             print(f"   ✅ Completed: {route_info_count}/{total_queries} queries with route info")
             print(f"   🧭 Directions: {directions_count}/{total_queries} queries")
             print(f"   🚗 Transport info: {transport_info_count}/{total_queries} queries")
             print(f"   📍 POI info: {poi_info_count}/{total_queries} queries")
+            print(f"   ⚠️ Hallucination risk: {hallucination_count}/{total_queries} queries")
+            print(f"   ✅ Appropriate responses: {appropriate_responses}/{total_queries} queries")
+            print(f"   📊 Avg Ground Truth Score: {avg_ground_truth_score:.2f}")
+            print(f"   📊 Avg Factual Accuracy: {avg_factual_score:.2f}")
             
             if ARIZE_AVAILABLE and "arize_relevance" in evaluated_results.columns:
                 avg_relevance = self._calculate_average_score(evaluated_results["arize_relevance"])
@@ -621,12 +687,15 @@ def eval_route_planning_basic():
     print("   • Quality of responses using vector search + LLM")
     print("   • LLM-based relevance and correctness scoring")
     
-    # Basic test queries for route planning
+    # Enhanced test queries for route planning with anti-hallucination checks
     test_inputs = [
         "Plan a route from New York to Boston",
         "How far is Los Angeles from San Francisco?", 
         "Best way to travel from Chicago to Detroit",
-        "Scenic route through Colorado"
+        "Scenic route through Colorado",
+        # Hallucination test cases
+        "Plan a route from Atlantis to Mars",
+        "How do I travel from New York to Pluto?",
     ]
     
     # Initialize evaluation components
@@ -646,12 +715,20 @@ def eval_route_planning_basic():
     total_queries = len(results_df)
     queries_with_route_info = results_df['has_route_info'].sum()
     success_rate = (queries_with_route_info / total_queries) * 100
+    hallucination_count = results_df['hallucination_risk'].sum()
+    appropriate_responses = results_df['appropriate_response'].sum()
+    avg_ground_truth_score = results_df['ground_truth_quality_score'].mean()
+    avg_factual_score = results_df['factual_accuracy_score'].mean()
     
     # Print summary
     print(f"\n✅ Basic route planning evaluation completed:")
     print(f"   📊 Total queries processed: {total_queries}")
     print(f"   🎯 Queries with route info: {queries_with_route_info}")
     print(f"   📈 Success rate: {success_rate:.1f}%")
+    print(f"   ⚠️ Hallucination risk detected: {hallucination_count} queries")
+    print(f"   ✅ Appropriate responses: {appropriate_responses} queries")
+    print(f"   📊 Avg Ground Truth Score: {avg_ground_truth_score:.2f}")
+    print(f"   📊 Avg Factual Accuracy: {avg_factual_score:.2f}")
     
     if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
         relevance_scores = results_df['arize_relevance'].value_counts()
