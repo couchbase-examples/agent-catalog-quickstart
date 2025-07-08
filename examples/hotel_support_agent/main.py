@@ -16,6 +16,9 @@ from langchain.hub import pull
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
+# Import hotel data from the data module
+from data.hotel_data import get_hotel_texts
+
 # Make sure you populate your .env file with the correct credentials!
 dotenv.load_dotenv(override=True)
 
@@ -126,60 +129,6 @@ def setup_vector_search_index(cluster, index_definition):
     except Exception as e:
         raise RuntimeError(f"Error setting up vector search index: {str(e)}")
 
-def load_hotel_data():
-    try:
-        hotels_data = [
-            {
-                "name": "Grand Palace Hotel",
-                "location": "New York City",
-                "description": "Luxury hotel in Manhattan with stunning city views, world-class amenities, and exceptional service.",
-                "price_range": "$300-$500",
-                "amenities": ["Pool", "Spa", "Gym", "Restaurant", "Room Service", "WiFi"],
-                "rating": 4.8
-            },
-            {
-                "name": "Seaside Resort",
-                "location": "Miami Beach",
-                "description": "Beautiful beachfront resort with private beach access, multiple pools, and ocean view rooms.",
-                "price_range": "$200-$400",
-                "amenities": ["Beach Access", "Pool", "Restaurant", "Bar", "Water Sports", "WiFi"],
-                "rating": 4.6
-            },
-            {
-                "name": "Mountain Lodge",
-                "location": "Aspen",
-                "description": "Cozy mountain lodge perfect for skiing and hiking, featuring rustic charm and mountain views.",
-                "price_range": "$150-$300",
-                "amenities": ["Ski Access", "Fireplace", "Restaurant", "Hot Tub", "Hiking Trails", "WiFi"],
-                "rating": 4.5
-            },
-            {
-                "name": "Business Center Hotel",
-                "location": "Chicago",
-                "description": "Modern business hotel in downtown Chicago with state-of-the-art conference facilities.",
-                "price_range": "$180-$280",
-                "amenities": ["Business Center", "Meeting Rooms", "Gym", "Restaurant", "WiFi", "Parking"],
-                "rating": 4.3
-            },
-            {
-                "name": "Boutique Inn",
-                "location": "San Francisco",
-                "description": "Charming boutique hotel in the heart of San Francisco with unique decor and personalized service.",
-                "price_range": "$220-$350",
-                "amenities": ["Concierge", "Restaurant", "Bar", "WiFi", "Pet Friendly", "Valet Parking"],
-                "rating": 4.7
-            }
-        ]
-        
-        hotel_texts = []
-        for hotel in hotels_data:
-            text = f"{hotel['name']} in {hotel['location']}. {hotel['description']} Price range: {hotel['price_range']}. Rating: {hotel['rating']}/5. Amenities: {', '.join(hotel['amenities'])}"
-            hotel_texts.append(text)
-        
-        return hotel_texts
-    except Exception as e:
-        raise ValueError(f"Error loading hotel data: {str(e)}")
-
 def setup_vector_store(cluster):
     try:
         embeddings = OpenAIEmbeddings(
@@ -199,7 +148,8 @@ def setup_vector_store(cluster):
         # Clear existing data before loading fresh hotel data
         clear_collection_data(cluster)
         
-        hotel_data = load_hotel_data()
+        # Use hotel data from the data module
+        hotel_data = get_hotel_texts()
         
         try:
             vector_store.add_texts(texts=hotel_data, batch_size=10)
@@ -270,9 +220,14 @@ def main():
             )
         
         with application_span.new("Tool Loading"):
-            # Load tools from Agent Catalog and convert to LangChain tools
+            # Load tools from Agent Catalog - they are now properly decorated
             tool_search = catalog.find("tool", name="search_vector_database")
             tool_details = catalog.find("tool", name="get_hotel_details")
+            
+            if not tool_search:
+                raise ValueError("Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'")
+            if not tool_details:
+                raise ValueError("Could not find get_hotel_details tool. Make sure it's indexed with 'agentc index tools/'")
             
             from langchain_core.tools import Tool
             tools = [
@@ -297,58 +252,16 @@ def main():
             # Create a custom prompt using the catalog prompt content
             from langchain_core.prompts import PromptTemplate
             
-            # Extract the content properly from the catalog prompt
-            if hasattr(hotel_prompt, 'content'):
-                if isinstance(hotel_prompt.content, dict):
-                    # Complex YAML structure - extract the instruction content
-                    instructions = []
-                    if 'agent_instructions' in hotel_prompt.content:
-                        instructions.extend(hotel_prompt.content['agent_instructions'])
-                    if 'response_guidelines' in hotel_prompt.content:
-                        instructions.extend(hotel_prompt.content['response_guidelines'])
-                    prompt_content = "\n".join(instructions)
-                else:
-                    # Simple string content
-                    prompt_content = hotel_prompt.content
-            else:
-                prompt_content = "You are a helpful hotel search assistant."
-            
-            # Create a ReAct-style prompt with the catalog content  
-            react_prompt_template = f"""You are a professional hotel search assistant. Your goal is to help users find the perfect hotel accommodation based on their specific needs and preferences.
-
-{prompt_content}
-
-You have access to the following tools:
-{{tools}}
-
-Use the following format EXACTLY:
-
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{{tool_names}}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-IMPORTANT: 
-- Always include "Thought:" before your reasoning
-- Always include "Action:" before the tool name
-- Always include "Action Input:" before the tool input
-- Always include "Final Answer:" before your final response
-- Do NOT add extra text after "Final Answer:"
-
-Begin!
-
-Question: {{input}}
-Thought: {{agent_scratchpad}}"""
+            # The prompt content is already properly structured with ReAct format
+            prompt_content = hotel_prompt.content.strip()
             
             custom_prompt = PromptTemplate(
-                template=react_prompt_template,
+                template=prompt_content,
                 input_variables=["input", "agent_scratchpad"],
-                partial_variables={"tools": "\n".join([f"{tool.name}: {tool.description}" for tool in tools]),
-                                 "tool_names": ", ".join([tool.name for tool in tools])}
+                partial_variables={
+                    "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in tools]),
+                    "tool_names": ", ".join([tool.name for tool in tools])
+                }
             )
             
             agent = create_react_agent(llm, tools, custom_prompt)
@@ -357,8 +270,8 @@ Thought: {{agent_scratchpad}}"""
                 tools=tools, 
                 verbose=True, 
                 handle_parsing_errors=True,
-                max_iterations=5,  # Increased iterations for complex queries
-                return_intermediate_steps=True  # Better error handling
+                max_iterations=5,
+                return_intermediate_steps=True
             )
         
         # Test the agent with sample queries
@@ -366,9 +279,9 @@ Thought: {{agent_scratchpad}}"""
         print("Testing with sample queries...")
         
         test_queries = [
-            "Find me a luxury hotel with a pool",
-            "I need a beach resort with spa services", 
-            "Get details about Ocean Breeze Resort"
+            "Find me a luxury hotel with a pool and spa",
+            "I need a beach resort in Miami", 
+            "Get me details about Ocean Breeze Resort"
         ]
         
         with application_span.new("Query Execution") as span:
@@ -381,21 +294,8 @@ Thought: {{agent_scratchpad}}"""
                         print(f"✅ Response: {response['output']}")
                         print("-" * 80)
                     except Exception as e:
-                        # Handle different types of errors
-                        if "Invalid Format" in str(e) or "parsing" in str(e).lower():
-                            # Try a simpler query format for parsing errors
-                            try:
-                                print(f"⚠️ Parsing error, retrying with simpler format...")
-                                simplified_query = f"Please help me with: {query}"
-                                response = agent_executor.invoke({"input": simplified_query})
-                                query_span["response"] = response['output']
-                                print(f"✅ Response (retry): {response['output']}")
-                            except Exception as retry_error:
-                                query_span["error"] = str(retry_error)
-                                print(f"❌ Error (after retry): {retry_error}")
-                        else:
-                            query_span["error"] = str(e)
-                            print(f"❌ Error: {e}")
+                        query_span["error"] = str(e)
+                        print(f"❌ Error: {e}")
                         print("-" * 80)
                 
     except Exception as e:

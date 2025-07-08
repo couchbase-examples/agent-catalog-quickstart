@@ -63,12 +63,19 @@ def search_vector_database(query: str) -> str:
                 if len(unique_results) >= 3:
                     break
         
+        # Format results with clear separators and numbering
         formatted_results = []
-        for doc, score in unique_results:
-            result_text = f"Match Score: {score:.3f}\nHotel Details: {doc.page_content}\n"
+        for i, (doc, score) in enumerate(unique_results, 1):
+            result_text = f"""HOTEL {i}:
+Match Score: {score:.3f}
+Hotel Details: {doc.page_content}
+{'='*60}"""
             formatted_results.append(result_text)
         
-        return "\n".join(formatted_results)
+        # Add summary at the end
+        summary = f"\nSEARCH SUMMARY: Found {len(unique_results)} unique hotels matching your criteria."
+        
+        return "\n\n".join(formatted_results) + summary
         
     except Exception as e:
         raise RuntimeError(f"Failed to search hotel database: {str(e)}")

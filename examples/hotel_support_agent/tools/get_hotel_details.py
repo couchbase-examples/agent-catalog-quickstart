@@ -6,6 +6,7 @@ import couchbase.options
 import dotenv
 import os
 from datetime import timedelta
+from data.hotel_data import get_detailed_hotel_data
 
 dotenv.load_dotenv()
 
@@ -23,138 +24,69 @@ try:
     cluster.wait_until_ready(timedelta(seconds=5))
 except couchbase.exceptions.CouchbaseException as e:
     print(f"Could not connect to Couchbase cluster: {str(e)}")
+    cluster = None
 
 @agentc.catalog.tool
 def get_hotel_details(hotel_name: str) -> str:
     """Get comprehensive details for a specific hotel by name including amenities, pricing, and contact information."""
     try:
-        bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
-        scope_name = os.environ.get('SCOPE_NAME', 'shared')
-        collection_name = os.environ.get('COLLECTION_NAME', 'agentcatalog')
+        # Get detailed hotel data from the data module first (primary source)
+        detailed_hotels = get_detailed_hotel_data()
         
-        query = f"""
-        SELECT RAW content 
-        FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` 
-        WHERE LOWER(content) LIKE LOWER('%{hotel_name}%')
-        LIMIT 1
-        """
+        # Try to find the hotel by normalizing the name
+        normalized_name = hotel_name.lower().strip()
         
-        result = cluster.query(query)
-        rows = list(result.rows())
+        # Check direct match or partial matches
+        matched_hotel = None
+        for key, hotel_info in detailed_hotels.items():
+            if key == normalized_name or normalized_name in key or key in normalized_name:
+                matched_hotel = hotel_info
+                break
         
-        if not rows:
-            # Provide detailed mock data for the demo hotels
-            detailed_hotels = {
-                "grand palace hotel": {
-                    "name": "Grand Palace Hotel",
-                    "location": "Manhattan, New York City",
-                    "description": "Luxury 5-star hotel featuring elegant rooms with Manhattan skyline views",
-                    "price_range": "$300-$500 per night",
-                    "amenities": ["Rooftop Pool", "World-class Spa", "24/7 Fitness Center", "Michelin-starred Restaurant", "24/7 Room Service", "High-speed WiFi", "Concierge Service", "Valet Parking"],
-                    "rating": "4.8/5",
-                    "contact": "Phone: +1-212-555-0123, Email: reservations@grandpalacehotel.com",
-                    "address": "123 Fifth Avenue, Manhattan, NY 10001",
-                    "check_in": "3:00 PM",
-                    "check_out": "12:00 PM",
-                    "cancellation": "Free cancellation up to 24 hours before check-in"
-                },
-                "seaside resort": {
-                    "name": "Seaside Resort",
-                    "location": "Miami Beach, Florida", 
-                    "description": "Oceanfront resort with private beach and stunning Atlantic Ocean views",
-                    "price_range": "$200-$400 per night",
-                    "amenities": ["Private Beach Access", "3 Swimming Pools", "Oceanview Restaurant", "Tiki Bar", "Water Sports Center", "Free WiFi", "Spa Services", "Kids Club"],
-                    "rating": "4.6/5",
-                    "contact": "Phone: +1-305-555-0456, Email: info@seasideresort.com",
-                    "address": "789 Ocean Drive, Miami Beach, FL 33139",
-                    "check_in": "4:00 PM",
-                    "check_out": "11:00 AM",
-                    "cancellation": "Free cancellation up to 48 hours before check-in"
-                },
-                "mountain lodge": {
-                    "name": "Mountain Lodge",
-                    "location": "Aspen, Colorado",
-                    "description": "Rustic mountain retreat perfect for skiing and outdoor adventures",
-                    "price_range": "$150-$300 per night",
-                    "amenities": ["Ski-in/Ski-out Access", "Stone Fireplace Lounge", "Mountain View Restaurant", "Outdoor Hot Tub", "Hiking Trail Access", "Free WiFi", "Game Room", "Ski Equipment Rental"],
-                    "rating": "4.5/5",
-                    "contact": "Phone: +1-970-555-0789, Email: bookings@mountainlodge.com",
-                    "address": "456 Alpine Way, Aspen, CO 81611",
-                    "check_in": "3:00 PM",
-                    "check_out": "11:00 AM",
-                    "cancellation": "Free cancellation up to 72 hours before check-in"
-                },
-                "business center hotel": {
-                    "name": "Business Center Hotel",
-                    "location": "Downtown Chicago, Illinois",
-                    "description": "Modern business hotel with state-of-the-art conference facilities",
-                    "price_range": "$180-$280 per night",
-                    "amenities": ["24/7 Business Center", "Executive Meeting Rooms", "Fitness Center", "Business Lounge Restaurant", "Free WiFi", "Self-parking", "Express Check-in/out", "Printing Services"],
-                    "rating": "4.3/5",
-                    "contact": "Phone: +1-312-555-0321, Email: corporate@businesscenterhotel.com",
-                    "address": "321 Michigan Avenue, Chicago, IL 60601",
-                    "check_in": "3:00 PM",
-                    "check_out": "12:00 PM",
-                    "cancellation": "Free cancellation up to 24 hours before check-in"
-                },
-                "boutique inn": {
-                    "name": "Boutique Inn",
-                    "location": "San Francisco, California",
-                    "description": "Charming boutique hotel with unique artistic decor and personalized service",
-                    "price_range": "$220-$350 per night",
-                    "amenities": ["Personal Concierge", "Artisan Restaurant", "Craft Cocktail Bar", "Free WiFi", "Pet-friendly Policies", "Valet Parking", "Custom Room Design", "Local Art Gallery"],
-                    "rating": "4.7/5",
-                    "contact": "Phone: +1-415-555-0654, Email: stay@boutiqueinn.com",
-                    "address": "987 Union Square, San Francisco, CA 94108",
-                    "check_in": "4:00 PM",
-                    "check_out": "11:00 AM",
-                    "cancellation": "Free cancellation up to 24 hours before check-in"
-                }
-            }
-            
-            # Improved matching logic - try multiple approaches
-            hotel_input = hotel_name.lower().strip()
-            
-            # First try exact match
-            if hotel_input in detailed_hotels:
-                hotel = detailed_hotels[hotel_input]
-            else:
-                # Try partial matching for each hotel key
-                matched_hotel = None
-                for key, hotel_data in detailed_hotels.items():
-                    # Check if any part of the hotel name matches
-                    if (key in hotel_input or 
-                        any(word in hotel_input for word in key.split()) or
-                        hotel_data['name'].lower() in hotel_input):
-                        matched_hotel = hotel_data
-                        break
-                
-                if matched_hotel:
-                    hotel = matched_hotel
-                else:
-                    return f"Hotel '{hotel_name}' not found in the database. Please check the spelling or try using the search tool to find similar hotels in your desired location."
-            
-            return f"""**{hotel['name']}**
+        if matched_hotel:
+            return f"""**{matched_hotel['name']}**
 
-**Location:** {hotel['location']}
-**Description:** {hotel['description']}
-**Price Range:** {hotel['price_range']}
-**Rating:** {hotel['rating']}
+**Location:** {matched_hotel['location']}
+**Description:** {matched_hotel['description']}
+**Price Range:** {matched_hotel['price_range']}
+**Rating:** {matched_hotel['rating']}
 
 **Amenities:**
-{chr(10).join(f"• {amenity}" for amenity in hotel['amenities'])}
+{chr(10).join(f"• {amenity}" for amenity in matched_hotel['amenities'])}
 
 **Contact Information:**
-{hotel['contact']}
+{matched_hotel['contact']}
 
-**Address:** {hotel['address']}
+**Address:** {matched_hotel['address']}
 
-**Check-in Time:** {hotel['check_in']}
-**Check-out Time:** {hotel['check_out']}
-**Cancellation Policy:** {hotel['cancellation']}"""
+**Check-in Time:** {matched_hotel['check_in']}
+**Check-out Time:** {matched_hotel['check_out']}
+**Cancellation Policy:** {matched_hotel['cancellation']}"""
         
-        hotel_content = rows[0]
-        return f"Hotel Details: {hotel_content}"
+        # If not found in data module and cluster is available, try database search
+        if cluster:
+            try:
+                bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
+                scope_name = os.environ.get('SCOPE_NAME', 'shared')
+                collection_name = os.environ.get('COLLECTION_NAME', 'agentcatalog')
+                
+                query = f"""
+                SELECT RAW content 
+                FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` 
+                WHERE LOWER(content) LIKE LOWER('%{hotel_name}%')
+                LIMIT 1
+                """
+                
+                result = cluster.query(query)
+                rows = list(result.rows())
+                
+                if rows:
+                    return rows[0]
+            except Exception as db_error:
+                print(f"Database search failed: {str(db_error)}")
+        
+        # If still not found, return helpful message
+        return f"Sorry, I couldn't find detailed information for '{hotel_name}'. Please try searching for hotels first to see available options."
         
     except Exception as e:
-        raise RuntimeError(f"Failed to retrieve hotel details: {str(e)}")
+        return f"I encountered an error while retrieving hotel details: {str(e)}. Please try again or search for hotels first."
