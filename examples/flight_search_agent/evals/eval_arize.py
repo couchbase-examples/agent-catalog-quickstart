@@ -45,7 +45,13 @@ PROJECT_NAME = "flight-search-agent-evaluation"
 
 # Import the flight search agent components
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from main import setup_environment, CouchbaseClient, FlightSearchAgent, FlightSearchGraph, FlightSearchState
+from main import (
+    setup_environment,
+    CouchbaseClient,
+    FlightSearchAgent,
+    FlightSearchGraph,
+    FlightSearchState,
+)
 
 # Import necessary dependencies for CouchbaseSetup
 from couchbase.auth import PasswordAuthenticator
@@ -79,6 +85,7 @@ try:
         OpenAIModel,
         llm_classify,
     )
+
     ARIZE_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Arize dependencies not available: {e}")
@@ -108,12 +115,12 @@ class CouchbaseSetup:
         if missing_vars:
             # Set defaults for missing variables
             defaults = {
-                'CB_CONN_STRING': 'couchbase://localhost',
-                'CB_USERNAME': 'Administrator', 
-                'CB_PASSWORD': 'password',
-                'CB_BUCKET': 'vector-search-testing'
+                "CB_CONN_STRING": "couchbase://localhost",
+                "CB_USERNAME": "Administrator",
+                "CB_PASSWORD": "password",
+                "CB_BUCKET": "vector-search-testing",
             }
-            
+
             for var in missing_vars:
                 if var in defaults:
                     os.environ[var] = defaults[var]
@@ -142,7 +149,7 @@ class CouchbaseSetup:
                 host = conn_string
             else:
                 host = f"couchbase://{conn_string}"
-            
+
             auth = PasswordAuthenticator(os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"])
             options = ClusterOptions(auth)
             self.cluster = Cluster(host, options)
@@ -222,13 +229,13 @@ class CouchbaseSetup:
         try:
             # Load index definition from agentcatalog_index.json
             index_file = "agentcatalog_index.json"
-            
+
             # Look for the index file in the current directory
             if not os.path.exists(index_file):
                 # Try looking in the parent directory
                 parent_dir = os.path.dirname(os.path.dirname(__file__))
                 index_file = os.path.join(parent_dir, "agentcatalog_index.json")
-            
+
             if os.path.exists(index_file):
                 with open(index_file, "r") as f:
                     index_definition = json.load(f)
@@ -259,7 +266,7 @@ class CouchbaseSetup:
 class ArizeFlightSearchEvaluator:
     """
     Comprehensive evaluation system for flight search agents using Arize AI.
-    
+
     This class provides:
     - Flight search performance evaluation with multiple metrics
     - Tool effectiveness monitoring (lookup, booking, retrieval, policies)
@@ -274,14 +281,14 @@ class ArizeFlightSearchEvaluator:
         self.arize_client = None
         self.dataset_id = None
         self.tracer_provider = None
-        
+
         # Initialize Arize observability if available
         if ARIZE_AVAILABLE:
             self._setup_arize_observability()
-            
+
             # Initialize evaluation models
             self.evaluator_llm = OpenAIModel(model="gpt-4o")
-            
+
             # Define evaluation rails
             self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
             self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
@@ -291,14 +298,14 @@ class ArizeFlightSearchEvaluator:
     def setup_couchbase_infrastructure(self):
         """Setup Couchbase infrastructure for evaluation."""
         logger = logging.getLogger(__name__)
-        
+
         try:
             couchbase_setup = CouchbaseSetup()
             couchbase_setup.setup_environment()
             cluster = couchbase_setup.setup_couchbase_connection()
             collection = couchbase_setup.setup_bucket_scope_collection()
             couchbase_setup.setup_vector_search_index()
-            
+
             # Create Couchbase client for compatibility with existing code
             couchbase_client = CouchbaseClient(
                 conn_string=os.environ["CB_CONN_STRING"],
@@ -306,7 +313,7 @@ class ArizeFlightSearchEvaluator:
                 password=os.environ["CB_PASSWORD"],
                 bucket_name=os.environ["CB_BUCKET"],
             )
-            
+
             logger.info("Couchbase infrastructure setup complete for evaluation")
             return couchbase_client
         except Exception as e:
@@ -316,15 +323,14 @@ class ArizeFlightSearchEvaluator:
     def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
         """Create a flight search agent for evaluation."""
         logger = logging.getLogger(__name__)
-        
+
         try:
-            # Create FlightSearchAgent
-            agent = FlightSearchAgent(catalog=catalog, span=span)
-            
-            # Create and compile the graph
-            graph = FlightSearchGraph(agent=agent)
-            compiled_graph = graph.compile()
-            
+            # Create the flight search graph
+            flight_graph = FlightSearchGraph(catalog=catalog, span=span)
+
+            # Compile the graph
+            compiled_graph = flight_graph.compile()
+
             logger.info("Flight search agent created for evaluation")
             return compiled_graph
         except Exception as e:
@@ -337,15 +343,15 @@ class ArizeFlightSearchEvaluator:
             # Setup tracer provider for Phoenix (local only)
             self.tracer_provider = TracerProvider()
             trace.set_tracer_provider(self.tracer_provider)
-            
+
             print("✅ Local tracing configured successfully")
-            
+
             # Instrument LangChain and OpenAI
             instrumentors = [
                 ("LangChain", LangChainInstrumentor),
                 ("OpenAI", OpenAIInstrumentor),
             ]
-            
+
             for name, instrumentor_class in instrumentors:
                 try:
                     instrumentor = instrumentor_class()
@@ -357,172 +363,229 @@ class ArizeFlightSearchEvaluator:
                 except Exception as e:
                     print(f"⚠️ {name} instrumentation failed: {e}")
                     continue
-                    
+
             # Initialize Arize datasets client
             if API_KEY != "your-api-key":
                 try:
-                    self.arize_client = ArizeDatasetsClient(
-                        developer_key=API_KEY,
-                        api_key=API_KEY
-                    )
+                    self.arize_client = ArizeDatasetsClient(developer_key=API_KEY, api_key=API_KEY)
                     print("✅ Arize datasets client initialized")
                 except Exception as e:
                     print(f"⚠️ Could not initialize Arize datasets client: {e}")
                     self.arize_client = None
-            
+
             print("✅ Arize observability configured successfully")
-            
+
         except Exception as e:
             print(f"⚠️ Error setting up Arize observability: {e}")
 
     def run_flight_search_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
         """
         Run flight search evaluation on a set of test inputs.
-        
+
         Args:
             test_inputs: List of flight search queries to evaluate
-            
+
         Returns:
             DataFrame with evaluation results
         """
         print(f"🚀 Running evaluation on {len(test_inputs)} queries...")
-        
+
         # Setup infrastructure
         print("🔧 Setting up Couchbase infrastructure...")
         couchbase_client = self.setup_couchbase_infrastructure()
         print("✅ Couchbase infrastructure setup complete")
-        
+
         # Create agent
         print("🤖 Creating flight search agent...")
         agent_graph = self.create_agent(self.catalog, self.span)
         print("✅ Flight search agent created")
-        
+
         results = []
-        
+
         for i, query in enumerate(test_inputs, 1):
             print(f"  📝 Query {i}/{len(test_inputs)}: {query}")
-            
+
             try:
                 print(f"     🔄 Agent processing query...")
-                
-                # Create initial state
-                initial_state = FlightSearchState(
-                    query=query,
-                    resolved=False,
-                    search_results=[]
-                )
-                
+
+                # Create initial state using the proper method
+                initial_state = FlightSearchGraph.build_starting_state(query=query)
+
                 # Run the agent
                 result = agent_graph.invoke(initial_state)
-                
+
                 # Extract the response from the final state
-                response = result.get("response", str(result))
-                
+                # The result should have messages or similar structure
+                response = self._extract_response(result)
+
                 print(f"     ✅ Response received")
-                
+
                 # Analyze response
                 has_flight_info = self._check_flight_info(response)
                 has_booking_info = self._check_booking_info(response)
                 has_policy_info = self._check_policy_info(response)
                 appropriate_response = self._check_appropriate_response(query, response)
-                
+
                 # Create response preview
                 response_preview = (response[:150] + "...") if len(response) > 150 else response
                 print(f"     💬 Response preview: {response_preview}")
-                
-                results.append({
-                    "example_id": f"flight_query_{i}",
-                    "query": query,
-                    "output": response,
-                    "has_flight_info": has_flight_info,
-                    "has_booking_info": has_booking_info,
-                    "has_policy_info": has_policy_info,
-                    "appropriate_response": appropriate_response,
-                    "response_length": len(response),
-                })
-                
+
+                results.append(
+                    {
+                        "example_id": f"flight_query_{i}",
+                        "query": query,
+                        "output": response,
+                        "has_flight_info": has_flight_info,
+                        "has_booking_info": has_booking_info,
+                        "has_policy_info": has_policy_info,
+                        "appropriate_response": appropriate_response,
+                        "response_length": len(response),
+                    }
+                )
+
             except Exception as e:
                 print(f"     ❌ Error processing query: {e}")
-                results.append({
-                    "example_id": f"flight_query_{i}",
-                    "query": query,
-                    "output": f"Error: {str(e)}",
-                    "has_flight_info": False,
-                    "has_booking_info": False,
-                    "has_policy_info": False,
-                    "appropriate_response": False,
-                    "response_length": 0,
-                })
-        
+                results.append(
+                    {
+                        "example_id": f"flight_query_{i}",
+                        "query": query,
+                        "output": f"Error: {str(e)}",
+                        "has_flight_info": False,
+                        "has_booking_info": False,
+                        "has_policy_info": False,
+                        "appropriate_response": False,
+                        "response_length": 0,
+                    }
+                )
+
         return pd.DataFrame(results)
+
+    def _extract_response(self, result: dict) -> str:
+        """Extract response text from LangGraph result."""
+        try:
+            # Check if there are messages in the result
+            messages = result.get("messages", [])
+            if messages:
+                # Get the last message (which should be the AI response)
+                last_message = messages[-1]
+                if hasattr(last_message, "content"):
+                    return last_message.content
+                elif isinstance(last_message, dict):
+                    return last_message.get("content", str(last_message))
+
+            # Fallback to search results if available
+            search_results = result.get("search_results", [])
+            if search_results:
+                return f"Found {len(search_results)} flight options. " + str(search_results)
+
+            # Final fallback
+            return str(result)
+        except Exception as e:
+            return f"Error extracting response: {e}"
 
     def _check_flight_info(self, response_text: str) -> bool:
         """Check if response contains flight information."""
-        flight_indicators = ["flight", "airline", "departure", "arrival", "aircraft", "gate", "terminal", "seat"]
+        flight_indicators = [
+            "flight",
+            "airline",
+            "departure",
+            "arrival",
+            "aircraft",
+            "gate",
+            "terminal",
+            "seat",
+        ]
         return any(indicator in response_text.lower() for indicator in flight_indicators)
 
     def _check_booking_info(self, response_text: str) -> bool:
         """Check if response contains booking information."""
-        booking_indicators = ["booking", "reservation", "ticket", "passenger", "confirmation", "booked", "reserved"]
+        booking_indicators = [
+            "booking",
+            "reservation",
+            "ticket",
+            "passenger",
+            "confirmation",
+            "booked",
+            "reserved",
+        ]
         return any(indicator in response_text.lower() for indicator in booking_indicators)
 
     def _check_policy_info(self, response_text: str) -> bool:
         """Check if response mentions policies."""
-        policy_indicators = ["policy", "baggage", "cancellation", "refund", "terms", "conditions", "rules"]
+        policy_indicators = [
+            "policy",
+            "baggage",
+            "cancellation",
+            "refund",
+            "terms",
+            "conditions",
+            "rules",
+        ]
         return any(indicator in response_text.lower() for indicator in policy_indicators)
 
     def _check_appropriate_response(self, query: str, response: str) -> bool:
         """Check if response is appropriate for the query."""
         # Check for hallucination indicators
-        hallucination_indicators = ["mars", "pluto", "atlantis", "fictional", "impossible", "cannot travel"]
-        has_hallucination = any(indicator in response.lower() for indicator in hallucination_indicators)
-        
+        hallucination_indicators = [
+            "mars",
+            "pluto",
+            "atlantis",
+            "fictional",
+            "impossible",
+            "cannot travel",
+        ]
+        has_hallucination = any(
+            indicator in response.lower() for indicator in hallucination_indicators
+        )
+
         # Check for reasonable response length
         reasonable_length = 50 < len(response) < 2000
-        
+
         # Check for flight-related content
         has_flight_content = self._check_flight_info(response)
-        
+
         return not has_hallucination and reasonable_length and has_flight_content
 
     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """
         Run Arize-based LLM evaluations on the results.
-        
+
         Args:
             results_df: DataFrame with evaluation results
-            
+
         Returns:
             DataFrame with additional Arize evaluation columns
         """
         if not ARIZE_AVAILABLE:
             print("⚠️ Arize not available - skipping LLM evaluations")
             return results_df
-            
+
         print(f"🧠 Running LLM-based evaluations on {len(results_df)} responses...")
         print("   📋 Evaluation criteria:")
         print("      🔍 Relevance: Does the response address the flight search query?")
         print("      🎯 Correctness: Is the flight information accurate and helpful?")
-        
+
         # Sample evaluation data preview
         if len(results_df) > 0:
             sample_row = results_df.iloc[0]
             print(f"\n   🔍 Sample evaluation data:")
             print(f"      Query: {sample_row['query']}")
             print(f"      Response: {sample_row['output'][:100]}...")
-        
+
         try:
             # Prepare data for evaluation
             evaluation_data = []
             for _, row in results_df.iterrows():
-                evaluation_data.append({
-                    "reference": row['output'],  # Use the agent's output as reference
-                    "input": row['query'],
-                    "output": row['output']
-                })
-            
+                evaluation_data.append(
+                    {
+                        "reference": row["output"],  # Use the agent's output as reference
+                        "input": row["query"],
+                        "output": row["output"],
+                    }
+                )
+
             eval_df = pd.DataFrame(evaluation_data)
-            
+
             # Run relevance evaluation
             print(f"\n   🔍 Evaluating relevance...")
             relevance_results = llm_classify(
@@ -532,7 +595,7 @@ class ArizeFlightSearchEvaluator:
                 rails=self.relevance_rails,
                 provide_explanation=True,
             )
-            
+
             # Run correctness evaluation
             print(f"   🎯 Evaluating correctness...")
             correctness_results = llm_classify(
@@ -542,28 +605,32 @@ class ArizeFlightSearchEvaluator:
                 rails=self.qa_rails,
                 provide_explanation=True,
             )
-            
+
             # Add evaluation results to DataFrame
-            results_df['arize_relevance'] = relevance_results['label']
-            results_df['arize_relevance_explanation'] = relevance_results['explanation']
-            results_df['arize_correctness'] = correctness_results['label']
-            results_df['arize_correctness_explanation'] = correctness_results['explanation']
-            
+            results_df["arize_relevance"] = relevance_results["label"]
+            results_df["arize_relevance_explanation"] = relevance_results["explanation"]
+            results_df["arize_correctness"] = correctness_results["label"]
+            results_df["arize_correctness_explanation"] = correctness_results["explanation"]
+
             # Display sample explanations
             if len(results_df) > 0:
                 print(f"\n   📝 Sample evaluation explanations:")
                 for i in range(min(2, len(results_df))):
                     row = results_df.iloc[i]
                     print(f"      Query: {row['query']}")
-                    print(f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:100]}...")
-                    print(f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:100]}...")
+                    print(
+                        f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:100]}..."
+                    )
+                    print(
+                        f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:100]}..."
+                    )
                     print()
-            
+
             print(f"   ✅ LLM evaluations completed")
-            
+
         except Exception as e:
             print(f"   ❌ Error running LLM evaluations: {e}")
-            
+
         return results_df
 
 
@@ -574,7 +641,7 @@ def eval_flight_search_basic():
     print("   • Agent's ability to understand flight search queries")
     print("   • Quality of responses using flight lookup tools")
     print("   • LLM-based relevance and correctness scoring")
-    
+
     # Test queries for flight search
     test_inputs = [
         "Find flights from New York to Los Angeles tomorrow",
@@ -584,28 +651,28 @@ def eval_flight_search_basic():
         "What are the flight options from Seattle to Denver?",
         "Can you help me find flights from Atlanta to Phoenix?",
     ]
-    
+
     # Initialize evaluation components
     catalog = agentc.Catalog()
     span = catalog.Span(name="FlightSearchEvaluation")
-    
+
     evaluator = ArizeFlightSearchEvaluator(catalog, span)
-    
+
     # Run the evaluation
     results_df = evaluator.run_flight_search_evaluation(test_inputs)
-    
+
     # Run Arize evaluations if available
     if ARIZE_AVAILABLE:
         results_df = evaluator.run_arize_evaluations(results_df)
-    
+
     # Calculate metrics
     total_queries = len(results_df)
-    queries_with_flight_info = results_df['has_flight_info'].sum()
-    queries_with_booking_info = results_df['has_booking_info'].sum()
-    queries_with_policy_info = results_df['has_policy_info'].sum()
-    appropriate_responses = results_df['appropriate_response'].sum()
+    queries_with_flight_info = results_df["has_flight_info"].sum()
+    queries_with_booking_info = results_df["has_booking_info"].sum()
+    queries_with_policy_info = results_df["has_policy_info"].sum()
+    appropriate_responses = results_df["appropriate_response"].sum()
     success_rate = (queries_with_flight_info / total_queries) * 100
-    
+
     # Print summary
     print(f"\n✅ Basic flight search evaluation completed:")
     print(f"   📊 Total queries processed: {total_queries}")
@@ -614,27 +681,27 @@ def eval_flight_search_basic():
     print(f"   ✈️ Queries with booking info: {queries_with_booking_info}")
     print(f"   📋 Queries with policy info: {queries_with_policy_info}")
     print(f"   ✅ Appropriate responses: {appropriate_responses}")
-    
-    if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
-        relevance_scores = results_df['arize_relevance'].value_counts()
-        correctness_scores = results_df['arize_correctness'].value_counts()
-        
+
+    if ARIZE_AVAILABLE and "arize_relevance" in results_df.columns:
+        relevance_scores = results_df["arize_relevance"].value_counts()
+        correctness_scores = results_df["arize_correctness"].value_counts()
+
         # Convert to regular Python dict with int values
         relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
         correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
-        
+
         print(f"\n🔍 Arize Evaluation Results:")
         print(f"   📋 Relevance: {relevance_dict}")
         print(f"   ✅ Correctness: {correctness_dict}")
-    
+
     print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
-    
+
     return results_df
 
 
 if __name__ == "__main__":
     import sys
-    
+
     # Check if specific evaluation is requested
     if len(sys.argv) > 1:
         if sys.argv[1] == "basic":
