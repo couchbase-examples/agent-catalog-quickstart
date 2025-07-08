@@ -60,7 +60,7 @@ def _get_vector_store():
 
         vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
-            bucket_name=os.getenv("CB_BUCKET", "route-planner-bucket"),
+            bucket_name=os.getenv("CB_BUCKET_NAME", "route-planner-bucket"),
             scope_name=os.getenv("SCOPE_NAME", "shared"),
             collection_name=os.getenv("COLLECTION_NAME", "route_data"),
             index_name=os.getenv("INDEX_NAME", "route_planner_vector_index"),
@@ -95,8 +95,21 @@ def search_routes(
     try:
         vector_store = _get_vector_store()
 
+        # Import VectorStoreQuery for proper querying
+        from llama_index.core.vector_stores import VectorStoreQuery
+
+        # Generate query embedding
+        embed_model = Settings.embed_model
+        query_embedding = embed_model.get_query_embedding(query)
+
+        # Create vector store query object
+        query_obj = VectorStoreQuery(
+            query_embedding=query_embedding, 
+            similarity_top_k=max_results
+        )
+
         # Perform semantic search
-        search_results = vector_store.query(query_str=query, similarity_top_k=max_results)
+        search_results = vector_store.query(query_obj)
 
         if not search_results.nodes:
             return f"No routes found matching '{query}'. Try a different search term or broader criteria."
@@ -105,7 +118,7 @@ def search_routes(
         formatted_results = []
         for i, node in enumerate(search_results.nodes, 1):
             content = node.text
-            metadata = node.metadata
+            metadata = node.metadata if hasattr(node, 'metadata') else {}
 
             # Apply filters if specified
             if route_type and metadata.get("route_type") != route_type:

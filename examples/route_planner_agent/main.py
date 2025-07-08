@@ -302,24 +302,8 @@ class RouteplannerAgent:
                 logger.warning("No route data loaded")
                 return
 
-            # Check if data already exists by trying to query
-            try:
-                # Try a simple search to see if data exists
-                from llama_index.core.vector_stores import VectorStoreQuery
-
-                embed_model = Settings.embed_model
-                query_embedding = embed_model.get_query_embedding("route")
-
-                query_obj = VectorStoreQuery(query_embedding=query_embedding, similarity_top_k=1)
-                search_results = self.vector_store.query(query_obj)
-                if search_results and len(search_results.nodes) > 0:
-                    logger.info("Route data already exists in vector store")
-                    return
-            except Exception:
-                # If search fails, assume no data exists
-                pass
-
-            logger.info("Ingesting route data into vector store...")
+            # Force reingest data to ensure it's properly loaded
+            logger.info("Force ingesting route data into vector store...")
 
             # Create documents
             documents = [Document(text=text) for text in route_texts]
@@ -352,23 +336,74 @@ class RouteplannerAgent:
             embed_model = Settings.embed_model
             query_embedding = embed_model.get_query_embedding(query)
 
-            query_obj = VectorStoreQuery(query_embedding=query_embedding, similarity_top_k=3)
+            # Create vector store query
+            query_obj = VectorStoreQuery(
+                query_embedding=query_embedding, 
+                similarity_top_k=5
+            )
+            
+            # Query the vector store
             search_results = self.vector_store.query(query_obj)
 
             if not search_results or not search_results.nodes:
-                return "No routes found matching your query"
+                return "No routes found in vector store. The vector store may be empty or the query didn't match any content."
 
-            response = f"Found {len(search_results.nodes)} relevant routes:\n\n"
+            response = f"Found {len(search_results.nodes)} relevant routes from vector store:\n\n"
             for i, node in enumerate(search_results.nodes, 1):
                 response += f"{i}. {node.text}\n"
-                if hasattr(node, "score"):
+                if hasattr(node, "score") and node.score:
                     response += f"   (Relevance score: {node.score:.3f})\n"
                 response += "\n"
 
             return response
 
         except Exception as e:
+            logger.error(f"Vector store search error: {e}")
             return f"Error searching routes with vector store: {e}"
+
+    def check_vector_store_data(self) -> str:
+        """Check if vector store has data."""
+        try:
+            from llama_index.core.vector_stores import VectorStoreQuery
+
+            embed_model = Settings.embed_model
+            query_embedding = embed_model.get_query_embedding("route")
+
+            query_obj = VectorStoreQuery(
+                query_embedding=query_embedding, 
+                similarity_top_k=1
+            )
+            
+            search_results = self.vector_store.query(query_obj)
+            
+            if search_results and search_results.nodes:
+                return f"Vector store contains {len(search_results.nodes)} documents"
+            else:
+                return "Vector store appears to be empty"
+        except Exception as e:
+            return f"Error checking vector store: {e}"
+
+    def clear_vector_store_data(self):
+        """Clear all data from vector store."""
+        try:
+            # Use Couchbase collection to clear all documents
+            collection = self.couchbase_setup.collection
+            if collection:
+                # Delete all documents in the collection
+                try:
+                    cluster = self.couchbase_setup.cluster
+                    bucket_name = os.environ["CB_BUCKET_NAME"]
+                    scope_name = os.environ["SCOPE_NAME"]
+                    collection_name = os.environ["COLLECTION_NAME"]
+                    
+                    # Delete all documents in the collection
+                    query = f"DELETE FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+                    cluster.query(query).execute()
+                    logger.info("Cleared all documents from vector store")
+                except Exception as e:
+                    logger.error(f"Error clearing vector store: {e}")
+        except Exception as e:
+            logger.error(f"Error clearing vector store: {e}")
 
     def plan_route(self, query: str) -> str:
         """Plan a route based on user query."""
@@ -376,46 +411,34 @@ class RouteplannerAgent:
             if not self.catalog:
                 return "Route planner not properly initialized. Please check your configuration."
 
-            # Get relevant route information using vector search
+            # Check vector store status
+            vector_status = self.check_vector_store_data()
+            logger.info(f"Vector store status: {vector_status}")
+
+            # First search using vector store
             vector_result = self.search_routes_with_vector_store(query)
 
-            # Try to enhance with tool search results
-            tool_result = ""
+            # If vector search failed or returned no results, try to reingest data
+            if "No routes found in vector store" in vector_result or "Error searching routes" in vector_result:
+                logger.info("Vector store seems empty or failed. Attempting to reingest data...")
+                self.ingest_route_data()
+                # Try vector search again
+                vector_result = self.search_routes_with_vector_store(query)
+
+            # Try to use the search_routes tool from Agent Catalog
             try:
                 tool_obj = self.catalog.find("tool", name="search_routes")
                 if tool_obj and hasattr(tool_obj, "func"):
+                    logger.info("Using search_routes tool from Agent Catalog")
                     tool_result = tool_obj.func(query=query)
+                    combined_result = f"=== VECTOR SEARCH RESULTS ===\n{vector_result}\n\n=== TOOL SEARCH RESULTS ===\n{tool_result}"
+                    return combined_result
+                else:
+                    logger.warning("search_routes tool not found in Agent Catalog")
+                    return vector_result
             except Exception as e:
                 logger.warning(f"Error using search_routes tool: {e}")
-
-            # Combine the search results
-            combined_context = f"Vector Search Results:\n{vector_result}"
-            if tool_result:
-                combined_context += f"\n\nTool Search Results:\n{tool_result}"
-
-            # Use LLM to process the search results and answer the user's question
-            llm_prompt = f"""Based on the route information provided below, please answer the user's travel question directly and helpfully.
-
-User Question: {query}
-
-Available Route Information:
-{combined_context}
-
-Please provide a clear, direct answer that addresses the user's specific question. Include relevant details like distances, travel times, transportation options, and recommendations where appropriate. If you can't find specific information to answer the question, say so clearly.
-
-Answer:"""
-
-            # Get LLM response
-            try:
-                if Settings.llm:
-                    llm_response = Settings.llm.complete(llm_prompt)
-                    return str(llm_response.text).strip()
-                else:
-                    # Fallback to raw results if LLM not available
-                    return f"LLM not configured. Raw search results:\n{combined_context}"
-            except Exception as e:
-                logger.warning(f"Error getting LLM response: {e}")
-                return f"Error processing with LLM: {e}\n\nRaw search results:\n{combined_context}"
+                return vector_result
 
         except Exception as e:
             return f"Error planning route: {e!s}"
@@ -644,8 +667,35 @@ def run_test():
         logger.error(f"Test failed: {e}")
 
 
+def run_nyc_boston_test():
+    """Run a specific test for New York to Boston route."""
+    logger.info("Running New York to Boston Route Test")
+    logger.info("=" * 40)
+
+    try:
+        catalog = agentc.Catalog()
+        application_span = catalog.Span(name="Route Planner Agent - NYC to Boston Test")
+        planner = RouteplannerAgent(span=application_span)
+
+        with application_span.new("NYC to Boston Route Test") as span:
+            logger.info("Testing route planning from New York to Boston...")
+            result = planner.plan_route("plan a route from new york to boston")
+            span["result"] = result
+            logger.info(f"NYC to Boston Route Result:\n{result}")
+
+        logger.info("NYC to Boston test completed successfully!")
+
+    except Exception as e:
+        logger.error(f"NYC to Boston test failed: {e}")
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        run_test()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "test":
+            run_test()
+        elif sys.argv[1] == "nyc":
+            run_nyc_boston_test()
+        else:
+            run_interactive_demo()
     else:
         run_interactive_demo()
