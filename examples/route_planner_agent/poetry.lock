@@ -395,14 +395,14 @@ tracing = ["deprecated", "openinference-semantic-conventions (>=0.1.12,<1)", "op
 
 [[package]]
 name = "arize-phoenix"
-version = "11.4.0"
+version = "11.5.0"
 description = "AI Observability and Evaluation"
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["main"]
 files = [
-    {file = "arize_phoenix-11.4.0-py3-none-any.whl", hash = "sha256:7165b35243feb3ec78c235bb198dd67136a7fbea966b65a2f5e01f6978d599b2"},
-    {file = "arize_phoenix-11.4.0.tar.gz", hash = "sha256:172fb3d76447ce72d1ec66f90f1600939659114170c84870c9e68f286d0ef263"},
+    {file = "arize_phoenix-11.5.0-py3-none-any.whl", hash = "sha256:6eb9983a75f3fb7b9c00b1e152ecaa9d73c368b3845a9baba7c9d333a5fc8357"},
+    {file = "arize_phoenix-11.5.0.tar.gz", hash = "sha256:e38b77b7e0dbc3027ef3614f5f54dc89114208f1e3b31a456ce4d6613356cebd"},
 ]
 
 [package.dependencies]
@@ -428,6 +428,7 @@ opentelemetry-proto = ">=1.12.0"
 opentelemetry-sdk = "*"
 opentelemetry-semantic-conventions = "*"
 pandas = ">=1.0"
+prometheus-client = "*"
 protobuf = ">=4.25.8,<6.0"
 psutil = "*"
 pyarrow = "*"
@@ -447,7 +448,7 @@ wrapt = ">=1.17.2"
 
 [package.extras]
 container = ["aiohttp", "anthropic (>=0.49.0)", "azure-identity", "boto3", "fast-hdbscan (>=0.2.0)", "google-generativeai", "numba (>=0.60.0)", "openai (>=1.0.0)", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation-fastapi", "opentelemetry-instrumentation-grpc", "opentelemetry-instrumentation-sqlalchemy", "opentelemetry-proto (>=1.12.0)", "opentelemetry-sdk", "opentelemetry-semantic-conventions", "prometheus-client", "py-grpc-prometheus", "strawberry-graphql[opentelemetry] (==0.270.1)", "umap-learn", "uvloop ; platform_system != \"Windows\""]
-dev = ["anthropic (>=0.49.0)", "arize[autoembeddings,llm-evaluation]", "asgi-lifespan", "asyncpg", "faker (>=30.1.0)", "gcsfs", "google-cloud-aiplatform (>=1.3)", "grpc-interceptor[testing]", "hatch", "jupyter", "langchain (>=0.0.334)", "litellm (>=1.0.3,<1.57.5)", "llama-index (>=0.10.3)", "mypy (==1.12.1)", "nbqa", "pandas (>=1.0)", "pandas-stubs (==2.2.2.240603)", "portpicker", "pre-commit", "prometheus-client", "psycopg[binary,pool]", "pytest (==8.3.3)", "pytest-asyncio", "pytest-cov", "pytest-postgresql", "pytest-xdist", "ruff (==0.6.9)", "strawberry-graphql[debug-server,opentelemetry] (==0.270.1)", "tabulate", "tox (==4.18.1)", "tox-uv (==1.11.3)", "types-jsonschema", "types-python-dateutil", "types-tabulate", "uv (==0.7.12)", "uvloop ; platform_system != \"Windows\""]
+dev = ["anthropic (>=0.49.0)", "arize[autoembeddings,llm-evaluation]", "asgi-lifespan", "asyncpg", "faker (>=30.1.0)", "gcsfs", "google-cloud-aiplatform (>=1.3)", "grpc-interceptor[testing]", "hatch", "jupyter", "langchain (>=0.0.334)", "litellm (>=1.0.3,<1.57.5)", "llama-index (>=0.10.3)", "mypy (==1.12.1)", "nbqa", "pandas (>=1.0)", "pandas-stubs (==2.2.2.240603)", "portpicker", "pre-commit", "psycopg[binary,pool]", "pytest (==8.3.3)", "pytest-asyncio", "pytest-cov", "pytest-postgresql", "pytest-xdist", "ruff (==0.6.9)", "strawberry-graphql[debug-server,opentelemetry] (==0.270.1)", "tabulate", "tox (==4.18.1)", "tox-uv (==1.11.3)", "types-jsonschema", "types-python-dateutil", "types-tabulate", "uv (==0.7.12)", "uvloop ; platform_system != \"Windows\""]
 embeddings = ["fast-hdbscan (>=0.2.0)", "numba (>=0.60.0)", "umap-learn"]
 llama-index = ["llama-index (==0.11.0)", "llama-index-agent-openai (>=0.2.7)", "llama-index-embeddings-openai (>=0.1.10)", "llama-index-llms-openai (>=0.1.24)", "llama-index-readers-file (>=0.1.25)"]
 pg = ["asyncpg", "psycopg[binary,pool]"]
@@ -4438,10 +4439,9 @@ testing = ["coverage", "pytest", "pytest-benchmark"]
 name = "prometheus-client"
 version = "0.22.1"
 description = "Python client for the Prometheus monitoring system."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"dev\""
 files = [
     {file = "prometheus_client-0.22.1-py3-none-any.whl", hash = "sha256:cca895342e308174341b2cbf99a56bef291fbc0ef7b9e5412a0f26d653ba7094"},
     {file = "prometheus_client-0.22.1.tar.gz", hash = "sha256:190f1331e783cf21eb60bca559354e0a4d4378facecf78f5428c39b675d20d28"},
