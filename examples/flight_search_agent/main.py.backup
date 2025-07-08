@@ -28,7 +28,6 @@ from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
 from parameter_mapper import ParameterMapper
@@ -228,21 +227,19 @@ class FlightSearchState(agentc_langgraph.agent.State):
     search_results: list[dict]
 
 
-class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
-    """Flight search agent using Agent Catalog tools and ReActAgent framework."""
+class FlightSearchAgent:
+    """Flight search agent using Agent Catalog tools and LangChain ReAct pattern."""
 
     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
         """Initialize the flight search agent."""
+        self.catalog = catalog
+        self.span = span
         
         model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
+        self.chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
 
-        super().__init__(
-            chat_model=chat_model,
-            catalog=catalog,
-            span=span,
-            prompt_name="flight_search_assistant"
-        )
+        # Initialize parameter mapper for intelligent parameter handling
+        self.parameter_mapper = ParameterMapper(self.chat_model)
 
     def _invoke(
         self,
@@ -250,7 +247,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         state: FlightSearchState,
         config: langchain_core.runnables.RunnableConfig,
     ) -> FlightSearchState:
-        """Handle flight search conversation using ReActAgent."""
+        """Handle flight search conversation using LangChain ReAct pattern."""
 
         # Initialize conversation if this is the first message
         if not state["messages"]:
@@ -258,73 +255,96 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             state["messages"].append(initial_msg)
             logger.info(f"Flight Query: {state['query']}")
 
-        # Initialize parameter mapper for intelligent parameter handling
-        parameter_mapper = ParameterMapper(self.chat_model)
+        try:
+            # Load tools from catalog - same pattern as hotel support agent
+            from langchain_core.tools import Tool
+            
+            tools = []
+            tool_configs = [
+                ("lookup_flight_info", "Find flight routes between airports"),
+                ("save_flight_booking", "Save flight booking requests"),
+                ("retrieve_flight_bookings", "Retrieve existing flight bookings"),
+                ("search_flight_policies", "Search flight policies and guidelines"),
+            ]
 
-        # Get tools from Agent Catalog and create wrapper functions for parameter mapping
-        from langchain_core.tools import Tool
+            for tool_name, description in tool_configs:
+                try:
+                    tool_obj = self.catalog.find("tool", name=tool_name)
+                    if tool_obj and hasattr(tool_obj, "func"):
+                        # Simple wrapper using parameter mapper
+                        def create_tool_wrapper(func, tool_name):
+                            def wrapper(tool_input):
+                                try:
+                                    # Handle retrieve_flight_bookings with no parameters
+                                    if tool_name == "retrieve_flight_bookings":
+                                        return func()
+                                    
+                                    # Use parameter mapper for other tools
+                                    mapped_args = self.parameter_mapper.map_string_input(
+                                        tool_name, tool_input, func
+                                    )
+                                    return func(**mapped_args)
+                                except Exception as e:
+                                    logger.error(f"Tool {tool_name} error: {e}")
+                                    return f"Error executing {tool_name}: {str(e)}"
+                            return wrapper
 
-        tools = []
-        for tool_name in ["lookup_flight_info", "save_flight_booking", "retrieve_flight_bookings", "search_flight_policies"]:
-            catalog_tool = self.catalog.find("tool", name=tool_name)
-            logger.info(f"Loaded tool: {tool_name}")
+                        wrapped_func = create_tool_wrapper(tool_obj.func, tool_name)
+                        lc_tool = Tool(
+                            name=tool_obj.meta.name,
+                            description=tool_obj.meta.description or description,
+                            func=wrapped_func,
+                        )
+                        tools.append(lc_tool)
+                        logger.info(f"Loaded tool: {tool_name}")
+                except Exception as e:
+                    logger.warning(f"Could not load tool {tool_name}: {e}")
 
-            # Create wrapper function to handle parameter mapping using ParameterMapper
-            def create_tool_wrapper(original_tool, name):
-                def wrapper_func(tool_input: str) -> str:
-                    """Wrapper to handle parameter mapping using ParameterMapper."""
-                    try:
-                        # Use ParameterMapper to intelligently map string input to parameters
-                        mapped_params = parameter_mapper.map_string_input(name, tool_input, original_tool.func)
-                        
-                        # Call the original tool with mapped parameters
-                        return original_tool.func(**mapped_params)
-                        
-                    except Exception as e:
-                        return f"Error calling {name}: {str(e)}"
+            if not tools:
+                error_msg = langchain_core.messages.AIMessage(
+                    content="I'm unable to access my flight search tools right now. Please try again later."
+                )
+                state["messages"].append(error_msg)
+                state["resolved"] = True
+                return state
 
-                return wrapper_func
-
-            # Create LangChain tool with wrapper
-            langchain_tool = Tool(
-                name=tool_name,
-                description=f"Tool for {tool_name.replace('_', ' ')}",
-                func=create_tool_wrapper(catalog_tool, tool_name)
+            # Use LangChain ReAct agent - same pattern as hotel support agent
+            from langchain.agents import AgentExecutor, create_react_agent
+            from langchain import hub
+            
+            # Get standard ReAct prompt
+            react_prompt = hub.pull("hwchase17/react")
+            
+            # Create ReAct agent
+            agent = create_react_agent(self.chat_model, tools, react_prompt)
+            agent_executor = AgentExecutor(
+                agent=agent,
+                tools=tools,
+                verbose=True,
+                handle_parsing_errors=True,
+                max_iterations=5,
+                return_intermediate_steps=True
             )
-            tools.append(langchain_tool)
+            
+            # Execute the agent with the query
+            query = state["query"]
+            result = agent_executor.invoke({"input": query})
+            
+            # Create response message
+            response_content = result.get("output", "I was unable to process your flight search request.")
+            response_msg = langchain_core.messages.AIMessage(content=response_content)
+            state["messages"].append(response_msg)
+            
+            logger.info(f"Agent Response: {response_content}")
+            state["resolved"] = True
 
-        # Get prompt from Agent Catalog directly  
-        prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
-        
-        # Convert PromptResult to LangChain compatible format
-        from langchain.agents import create_react_agent
-        from langchain_core.prompts import PromptTemplate
-        
-        # Use the Agent Catalog prompt content directly - it already has ReAct format
-        react_prompt = PromptTemplate.from_template(prompt_resource.content)
-
-        # Create ReAct agent with tools and prompt
-        agent = create_react_agent(self.chat_model, tools, react_prompt)
-        
-        # Create agent executor
-        from langchain.agents import AgentExecutor
-        agent_executor = AgentExecutor(
-            agent=agent, 
-            tools=tools, 
-            verbose=True,
-            handle_parsing_errors=True,
-            max_iterations=10
-        )
-
-        # Execute the agent
-        response = agent_executor.invoke({
-            "input": state["query"]
-        })
-
-        # Add response to conversation
-        assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
-        state["messages"].append(assistant_msg)
-        state["resolved"] = True
+        except Exception as e:
+            logger.error(f"Agent invocation error: {e}")
+            error_msg = langchain_core.messages.AIMessage(
+                content="I apologize, but I encountered an issue processing your request. Please try again."
+            )
+            state["messages"].append(error_msg)
+            state["resolved"] = True
 
         return state
 
@@ -349,9 +369,9 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         # Build the flight search agent with catalog integration
         search_agent = FlightSearchAgent(catalog=self.catalog, span=self.span)
 
-        # Create a wrapper function for the ReActAgent
+        # Create a wrapper function for the agent since LangGraph expects callables
         def flight_search_node(state: FlightSearchState) -> FlightSearchState:
-            """Wrapper function for the flight search ReActAgent."""
+            """Wrapper function for the flight search agent."""
             with self.span.new("Flight Search Node") as node_span:
                 return search_agent._invoke(
                     span=node_span,

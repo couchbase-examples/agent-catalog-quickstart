@@ -84,6 +84,7 @@ def save_flight_booking(
     Save a flight booking to Couchbase database.
     Handles flight reservations with validation, pricing, and booking confirmation.
     Single user system - no customer ID required.
+    Checks for duplicate bookings before creating new ones.
     """
     try:
         # Validate required fields
@@ -108,6 +109,58 @@ def save_flight_booking(
         except ValueError:
             return "Error: Invalid date format. Please use YYYY-MM-DD format or 'tomorrow'."
 
+        # Setup collection info
+        bucket_name = os.getenv("CB_BUCKET", "vector-search-testing")
+        scope_name = "agentc_bookings"
+        collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
+
+        # Ensure collection exists
+        _ensure_collection_exists(bucket_name, scope_name, collection_name)
+
+        # Check for duplicate bookings using Couchbase SDK
+        duplicate_check_query = f"""
+        SELECT booking_id, total_price 
+        FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` 
+        WHERE source_airport = $source_airport 
+        AND destination_airport = $destination_airport 
+        AND departure_date = $departure_date 
+        AND passengers = $passengers 
+        AND flight_class = $flight_class
+        AND status = 'confirmed'
+        """
+        
+        try:
+            duplicate_result = cluster.query(
+                duplicate_check_query,
+                source_airport=source_airport.upper(),
+                destination_airport=destination_airport.upper(),
+                departure_date=departure_date,
+                passengers=passengers,
+                flight_class=flight_class.title()
+            )
+            
+            existing_bookings = list(duplicate_result.rows())
+            
+            if existing_bookings:
+                existing_booking = existing_bookings[0]
+                return f"""
+Duplicate Booking Detected!
+
+You already have a confirmed booking for this exact flight:
+- Booking ID: {existing_booking['booking_id']}
+- Route: {source_airport.upper()} → {destination_airport.upper()}
+- Date: {departure_date}
+- Passengers: {passengers}
+- Class: {flight_class.title()}
+- Total: ${existing_booking['total_price']:.2f}
+
+No new booking was created. Use the existing booking ID for reference.
+                """.strip()
+                
+        except Exception as e:
+            # Continue with booking creation if duplicate check fails
+            pass
+
         # Generate booking ID for single user
         booking_id = (
             f"FL{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:8].upper()}"
@@ -131,14 +184,6 @@ def save_flight_booking(
             "booking_time": datetime.datetime.now().isoformat(),
             "status": "confirmed",
         }
-
-        # Setup collection name - single user system
-        bucket_name = os.getenv("CB_BUCKET", "vector-search-testing")
-        scope_name = "agentc_bookings"
-        collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
-
-        # Ensure collection exists
-        _ensure_collection_exists(bucket_name, scope_name, collection_name)
 
         # Insert booking into Couchbase
         insert_query = f"""
