@@ -27,6 +27,9 @@ from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.prompts import PromptTemplate
+from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 
@@ -97,6 +100,8 @@ class CouchbaseClient:
             self.cluster.wait_until_ready(timedelta(seconds=10))
             logger.info("Successfully connected to Couchbase")
             return self.cluster
+        except (ConnectionError, TimeoutError) as e:
+            raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
         except Exception as e:
             raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
@@ -112,6 +117,8 @@ class CouchbaseClient:
                 try:
                     self.bucket = self.cluster.bucket(self.bucket_name)
                     logger.info(f"Bucket '{self.bucket_name}' exists")
+                except (ValueError, RuntimeError):
+                    logger.info(f"Creating bucket '{self.bucket_name}'...")
                 except Exception:
                     logger.info(f"Creating bucket '{self.bucket_name}'...")
                     bucket_settings = CreateBucketSettings(
@@ -159,6 +166,8 @@ class CouchbaseClient:
                     f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
                 ).execute()
                 logger.info("Primary index created successfully")
+            except (ValueError, RuntimeError) as e:
+                logger.warning(f"Error creating primary index: {e!s}")
             except Exception as e:
                 logger.warning(f"Error creating primary index: {e!s}")
 
@@ -169,6 +178,8 @@ class CouchbaseClient:
             logger.info(f"Collection setup complete for {scope_name}.{collection_name}")
             return collection
 
+        except (ConnectionError, ValueError, RuntimeError) as e:
+            raise RuntimeError(f"Error setting up collection: {e!s}")
         except Exception as e:
             raise RuntimeError(f"Error setting up collection: {e!s}")
 
@@ -196,6 +207,8 @@ class CouchbaseClient:
                 logger.info(f"Vector search index '{index_name}' created successfully")
             else:
                 logger.info(f"Vector search index '{index_name}' already exists")
+        except (ValueError, RuntimeError) as e:
+            raise RuntimeError(f"Error setting up vector search index: {e!s}")
         except Exception as e:
             raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
@@ -215,6 +228,8 @@ class CouchbaseClient:
                 flight_texts.append(text)
 
             return flight_texts
+        except (ImportError, AttributeError, ValueError) as e:
+            raise ValueError(f"Error loading flight data: {e!s}")
         except Exception as e:
             raise ValueError(f"Error loading flight data: {e!s}")
 
@@ -240,12 +255,18 @@ class CouchbaseClient:
             try:
                 vector_store.add_texts(texts=flight_data, batch_size=10)
                 logger.info("Flight data loaded into vector store successfully")
+            except (ValueError, RuntimeError) as e:
+                logger.warning(
+                    f"Error loading flight data: {e!s}. Vector store created but data not loaded."
+                )
             except Exception as e:
                 logger.warning(
                     f"Error loading flight data: {e!s}. Vector store created but data not loaded."
                 )
 
             return vector_store
+        except (ConnectionError, ValueError, RuntimeError) as e:
+            raise ValueError(f"Error setting up vector store: {e!s}")
         except Exception as e:
             raise ValueError(f"Error setting up vector store: {e!s}")
 
@@ -280,11 +301,15 @@ class CouchbaseClient:
                     )
                     self.cluster.query(delete_query).execute()
                     logger.info(f"Cleared collection '{collection.name}' in scope '{scope_name}'")
+                except (ValueError, RuntimeError) as e:
+                    logger.warning(f"Could not clear collection '{collection.name}': {e}")
                 except Exception as e:
                     logger.warning(f"Could not clear collection '{collection.name}': {e}")
 
             logger.info(f"Cleared all collections in scope '{scope_name}'")
 
+        except (ConnectionError, ValueError, RuntimeError) as e:
+            logger.warning(f"Could not clear scope '{scope_name}': {e}")
         except Exception as e:
             logger.warning(f"Could not clear scope '{scope_name}': {e}")
 
@@ -328,8 +353,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         parameter_mapper = ParameterMapper(self.chat_model)
 
         # Get tools from Agent Catalog and create wrapper functions for parameter mapping
-        from langchain_core.tools import Tool
-
         tools = []
         for tool_name in [
             "lookup_flight_info",
@@ -353,6 +376,8 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         # Call the original tool with mapped parameters
                         return original_tool.func(**mapped_params)
 
+                    except (ValueError, RuntimeError, TypeError) as e:
+                        return f"Error calling {name}: {e!s}"
                     except Exception as e:
                         return f"Error calling {name}: {e!s}"
 
@@ -369,10 +394,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Get prompt from Agent Catalog directly
         prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
 
-        # Convert PromptResult to LangChain compatible format
-        from langchain.agents import create_react_agent
-        from langchain_core.prompts import PromptTemplate
-
         # Use the Agent Catalog prompt content directly - it already has ReAct format
         react_prompt = PromptTemplate.from_template(prompt_resource.content)
 
@@ -380,8 +401,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         agent = create_react_agent(self.chat_model, tools, react_prompt)
 
         # Create agent executor
-        from langchain.agents import AgentExecutor
-
         agent_executor = AgentExecutor(
             agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=10
         )
@@ -457,6 +476,8 @@ def clear_flight_bookings():
         client.clear_scope(scope_name)
         logger.info("Cleared existing flight bookings for fresh test run")
 
+    except (ConnectionError, ValueError, RuntimeError) as e:
+        logger.warning(f"Could not clear bookings: {e}")
     except Exception as e:
         logger.warning(f"Could not clear bookings: {e}")
 
@@ -496,6 +517,8 @@ def setup_flight_search_agent():
                     index_definition = json.load(file)
                 logger.info("Loaded vector search index definition from agentcatalog_index.json")
                 client.setup_vector_search_index(index_definition, os.environ["SCOPE_NAME"])
+            except (FileNotFoundError, ValueError, RuntimeError) as e:
+                logger.warning(f"Error loading index definition: {e!s}")
             except Exception as e:
                 logger.warning(f"Error loading index definition: {e!s}")
                 logger.info("Continuing without vector search index...")
@@ -521,8 +544,12 @@ def setup_flight_search_agent():
 
         return compiled_graph, application_span
 
+    except (ConnectionError, ValueError, RuntimeError) as e:
+        logger.exception(f"Setup error: {e}")
+        logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
+        raise
     except Exception as e:
-        logger.error(f"Setup error: {e}")
+        logger.exception(f"Setup error: {e}")
         logger.info("Ensure Agent Catalog is published: agentc index . && agentc publish")
         raise
 
@@ -573,12 +600,17 @@ def run_interactive_demo():
 
                         logger.info(f"Search completed: {result.get('resolved', False)}")
 
+                    except (ValueError, RuntimeError) as e:
+                        logger.exception(f"Search error: {e}")
+                        query_span["error"] = str(e)
                     except Exception as e:
-                        logger.error(f"Search error: {e}")
+                        logger.exception(f"Search error: {e}")
                         query_span["error"] = str(e)
 
+    except (ConnectionError, ValueError, RuntimeError) as e:
+        logger.exception(f"Demo initialization error: {e}")
     except Exception as e:
-        logger.error(f"Demo initialization error: {e}")
+        logger.exception(f"Demo initialization error: {e}")
 
 
 def run_test():
@@ -615,16 +647,21 @@ def run_test():
                             logger.info(f"✅ Found {len(result['search_results'])} flight options")
                         logger.info(f"✅ Test {i} completed: {result.get('resolved', False)}")
 
+                    except (ValueError, RuntimeError) as e:
+                        logger.exception(f"❌ Test {i} failed: {e}")
+                        query_span["error"] = str(e)
                     except Exception as e:
-                        logger.error(f"❌ Test {i} failed: {e}")
+                        logger.exception(f"❌ Test {i} failed: {e}")
                         query_span["error"] = str(e)
 
                     logger.info("-" * 50)
 
         logger.info("All tests completed!")
 
+    except (ConnectionError, ValueError, RuntimeError) as e:
+        logger.exception(f"Test error: {e}")
     except Exception as e:
-        logger.error(f"Test error: {e}")
+        logger.exception(f"Test error: {e}")
 
 
 def run_flight_search_demo():
