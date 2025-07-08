@@ -1,560 +1,647 @@
-# #!/usr/bin/env python3
-# """
-# Arize AI Integration for Flight Search Agent Evaluation
-
-# This module provides comprehensive evaluation capabilities using Arize AI observability
-# platform alongside the existing Agent Catalog infrastructure.
-# """
-
-# import json
-# import os
-# import pathlib
-# import unittest.mock
-# from typing import Any, Dict, List
-# from uuid import uuid4
-
-# import agentc
-# import pandas as pd
-
-# # Configuration constants
-# SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
-# API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
-# DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")
-# PROJECT_NAME = "flight-search-agent-evaluation"
-
-# # Import the flight search agent components
-# from main import FlightSearchGraph, setup_environment
-
-# # Try to import Arize dependencies with fallback
-# try:
-#     from arize.experimental.datasets import ArizeDatasetsClient
-#     from arize.experimental.datasets.experiments.types import (
-#         EvaluationResultColumnNames,
-#         ExperimentTaskResultColumnNames,
-#     )
-#     from arize.experimental.datasets.utils.constants import GENERATIVE
-#     from arize.otel import register
-#     from openinference.instrumentation.langchain import LangChainInstrumentor
-#     from openinference.instrumentation.openai import OpenAIInstrumentor
-#     from phoenix.evals import (
-#         QA_PROMPT_RAILS_MAP,
-#         QA_PROMPT_TEMPLATE,
-#         RAG_RELEVANCY_PROMPT_RAILS_MAP,
-#         RAG_RELEVANCY_PROMPT_TEMPLATE,
-#         OpenAIModel,
-#         llm_classify,
-#     )
-
-#     ARIZE_AVAILABLE = True
-# except ImportError as e:
-#     print(f"⚠️ Arize dependencies not available: {e}")
-#     print("   Running in local evaluation mode only...")
-#     ARIZE_AVAILABLE = False
-
-
-# class ArizeFlightSearchEvaluator:
-#     """
-#     Comprehensive evaluation system for flight search agents using Arize AI.
-#     """
-
-#     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
-#         """Initialize the Arize evaluator with Agent Catalog integration."""
-#         self.catalog = catalog
-#         self.span = span
-#         self.arize_client = None
-#         self.dataset_id = None
-#         self.tracer_provider = None
-
-#         # Initialize Arize observability if available
-#         if ARIZE_AVAILABLE:
-#             self._setup_arize_observability()
-
-#             # Initialize evaluation models
-#             self.evaluator_llm = OpenAIModel(model="gpt-4o")
-
-#             # Define evaluation rails
-#             self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
-#             self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
-#         else:
-#             print("⚠️ Arize not available - running basic evaluation only")
-
-#     def _setup_arize_observability(self):
-#         """Configure Arize observability with OpenTelemetry instrumentation."""
-#         try:
-#             # Setup tracer provider
-#             self.tracer_provider = register(
-#                 space_id=SPACE_ID,
-#                 api_key=API_KEY,
-#                 project_name=PROJECT_NAME,
-#             )
-
-#             # Instrument LangChain and OpenAI
-#             LangChainInstrumentor().instrument(tracer_provider=self.tracer_provider)
-#             OpenAIInstrumentor().instrument(tracer_provider=self.tracer_provider)
-
-#             # Initialize Arize datasets client
-#             self.arize_client = ArizeDatasetsClient(developer_key=DEVELOPER_KEY, api_key=API_KEY)
-
-#             print("✅ Arize observability configured successfully")
-
-#         except Exception as e:
-#             print(f"⚠️ Warning: Could not configure Arize observability: {e}")
-#             print("   Continuing with local evaluation only...")
-
-#     def run_agent_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
-#         """
-#         Run the flight search agent on test inputs and collect results.
-
-#         Args:
-#             test_inputs: List of flight search queries to evaluate
-
-#         Returns:
-#             DataFrame with input queries and agent responses
-#         """
-#         results = []
-
-#         with self.span.new("FlightSearchEvaluation") as eval_span:
-#             # Setup the agent once
-#             flight_graph = FlightSearchGraph(catalog=self.catalog, span=eval_span)
-#             compiled_graph = flight_graph.compile()
-
-#             for i, query in enumerate(test_inputs):
-#                 with eval_span.new(f"Query_{i}", query=query) as query_span:
-#                     try:
-#                         # Mock input to prevent interactive prompts
-#                         with unittest.mock.patch("builtins.input", return_value=query):
-#                             # Create starting state
-#                             state = FlightSearchGraph.build_starting_state(query=query)
-
-#                             # Run the agent
-#                             result = compiled_graph.invoke(state)
-
-#                             # Extract the response
-#                             response = ""
-#                             if result.get("messages"):
-#                                 last_message = result["messages"][-1]
-#                                 if hasattr(last_message, "content"):
-#                                     response = last_message.content
-
-#                             results.append(
-#                                 {
-#                                     "input": query,
-#                                     "output": response,
-#                                     "resolved": result.get("resolved", False),
-#                                     "search_results_count": len(result.get("search_results", [])),
-#                                     "example_id": i,
-#                                 }
-#                             )
-
-#                             query_span["response"] = response
-#                             query_span["resolved"] = result.get("resolved", False)
-
-#                     except Exception as e:
-#                         print(f"❌ Error evaluating query '{query}': {e}")
-#                         results.append(
-#                             {
-#                                 "input": query,
-#                                 "output": f"Error: {str(e)}",
-#                                 "resolved": False,
-#                                 "search_results_count": 0,
-#                                 "example_id": i,
-#                             }
-#                         )
-#                         query_span["error"] = str(e)
-
-#         return pd.DataFrame(results)
-
-#     def run_llm_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
-#         """
-#         Run LLM-based evaluations on agent responses.
-
-#         Args:
-#             results_df: DataFrame with agent inputs and outputs
-
-#         Returns:
-#             DataFrame with evaluation scores added
-#         """
-#         if not ARIZE_AVAILABLE:
-#             print("⚠️ LLM evaluations not available - Arize dependencies missing")
-#             return results_df
-
-#         try:
-#             # Relevance evaluation
-#             print("🔍 Running relevance evaluation...")
-#             relevance_eval_df = llm_classify(
-#                 dataframe=results_df,
-#                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.relevance_rails,
-#                 provide_explanation=True,
-#                 include_prompt=True,
-#                 concurrency=2,
-#             )
-
-#             # Correctness evaluation
-#             print("🎯 Running correctness evaluation...")
-#             correctness_eval_df = llm_classify(
-#                 dataframe=results_df,
-#                 template=QA_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.qa_rails,
-#                 provide_explanation=True,
-#                 include_prompt=True,
-#                 concurrency=2,
-#             )
-
-#             # Merge evaluations
-#             merged_df = results_df.copy()
-#             merged_df["relevance"] = relevance_eval_df.get("label", "unknown")
-#             merged_df["relevance_explanation"] = relevance_eval_df.get("explanation", "")
-#             merged_df["correctness"] = correctness_eval_df.get("label", "unknown")
-#             merged_df["correctness_explanation"] = correctness_eval_df.get("explanation", "")
-
-#             return merged_df
-
-#         except Exception as e:
-#             print(f"❌ Error running LLM evaluations: {e}")
-#             return results_df
-
-#     def evaluate_flight_search_scenarios(self) -> Dict[str, pd.DataFrame]:
-#         """
-#         Run comprehensive evaluation on different flight search scenarios.
-
-#         Returns:
-#             Dictionary of scenario names to evaluation results
-#         """
-#         scenarios = {
-#             "basic_queries": [
-#                 "Find flights from SFO to LAX",
-#                 "I want to book a flight from New York to Los Angeles",
-#                 "Show me flights from Miami to Chicago",
-#                 "Find the cheapest flights from Boston to Seattle",
-#             ],
-#             "complex_queries": [
-#                 "I need a flight from San Francisco to Tokyo with a layover",
-#                 "Find round-trip flights from LAX to LHR departing next week",
-#                 "Book a first-class flight from JFK to SFO for 2 passengers",
-#                 "I want to find flights with flexible dates from Chicago to Miami",
-#             ],
-#             "policy_queries": [
-#                 "What is the baggage policy for domestic flights?",
-#                 "Can I cancel my flight booking?",
-#                 "What happens if my flight is delayed due to weather?",
-#                 "Do you have any COVID-19 travel restrictions?",
-#             ],
-#             "booking_queries": [
-#                 "Retrieve my existing flight bookings",
-#                 "Save this flight booking for later",
-#                 "Cancel my flight reservation",
-#                 "Modify my existing booking",
-#             ],
-#             "irrelevant_queries": [
-#                 "What's the weather like today?",
-#                 "How do I bake a cake?",
-#                 "Tell me about the stock market",
-#                 "What's the capital of France?",
-#             ],
-#         }
-
-#         results = {}
-
-#         for scenario_name, queries in scenarios.items():
-#             print(f"\n🚀 Evaluating scenario: {scenario_name}")
-#             print(f"   Running {len(queries)} queries...")
-
-#             # Run agent evaluation
-#             agent_results = self.run_agent_evaluation(queries)
-
-#             # Run LLM evaluations if available
-#             if ARIZE_AVAILABLE:
-#                 evaluated_results = self.run_llm_evaluations(agent_results)
-#             else:
-#                 evaluated_results = agent_results
-
-#             results[scenario_name] = evaluated_results
-
-#             # Print summary
-#             total_queries = len(evaluated_results)
-#             resolved_count = sum(evaluated_results["resolved"])
-
-#             print(f"   ✅ Completed: {resolved_count}/{total_queries} queries resolved")
-
-#             if ARIZE_AVAILABLE:
-#                 avg_relevance = self._calculate_average_score(
-#                     evaluated_results.get("relevance", [])
-#                 )
-#                 avg_correctness = self._calculate_average_score(
-#                     evaluated_results.get("correctness", [])
-#                 )
-#                 print(f"   📊 Avg Relevance: {avg_relevance:.2f}")
-#                 print(f"   📊 Avg Correctness: {avg_correctness:.2f}")
-
-#         return results
-
-#     def _calculate_average_score(self, scores: List[str]) -> float:
-#         """Calculate average score from evaluation labels."""
-#         if not scores:
-#             return 0.0
-
-#         # Map evaluation labels to numeric scores
-#         score_map = {
-#             "correct": 1.0,
-#             "incorrect": 0.0,
-#             "relevant": 1.0,
-#             "irrelevant": 0.0,
-#             "unknown": 0.5,
-#         }
-
-#         numeric_scores = [score_map.get(score.lower(), 0.5) for score in scores]
-#         return sum(numeric_scores) / len(numeric_scores)
-
-#     def generate_evaluation_report(self, results: Dict[str, pd.DataFrame]) -> str:
-#         """
-#         Generate a comprehensive evaluation report.
-
-#         Args:
-#             results: Dictionary of scenario results
-
-#         Returns:
-#             Formatted evaluation report
-#         """
-#         report = []
-#         report.append("# Flight Search Agent Evaluation Report")
-#         report.append("=" * 50)
-#         report.append("")
-
-#         total_queries = 0
-#         total_resolved = 0
-
-#         for scenario_name, df in results.items():
-#             report.append(f"## {scenario_name.replace('_', ' ').title()}")
-#             report.append(f"- Total Queries: {len(df)}")
-#             report.append(f"- Resolved: {sum(df['resolved'])}")
-#             report.append(f"- Success Rate: {sum(df['resolved']) / len(df) * 100:.1f}%")
-
-#             if ARIZE_AVAILABLE and "relevance" in df.columns:
-#                 avg_relevance = self._calculate_average_score(df["relevance"])
-#                 report.append(f"- Avg Relevance: {avg_relevance:.2f}")
-
-#             if ARIZE_AVAILABLE and "correctness" in df.columns:
-#                 avg_correctness = self._calculate_average_score(df["correctness"])
-#                 report.append(f"- Avg Correctness: {avg_correctness:.2f}")
-
-#             report.append("")
-
-#             total_queries += len(df)
-#             total_resolved += sum(df["resolved"])
-
-#         report.append("## Overall Summary")
-#         report.append(f"- Total Queries Evaluated: {total_queries}")
-#         report.append(f"- Total Resolved: {total_resolved}")
-#         report.append(f"- Overall Success Rate: {total_resolved / total_queries * 100:.1f}%")
-#         report.append("")
-
-#         if ARIZE_AVAILABLE and self.arize_client:
-#             report.append("## Arize AI Dashboard")
-#             report.append("View detailed traces and metrics in your Arize workspace:")
-#             report.append(f"- Project: {PROJECT_NAME}")
-#             report.append(f"- Space ID: {SPACE_ID}")
-#             report.append("")
-
-#         return "\n".join(report)
-
-
-# def eval_bad_intro():
-#     """
-#     Evaluate agent behavior with irrelevant queries.
-#     """
-#     print("🔍 Running bad intro evaluation...")
-
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="FlightSearchEvalBadIntro")
-
-#     # Initialize evaluator
-#     evaluator = ArizeFlightSearchEvaluator(catalog=catalog, span=root_span)
-
-#     # Load test cases
-#     test_file = pathlib.Path("evals") / "resources" / "bad-intro.jsonl"
-#     if not test_file.exists():
-#         print(f"❌ Test file not found: {test_file}")
-#         return
-
-#     with (
-#         test_file.open() as fp,
-#         root_span.new("IrrelevantQueries") as suite_span,
-#     ):
-#         test_inputs = []
-#         for line in fp:
-#             try:
-#                 test_case = json.loads(line.strip())
-#                 if test_case.get("input"):
-#                     test_inputs.append(test_case["input"])
-#             except json.JSONDecodeError:
-#                 continue
-
-#         if not test_inputs:
-#             print("❌ No valid test cases found")
-#             return
-
-#         # Run evaluation
-#         results = evaluator.run_agent_evaluation(test_inputs)
-
-#         # Check if agent correctly identifies irrelevant queries
-#         correctly_handled = sum(
-#             1
-#             for _, row in results.iterrows()
-#             if "I can help you with flight" in row.get("output", "").lower()
-#             or "flight search" in row.get("output", "").lower()
-#         )
-
-#         print(f"✅ Bad intro evaluation completed:")
-#         print(f"   - Total queries: {len(results)}")
-#         print(f"   - Correctly handled: {correctly_handled}")
-#         print(f"   - Success rate: {correctly_handled / len(results) * 100:.1f}%")
-
-#         # Log results
-#         suite_span["total_queries"] = len(results)
-#         suite_span["correctly_handled"] = correctly_handled
-#         suite_span["success_rate"] = correctly_handled / len(results)
-
-
-# def eval_short_threads():
-#     """
-#     Evaluate agent behavior with valid flight search queries.
-#     """
-#     print("🔍 Running short threads evaluation...")
-
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="FlightSearchEvalShortThreads")
-
-#     # Initialize evaluator
-#     evaluator = ArizeFlightSearchEvaluator(catalog=catalog, span=root_span)
-
-#     # Load test cases
-#     test_file = pathlib.Path("evals") / "resources" / "short-thread.jsonl"
-#     if not test_file.exists():
-#         print(f"❌ Test file not found: {test_file}")
-#         return
-
-#     with (
-#         test_file.open() as fp,
-#         root_span.new("ValidFlightQueries") as suite_span,
-#     ):
-#         test_cases = []
-#         for line in fp:
-#             try:
-#                 test_case = json.loads(line.strip())
-#                 if test_case.get("input"):
-#                     # Handle both single queries and conversation threads
-#                     if isinstance(test_case["input"], list):
-#                         # Take the first query from conversation threads
-#                         query = test_case["input"][0]
-#                     else:
-#                         query = test_case["input"]
-
-#                     test_cases.append(
-#                         {
-#                             "input": query,
-#                             "reference": test_case.get("reference", ""),
-#                         }
-#                     )
-#             except json.JSONDecodeError:
-#                 continue
-
-#         if not test_cases:
-#             print("❌ No valid test cases found")
-#             return
-
-#         # Extract just the queries for evaluation
-#         queries = [case["input"] for case in test_cases]
-
-#         # Run evaluation
-#         results = evaluator.run_agent_evaluation(queries)
-
-#         # Run LLM evaluations if available
-#         if ARIZE_AVAILABLE:
-#             evaluated_results = evaluator.run_llm_evaluations(results)
-#         else:
-#             evaluated_results = results
-
-#         # Calculate metrics
-#         total_queries = len(evaluated_results)
-#         resolved_count = sum(evaluated_results["resolved"])
-
-#         print(f"✅ Short threads evaluation completed:")
-#         print(f"   - Total queries: {total_queries}")
-#         print(f"   - Resolved: {resolved_count}")
-#         print(f"   - Success rate: {resolved_count / total_queries * 100:.1f}%")
-
-#         if ARIZE_AVAILABLE:
-#             avg_relevance = evaluator._calculate_average_score(
-#                 evaluated_results.get("relevance", [])
-#             )
-#             avg_correctness = evaluator._calculate_average_score(
-#                 evaluated_results.get("correctness", [])
-#             )
-#             print(f"   - Avg relevance: {avg_relevance:.2f}")
-#             print(f"   - Avg correctness: {avg_correctness:.2f}")
-
-#         # Log results
-#         suite_span["total_queries"] = total_queries
-#         suite_span["resolved_count"] = resolved_count
-#         suite_span["success_rate"] = resolved_count / total_queries
-
-
-# def run_comprehensive_evaluation():
-#     """
-#     Run comprehensive evaluation across all scenarios.
-#     """
-#     print("🚀 Starting comprehensive flight search agent evaluation...")
-
-#     # Setup environment
-#     setup_environment()
-
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="FlightSearchComprehensiveEval")
-
-#     # Initialize evaluator
-#     evaluator = ArizeFlightSearchEvaluator(catalog=catalog, span=root_span)
-
-#     # Run comprehensive evaluation
-#     results = evaluator.evaluate_flight_search_scenarios()
-
-#     # Generate report
-#     report = evaluator.generate_evaluation_report(results)
-
-#     # Save report
-#     report_file = pathlib.Path("evals") / "evaluation_report.md"
-#     with report_file.open("w") as f:
-#         f.write(report)
-
-#     print(f"✅ Comprehensive evaluation completed!")
-#     print(f"   📊 Report saved to: {report_file}")
-#     print("\n" + "=" * 50)
-#     print(report)
-
-
-# if __name__ == "__main__":
-#     import sys
-
-#     # Check if specific evaluation is requested
-#     if len(sys.argv) > 1:
-#         if sys.argv[1] == "bad_intro":
-#             eval_bad_intro()
-#         elif sys.argv[1] == "short_threads":
-#             eval_short_threads()
-#         elif sys.argv[1] == "comprehensive":
-#             run_comprehensive_evaluation()
-#         else:
-#             print("Usage: python eval_short.py [bad_intro|short_threads|comprehensive]")
-#     else:
-#         # Run all evaluations by default
-#         print("🔍 Running all flight search agent evaluations...")
-#         eval_bad_intro()
-#         print("\n" + "=" * 50 + "\n")
-#         eval_short_threads()
-#         print("\n" + "=" * 50 + "\n")
-#         run_comprehensive_evaluation()
+#!/usr/bin/env python3
+"""
+Arize AI Integration for Flight Search Agent Evaluation
+
+This module provides comprehensive evaluation capabilities using Arize AI observability
+platform for the flight search agent. It demonstrates how to:
+
+1. Set up Arize observability for LangGraph-based agents
+2. Create and manage evaluation datasets for flight search scenarios
+3. Run automated evaluations with LLM-as-a-judge for response quality
+4. Track performance metrics and traces for flight booking systems
+5. Monitor tool usage and booking effectiveness
+
+The implementation integrates with the existing Agent Catalog infrastructure
+while extending it with Arize AI capabilities for production monitoring.
+"""
+
+import json
+import os
+import pathlib
+import sys
+import unittest.mock
+import logging
+import time
+from typing import Dict, List
+from uuid import uuid4
+
+import agentc
+import pandas as pd
+
+# Configure logging to reduce verbosity
+logging.basicConfig(level=logging.INFO)
+# Suppress verbose HTTP logs and embeddings
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("opentelemetry").setLevel(logging.WARNING)
+logging.getLogger("phoenix").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("langchain").setLevel(logging.WARNING)
+logging.getLogger("agentc_core").setLevel(logging.WARNING)
+
+# Configuration constants
+SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
+API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
+PROJECT_NAME = "flight-search-agent-evaluation"
+
+# Import the flight search agent components
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from main import setup_environment, CouchbaseClient, FlightSearchAgent, FlightSearchGraph, FlightSearchState
+
+# Import necessary dependencies for CouchbaseSetup
+from couchbase.auth import PasswordAuthenticator
+from couchbase.cluster import Cluster
+from couchbase.management.buckets import CreateBucketSettings
+from couchbase.management.search import SearchIndex
+from couchbase.options import ClusterOptions
+from couchbase.exceptions import CouchbaseException
+from datetime import timedelta
+import time
+
+# Try to import Arize dependencies with fallback
+try:
+    from arize.experimental.datasets import ArizeDatasetsClient
+    from arize.experimental.datasets.experiments.types import (
+        ExperimentTaskResultColumnNames,
+        EvaluationResultColumnNames,
+    )
+    from arize.experimental.datasets.utils.constants import GENERATIVE
+    from phoenix.otel import register
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+    from openinference.instrumentation.openai import OpenAIInstrumentor
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+    from phoenix.evals import (
+        QA_PROMPT_RAILS_MAP,
+        QA_PROMPT_TEMPLATE,
+        RAG_RELEVANCY_PROMPT_RAILS_MAP,
+        RAG_RELEVANCY_PROMPT_TEMPLATE,
+        OpenAIModel,
+        llm_classify,
+    )
+    ARIZE_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Arize dependencies not available: {e}")
+    print("   Running in local evaluation mode only...")
+    ARIZE_AVAILABLE = False
+
+
+class CouchbaseSetup:
+    """Handle Couchbase cluster setup and configuration for flight search evaluation."""
+
+    def __init__(self):
+        self.cluster = None
+        self.collection = None
+        self.logger = logging.getLogger(__name__)
+
+    def setup_environment(self):
+        """Setup required environment variables."""
+        required_vars = [
+            "OPENAI_API_KEY",
+            "CB_CONN_STRING",
+            "CB_USERNAME",
+            "CB_PASSWORD",
+            "CB_BUCKET",
+        ]
+
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        if missing_vars:
+            # Set defaults for missing variables
+            defaults = {
+                'CB_CONN_STRING': 'couchbase://localhost',
+                'CB_USERNAME': 'Administrator', 
+                'CB_PASSWORD': 'password',
+                'CB_BUCKET': 'vector-search-testing'
+            }
+            
+            for var in missing_vars:
+                if var in defaults:
+                    os.environ[var] = defaults[var]
+                    self.logger.info(f"Set default for {var}: {defaults[var]}")
+
+        # Set defaults for optional variables
+        if not os.getenv("INDEX_NAME"):
+            os.environ["INDEX_NAME"] = "vector_search_agentcatalog"
+        if not os.getenv("SCOPE_NAME"):
+            os.environ["SCOPE_NAME"] = "shared"
+        if not os.getenv("COLLECTION_NAME"):
+            os.environ["COLLECTION_NAME"] = "agentcatalog"
+
+        self.logger.info(f"Using Couchbase connection: {os.getenv('CB_CONN_STRING')}")
+        self.logger.info(f"Using bucket: {os.getenv('CB_BUCKET')}")
+        self.logger.info(f"Using scope: {os.getenv('SCOPE_NAME')}")
+        self.logger.info(f"Using collection: {os.getenv('COLLECTION_NAME')}")
+        self.logger.info(f"Using index: {os.getenv('INDEX_NAME')}")
+
+    def setup_couchbase_connection(self):
+        """Setup Couchbase cluster connection."""
+        try:
+            # Extract host from connection string
+            conn_string = os.environ["CB_CONN_STRING"]
+            if "://" in conn_string:
+                host = conn_string
+            else:
+                host = f"couchbase://{conn_string}"
+            
+            auth = PasswordAuthenticator(os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"])
+            options = ClusterOptions(auth)
+            self.cluster = Cluster(host, options)
+            self.cluster.wait_until_ready(timedelta(seconds=10))
+            self.logger.info("Successfully connected to Couchbase cluster")
+            return self.cluster
+        except CouchbaseException as e:
+            raise ConnectionError(f"Failed to connect to Couchbase: {e}")
+
+    def setup_bucket_scope_collection(self):
+        """Setup bucket, scope, and collection."""
+        try:
+            bucket_name = os.environ["CB_BUCKET"]
+            scope_name = os.environ["SCOPE_NAME"]
+            collection_name = os.environ["COLLECTION_NAME"]
+
+            # Check bucket
+            try:
+                bucket = self.cluster.bucket(bucket_name)
+                self.logger.info(f"Bucket '{bucket_name}' exists")
+            except Exception:
+                self.logger.info(f"Creating bucket '{bucket_name}'...")
+                bucket_settings = CreateBucketSettings(
+                    name=bucket_name,
+                    bucket_type="couchbase",
+                    ram_quota_mb=1024,
+                    flush_enabled=True,
+                    num_replicas=0,
+                )
+                self.cluster.buckets().create_bucket(bucket_settings)
+                time.sleep(5)
+                bucket = self.cluster.bucket(bucket_name)
+                self.logger.info(f"Bucket '{bucket_name}' created successfully")
+
+            # Setup scope and collection
+            bucket_manager = bucket.collections()
+
+            scopes = bucket_manager.get_all_scopes()
+            scope_exists = any(scope.name == scope_name for scope in scopes)
+
+            if not scope_exists and scope_name != "_default":
+                self.logger.info(f"Creating scope '{scope_name}'...")
+                bucket_manager.create_scope(scope_name)
+                self.logger.info(f"Scope '{scope_name}' created successfully")
+
+            collections = bucket_manager.get_all_scopes()
+            collection_exists = any(
+                scope.name == scope_name
+                and collection_name in [col.name for col in scope.collections]
+                for scope in collections
+            )
+
+            if not collection_exists:
+                self.logger.info(f"Creating collection '{collection_name}'...")
+                bucket_manager.create_collection(scope_name, collection_name)
+                self.logger.info(f"Collection '{collection_name}' created successfully")
+
+            self.collection = bucket.scope(scope_name).collection(collection_name)
+            time.sleep(3)
+
+            # Create primary index
+            try:
+                self.cluster.query(
+                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+                ).execute()
+                self.logger.info("Primary index created successfully")
+            except Exception as e:
+                self.logger.warning(f"Error creating primary index: {e}")
+
+            return self.collection
+
+        except Exception as e:
+            raise RuntimeError(f"Error setting up bucket/scope/collection: {e}")
+
+    def setup_vector_search_index(self):
+        """Setup vector search index."""
+        try:
+            # Load index definition from agentcatalog_index.json
+            index_file = "agentcatalog_index.json"
+            
+            # Look for the index file in the current directory
+            if not os.path.exists(index_file):
+                # Try looking in the parent directory
+                parent_dir = os.path.dirname(os.path.dirname(__file__))
+                index_file = os.path.join(parent_dir, "agentcatalog_index.json")
+            
+            if os.path.exists(index_file):
+                with open(index_file, "r") as f:
+                    index_definition = json.load(f)
+
+                scope_index_manager = (
+                    self.cluster.bucket(os.environ["CB_BUCKET"])
+                    .scope(os.environ["SCOPE_NAME"])
+                    .search_indexes()
+                )
+
+                existing_indexes = scope_index_manager.get_all_indexes()
+                index_name = index_definition["name"]
+
+                if index_name not in [index.name for index in existing_indexes]:
+                    self.logger.info(f"Creating vector search index '{index_name}'...")
+                    search_index = SearchIndex.from_json(index_definition)
+                    scope_index_manager.upsert_index(search_index)
+                    self.logger.info(f"Vector search index '{index_name}' created successfully")
+                else:
+                    self.logger.info(f"Vector search index '{index_name}' already exists")
+            else:
+                self.logger.warning(f"Index definition file {index_file} not found")
+
+        except Exception as e:
+            self.logger.error(f"Error setting up vector search index: {e}")
+
+
+class ArizeFlightSearchEvaluator:
+    """
+    Comprehensive evaluation system for flight search agents using Arize AI.
+    
+    This class provides:
+    - Flight search performance evaluation with multiple metrics
+    - Tool effectiveness monitoring (lookup, booking, retrieval, policies)
+    - Response quality assessment and booking accuracy tracking
+    - Comparative analysis of different flight search strategies
+    """
+
+    def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
+        """Initialize the Arize evaluator with Agent Catalog integration."""
+        self.catalog = catalog
+        self.span = span
+        self.arize_client = None
+        self.dataset_id = None
+        self.tracer_provider = None
+        
+        # Initialize Arize observability if available
+        if ARIZE_AVAILABLE:
+            self._setup_arize_observability()
+            
+            # Initialize evaluation models
+            self.evaluator_llm = OpenAIModel(model="gpt-4o")
+            
+            # Define evaluation rails
+            self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
+            self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
+        else:
+            print("⚠️ Arize not available - running basic evaluation only")
+
+    def setup_couchbase_infrastructure(self):
+        """Setup Couchbase infrastructure for evaluation."""
+        logger = logging.getLogger(__name__)
+        
+        try:
+            couchbase_setup = CouchbaseSetup()
+            couchbase_setup.setup_environment()
+            cluster = couchbase_setup.setup_couchbase_connection()
+            collection = couchbase_setup.setup_bucket_scope_collection()
+            couchbase_setup.setup_vector_search_index()
+            
+            # Create Couchbase client for compatibility with existing code
+            couchbase_client = CouchbaseClient(
+                conn_string=os.environ["CB_CONN_STRING"],
+                username=os.environ["CB_USERNAME"],
+                password=os.environ["CB_PASSWORD"],
+                bucket_name=os.environ["CB_BUCKET"],
+            )
+            
+            logger.info("Couchbase infrastructure setup complete for evaluation")
+            return couchbase_client
+        except Exception as e:
+            logger.error(f"Error setting up Couchbase infrastructure: {e}")
+            raise
+
+    def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
+        """Create a flight search agent for evaluation."""
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Create FlightSearchAgent
+            agent = FlightSearchAgent(catalog=catalog, span=span)
+            
+            # Create and compile the graph
+            graph = FlightSearchGraph(agent=agent)
+            compiled_graph = graph.compile()
+            
+            logger.info("Flight search agent created for evaluation")
+            return compiled_graph
+        except Exception as e:
+            logger.error(f"Error creating agent: {e}")
+            raise
+
+    def _setup_arize_observability(self):
+        """Configure Arize observability with OpenTelemetry instrumentation."""
+        try:
+            # Setup tracer provider for Phoenix (local only)
+            self.tracer_provider = TracerProvider()
+            trace.set_tracer_provider(self.tracer_provider)
+            
+            print("✅ Local tracing configured successfully")
+            
+            # Instrument LangChain and OpenAI
+            instrumentors = [
+                ("LangChain", LangChainInstrumentor),
+                ("OpenAI", OpenAIInstrumentor),
+            ]
+            
+            for name, instrumentor_class in instrumentors:
+                try:
+                    instrumentor = instrumentor_class()
+                    if not instrumentor.is_instrumented_by_opentelemetry:
+                        instrumentor.instrument(tracer_provider=self.tracer_provider)
+                        print(f"✅ {name} instrumented successfully")
+                    else:
+                        print(f"ℹ️ {name} already instrumented, skipping")
+                except Exception as e:
+                    print(f"⚠️ {name} instrumentation failed: {e}")
+                    continue
+                    
+            # Initialize Arize datasets client
+            if API_KEY != "your-api-key":
+                try:
+                    self.arize_client = ArizeDatasetsClient(
+                        developer_key=API_KEY,
+                        api_key=API_KEY
+                    )
+                    print("✅ Arize datasets client initialized")
+                except Exception as e:
+                    print(f"⚠️ Could not initialize Arize datasets client: {e}")
+                    self.arize_client = None
+            
+            print("✅ Arize observability configured successfully")
+            
+        except Exception as e:
+            print(f"⚠️ Error setting up Arize observability: {e}")
+
+    def run_flight_search_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
+        """
+        Run flight search evaluation on a set of test inputs.
+        
+        Args:
+            test_inputs: List of flight search queries to evaluate
+            
+        Returns:
+            DataFrame with evaluation results
+        """
+        print(f"🚀 Running evaluation on {len(test_inputs)} queries...")
+        
+        # Setup infrastructure
+        print("🔧 Setting up Couchbase infrastructure...")
+        couchbase_client = self.setup_couchbase_infrastructure()
+        print("✅ Couchbase infrastructure setup complete")
+        
+        # Create agent
+        print("🤖 Creating flight search agent...")
+        agent_graph = self.create_agent(self.catalog, self.span)
+        print("✅ Flight search agent created")
+        
+        results = []
+        
+        for i, query in enumerate(test_inputs, 1):
+            print(f"  📝 Query {i}/{len(test_inputs)}: {query}")
+            
+            try:
+                print(f"     🔄 Agent processing query...")
+                
+                # Create initial state
+                initial_state = FlightSearchState(
+                    query=query,
+                    resolved=False,
+                    search_results=[]
+                )
+                
+                # Run the agent
+                result = agent_graph.invoke(initial_state)
+                
+                # Extract the response from the final state
+                response = result.get("response", str(result))
+                
+                print(f"     ✅ Response received")
+                
+                # Analyze response
+                has_flight_info = self._check_flight_info(response)
+                has_booking_info = self._check_booking_info(response)
+                has_policy_info = self._check_policy_info(response)
+                appropriate_response = self._check_appropriate_response(query, response)
+                
+                # Create response preview
+                response_preview = (response[:150] + "...") if len(response) > 150 else response
+                print(f"     💬 Response preview: {response_preview}")
+                
+                results.append({
+                    "example_id": f"flight_query_{i}",
+                    "query": query,
+                    "output": response,
+                    "has_flight_info": has_flight_info,
+                    "has_booking_info": has_booking_info,
+                    "has_policy_info": has_policy_info,
+                    "appropriate_response": appropriate_response,
+                    "response_length": len(response),
+                })
+                
+            except Exception as e:
+                print(f"     ❌ Error processing query: {e}")
+                results.append({
+                    "example_id": f"flight_query_{i}",
+                    "query": query,
+                    "output": f"Error: {str(e)}",
+                    "has_flight_info": False,
+                    "has_booking_info": False,
+                    "has_policy_info": False,
+                    "appropriate_response": False,
+                    "response_length": 0,
+                })
+        
+        return pd.DataFrame(results)
+
+    def _check_flight_info(self, response_text: str) -> bool:
+        """Check if response contains flight information."""
+        flight_indicators = ["flight", "airline", "departure", "arrival", "aircraft", "gate", "terminal", "seat"]
+        return any(indicator in response_text.lower() for indicator in flight_indicators)
+
+    def _check_booking_info(self, response_text: str) -> bool:
+        """Check if response contains booking information."""
+        booking_indicators = ["booking", "reservation", "ticket", "passenger", "confirmation", "booked", "reserved"]
+        return any(indicator in response_text.lower() for indicator in booking_indicators)
+
+    def _check_policy_info(self, response_text: str) -> bool:
+        """Check if response mentions policies."""
+        policy_indicators = ["policy", "baggage", "cancellation", "refund", "terms", "conditions", "rules"]
+        return any(indicator in response_text.lower() for indicator in policy_indicators)
+
+    def _check_appropriate_response(self, query: str, response: str) -> bool:
+        """Check if response is appropriate for the query."""
+        # Check for hallucination indicators
+        hallucination_indicators = ["mars", "pluto", "atlantis", "fictional", "impossible", "cannot travel"]
+        has_hallucination = any(indicator in response.lower() for indicator in hallucination_indicators)
+        
+        # Check for reasonable response length
+        reasonable_length = 50 < len(response) < 2000
+        
+        # Check for flight-related content
+        has_flight_content = self._check_flight_info(response)
+        
+        return not has_hallucination and reasonable_length and has_flight_content
+
+    def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Run Arize-based LLM evaluations on the results.
+        
+        Args:
+            results_df: DataFrame with evaluation results
+            
+        Returns:
+            DataFrame with additional Arize evaluation columns
+        """
+        if not ARIZE_AVAILABLE:
+            print("⚠️ Arize not available - skipping LLM evaluations")
+            return results_df
+            
+        print(f"🧠 Running LLM-based evaluations on {len(results_df)} responses...")
+        print("   📋 Evaluation criteria:")
+        print("      🔍 Relevance: Does the response address the flight search query?")
+        print("      🎯 Correctness: Is the flight information accurate and helpful?")
+        
+        # Sample evaluation data preview
+        if len(results_df) > 0:
+            sample_row = results_df.iloc[0]
+            print(f"\n   🔍 Sample evaluation data:")
+            print(f"      Query: {sample_row['query']}")
+            print(f"      Response: {sample_row['output'][:100]}...")
+        
+        try:
+            # Prepare data for evaluation
+            evaluation_data = []
+            for _, row in results_df.iterrows():
+                evaluation_data.append({
+                    "reference": row['output'],  # Use the agent's output as reference
+                    "input": row['query'],
+                    "output": row['output']
+                })
+            
+            eval_df = pd.DataFrame(evaluation_data)
+            
+            # Run relevance evaluation
+            print(f"\n   🔍 Evaluating relevance...")
+            relevance_results = llm_classify(
+                dataframe=eval_df,
+                model=self.evaluator_llm,
+                template=RAG_RELEVANCY_PROMPT_TEMPLATE,
+                rails=self.relevance_rails,
+                provide_explanation=True,
+            )
+            
+            # Run correctness evaluation
+            print(f"   🎯 Evaluating correctness...")
+            correctness_results = llm_classify(
+                dataframe=eval_df,
+                model=self.evaluator_llm,
+                template=QA_PROMPT_TEMPLATE,
+                rails=self.qa_rails,
+                provide_explanation=True,
+            )
+            
+            # Add evaluation results to DataFrame
+            results_df['arize_relevance'] = relevance_results['label']
+            results_df['arize_relevance_explanation'] = relevance_results['explanation']
+            results_df['arize_correctness'] = correctness_results['label']
+            results_df['arize_correctness_explanation'] = correctness_results['explanation']
+            
+            # Display sample explanations
+            if len(results_df) > 0:
+                print(f"\n   📝 Sample evaluation explanations:")
+                for i in range(min(2, len(results_df))):
+                    row = results_df.iloc[i]
+                    print(f"      Query: {row['query']}")
+                    print(f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:100]}...")
+                    print(f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:100]}...")
+                    print()
+            
+            print(f"   ✅ LLM evaluations completed")
+            
+        except Exception as e:
+            print(f"   ❌ Error running LLM evaluations: {e}")
+            
+        return results_df
+
+
+def eval_flight_search_basic():
+    """Run basic flight search evaluation with a small set of test queries."""
+    print("🔍 Running basic flight search evaluation...")
+    print("📋 This evaluation tests:")
+    print("   • Agent's ability to understand flight search queries")
+    print("   • Quality of responses using flight lookup tools")
+    print("   • LLM-based relevance and correctness scoring")
+    
+    # Test queries for flight search
+    test_inputs = [
+        "Find flights from New York to Los Angeles tomorrow",
+        "I need a flight from JFK to LAX on Friday",
+        "Show me flights from San Francisco to Chicago next week",
+        "Book a flight from Miami to Boston for 2 passengers",
+        "What are the flight options from Seattle to Denver?",
+        "Can you help me find flights from Atlanta to Phoenix?",
+    ]
+    
+    # Initialize evaluation components
+    catalog = agentc.Catalog()
+    span = catalog.Span(name="FlightSearchEvaluation")
+    
+    evaluator = ArizeFlightSearchEvaluator(catalog, span)
+    
+    # Run the evaluation
+    results_df = evaluator.run_flight_search_evaluation(test_inputs)
+    
+    # Run Arize evaluations if available
+    if ARIZE_AVAILABLE:
+        results_df = evaluator.run_arize_evaluations(results_df)
+    
+    # Calculate metrics
+    total_queries = len(results_df)
+    queries_with_flight_info = results_df['has_flight_info'].sum()
+    queries_with_booking_info = results_df['has_booking_info'].sum()
+    queries_with_policy_info = results_df['has_policy_info'].sum()
+    appropriate_responses = results_df['appropriate_response'].sum()
+    success_rate = (queries_with_flight_info / total_queries) * 100
+    
+    # Print summary
+    print(f"\n✅ Basic flight search evaluation completed:")
+    print(f"   📊 Total queries processed: {total_queries}")
+    print(f"   🎯 Queries with flight info: {queries_with_flight_info}")
+    print(f"   📈 Success rate: {success_rate:.1f}%")
+    print(f"   ✈️ Queries with booking info: {queries_with_booking_info}")
+    print(f"   📋 Queries with policy info: {queries_with_policy_info}")
+    print(f"   ✅ Appropriate responses: {appropriate_responses}")
+    
+    if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
+        relevance_scores = results_df['arize_relevance'].value_counts()
+        correctness_scores = results_df['arize_correctness'].value_counts()
+        
+        # Convert to regular Python dict with int values
+        relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
+        correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
+        
+        print(f"\n🔍 Arize Evaluation Results:")
+        print(f"   📋 Relevance: {relevance_dict}")
+        print(f"   ✅ Correctness: {correctness_dict}")
+    
+    print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
+    
+    return results_df
+
+
+if __name__ == "__main__":
+    import sys
+    
+    # Check if specific evaluation is requested
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "basic":
+            eval_flight_search_basic()
+        else:
+            print("Usage: python eval_arize.py [basic]")
+    else:
+        # Run basic evaluation by default
+        print("🔍 Running basic flight search agent evaluation...")
+        eval_flight_search_basic()

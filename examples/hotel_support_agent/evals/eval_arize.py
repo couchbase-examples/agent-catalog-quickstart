@@ -1,563 +1,640 @@
-# #!/usr/bin/env python3
-# """
-# Arize AI Integration for Hotel Support Agent Evaluation
+#!/usr/bin/env python3
+"""
+Arize AI Integration for Hotel Support Agent Evaluation
 
-# This module provides comprehensive evaluation capabilities using Arize AI observability
-# platform for the hotel support agent. It demonstrates how to:
+This module provides comprehensive evaluation capabilities using Arize AI observability
+platform for the hotel support agent. It demonstrates how to:
 
-# 1. Set up Arize observability for LangChain-based agents
-# 2. Create and manage evaluation datasets for hotel search scenarios
-# 3. Run automated evaluations with LLM-as-a-judge
-# 4. Track performance metrics and traces for hotel recommendation systems
-# 5. Monitor vector search effectiveness and tool usage
+1. Set up Arize observability for LangChain-based agents
+2. Create and manage evaluation datasets for hotel search scenarios
+3. Run automated evaluations with LLM-as-a-judge for response quality
+4. Track performance metrics and traces for hotel search systems
+5. Monitor tool usage and search effectiveness
 
-# The implementation integrates with the existing Agent Catalog infrastructure
-# while extending it with Arize AI capabilities for production monitoring.
-# """
+The implementation integrates with the existing Agent Catalog infrastructure
+while extending it with Arize AI capabilities for production monitoring.
+"""
 
-# import json
-# import os
-# import pathlib
-# import unittest.mock
-# from typing import Dict, List
-# from uuid import uuid4
+import json
+import os
+import pathlib
+import sys
+import unittest.mock
+import logging
+import time
+from typing import Dict, List
+from uuid import uuid4
 
-# import agentc
-# import pandas as pd
+import agentc
+import pandas as pd
 
-# # Configuration constants
-# SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
-# API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
-# DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")
-# PROJECT_NAME = "hotel-support-agent-evaluation"
+# Configure logging to reduce verbosity
+logging.basicConfig(level=logging.INFO)
+# Suppress verbose HTTP logs and embeddings
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("opentelemetry").setLevel(logging.WARNING)
+logging.getLogger("phoenix").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("langchain").setLevel(logging.WARNING)
 
-# # Import the hotel support agent components
-# from main import setup_environment, setup_couchbase_connection, load_hotel_data, run_agent_chat
+# Configuration constants
+SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
+API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
+PROJECT_NAME = "hotel-support-agent-evaluation"
 
-# # Try to import Arize dependencies with fallback
-# try:
-#     from arize.experimental.datasets import ArizeDatasetsClient
-#     from arize.experimental.datasets.experiments.types import (
-#         ExperimentTaskResultColumnNames,
-#         EvaluationResultColumnNames,
-#     )
-#     from arize.experimental.datasets.utils.constants import GENERATIVE
-#     from arize.otel import register
-#     from openinference.instrumentation.langchain import LangChainInstrumentor
-#     from openinference.instrumentation.openai import OpenAIInstrumentor
-#     from phoenix.evals import (
-#         QA_PROMPT_RAILS_MAP,
-#         QA_PROMPT_TEMPLATE,
-#         RAG_RELEVANCY_PROMPT_RAILS_MAP,
-#         RAG_RELEVANCY_PROMPT_TEMPLATE,
-#         OpenAIModel,
-#         llm_classify,
-#     )
-#     ARIZE_AVAILABLE = True
-# except ImportError as e:
-#     print(f"⚠️ Arize dependencies not available: {e}")
-#     print("   Running in local evaluation mode only...")
-#     ARIZE_AVAILABLE = False
+# Import the hotel support agent components
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from main import setup_environment, setup_couchbase_connection, setup_collection, setup_vector_search_index, setup_vector_store, clear_collection_data
+
+# Import necessary dependencies for CouchbaseSetup
+from couchbase.auth import PasswordAuthenticator
+from couchbase.cluster import Cluster
+from couchbase.management.buckets import CreateBucketSettings
+from couchbase.management.search import SearchIndex
+from couchbase.options import ClusterOptions
+from couchbase.exceptions import CouchbaseException
+from datetime import timedelta
+import time
+
+# Try to import Arize dependencies with fallback
+try:
+    from arize.experimental.datasets import ArizeDatasetsClient
+    from arize.experimental.datasets.experiments.types import (
+        ExperimentTaskResultColumnNames,
+        EvaluationResultColumnNames,
+    )
+    from arize.experimental.datasets.utils.constants import GENERATIVE
+    from phoenix.otel import register
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+    from openinference.instrumentation.openai import OpenAIInstrumentor
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+    from phoenix.evals import (
+        QA_PROMPT_RAILS_MAP,
+        QA_PROMPT_TEMPLATE,
+        RAG_RELEVANCY_PROMPT_RAILS_MAP,
+        RAG_RELEVANCY_PROMPT_TEMPLATE,
+        OpenAIModel,
+        llm_classify,
+    )
+    ARIZE_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Arize dependencies not available: {e}")
+    print("   Running in local evaluation mode only...")
+    ARIZE_AVAILABLE = False
 
 
-# class ArizeHotelSupportEvaluator:
-#     """
-#     Comprehensive evaluation system for hotel support agents using Arize AI.
+class CouchbaseSetup:
+    """Handle Couchbase cluster setup and configuration for hotel support evaluation."""
+
+    def __init__(self):
+        self.cluster = None
+        self.collection = None
+        self.logger = logging.getLogger(__name__)
+
+    def setup_environment(self):
+        """Setup required environment variables."""
+        required_vars = [
+            "OPENAI_API_KEY",
+            "CB_HOST",
+            "CB_USERNAME",
+            "CB_PASSWORD",
+            "CB_BUCKET_NAME",
+        ]
+
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        if missing_vars:
+            # Set defaults for missing variables
+            defaults = {
+                'CB_HOST': 'couchbase://localhost',
+                'CB_USERNAME': 'Administrator', 
+                'CB_PASSWORD': 'password',
+                'CB_BUCKET_NAME': 'vector-search-testing'
+            }
+            
+            for var in missing_vars:
+                if var in defaults:
+                    os.environ[var] = defaults[var]
+                    self.logger.info(f"Set default for {var}: {defaults[var]}")
+
+        # Set defaults for optional variables
+        if not os.getenv("INDEX_NAME"):
+            os.environ["INDEX_NAME"] = "vector_search_agentcatalog"
+        if not os.getenv("SCOPE_NAME"):
+            os.environ["SCOPE_NAME"] = "shared"
+        if not os.getenv("COLLECTION_NAME"):
+            os.environ["COLLECTION_NAME"] = "agentcatalog"
+
+        self.logger.info(f"Using Couchbase connection: {os.getenv('CB_HOST')}")
+        self.logger.info(f"Using bucket: {os.getenv('CB_BUCKET_NAME')}")
+        self.logger.info(f"Using scope: {os.getenv('SCOPE_NAME')}")
+        self.logger.info(f"Using collection: {os.getenv('COLLECTION_NAME')}")
+        self.logger.info(f"Using index: {os.getenv('INDEX_NAME')}")
+
+    def setup_couchbase_connection(self):
+        """Setup Couchbase cluster connection."""
+        try:
+            auth = PasswordAuthenticator(os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"])
+            options = ClusterOptions(auth)
+            self.cluster = Cluster(os.environ["CB_HOST"], options)
+            self.cluster.wait_until_ready(timedelta(seconds=10))
+            self.logger.info("Successfully connected to Couchbase cluster")
+            return self.cluster
+        except CouchbaseException as e:
+            raise ConnectionError(f"Failed to connect to Couchbase: {e}")
+
+    def setup_bucket_scope_collection(self):
+        """Setup bucket, scope, and collection."""
+        try:
+            bucket_name = os.environ["CB_BUCKET_NAME"]
+            scope_name = os.environ["SCOPE_NAME"]
+            collection_name = os.environ["COLLECTION_NAME"]
+
+            # Check bucket
+            try:
+                bucket = self.cluster.bucket(bucket_name)
+                self.logger.info(f"Bucket '{bucket_name}' exists")
+            except Exception:
+                self.logger.info(f"Creating bucket '{bucket_name}'...")
+                bucket_settings = CreateBucketSettings(
+                    name=bucket_name,
+                    bucket_type="couchbase",
+                    ram_quota_mb=1024,
+                    flush_enabled=True,
+                    num_replicas=0,
+                )
+                self.cluster.buckets().create_bucket(bucket_settings)
+                time.sleep(5)
+                bucket = self.cluster.bucket(bucket_name)
+                self.logger.info(f"Bucket '{bucket_name}' created successfully")
+
+            # Setup scope and collection
+            bucket_manager = bucket.collections()
+
+            scopes = bucket_manager.get_all_scopes()
+            scope_exists = any(scope.name == scope_name for scope in scopes)
+
+            if not scope_exists and scope_name != "_default":
+                self.logger.info(f"Creating scope '{scope_name}'...")
+                bucket_manager.create_scope(scope_name)
+                self.logger.info(f"Scope '{scope_name}' created successfully")
+
+            collections = bucket_manager.get_all_scopes()
+            collection_exists = any(
+                scope.name == scope_name
+                and collection_name in [col.name for col in scope.collections]
+                for scope in collections
+            )
+
+            if not collection_exists:
+                self.logger.info(f"Creating collection '{collection_name}'...")
+                bucket_manager.create_collection(scope_name, collection_name)
+                self.logger.info(f"Collection '{collection_name}' created successfully")
+
+            self.collection = bucket.scope(scope_name).collection(collection_name)
+            time.sleep(3)
+
+            # Create primary index
+            try:
+                self.cluster.query(
+                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+                ).execute()
+                self.logger.info("Primary index created successfully")
+            except Exception as e:
+                self.logger.warning(f"Error creating primary index: {e}")
+
+            return self.collection
+
+        except Exception as e:
+            raise RuntimeError(f"Error setting up bucket/scope/collection: {e}")
+
+    def setup_vector_search_index(self):
+        """Setup vector search index."""
+        try:
+            # Load index definition from agentcatalog_index.json
+            index_file = "agentcatalog_index.json"
+            
+            # Look for the index file in the current directory
+            if not os.path.exists(index_file):
+                # Try looking in the parent directory
+                parent_dir = os.path.dirname(os.path.dirname(__file__))
+                index_file = os.path.join(parent_dir, "agentcatalog_index.json")
+            
+            if os.path.exists(index_file):
+                with open(index_file, "r") as f:
+                    index_definition = json.load(f)
+
+                scope_index_manager = (
+                    self.cluster.bucket(os.environ["CB_BUCKET_NAME"])
+                    .scope(os.environ["SCOPE_NAME"])
+                    .search_indexes()
+                )
+
+                existing_indexes = scope_index_manager.get_all_indexes()
+                index_name = index_definition["name"]
+
+                if index_name not in [index.name for index in existing_indexes]:
+                    self.logger.info(f"Creating vector search index '{index_name}'...")
+                    search_index = SearchIndex.from_json(index_definition)
+                    scope_index_manager.upsert_index(search_index)
+                    self.logger.info(f"Vector search index '{index_name}' created successfully")
+                else:
+                    self.logger.info(f"Vector search index '{index_name}' already exists")
+            else:
+                self.logger.warning(f"Index definition file {index_file} not found")
+
+        except Exception as e:
+            self.logger.error(f"Error setting up vector search index: {e}")
+
+
+class ArizeHotelSupportEvaluator:
+    """
+    Comprehensive evaluation system for hotel support agents using Arize AI.
     
-#     This class provides:
-#     - Hotel search performance evaluation with multiple metrics
-#     - Vector search effectiveness monitoring
-#     - Tool usage analysis and optimization
-#     - Comparative analysis of search strategies
-#     """
+    This class provides:
+    - Hotel search performance evaluation with multiple metrics
+    - Tool effectiveness monitoring (search, details, booking)
+    - Response quality assessment and search accuracy tracking
+    - Comparative analysis of different hotel search strategies
+    """
 
-#     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
-#         """Initialize the Arize evaluator with Agent Catalog integration."""
-#         self.catalog = catalog
-#         self.span = span
-#         self.arize_client = None
-#         self.dataset_id = None
-#         self.tracer_provider = None
+    def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
+        """Initialize the Arize evaluator with Agent Catalog integration."""
+        self.catalog = catalog
+        self.span = span
+        self.arize_client = None
+        self.dataset_id = None
+        self.tracer_provider = None
         
-#         # Initialize Arize observability if available
-#         if ARIZE_AVAILABLE:
-#             self._setup_arize_observability()
+        # Initialize Arize observability if available
+        if ARIZE_AVAILABLE:
+            self._setup_arize_observability()
             
-#             # Initialize evaluation models
-#             self.evaluator_llm = OpenAIModel(model="gpt-4o")
+            # Initialize evaluation models
+            self.evaluator_llm = OpenAIModel(model="gpt-4o")
             
-#             # Define evaluation rails
-#             self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
-#             self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
-#         else:
-#             print("⚠️ Arize not available - running basic evaluation only")
+            # Define evaluation rails
+            self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
+            self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
+        else:
+            print("⚠️ Arize not available - running basic evaluation only")
 
-#     def _setup_arize_observability(self):
-#         """Configure Arize observability with OpenTelemetry instrumentation."""
-#         try:
-#             # Setup tracer provider
-#             self.tracer_provider = register(
-#                 space_id=SPACE_ID,
-#                 api_key=API_KEY,
-#                 project_name=PROJECT_NAME,
-#             )
+    def setup_couchbase_infrastructure(self):
+        """Setup Couchbase infrastructure for evaluation."""
+        logger = logging.getLogger(__name__)
+        
+        try:
+            couchbase_setup = CouchbaseSetup()
+            couchbase_setup.setup_environment()
+            cluster = couchbase_setup.setup_couchbase_connection()
+            collection = couchbase_setup.setup_bucket_scope_collection()
+            couchbase_setup.setup_vector_search_index()
             
-#             # Instrument LangChain and OpenAI
-#             LangChainInstrumentor().instrument(tracer_provider=self.tracer_provider)
-#             OpenAIInstrumentor().instrument(tracer_provider=self.tracer_provider)
+            # Setup vector store using the existing method
+            vector_store = setup_vector_store(cluster)
             
-#             # Initialize Arize datasets client
-#             if DEVELOPER_KEY != "your-developer-key":
-#                 self.arize_client = ArizeDatasetsClient(
-#                     developer_key=DEVELOPER_KEY,
-#                     api_key=API_KEY
-#                 )
-            
-#             print("✅ Arize observability configured successfully")
-            
-#         except Exception as e:
-#             print(f"⚠️ Warning: Could not configure Arize observability: {e}")
-#             print("   Continuing with local evaluation only...")
+            logger.info("Couchbase infrastructure setup complete for evaluation")
+            return cluster, vector_store
+        except Exception as e:
+            logger.error(f"Error setting up Couchbase infrastructure: {e}")
+            raise
 
-#     def run_hotel_search_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
-#         """
-#         Run the hotel support agent on test inputs and collect results.
+    def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
+        """Create a hotel support agent for evaluation."""
+        logger = logging.getLogger(__name__)
         
-#         Args:
-#             test_inputs: List of hotel search queries to evaluate
+        try:
+            # Import required components
+            from langchain.agents import AgentExecutor, create_react_agent
+            from langchain.hub import pull
+            from langchain_openai import ChatOpenAI
+            import agentc_langchain
             
-#         Returns:
-#             DataFrame with input queries and agent responses
-#         """
-#         results = []
-        
-#         with self.span.new("HotelSupportEvaluation") as eval_span:
-#             # Setup the agent environment once
-#             setup_environment()
-#             cluster = setup_couchbase_connection()
-#             load_hotel_data(cluster)
+            # Get tools from catalog
+            tools = catalog.get_tools()
             
-#             for i, query in enumerate(test_inputs):
-#                 with eval_span.new(f"Query_{i}", query=query) as query_span:
-#                     try:
-#                         # Mock input to prevent interactive prompts
-#                         with unittest.mock.patch("builtins.input", side_effect=[query, "quit"]), \
-#                              unittest.mock.patch("builtins.print", lambda *args, **kwargs: None):
-                            
-#                             # Capture the agent response
-#                             response_captured = []
-                            
-#                             # Mock the print function to capture agent responses
-#                             def capture_print(*args, **kwargs):
-#                                 response_captured.append(" ".join(str(arg) for arg in args))
-                            
-#                             with unittest.mock.patch("builtins.print", capture_print):
-#                                 try:
-#                                     run_agent_chat(cluster, self.catalog, eval_span)
-#                                 except (EOFError, KeyboardInterrupt):
-#                                     pass  # Expected when we quit the chat
-                            
-#                             # Extract the meaningful response (filter out system messages)
-#                             response = ""
-#                             for captured in response_captured:
-#                                 if ("hotel" in captured.lower() or 
-#                                     "search" in captured.lower() or 
-#                                     "accommodation" in captured.lower() or
-#                                     len(captured) > 50):  # Likely agent response
-#                                     response = captured
-#                                     break
-                            
-#                             if not response:
-#                                 response = " ".join(response_captured) if response_captured else "No response"
-                            
-#                             # Analyze the response for hotel-related information
-#                             has_hotel_info = any(keyword in response.lower() for keyword in 
-#                                                ["hotel", "accommodation", "room", "amenities", "price", "booking"])
-                            
-#                             # Check if vector search was likely used
-#                             uses_search = "search" in response.lower() or len(response) > 100
-                            
-#                             results.append({
-#                                 "input": query,
-#                                 "output": response,
-#                                 "has_hotel_info": has_hotel_info,
-#                                 "uses_search": uses_search,
-#                                 "response_length": len(response),
-#                                 "example_id": i
-#                             })
-                            
-#                             query_span["response"] = response
-#                             query_span["has_hotel_info"] = has_hotel_info
-#                             query_span["uses_search"] = uses_search
-                            
-#                     except Exception as e:
-#                         print(f"❌ Error evaluating query '{query}': {e}")
-#                         results.append({
-#                             "input": query,
-#                             "output": f"Error: {str(e)}",
-#                             "has_hotel_info": False,
-#                             "uses_search": False,
-#                             "response_length": 0,
-#                             "example_id": i
-#                         })
-#                         query_span["error"] = str(e)
-        
-#         return pd.DataFrame(results)
+            # Create LLM
+            llm = ChatOpenAI(model_name="gpt-4o", temperature=0.1)
+            
+            # Get prompt
+            prompt = catalog.get_prompt("hotel_search_assistant")
+            
+            # Create ReAct agent
+            agent = create_react_agent(llm, tools, prompt)
+            agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+            
+            # Wrap with AgentC
+            agent_with_catalog = agentc_langchain.agent.Agent(
+                agent_executor=agent_executor,
+                catalog=catalog,
+                span=span
+            )
+            
+            logger.info("Hotel support agent created for evaluation")
+            return agent_with_catalog
+        except Exception as e:
+            logger.error(f"Error creating agent: {e}")
+            raise
 
-#     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
-#         """
-#         Run Arize LLM-based evaluations on agent responses.
-        
-#         Args:
-#             results_df: DataFrame with agent inputs and outputs
+    def _setup_arize_observability(self):
+        """Configure Arize observability with OpenTelemetry instrumentation."""
+        try:
+            # Setup tracer provider for Phoenix (local only)
+            self.tracer_provider = TracerProvider()
+            trace.set_tracer_provider(self.tracer_provider)
             
-#         Returns:
-#             DataFrame with Arize evaluation scores added
-#         """
-#         if not ARIZE_AVAILABLE:
-#             print("⚠️ Arize evaluations not available - dependencies missing")
-#             return results_df
+            print("✅ Local tracing configured successfully")
             
-#         try:
-#             # Relevance evaluation
-#             print("🔍 Running Arize relevance evaluation...")
-#             relevance_eval_df = llm_classify(
-#                 dataframe=results_df,
-#                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.relevance_rails,
-#                 provide_explanation=True,
-#                 include_prompt=True,
-#                 concurrency=2,
-#             )
+            # Instrument LangChain and OpenAI
+            instrumentors = [
+                ("LangChain", LangChainInstrumentor),
+                ("OpenAI", OpenAIInstrumentor),
+            ]
             
-#             # Correctness evaluation
-#             print("🎯 Running Arize correctness evaluation...")
-#             correctness_eval_df = llm_classify(
-#                 dataframe=results_df,
-#                 template=QA_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.qa_rails,
-#                 provide_explanation=True,
-#                 include_prompt=True,
-#                 concurrency=2,
-#             )
+            for name, instrumentor_class in instrumentors:
+                try:
+                    instrumentor = instrumentor_class()
+                    if not instrumentor.is_instrumented_by_opentelemetry:
+                        instrumentor.instrument(tracer_provider=self.tracer_provider)
+                        print(f"✅ {name} instrumented successfully")
+                    else:
+                        print(f"ℹ️ {name} already instrumented, skipping")
+                except Exception as e:
+                    print(f"⚠️ {name} instrumentation failed: {e}")
+                    continue
+                    
+            # Initialize Arize datasets client
+            if API_KEY != "your-api-key":
+                try:
+                    self.arize_client = ArizeDatasetsClient(
+                        developer_key=API_KEY,
+                        api_key=API_KEY
+                    )
+                    print("✅ Arize datasets client initialized")
+                except Exception as e:
+                    print(f"⚠️ Could not initialize Arize datasets client: {e}")
+                    self.arize_client = None
             
-#             # Merge evaluations
-#             merged_df = results_df.copy()
-#             merged_df["arize_relevance"] = relevance_eval_df.get("label", "unknown")
-#             merged_df["arize_relevance_explanation"] = relevance_eval_df.get("explanation", "")
-#             merged_df["arize_correctness"] = correctness_eval_df.get("label", "unknown")
-#             merged_df["arize_correctness_explanation"] = correctness_eval_df.get("explanation", "")
+            print("✅ Arize observability configured successfully")
             
-#             return merged_df
-            
-#         except Exception as e:
-#             print(f"❌ Error running Arize evaluations: {e}")
-#             return results_df
+        except Exception as e:
+            print(f"⚠️ Error setting up Arize observability: {e}")
 
-#     def evaluate_hotel_search_scenarios(self) -> Dict[str, pd.DataFrame]:
-#         """
-#         Run comprehensive evaluation on different hotel search scenarios.
+    def run_hotel_search_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
+        """
+        Run hotel search evaluation on a set of test inputs.
         
-#         Returns:
-#             Dictionary of scenario names to evaluation results
-#         """
-#         scenarios = {
-#             "location_searches": [
-#                 "Find hotels in New York City",
-#                 "I need accommodation in San Francisco",
-#                 "Show me hotels near LAX airport",
-#                 "Hotels in downtown Chicago",
-#             ],
-#             "amenity_filtering": [
-#                 "Hotels with swimming pool and gym",
-#                 "I need a hotel with free WiFi and parking",
-#                 "Find luxury hotels with spa services",
-#                 "Budget hotels with continental breakfast",
-#             ],
-#             "budget_queries": [
-#                 "Cheap hotels under $100 per night",
-#                 "Luxury hotels with premium amenities",
-#                 "Mid-range hotels for business travel",
-#                 "Family-friendly hotels with good value",
-#             ],
-#             "specific_requirements": [
-#                 "Pet-friendly hotels in Seattle",
-#                 "Hotels with accessibility features",
-#                 "Business hotels with conference rooms",
-#                 "Boutique hotels with unique character",
-#             ],
-#             "travel_purpose": [
-#                 "Hotels for romantic getaway",
-#                 "Business travel accommodation",
-#                 "Family vacation hotels with kids activities",
-#                 "Solo traveler budget accommodation",
-#             ],
-#             "irrelevant_queries": [
-#                 "What's the weather like today?",
-#                 "How do I cook pasta?",
-#                 "Tell me about stock market trends",
-#                 "What's the capital of France?",
-#             ],
-#         }
+        Args:
+            test_inputs: List of hotel search queries to evaluate
+            
+        Returns:
+            DataFrame with evaluation results
+        """
+        print(f"🚀 Running evaluation on {len(test_inputs)} queries...")
         
-#         results = {}
+        # Setup infrastructure
+        print("🔧 Setting up Couchbase infrastructure...")
+        cluster, vector_store = self.setup_couchbase_infrastructure()
+        print("✅ Couchbase infrastructure setup complete")
         
-#         for scenario_name, queries in scenarios.items():
-#             print(f"\n🚀 Evaluating scenario: {scenario_name}")
-#             print(f"   Running {len(queries)} queries...")
-            
-#             # Run hotel search evaluation
-#             agent_results = self.run_hotel_search_evaluation(queries)
-            
-#             # Run Arize evaluations if available
-#             if ARIZE_AVAILABLE:
-#                 evaluated_results = self.run_arize_evaluations(agent_results)
-#             else:
-#                 evaluated_results = agent_results
-            
-#             results[scenario_name] = evaluated_results
-            
-#             # Print summary
-#             total_queries = len(evaluated_results)
-#             hotel_info_count = sum(evaluated_results["has_hotel_info"])
-#             search_usage_count = sum(evaluated_results["uses_search"])
-            
-#             print(f"   ✅ Completed: {hotel_info_count}/{total_queries} queries with hotel info")
-#             print(f"   🔍 Search usage: {search_usage_count}/{total_queries} queries")
-            
-#             if ARIZE_AVAILABLE and "arize_relevance" in evaluated_results.columns:
-#                 avg_relevance = self._calculate_average_score(evaluated_results["arize_relevance"])
-#                 avg_correctness = self._calculate_average_score(evaluated_results["arize_correctness"])
-#                 print(f"   📊 Avg Relevance: {avg_relevance:.2f}")
-#                 print(f"   📊 Avg Correctness: {avg_correctness:.2f}")
+        # Create agent
+        print("🤖 Creating hotel support agent...")
+        agent = self.create_agent(self.catalog, self.span)
+        print("✅ Hotel support agent created")
         
-#         return results
+        results = []
+        
+        for i, query in enumerate(test_inputs, 1):
+            print(f"  📝 Query {i}/{len(test_inputs)}: {query}")
+            
+            try:
+                print(f"     🔄 Agent processing query...")
+                response = agent.run(query)
+                print(f"     ✅ Response received")
+                
+                # Analyze response
+                has_hotel_info = self._check_hotel_info(response)
+                has_recommendations = self._check_recommendations(response)
+                has_amenities = self._check_amenities(response)
+                appropriate_response = self._check_appropriate_response(query, response)
+                
+                # Create response preview
+                response_preview = (response[:150] + "...") if len(response) > 150 else response
+                print(f"     💬 Response preview: {response_preview}")
+                
+                results.append({
+                    "example_id": f"hotel_query_{i}",
+                    "query": query,
+                    "output": response,
+                    "has_hotel_info": has_hotel_info,
+                    "has_recommendations": has_recommendations,
+                    "has_amenities": has_amenities,
+                    "appropriate_response": appropriate_response,
+                    "response_length": len(response),
+                })
+                
+            except Exception as e:
+                print(f"     ❌ Error processing query: {e}")
+                results.append({
+                    "example_id": f"hotel_query_{i}",
+                    "query": query,
+                    "output": f"Error: {str(e)}",
+                    "has_hotel_info": False,
+                    "has_recommendations": False,
+                    "has_amenities": False,
+                    "appropriate_response": False,
+                    "response_length": 0,
+                })
+        
+        return pd.DataFrame(results)
 
-#     def _calculate_average_score(self, scores: List[str]) -> float:
-#         """Calculate average score from evaluation labels."""
-#         if not scores:
-#             return 0.0
-        
-#         # Map evaluation labels to numeric scores
-#         score_map = {
-#             "correct": 1.0,
-#             "incorrect": 0.0,
-#             "relevant": 1.0,
-#             "irrelevant": 0.0,
-#             "unknown": 0.5,
-#         }
-        
-#         numeric_scores = [score_map.get(str(score).lower(), 0.5) for score in scores]
-#         return sum(numeric_scores) / len(numeric_scores)
+    def _check_hotel_info(self, response_text: str) -> bool:
+        """Check if response contains hotel information."""
+        hotel_indicators = ["hotel", "room", "accommodation", "stay", "booking", "reservation", "check-in", "check-out"]
+        return any(indicator in response_text.lower() for indicator in hotel_indicators)
 
-#     def generate_evaluation_report(self, results: Dict[str, pd.DataFrame]) -> str:
-#         """
-#         Generate a comprehensive evaluation report.
-        
-#         Args:
-#             results: Dictionary of scenario results
-            
-#         Returns:
-#             Formatted evaluation report
-#         """
-#         report = []
-#         report.append("# Hotel Support Agent Evaluation Report")
-#         report.append("=" * 60)
-#         report.append("")
-        
-#         total_queries = 0
-#         total_with_hotel_info = 0
-#         total_search_usage = 0
-        
-#         for scenario_name, df in results.items():
-#             report.append(f"## {scenario_name.replace('_', ' ').title()}")
-#             report.append(f"- Total Queries: {len(df)}")
-#             report.append(f"- With Hotel Info: {sum(df['has_hotel_info'])}")
-#             report.append(f"- Search Usage: {sum(df['uses_search'])}")
-#             report.append(f"- Success Rate: {sum(df['has_hotel_info']) / len(df) * 100:.1f}%")
-            
-#             # Arize metrics
-#             if ARIZE_AVAILABLE and "arize_relevance" in df.columns:
-#                 avg_relevance = self._calculate_average_score(df["arize_relevance"])
-#                 avg_correctness = self._calculate_average_score(df["arize_correctness"])
-#                 report.append(f"- Avg Relevance: {avg_relevance:.2f}")
-#                 report.append(f"- Avg Correctness: {avg_correctness:.2f}")
-            
-#             # Response quality metrics
-#             avg_response_length = df["response_length"].mean()
-#             report.append(f"- Avg Response Length: {avg_response_length:.0f} chars")
-            
-#             report.append("")
-            
-#             total_queries += len(df)
-#             total_with_hotel_info += sum(df["has_hotel_info"])
-#             total_search_usage += sum(df["uses_search"])
-        
-#         report.append("## Overall Summary")
-#         report.append(f"- Total Queries Evaluated: {total_queries}")
-#         report.append(f"- Total With Hotel Info: {total_with_hotel_info}")
-#         report.append(f"- Overall Success Rate: {total_with_hotel_info / total_queries * 100:.1f}%")
-#         report.append(f"- Search Tool Usage: {total_search_usage / total_queries * 100:.1f}%")
-#         report.append("")
-        
-#         if ARIZE_AVAILABLE and self.arize_client:
-#             report.append("## Arize AI Dashboard")
-#             report.append("View detailed traces and metrics in your Arize workspace:")
-#             report.append(f"- Project: {PROJECT_NAME}")
-#             report.append(f"- Space ID: {SPACE_ID}")
-#             report.append("")
-        
-#         return "\n".join(report)
+    def _check_recommendations(self, response_text: str) -> bool:
+        """Check if response contains hotel recommendations."""
+        recommendation_indicators = ["recommend", "suggest", "option", "choice", "available", "found", "located"]
+        return any(indicator in response_text.lower() for indicator in recommendation_indicators)
 
-#     def log_experiment_to_arize(self, results_df: pd.DataFrame, experiment_name: str) -> str:
-#         """
-#         Log experiment results to Arize for analysis and comparison.
+    def _check_amenities(self, response_text: str) -> bool:
+        """Check if response mentions amenities."""
+        amenity_indicators = ["amenities", "pool", "gym", "wifi", "breakfast", "parking", "spa", "restaurant", "bar"]
+        return any(indicator in response_text.lower() for indicator in amenity_indicators)
+
+    def _check_appropriate_response(self, query: str, response: str) -> bool:
+        """Check if response is appropriate for the query."""
+        # Check for hallucination indicators
+        hallucination_indicators = ["mars", "pluto", "atlantis", "fictional", "not possible", "not available"]
+        has_hallucination = any(indicator in response.lower() for indicator in hallucination_indicators)
         
-#         Args:
-#             results_df: DataFrame with evaluation results
-#             experiment_name: Name for the experiment
+        # Check for reasonable response length
+        reasonable_length = 50 < len(response) < 2000
+        
+        # Check for hotel-related content
+        has_hotel_content = self._check_hotel_info(response)
+        
+        return not has_hallucination and reasonable_length and has_hotel_content
+
+    def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Run Arize-based LLM evaluations on the results.
+        
+        Args:
+            results_df: DataFrame with evaluation results
             
-#         Returns:
-#             Experiment ID if successful, None otherwise
-#         """
-#         try:
-#             if not self.arize_client or not ARIZE_AVAILABLE:
-#                 print("⚠️ No Arize client available, skipping logging")
-#                 return None
+        Returns:
+            DataFrame with additional Arize evaluation columns
+        """
+        if not ARIZE_AVAILABLE:
+            print("⚠️ Arize not available - skipping LLM evaluations")
+            return results_df
             
-#             # Define column mappings
-#             task_cols = ExperimentTaskResultColumnNames(
-#                 example_id="example_id",
-#                 result="output"
-#             )
+        print(f"🧠 Running LLM-based evaluations on {len(results_df)} responses...")
+        print("   📋 Evaluation criteria:")
+        print("      🔍 Relevance: Does the response address the hotel search query?")
+        print("      🎯 Correctness: Is the hotel information accurate and helpful?")
+        
+        # Sample evaluation data preview
+        if len(results_df) > 0:
+            sample_row = results_df.iloc[0]
+            print(f"\n   🔍 Sample evaluation data:")
+            print(f"      Query: {sample_row['query']}")
+            print(f"      Response: {sample_row['output'][:100]}...")
+        
+        try:
+            # Prepare data for evaluation
+            evaluation_data = []
+            for _, row in results_df.iterrows():
+                evaluation_data.append({
+                    "reference": row['output'],  # Use the agent's output as reference
+                    "input": row['query'],
+                    "output": row['output']
+                })
             
-#             evaluator_columns = {}
+            eval_df = pd.DataFrame(evaluation_data)
             
-#             if "arize_relevance" in results_df.columns:
-#                 evaluator_columns["arize_relevance"] = EvaluationResultColumnNames(
-#                     label="arize_relevance",
-#                     explanation="arize_relevance_explanation",
-#                 )
+            # Run relevance evaluation
+            print(f"\n   🔍 Evaluating relevance...")
+            relevance_results = llm_classify(
+                dataframe=eval_df,
+                model=self.evaluator_llm,
+                template=RAG_RELEVANCY_PROMPT_TEMPLATE,
+                rails=self.relevance_rails,
+                provide_explanation=True,
+            )
             
-#             if "arize_correctness" in results_df.columns:
-#                 evaluator_columns["arize_correctness"] = EvaluationResultColumnNames(
-#                     label="arize_correctness",
-#                     explanation="arize_correctness_explanation",
-#                 )
+            # Run correctness evaluation
+            print(f"   🎯 Evaluating correctness...")
+            correctness_results = llm_classify(
+                dataframe=eval_df,
+                model=self.evaluator_llm,
+                template=QA_PROMPT_TEMPLATE,
+                rails=self.qa_rails,
+                provide_explanation=True,
+            )
             
-#             # Log experiment to Arize
-#             experiment_id = self.arize_client.log_experiment(
-#                 space_id=SPACE_ID,
-#                 experiment_name=f"{experiment_name}-{str(uuid4())[:4]}",
-#                 experiment_df=results_df,
-#                 task_columns=task_cols,
-#                 evaluator_columns=evaluator_columns,
-#                 dataset_name=f"hotel-support-eval-{str(uuid4())[:8]}",
-#             )
+            # Add evaluation results to DataFrame
+            results_df['arize_relevance'] = relevance_results['label']
+            results_df['arize_relevance_explanation'] = relevance_results['explanation']
+            results_df['arize_correctness'] = correctness_results['label']
+            results_df['arize_correctness_explanation'] = correctness_results['explanation']
             
-#             print(f"✅ Logged experiment to Arize: {experiment_name}")
-#             return experiment_id
+            # Display sample explanations
+            if len(results_df) > 0:
+                print(f"\n   📝 Sample evaluation explanations:")
+                for i in range(min(2, len(results_df))):
+                    row = results_df.iloc[i]
+                    print(f"      Query: {row['query']}")
+                    print(f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:100]}...")
+                    print(f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:100]}...")
+                    print()
             
-#         except Exception as e:
-#             print(f"❌ Error logging experiment to Arize: {e}")
-#             return None
+            print(f"   ✅ LLM evaluations completed")
+            
+        except Exception as e:
+            print(f"   ❌ Error running LLM evaluations: {e}")
+            
+        return results_df
 
 
-# def eval_hotel_search_basic():
-#     """
-#     Evaluate hotel search agent with basic queries.
+def eval_hotel_search_basic():
+    """Run basic hotel search evaluation with a small set of test queries."""
+    print("🔍 Running basic hotel search evaluation...")
+    print("📋 This evaluation tests:")
+    print("   • Agent's ability to understand hotel search queries")
+    print("   • Quality of responses using vector search + LLM")
+    print("   • LLM-based relevance and correctness scoring")
     
-#     This function tests the agent's ability to handle standard hotel search
-#     requests and provide appropriate recommendations.
-#     """
-#     print("🔍 Running basic hotel search evaluation...")
+    # Test queries for hotel search
+    test_inputs = [
+        "Find me a hotel in New York City with a pool",
+        "I need a budget hotel in San Francisco near the airport",
+        "Show me luxury hotels in Miami Beach with ocean views",
+        "Find hotels in Los Angeles with free breakfast and parking",
+        "What are the best hotels in Chicago for business travelers?",
+        "I need a pet-friendly hotel in Seattle with a gym",
+    ]
     
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="HotelSupportEvalBasic")
+    # Initialize evaluation components
+    catalog = agentc.Catalog()
+    span = catalog.Span(name="HotelSupportEvaluation")
     
-#     # Initialize evaluator
-#     evaluator = ArizeHotelSupportEvaluator(catalog=catalog, span=root_span)
+    evaluator = ArizeHotelSupportEvaluator(catalog, span)
     
-#     # Basic test queries
-#     test_inputs = [
-#         "Find hotels in New York",
-#         "I need a hotel with a pool",
-#         "Show me luxury hotels",
-#         "Budget accommodation options",
-#     ]
+    # Run the evaluation
+    results_df = evaluator.run_hotel_search_evaluation(test_inputs)
     
-#     # Run evaluation
-#     results = evaluator.run_hotel_search_evaluation(test_inputs)
+    # Run Arize evaluations if available
+    if ARIZE_AVAILABLE:
+        results_df = evaluator.run_arize_evaluations(results_df)
     
-#     # Run Arize evaluations if available
-#     if ARIZE_AVAILABLE:
-#         evaluated_results = evaluator.run_arize_evaluations(results)
-#     else:
-#         evaluated_results = results
+    # Calculate metrics
+    total_queries = len(results_df)
+    queries_with_hotel_info = results_df['has_hotel_info'].sum()
+    queries_with_recommendations = results_df['has_recommendations'].sum()
+    queries_with_amenities = results_df['has_amenities'].sum()
+    appropriate_responses = results_df['appropriate_response'].sum()
+    success_rate = (queries_with_hotel_info / total_queries) * 100
     
-#     # Calculate metrics
-#     total_queries = len(evaluated_results)
-#     hotel_info_count = sum(evaluated_results["has_hotel_info"])
+    # Print summary
+    print(f"\n✅ Basic hotel search evaluation completed:")
+    print(f"   📊 Total queries processed: {total_queries}")
+    print(f"   🎯 Queries with hotel info: {queries_with_hotel_info}")
+    print(f"   📈 Success rate: {success_rate:.1f}%")
+    print(f"   🏨 Queries with recommendations: {queries_with_recommendations}")
+    print(f"   🛏️ Queries with amenities: {queries_with_amenities}")
+    print(f"   ✅ Appropriate responses: {appropriate_responses}")
     
-#     print(f"✅ Basic hotel search evaluation completed:")
-#     print(f"   - Total queries: {total_queries}")
-#     print(f"   - With hotel info: {hotel_info_count}")
-#     print(f"   - Success rate: {hotel_info_count / total_queries * 100:.1f}%")
+    if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
+        relevance_scores = results_df['arize_relevance'].value_counts()
+        correctness_scores = results_df['arize_correctness'].value_counts()
+        
+        # Convert to regular Python dict with int values
+        relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
+        correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
+        
+        print(f"\n🔍 Arize Evaluation Results:")
+        print(f"   📋 Relevance: {relevance_dict}")
+        print(f"   ✅ Correctness: {correctness_dict}")
     
-#     # Log results
-#     root_span["total_queries"] = total_queries
-#     root_span["hotel_info_count"] = hotel_info_count
-#     root_span["success_rate"] = hotel_info_count / total_queries
+    print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
+    
+    return results_df
 
 
-# def eval_hotel_search_comprehensive():
-#     """
-#     Run comprehensive evaluation across all hotel search scenarios.
+if __name__ == "__main__":
+    import sys
     
-#     This function provides a complete evaluation suite that tests the
-#     agent across different types of hotel search queries and use cases.
-#     """
-#     print("🚀 Starting comprehensive hotel support agent evaluation...")
-    
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="HotelSupportComprehensiveEval")
-    
-#     # Initialize evaluator
-#     evaluator = ArizeHotelSupportEvaluator(catalog=catalog, span=root_span)
-    
-#     # Run comprehensive evaluation
-#     results = evaluator.evaluate_hotel_search_scenarios()
-    
-#     # Generate report
-#     report = evaluator.generate_evaluation_report(results)
-    
-#     # Save report
-#     report_file = pathlib.Path("evals") / "hotel_evaluation_report.md"
-#     with report_file.open("w") as f:
-#         f.write(report)
-    
-#     print(f"✅ Comprehensive evaluation completed!")
-#     print(f"   📊 Report saved to: {report_file}")
-#     print("\n" + "=" * 60)
-#     print(report)
-
-
-# if __name__ == "__main__":
-#     import sys
-    
-#     # Check if specific evaluation is requested
-#     if len(sys.argv) > 1:
-#         if sys.argv[1] == "basic":
-#             eval_hotel_search_basic()
-#         elif sys.argv[1] == "comprehensive":
-#             eval_hotel_search_comprehensive()
-#         else:
-#             print("Usage: python eval_arize.py [basic|comprehensive]")
-#     else:
-#         # Run comprehensive evaluation by default
-#         print("🔍 Running comprehensive hotel support agent evaluation...")
-#         eval_hotel_search_comprehensive()
+    # Check if specific evaluation is requested
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "basic":
+            eval_hotel_search_basic()
+        else:
+            print("Usage: python eval_arize.py [basic]")
+    else:
+        # Run basic evaluation by default
+        print("🔍 Running basic hotel search agent evaluation...")
+        eval_hotel_search_basic()
