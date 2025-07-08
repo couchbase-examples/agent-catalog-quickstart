@@ -358,8 +358,7 @@ Thought: {{agent_scratchpad}}"""
                 verbose=True, 
                 handle_parsing_errors=True,
                 max_iterations=5,  # Increased iterations for complex queries
-                return_intermediate_steps=True,  # Better error handling
-                early_stopping_method="generate"  # Better stopping condition
+                return_intermediate_steps=True  # Better error handling
             )
         
         # Test the agent with sample queries

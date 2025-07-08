@@ -112,10 +112,29 @@ def get_hotel_details(hotel_name: str) -> str:
                 }
             }
             
-            hotel_key = hotel_name.lower().strip()
-            if hotel_key in detailed_hotels:
-                hotel = detailed_hotels[hotel_key]
-                return f"""**{hotel['name']}**
+            # Improved matching logic - try multiple approaches
+            hotel_input = hotel_name.lower().strip()
+            
+            # First try exact match
+            if hotel_input in detailed_hotels:
+                hotel = detailed_hotels[hotel_input]
+            else:
+                # Try partial matching for each hotel key
+                matched_hotel = None
+                for key, hotel_data in detailed_hotels.items():
+                    # Check if any part of the hotel name matches
+                    if (key in hotel_input or 
+                        any(word in hotel_input for word in key.split()) or
+                        hotel_data['name'].lower() in hotel_input):
+                        matched_hotel = hotel_data
+                        break
+                
+                if matched_hotel:
+                    hotel = matched_hotel
+                else:
+                    return f"Hotel '{hotel_name}' not found in the database. Please check the spelling or try using the search tool to find similar hotels in your desired location."
+            
+            return f"""**{hotel['name']}**
 
 **Location:** {hotel['location']}
 **Description:** {hotel['description']}
@@ -133,8 +152,6 @@ def get_hotel_details(hotel_name: str) -> str:
 **Check-in Time:** {hotel['check_in']}
 **Check-out Time:** {hotel['check_out']}
 **Cancellation Policy:** {hotel['cancellation']}"""
-            else:
-                return f"Hotel '{hotel_name}' not found in the database. Please check the spelling or try using the search tool to find similar hotels in your desired location."
         
         hotel_content = rows[0]
         return f"Hotel Details: {hotel_content}"
