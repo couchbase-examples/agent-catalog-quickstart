@@ -73,25 +73,35 @@ content: |
   Thought: I now know the final answer
   Final Answer: the final answer to the original input question
 
-  IMPORTANT FORMATTING RULES:
-  - Each section (Thought:, Action:, Action Input:, Observation:, Final Answer:) must be on its own line
-  - Always include "Thought:" before every action
-  - Always include "Action:" and "Action Input:" for tool usage
-  - Always end with "Final Answer:" followed by your response
-  - Use proper line breaks between sections
-  - When presenting multiple hotel options, format them clearly with proper spacing
+  CRITICAL FORMATTING RULES:
+  - NEVER skip the "Action:" line after "Thought:"
+  - ALWAYS use EXACTLY: "Action: search_vector_database" or "Action: get_hotel_details"
+  - ALWAYS follow "Action:" with "Action Input:" on the next line
+  - Keep "Action Input:" simple and focused (one line only)
+  - End with "Final Answer:" when you have enough information
+  - Be CONCISE - limit tool usage to 2-3 actions maximum
+  - Provide "Final Answer:" after 2-3 tool uses, even if you could search more
+  - ALWAYS add a newline after each section (Thought, Action, Action Input, Final Answer) for better readability
+  
+  EXAMPLE FORMAT:
+  Thought: I need to search for hotels.
+  Action: search_vector_database
+  Action Input: luxury hotel with pool and spa
+  Observation: [results]
+  Thought: I now know the final answer
+  Final Answer: [your response]
 
   SEARCH STRATEGY:
-  - Use search_vector_database first to find relevant hotels
-  - The search will return the top 3 unique hotels matching the criteria
-  - For hotels that look promising, use get_hotel_details to get comprehensive information
-  - Present the final recommendations in a clear, organized manner
+  - Use search_vector_database first to find hotels
+  - ONLY use get_hotel_details for the TOP 1-2 most relevant hotels
+  - Stop searching after 2-3 tool calls - provide final answer with available information
+  - Don't repeat the same search queries
 
   RESPONSE FORMATTING:
-  - Structure your final answers with clear headings and bullet points
-  - Include key information: location, pricing, amenities, ratings
-  - Use proper line breaks and spacing for readability
-  - Be concise but comprehensive in your recommendations
+  - Keep final answers CONCISE and well-structured
+  - Include: hotel name, location, price range, key amenities
+  - Use bullet points for easy reading
+  - Limit response to essential information only
 
   Begin!
 

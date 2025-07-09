@@ -1,7 +1,9 @@
+import base64
 import json
 import os
 import time
 from datetime import timedelta
+import requests
 
 import agentc
 import agentc_langchain
@@ -28,9 +30,15 @@ def _set_if_undefined(var: str):
         os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
 
 def setup_environment():
-    required_vars = ['OPENAI_API_KEY', 'CB_HOST', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET_NAME']
+    required_vars = ['CB_HOST', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET_NAME']
     for var in required_vars:
         _set_if_undefined(var)
+    
+    # Optional Capella AI variables (fallback to OpenAI if not provided)
+    optional_vars = ['CAPELLA_API_ENDPOINT', 'CAPELLA_API_EMBEDDING_MODEL', 'CAPELLA_API_LLM_MODEL']
+    for var in optional_vars:
+        if not os.environ.get(var):
+            print(f"ℹ️ {var} not provided - will use OpenAI fallback")
     
     defaults = {
         'CB_HOST': 'couchbase://localhost',
@@ -45,13 +53,24 @@ def setup_environment():
     for key, default_value in defaults.items():
         if not os.environ.get(key):
             os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
+    
+    # Generate Capella AI API key from username and password if endpoint is provided
+    if os.environ.get('CAPELLA_API_ENDPOINT'):
+        os.environ['CAPELLA_API_KEY'] = base64.b64encode(f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode("utf-8")).decode("utf-8")
+        
+        # Ensure endpoint has /v1 suffix for OpenAI compatibility
+        if not os.environ['CAPELLA_API_ENDPOINT'].endswith('/v1'):
+            os.environ['CAPELLA_API_ENDPOINT'] = os.environ['CAPELLA_API_ENDPOINT'].rstrip('/') + '/v1'
+            print(f"Added /v1 suffix to endpoint: {os.environ['CAPELLA_API_ENDPOINT']}")
 
 def setup_couchbase_connection():
     try:
         auth = PasswordAuthenticator(os.environ['CB_USERNAME'], os.environ['CB_PASSWORD'])
         options = ClusterOptions(auth)
+        # Use WAN profile for better timeout handling with remote clusters  
+        options.apply_profile("wan_development")
         cluster = Cluster(os.environ['CB_HOST'], options)
-        cluster.wait_until_ready(timedelta(seconds=10))
+        cluster.wait_until_ready(timedelta(seconds=15))  # Increased wait time
         print("Successfully connected to Couchbase")
         return cluster
     except Exception as e:
@@ -131,10 +150,20 @@ def setup_vector_search_index(cluster, index_definition):
 
 def setup_vector_store(cluster):
     try:
-        embeddings = OpenAIEmbeddings(
-            api_key=os.environ['OPENAI_API_KEY'],
-            model="text-embedding-3-small"
-        )
+        # Try Capella AI embeddings first
+        try:
+            embeddings = OpenAIEmbeddings(
+                api_key=os.environ['CAPELLA_API_KEY'],
+                base_url=os.environ['CAPELLA_API_ENDPOINT'],
+                model=os.environ['CAPELLA_API_EMBEDDING_MODEL']
+            )
+            # Test the embeddings work
+            test_embedding = embeddings.embed_query("test")
+            print(f"✅ Using Capella AI embeddings (dimension: {len(test_embedding)})")
+        except Exception as e:
+            print(f"⚠️ Capella AI embeddings failed: {str(e)}")
+            print("❌ Cannot fall back to OpenAI embeddings - dimension mismatch!")
+            raise Exception("Embedding dimension mismatch - cannot proceed with OpenAI fallback")
         
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
@@ -177,6 +206,59 @@ def clear_collection_data(cluster):
     except Exception as e:
         print(f"Warning: Could not clear collection data: {str(e)}. Continuing with existing data...")
 
+def test_capella_connectivity():
+    """Test Capella API connectivity for both embeddings and LLM before running main demo."""
+    print("🔍 Testing Capella API connectivity...")
+    print(f"Endpoint: {os.environ['CAPELLA_API_ENDPOINT']}")
+    print(f"Embedding Model: {os.environ['CAPELLA_API_EMBEDDING_MODEL']}")
+    print(f"LLM Model: {os.environ['CAPELLA_API_LLM_MODEL']}")
+    print(f"Username: {os.environ['CB_USERNAME']}")
+    print(f"API Key (first 20 chars): {os.environ['CAPELLA_API_KEY'][:20]}...")
+    
+    # First test basic HTTP connectivity
+    try:
+        print("Testing basic HTTP connectivity...")
+        response = requests.get(f"{os.environ['CAPELLA_API_ENDPOINT']}/models", 
+                               headers={"Authorization": f"Bearer {os.environ['CAPELLA_API_KEY']}"}, 
+                               timeout=10)
+        print(f"HTTP response status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"HTTP response: {response.text[:200]}...")
+    except Exception as e:
+        print(f"HTTP test failed: {str(e)}")
+    
+    # Test embedding model
+    try:
+        print("Testing embedding model...")
+        embeddings = OpenAIEmbeddings(
+            api_key=os.environ['CAPELLA_API_KEY'],
+            base_url=os.environ['CAPELLA_API_ENDPOINT'],
+            model=os.environ['CAPELLA_API_EMBEDDING_MODEL']
+        )
+        test_embedding = embeddings.embed_query("test connectivity")
+        print(f"✅ Embedding model working - dimension: {len(test_embedding)}")
+    except Exception as e:
+        print(f"❌ Embedding model failed: {str(e)}")
+        return False
+    
+    # Test LLM model
+    try:
+        print("Testing LLM model...")
+        llm = ChatOpenAI(
+            api_key=os.environ['CAPELLA_API_KEY'],
+            base_url=os.environ['CAPELLA_API_ENDPOINT'],
+            model=os.environ['CAPELLA_API_LLM_MODEL'],
+            temperature=0
+        )
+        response = llm.invoke("Say 'Hello' if you can hear me")
+        print(f"✅ LLM model working - response: {response.content[:50]}...")
+    except Exception as e:
+        print(f"❌ LLM model failed: {str(e)}")
+        return False
+    
+    print("✅ All Capella API tests passed!")
+    return True
+
 def main():
     try:
         # Initialize Agent Catalog
@@ -185,6 +267,13 @@ def main():
 
         with application_span.new("Environment Setup"):
             setup_environment()
+            
+        with application_span.new("Capella API Test"):
+            if os.environ.get('CAPELLA_API_ENDPOINT'):
+                if not test_capella_connectivity():
+                    print("❌ Capella API connectivity test failed. Will use OpenAI fallback.")
+            else:
+                print("ℹ️ Capella API not configured - will use OpenAI models")
         
         with application_span.new("Couchbase Connection"):
             cluster = setup_couchbase_connection()
@@ -211,13 +300,29 @@ def main():
             setup_vector_store(cluster)
         
         with application_span.new("LLM Setup"):
-            # Setup LLM with Agent Catalog callback
-            llm = ChatOpenAI(
-                api_key=os.environ['OPENAI_API_KEY'],
-                model="gpt-4o",
-                temperature=0,
-                callbacks=[agentc_langchain.chat.Callback(span=application_span)]
-            )
+            # Setup LLM with Agent Catalog callback - try Capella AI first, fallback to OpenAI
+            try:
+                llm = ChatOpenAI(
+                    api_key=os.environ['CAPELLA_API_KEY'],
+                    base_url=os.environ['CAPELLA_API_ENDPOINT'],
+                    model=os.environ['CAPELLA_API_LLM_MODEL'],
+                    temperature=0,
+                    callbacks=[agentc_langchain.chat.Callback(span=application_span)]
+                )
+                # Test the LLM works
+                llm.invoke("Hello")
+                print("✅ Using Capella AI LLM")
+            except Exception as e:
+                print(f"⚠️ Capella AI LLM failed: {str(e)}")
+                print("🔄 Falling back to OpenAI LLM...")
+                _set_if_undefined("OPENAI_API_KEY")
+                llm = ChatOpenAI(
+                    api_key=os.environ['OPENAI_API_KEY'],
+                    model="gpt-4o",
+                    temperature=0,
+                    callbacks=[agentc_langchain.chat.Callback(span=application_span)]
+                )
+                print("✅ Using OpenAI LLM as fallback")
         
         with application_span.new("Tool Loading"):
             # Load tools from Agent Catalog - they are now properly decorated
@@ -270,8 +375,10 @@ def main():
                 tools=tools, 
                 verbose=True, 
                 handle_parsing_errors=True,
-                max_iterations=5,
-                return_intermediate_steps=True
+                max_iterations=8,
+                return_intermediate_steps=True,
+                early_stopping_method="force",  # Changed from "generate" to "force"
+                max_execution_time=60  # 60 second timeout to prevent hanging
             )
         
         # Test the agent with sample queries

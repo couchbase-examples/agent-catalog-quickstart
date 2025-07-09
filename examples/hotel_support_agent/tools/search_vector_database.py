@@ -1,4 +1,5 @@
 import agentc
+import base64
 import couchbase.auth
 import couchbase.cluster
 import couchbase.exceptions
@@ -11,18 +12,27 @@ from datetime import timedelta
 
 dotenv.load_dotenv()
 
+# Generate Capella AI API key if endpoint is provided
+if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CB_USERNAME') and os.getenv('CB_PASSWORD'):
+    os.environ['CAPELLA_API_KEY'] = base64.b64encode(
+        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
+    ).decode("utf-8")
+
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
+    auth = couchbase.auth.PasswordAuthenticator(
+        username=os.getenv("CB_USERNAME", "Administrator"), 
+        password=os.getenv("CB_PASSWORD", "password")
+    )
+    options = couchbase.options.ClusterOptions(authenticator=auth)
+    # Use WAN profile for better timeout handling with remote clusters
+    options.apply_profile("wan_development")
+    
     cluster = couchbase.cluster.Cluster(
         os.getenv("CB_HOST", "couchbase://localhost"),
-        couchbase.options.ClusterOptions(
-            authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"), 
-                password=os.getenv("CB_PASSWORD", "password")
-            )
-        ),
+        options
     )
-    cluster.wait_until_ready(timedelta(seconds=5))
+    cluster.wait_until_ready(timedelta(seconds=15))
 except couchbase.exceptions.CouchbaseException as e:
     print(f"Could not connect to Couchbase cluster: {str(e)}")
 
@@ -30,10 +40,18 @@ except couchbase.exceptions.CouchbaseException as e:
 def search_vector_database(query: str) -> str:
     """Search for hotels using semantic vector similarity based on user query preferences."""
     try:
-        embeddings = OpenAIEmbeddings(
-            api_key=os.environ['OPENAI_API_KEY'],
-            model="text-embedding-3-small"
-        )
+        # Use Capella AI embeddings to match the data loading embeddings
+        try:
+            if os.environ.get('CAPELLA_API_KEY') and os.environ.get('CAPELLA_API_ENDPOINT'):
+                embeddings = OpenAIEmbeddings(
+                    api_key=os.environ['CAPELLA_API_KEY'],
+                    base_url=os.environ['CAPELLA_API_ENDPOINT'],
+                    model=os.environ['CAPELLA_API_EMBEDDING_MODEL']
+                )
+            else:
+                raise Exception("Capella credentials not available")
+        except Exception as e:
+            raise RuntimeError(f"⚠️ Capella AI not available {str(e)}")
         
         vector_store = CouchbaseVectorStore(
             cluster=cluster,

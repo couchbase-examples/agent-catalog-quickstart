@@ -30,6 +30,7 @@ content: >
   - If you're ready to answer, provide ONLY Thought/Final Answer
   - Do NOT repeat the same action multiple times unless necessary
   - Do NOT include explanatory text outside the required format
+  - ALWAYS add a newline after each section (Thought, Action, Action Input, Final Answer) for better readability
 
   TOOL USAGE:
   - lookup_flight_info: Use format "origin, destination, date" (e.g., "JFK, LAX, tomorrow")
