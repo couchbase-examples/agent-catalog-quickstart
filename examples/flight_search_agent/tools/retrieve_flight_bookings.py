@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 from datetime import timedelta
 
@@ -10,6 +11,8 @@ import couchbase.options
 import dotenv
 
 dotenv.load_dotenv(override=True)
+
+logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:

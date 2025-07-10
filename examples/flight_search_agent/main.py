@@ -6,6 +6,7 @@ A streamlined flight search agent demonstrating Agent Catalog integration
 with LangGraph and Couchbase vector search for flight booking assistance.
 """
 
+import base64
 import getpass
 import json
 import logging
@@ -22,6 +23,7 @@ import langchain_core.messages
 import langchain_core.runnables
 import langchain_openai.chat_models
 import langgraph.graph
+import requests
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
@@ -31,7 +33,8 @@ from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+import openai
 
 from parameter_mapper import ParameterMapper
 
@@ -51,6 +54,101 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 dotenv.load_dotenv(override=True)
 
 
+def setup_capella_ai_config():
+    """Setup Capella AI configuration - requires environment variables to be set."""
+    # Verify required environment variables are set (no defaults)
+    required_capella_vars = [
+        "CB_USERNAME",
+        "CB_PASSWORD",
+        "CAPELLA_API_ENDPOINT",
+        "CAPELLA_API_EMBEDDING_MODEL",
+        "CAPELLA_API_LLM_MODEL",
+    ]
+    missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
+    if missing_vars:
+        raise ValueError(f"Missing required Capella AI environment variables: {missing_vars}")
+
+    return {
+        "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
+        "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+        "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
+        "dimensions": 4096,
+    }
+
+
+def test_capella_connectivity():
+    """Test connectivity to Capella AI services."""
+    try:
+        endpoint = os.getenv("CAPELLA_API_ENDPOINT")
+        if not endpoint:
+            logger.warning("CAPELLA_API_ENDPOINT not configured")
+            return False
+
+        # Test basic HTTP connectivity
+        logger.info("Testing Capella AI connectivity...")
+        response = requests.get(f"{endpoint}/health", timeout=10)
+        if response.status_code != 200:
+            logger.warning(f"Capella AI health check failed: {response.status_code}")
+
+        # Test embedding model (requires API key)
+        if os.getenv("CB_USERNAME") and os.getenv("CB_PASSWORD"):
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+
+            headers = {"Authorization": f"Basic {api_key}", "Content-Type": "application/json"}
+
+            # Test embedding
+            embedding_data = {
+                "model": os.getenv(
+                    "CAPELLA_API_EMBEDDING_MODEL", "intfloat/e5-mistral-7b-instruct"
+                ),
+                "input": "test connectivity",
+            }
+
+            embedding_response = requests.post(
+                f"{endpoint}/v1/embeddings", headers=headers, json=embedding_data, timeout=30
+            )
+
+            if embedding_response.status_code == 200:
+                embed_result = embedding_response.json()
+                embed_dims = len(embed_result["data"][0]["embedding"])
+                logger.info(f"✅ Capella AI embedding test successful - dimensions: {embed_dims}")
+
+                if embed_dims != 4096:
+                    logger.warning(f"Expected 4096 dimensions, got {embed_dims}")
+                    return False
+            else:
+                logger.warning(
+                    f"Capella AI embedding test failed: {embedding_response.status_code}"
+                )
+                return False
+
+            # Test LLM
+            llm_data = {
+                "model": os.getenv("CAPELLA_API_LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct"),
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 10,
+            }
+
+            llm_response = requests.post(
+                f"{endpoint}/v1/chat/completions", headers=headers, json=llm_data, timeout=30
+            )
+
+            if llm_response.status_code == 200:
+                logger.info("✅ Capella AI LLM test successful")
+            else:
+                logger.warning(f"Capella AI LLM test failed: {llm_response.status_code}")
+                return False
+
+        logger.info("✅ Capella AI connectivity tests completed successfully")
+        return True
+
+    except Exception as e:
+        logger.warning(f"Capella AI connectivity test failed: {e}")
+        return False
+
+
 def _set_if_undefined(var: str):
     if os.environ.get(var) is None:
         os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
@@ -58,6 +156,10 @@ def _set_if_undefined(var: str):
 
 def setup_environment():
     """Setup required environment variables with defaults."""
+    # Setup Capella AI configuration first
+    setup_capella_ai_config()
+
+    # Required variables
     required_vars = ["OPENAI_API_KEY", "CB_CONN_STRING", "CB_USERNAME", "CB_PASSWORD", "CB_BUCKET"]
     for var in required_vars:
         _set_if_undefined(var)
@@ -76,6 +178,9 @@ def setup_environment():
     os.environ["INDEX_NAME"] = os.getenv("INDEX_NAME", "vector_search_agentcatalog")
     os.environ["SCOPE_NAME"] = os.getenv("SCOPE_NAME", "shared")
     os.environ["COLLECTION_NAME"] = os.getenv("COLLECTION_NAME", "agentcatalog")
+
+    # Test Capella AI connectivity
+    test_capella_connectivity()
 
 
 class CouchbaseClient:
@@ -96,6 +201,8 @@ class CouchbaseClient:
         try:
             auth = PasswordAuthenticator(self.username, self.password)
             options = ClusterOptions(auth)
+            # Use WAN profile for better timeout handling with remote clusters
+            options.apply_profile("wan_development")
             self.cluster = Cluster(self.conn_string, options)
             self.cluster.wait_until_ready(timedelta(seconds=10))
             logger.info("Successfully connected to Couchbase")
@@ -238,15 +345,14 @@ class CouchbaseClient:
                 index_name=index_name,
             )
 
-            flight_data = self.load_flight_data()
-
+            # Load flight data - single attempt
             try:
+                flight_data = self.load_flight_data()
                 vector_store.add_texts(texts=flight_data, batch_size=10)
                 logger.info("Flight data loaded into vector store successfully")
             except Exception as e:
-                logger.warning(
-                    f"Error loading flight data: {e!s}. Vector store created but data not loaded."
-                )
+                logger.error(f"Failed to load flight data: {e}")
+                logger.warning("Vector store created but data not loaded.")
 
             return vector_store
         except Exception as e:
@@ -306,8 +412,39 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
         """Initialize the flight search agent."""
 
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
+        # Try Capella AI first, fallback to OpenAI
+        chat_model = None
+        try:
+            if (
+                os.getenv("CB_USERNAME")
+                and os.getenv("CB_PASSWORD")
+                and os.getenv("CAPELLA_API_ENDPOINT")
+                and os.getenv("CAPELLA_API_LLM_MODEL")
+            ):
+                # Create API key for Capella AI
+                api_key = base64.b64encode(
+                    f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+                ).decode()
+
+                chat_model = ChatOpenAI(
+                    model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                    api_key=api_key,
+                    base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    temperature=0.0,
+                    max_tokens=512,
+                    timeout=30,
+                )
+                logger.info("✅ Using Capella AI for LLM")
+            else:
+                raise ValueError("Capella AI credentials not available")
+
+        except Exception as e:
+            logger.warning(f"Capella AI LLM failed, falling back to OpenAI: {e}")
+            model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+            chat_model = langchain_openai.chat_models.ChatOpenAI(
+                model=model_name, temperature=0.0, max_tokens=512, timeout=30
+            )
+            logger.info("✅ Using OpenAI for LLM (fallback)")
 
         super().__init__(
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
@@ -346,15 +483,27 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 def wrapper_func(tool_input: str) -> str:
                     """Wrapper to handle parameter mapping using ParameterMapper."""
                     try:
+                        logger.debug(f"Tool wrapper called for {name} with input: '{tool_input}'")
+                        
                         # Use ParameterMapper to intelligently map string input to parameters
                         mapped_params = parameter_mapper.map_string_input(
                             name, tool_input, original_tool.func
                         )
+                        
+                        logger.debug(f"Mapped parameters for {name}: {mapped_params}")
 
                         # Call the original tool with mapped parameters
-                        return original_tool.func(**mapped_params)
+                        result = original_tool.func(**mapped_params)
+                        
+                        logger.debug(f"Tool {name} result type: {type(result)}, length: {len(result) if hasattr(result, '__len__') else 'N/A'}")
+                        
+                        return result
 
+                    except openai.OpenAIError as e:
+                        logger.warning(f"OpenAI service error in {name}: {e}")
+                        return f"The {name.replace('_', ' ')} service is temporarily unavailable. Please try again or contact customer service."
                     except Exception as e:
+                        logger.error(f"Error in tool wrapper for {name}: {e!s}")
                         return f"Error calling {name}: {e!s}"
 
                 return wrapper_func
@@ -376,16 +525,67 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Create ReAct agent with tools and prompt
         agent = create_react_agent(self.chat_model, tools, react_prompt)
 
-        # Create agent executor
+        # Create agent executor with optimized settings for Llama
         agent_executor = AgentExecutor(
-            agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=10
+            agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=5
         )
 
-        # Execute the agent
-        response = agent_executor.invoke({"input": state["query"]})
+        # Execute the agent with enhanced error handling for Llama
+        try:
+            response = agent_executor.invoke({"input": state["query"]})
+            output = response["output"]
+        except openai.OpenAIError as e:
+            # Handle OpenAI service errors (model unavailable, health errors, etc.)
+            logger.warning(f"OpenAI service error in agent execution: {e}")
+            output = "The flight search service is temporarily unavailable due to model maintenance. Please try again in a few minutes or contact customer service."
+        except Exception as e:
+            # Handle guardrail violations and other API errors gracefully
+            error_msg = str(e)
+            error_lower = error_msg.lower()
+
+            # Check for guardrail violations with expanded patterns
+            if (
+                "guardrail_violation_error" in error_lower
+                or "guardrail violation" in error_lower
+                or "content policy" in error_lower
+            ):
+                # Treat guardrails as warnings, not errors
+                logger.warning(f"Guardrails content moderated: {error_msg}")
+                output = "I apologize, but I can't process that specific request due to content policies. Please try rephrasing your flight search query or ask about general flight information."
+
+            # Handle timeout errors
+            elif "timeout" in error_lower or "timed out" in error_lower:
+                logger.warning(f"Request timeout: {error_msg}")
+                output = "The request timed out. Please try again with a simpler query."
+
+            # Handle connection errors
+            elif "connection" in error_lower or "network" in error_lower:
+                logger.warning(f"Connection error: {error_msg}")
+                output = "I'm having trouble connecting to the flight database. Please try again in a moment."
+
+            # Handle JSON/parsing errors
+            elif "json" in error_lower or "parsing" in error_lower:
+                logger.warning(f"Parsing error: {error_msg}")
+                output = "I had trouble understanding the flight data. Please try rephrasing your request."
+
+            # Handle API rate limiting
+            elif "rate limit" in error_lower or "429" in error_msg:
+                logger.warning(f"Rate limit exceeded: {error_msg}")
+                output = "Too many requests. Please wait a moment before trying again."
+
+            # Generic error fallback - don't break the app
+            else:
+                logger.warning(f"Unexpected error: {error_msg}")
+                output = "I encountered an unexpected issue. Please try again or contact support if the problem persists."
+
+            # Log the specific error type for debugging (but don't break the flow)
+            if "guardrail" in error_lower:
+                logger.info("Guardrails triggered - request handled gracefully")
+            else:
+                logger.info("Non-guardrail error - handled gracefully")
 
         # Add response to conversation
-        assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
+        assistant_msg = langchain_core.messages.AIMessage(content=output)
         state["messages"].append(assistant_msg)
         state["resolved"] = True
 
@@ -496,9 +696,36 @@ def setup_flight_search_agent():
                 logger.info("Continuing without vector search index...")
 
         with application_span.new("Vector Store Setup"):
-            embeddings = OpenAIEmbeddings(
-                api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
-            )
+            # Use Capella AI embeddings (no fallback due to dimension mismatch)
+            try:
+                if (
+                    os.getenv("CB_USERNAME")
+                    and os.getenv("CB_PASSWORD")
+                    and os.getenv("CAPELLA_API_ENDPOINT")
+                    and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
+                ):
+                    # Create API key for Capella AI
+                    api_key = base64.b64encode(
+                        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+                    ).decode()
+
+                    # Use OpenAI embeddings client with Capella endpoint
+                    embeddings = OpenAIEmbeddings(
+                        model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                        api_key=api_key,
+                        base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    )
+                    logger.info("✅ Using Capella AI for embeddings (4096 dimensions)")
+                else:
+                    raise ValueError("Capella AI credentials not available")
+
+            except Exception as e:
+                logger.error(f"❌ Capella AI embeddings failed: {e}")
+                logger.error(
+                    "Cannot fallback to OpenAI embeddings due to dimension mismatch (1536 vs 4096)"
+                )
+                raise RuntimeError("Capella AI embeddings required for this configuration")
+
             client.setup_vector_store(
                 scope_name=os.environ["SCOPE_NAME"],
                 collection_name=os.environ["COLLECTION_NAME"],
@@ -605,6 +832,14 @@ def run_test():
                         state = FlightSearchGraph.build_starting_state(query=query)
                         result = compiled_graph.invoke(state)
                         query_span["result"] = result
+
+                        # Display the AI's response to see if error handling is working
+                        if result.get("messages"):
+                            last_message = result["messages"][-1]
+                            if hasattr(last_message, "content"):
+                                logger.info(f"🤖 AI Response: {last_message.content}")
+                            else:
+                                logger.info(f"🤖 AI Response: {last_message}")
 
                         if result.get("search_results"):
                             logger.info(f"✅ Found {len(result['search_results'])} flight options")

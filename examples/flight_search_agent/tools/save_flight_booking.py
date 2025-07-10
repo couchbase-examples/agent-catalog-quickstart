@@ -1,5 +1,7 @@
 import datetime
+import logging
 import os
+import re
 import uuid
 from datetime import timedelta
 
@@ -11,6 +13,8 @@ import couchbase.options
 import dotenv
 
 dotenv.load_dotenv(override=True)
+
+logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
@@ -91,6 +95,30 @@ def save_flight_booking(
         if not source_airport or not destination_airport or not departure_date:
             return "Error: Source airport, destination airport, and departure date are required for booking."
 
+        # Validate and normalize airport codes
+        source_airport = source_airport.upper().strip()
+        destination_airport = destination_airport.upper().strip()
+        
+        if len(source_airport) != 3 or len(destination_airport) != 3:
+            return f"Error: Airport codes must be 3 letters (e.g., JFK, LAX). Got: {source_airport}, {destination_airport}"
+        
+        # Validate passengers
+        if not isinstance(passengers, int) or passengers < 1 or passengers > 9:
+            return "Error: Number of passengers must be between 1 and 9."
+        
+        # Validate flight class (clean and normalize)
+        original_flight_class = flight_class
+        flight_class = str(flight_class).strip().strip('"\'').strip().lower()
+        
+        # Additional cleaning for edge cases
+        flight_class = re.sub(r'["\'\s]+$', '', flight_class)  # Remove trailing quotes/spaces
+        flight_class = re.sub(r'^["\'\s]+', '', flight_class)  # Remove leading quotes/spaces
+        
+        valid_classes = ["economy", "business", "first", "premium"]
+        if flight_class not in valid_classes:
+            logger.warning(f"Invalid flight class: original='{original_flight_class}', cleaned='{flight_class}'")
+            return f"Error: Flight class must be one of: {', '.join(valid_classes)}. Got: '{flight_class}' (original: '{original_flight_class}')"
+
         # Validate and parse date
         try:
             # Handle relative dates
@@ -99,6 +127,9 @@ def save_flight_booking(
                 departure_date = dep_date.strftime("%Y-%m-%d")
             elif departure_date.lower() == "today":
                 dep_date = datetime.date.today()
+                departure_date = dep_date.strftime("%Y-%m-%d")
+            elif departure_date.lower() == "next week":
+                dep_date = datetime.date.today() + datetime.timedelta(days=7)
                 departure_date = dep_date.strftime("%Y-%m-%d")
             else:
                 dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
