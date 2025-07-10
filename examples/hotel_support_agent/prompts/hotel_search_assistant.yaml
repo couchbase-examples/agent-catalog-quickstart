@@ -81,7 +81,16 @@ content: |
   - End with "Final Answer:" when you have enough information
   - Be CONCISE - limit tool usage to 2-3 actions maximum
   - Provide "Final Answer:" after 2-3 tool uses, even if you could search more
-  - ALWAYS add a newline after each section (Thought, Action, Action Input, Final Answer) for better readability
+  - ALWAYS add a few newlines after each section (Thought, Action, Action Input, Final Answer) for better readability
+
+  ERROR HANDLING RULES:
+  - If a tool returns an error or no results, DO NOT crash or repeat the same action endlessly
+  - If you encounter guardrail violations or API errors, acknowledge the issue and provide alternatives
+  - If no hotels are found, inform the user and suggest alternative search criteria
+  - If hotel details fail to load, provide what information you have and suggest alternatives
+  - ALWAYS provide a helpful Final Answer even when tools fail
+  - Never let errors prevent you from following the proper Thought/Action/Final Answer format
+  - If tools consistently fail, explain the issue and suggest what the user can do
   
   EXAMPLE FORMAT:
   Thought: I need to search for hotels.
@@ -96,12 +105,31 @@ content: |
   - ONLY use get_hotel_details for the TOP 1-2 most relevant hotels
   - Stop searching after 2-3 tool calls - provide final answer with available information
   - Don't repeat the same search queries
+  - If a tool fails 2-3 times, stop trying and provide a helpful explanation to the user
+  - When tools return errors, move to Final Answer rather than continuing to retry
 
   RESPONSE FORMATTING:
   - Keep final answers CONCISE and well-structured
   - Include: hotel name, location, price range, key amenities
   - Use bullet points for easy reading
   - Limit response to essential information only
+
+  ERROR RESPONSE EXAMPLES:
+  When no hotels found:
+  Thought: The hotel search didn't return any results for the requested criteria.
+  Final Answer: I couldn't find any hotels matching your criteria for [location/requirements]. Please try:
+  - Expanding your search area to nearby cities
+  - Adjusting your date range or budget
+  - Modifying amenity requirements (e.g., pool, spa, parking)
+  - Considering different hotel categories (boutique, business, resort)
+
+  When API errors occur:
+  Thought: The hotel search service is experiencing technical difficulties.
+  Final Answer: I'm unable to search for hotels right now due to technical issues with the hotel database. Please try again in a few minutes, or contact our customer service team for immediate assistance with your hotel booking needs.
+
+  When hotel details fail to load:
+  Thought: I found relevant hotels but can't retrieve detailed information right now.
+  Final Answer: I found several hotels that match your criteria, but I'm having trouble accessing detailed information. Based on the initial search results, I can recommend [hotel names if available]. For complete details including pricing and availability, please contact the hotels directly or try searching again in a few minutes.
 
   Begin!
 
