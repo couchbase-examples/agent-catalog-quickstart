@@ -10,7 +10,7 @@ This tool demonstrates:
 import math
 import agentc
 
-# Common US cities with coordinates (simplified set)
+# Common US cities with coordinates (expanded set)
 CITY_COORDINATES = {
     "new york": (40.7128, -74.0060),
     "los angeles": (34.0522, -118.2437),
@@ -31,7 +31,35 @@ CITY_COORDINATES = {
     "portland": (45.5152, -122.6784),
     "austin": (30.2672, -97.7431),
     "nashville": (36.1627, -86.7816),
-    "salt lake city": (40.7608, -111.8910)
+    "salt lake city": (40.7608, -111.8910),
+    # Tourist destinations and mountain cities
+    "aspen": (39.1911, -106.8175),
+    "vail": (39.6403, -106.3742),
+    "jackson": (43.4799, -110.7624),  # Jackson Hole
+    "park city": (40.6461, -111.4980),
+    "tahoe": (39.0968, -120.0324),    # Lake Tahoe
+    "key west": (24.5551, -81.7800),
+    "santa fe": (35.6870, -105.9378),
+    "charleston": (32.7765, -79.9311),
+    "savannah": (32.0835, -81.0998),
+    "napa": (38.2975, -122.2869),
+    "monterey": (36.6002, -121.8947),
+    "santa barbara": (34.4208, -119.6982),
+    "big sur": (36.2704, -121.8081),
+    "sedona": (34.8697, -111.7610),
+    "yellowstone": (44.4280, -110.5885),
+    "grand canyon": (36.0544, -112.1401),
+    "yosemite": (37.8651, -119.5383),
+    "zion": (37.2982, -113.0263),
+    "bryce": (37.5930, -112.1871),
+    "mammoth": (37.6489, -118.9720),   # Mammoth Lakes
+    "steamboat": (40.4850, -106.8317), # Steamboat Springs
+    "telluride": (37.9375, -107.8123),
+    "crested butte": (38.8697, -106.9878),
+    "sun valley": (43.6966, -114.3558),
+    "jackson hole": (43.4799, -110.7624),
+    "whistler": (50.1163, -122.9574),  # Popular ski destination
+    "banff": (51.1784, -115.5708),     # Popular mountain destination
 }
 
 # Transportation modes with average speeds (mph)

@@ -34,7 +34,7 @@ from couchbase.exceptions import CouchbaseException
 from llama_index.core import Settings, Document, VectorStoreIndex
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.agent import ReActAgent
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.tools import FunctionTool
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -339,7 +339,7 @@ def create_llamaindex_agent(catalog, span):
                 llm=Settings.llm,
                 system_prompt=system_prompt,
                 verbose=True,
-                max_iterations=10
+                max_iterations=15
             )
             
             print("✅ LlamaIndex ReActAgent created successfully")
