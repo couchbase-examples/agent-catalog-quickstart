@@ -1,226 +1,95 @@
 """
-Route Search Tool for Agent Catalog
+Route Search Tool - Simplified for AgentC Integration
 
-Performs semantic search for route information using Couchbase vector store.
+This tool demonstrates:
+- Using AgentC for tool registration (@agentc.catalog.tool)
+- Simple tool function that can be discovered by AgentC
+- Semantic search using the vector store set up in main.py
 """
 
 import os
-from datetime import timedelta
+import logging
 
 import agentc
-import couchbase.auth
-import couchbase.cluster
-import couchbase.exceptions
-import couchbase.options
-import dotenv
-from llama_index.core import Settings
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core import Settings, VectorStoreIndex
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
-dotenv.load_dotenv(override=True)
+# Setup logging
+logger = logging.getLogger(__name__)
 
-# Global Couchbase connection
-cluster = None
-try:
-    cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        couchbase.options.ClusterOptions(
-            authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"),
-                password=os.getenv("CB_PASSWORD", "password"),
-            )
-        ),
-    )
-    cluster.wait_until_ready(timedelta(seconds=5))
-    print("Successfully connected to Couchbase cluster")
-except couchbase.exceptions.CouchbaseException as e:
-    print(f"Could not connect to Couchbase cluster: {e}")
-    cluster = None
-except Exception as e:
-    print(f"Unexpected error connecting to Couchbase: {e}")
-    cluster = None
-
-
-def _get_vector_store():
-    """Get vector store instance for route searching."""
+@agentc.catalog.tool
+def search_routes(query: str) -> str:
+    """
+    Search for route information using semantic vector search.
+    
+    This tool performs semantic search against the route database to find
+    relevant travel routes, scenic drives, and transportation information.
+    
+    Args:
+        query: Natural language query about routes (e.g., "routes from New York to Boston", "scenic drives in California")
+        
+    Returns:
+        Formatted string with relevant route information and travel recommendations
+    """
     try:
-        if cluster is None:
-            raise RuntimeError(
-                "Couchbase cluster is not connected. Please check your connection settings and credentials."
-            )
-
-        # Create embedding model using OpenAI (same as main agent)
-        embed_model = OpenAIEmbedding(
-            api_key=os.environ["OPENAI_API_KEY"], 
-            model="text-embedding-3-small"
-        )
-
-        # Configure LlamaIndex to use this embedding model globally
-        Settings.embed_model = embed_model
-
+        # Import here to avoid circular imports
+        from couchbase.auth import PasswordAuthenticator
+        from couchbase.cluster import Cluster
+        from couchbase.options import ClusterOptions
+        from datetime import timedelta
+        
+        # Get configuration from environment (set by main.py)
+        cluster_config = {
+            'host': os.environ.get('CB_HOST', 'couchbase://localhost'),
+            'username': os.environ.get('CB_USERNAME', 'Administrator'),
+            'password': os.environ.get('CB_PASSWORD', 'password'),
+            'bucket': os.environ.get('CB_BUCKET_NAME', 'route_planner'),
+            'scope': os.environ.get('SCOPE_NAME', 'shared'),
+            'collection': os.environ.get('COLLECTION_NAME', 'routes'),
+            'index': os.environ.get('INDEX_NAME', 'route_search_index')
+        }
+        
+        # Connect to Couchbase (quick connection for tool usage)
+        auth = PasswordAuthenticator(cluster_config['username'], cluster_config['password'])
+        options = ClusterOptions(auth)
+        options.apply_profile("wan_development")
+        cluster = Cluster(cluster_config['host'], options)
+        cluster.wait_until_ready(timedelta(seconds=10))
+        
+        # Create vector store
         vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
-            bucket_name=os.getenv("CB_BUCKET_NAME", "route-planner-bucket"),
-            scope_name=os.getenv("SCOPE_NAME", "shared"),
-            collection_name=os.getenv("COLLECTION_NAME", "route_data"),
-            index_name=os.getenv("INDEX_NAME", "route_planner_vector_index"),
-            # Note: LlamaIndex uses Settings.embed_model, not embedding parameter
+            bucket_name=cluster_config['bucket'],
+            scope_name=cluster_config['scope'],
+            collection_name=cluster_config['collection'],
+            index_name=cluster_config['index']
         )
-        return vector_store
-    except Exception as e:
-        raise RuntimeError(f"Failed to create vector store: {e}")
-
-
-@agentc.catalog.tool
-def search_routes(
-    query: str,
-    route_type: str = None,
-    region: str = None,
-    transport_mode: str = None,
-    max_results: int = 5,
-) -> str:
-    """
-    Search for route information using semantic search.
-
-    Args:
-        query: Natural language description of the route or travel need
-        route_type: Optional filter for route type (scenic_drive, urban_corridor, etc.)
-        region: Optional filter for geographic region
-        transport_mode: Optional filter for transportation mode
-        max_results: Maximum number of results to return (default: 5)
-
-    Returns:
-        Formatted string with route search results and recommendations
-    """
-    try:
-        vector_store = _get_vector_store()
-
-        # Import VectorStoreQuery for proper querying
-        from llama_index.core.vector_stores import VectorStoreQuery
-
-        # Generate query embedding
-        embed_model = Settings.embed_model
-        query_embedding = embed_model.get_query_embedding(query)
-
-        # Create vector store query object
-        query_obj = VectorStoreQuery(
-            query_embedding=query_embedding, 
-            similarity_top_k=max_results
+        
+        # Create index from vector store
+        index = VectorStoreIndex.from_vector_store(vector_store)
+        
+        # Create query engine
+        query_engine = index.as_query_engine(
+            similarity_top_k=3,
+            response_mode="compact"
         )
-
+        
         # Perform semantic search
-        search_results = vector_store.query(query_obj)
-
-        if not search_results.nodes:
-            return f"No routes found matching '{query}'. Try a different search term or broader criteria."
-
-        # Format results
-        formatted_results = []
-        for i, node in enumerate(search_results.nodes, 1):
-            content = node.text
-            metadata = node.metadata if hasattr(node, 'metadata') else {}
-
-            # Apply filters if specified
-            if route_type and metadata.get("route_type") != route_type:
-                continue
-            if region and region.lower() not in metadata.get("region", "").lower():
-                continue
-            if transport_mode and transport_mode not in metadata.get("transport_mode", ""):
-                continue
-
-            result = f"\n**Route {i}: {metadata.get('title', 'Route Information')}**\n"
-            result += f"📍 Region: {metadata.get('region', 'Not specified')}\n"
-            result += f"🚗 Transport: {metadata.get('transport_mode', 'Various')}\n"
-            result += f"⏱️ Duration: {metadata.get('duration', 'Variable')}\n"
-
-            if metadata.get("distance"):
-                result += f"📏 Distance: {metadata['distance']}\n"
-            if metadata.get("difficulty"):
-                result += f"💪 Difficulty: {metadata['difficulty']}\n"
-
-            result += f"\n{content[:300]}{'...' if len(content) > 300 else ''}\n"
-            result += "─" * 50
-
-            formatted_results.append(result)
-
-        if not formatted_results:
-            return f"No routes found matching the specified filters for '{query}'."
-
-        header = f"🗺️ **Route Search Results for:** '{query}'\n"
-        header += f"Found {len(formatted_results)} relevant routes:\n"
-        header += "=" * 60
-
-        return header + "\n".join(formatted_results)
-
+        logger.info(f"🔍 Searching routes for: {query}")
+        response = query_engine.query(query)
+        
+        # Format response
+        result = f"🗺️ **Route Search Results**\n"
+        result += "=" * 50 + "\n"
+        result += f"**Query:** {query}\n\n"
+        result += f"**Results:**\n{response}\n\n"
+        result += "💡 **Tip:** Use calculate_distance for specific distance calculations between cities."
+        
+        return result
+        
     except Exception as e:
-        return f"Error searching routes: {e!s}. Please check your connection and try again."
+        error_msg = f"❌ Error searching routes: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
 
 
-@agentc.catalog.tool
-def search_routes_by_cities(origin: str, destination: str, preferences: str = "") -> str:
-    """
-    Search for specific routes between two cities with optional preferences.
-
-    Args:
-        origin: Starting city or location
-        destination: Ending city or location
-        preferences: Optional preferences like "scenic", "fastest", "cheapest", etc.
-
-    Returns:
-        Formatted route options between the specified cities
-    """
-    try:
-        # Construct search query
-        search_query = f"route from {origin} to {destination}"
-        if preferences:
-            search_query += f" {preferences}"
-
-        # Use the main search function
-        results = search_routes(query=search_query, max_results=3)
-
-        # Add city-specific header
-        header = f"🏙️ **Routes from {origin} to {destination}**\n"
-        if preferences:
-            header += f"Preferences: {preferences}\n"
-        header += "=" * 50 + "\n"
-
-        return header + results
-
-    except Exception as e:
-        return f"Error finding routes between {origin} and {destination}: {e!s}"
-
-
-@agentc.catalog.tool
-def search_scenic_routes(region: str = "", activity: str = "") -> str:
-    """
-    Search for scenic and recreational routes.
-
-    Args:
-        region: Geographic region to search in (optional)
-        activity: Type of activity like "hiking", "driving", "cycling" (optional)
-
-    Returns:
-        Scenic route recommendations with descriptions
-    """
-    try:
-        query = "scenic beautiful route drive"
-        if activity:
-            query += f" {activity}"
-        if region:
-            query += f" {region}"
-
-        results = search_routes(
-            query=query, route_type="scenic_drive", region=region if region else None, max_results=4
-        )
-
-        header = "🌄 **Scenic Route Recommendations**\n"
-        if region:
-            header += f"Region: {region}\n"
-        if activity:
-            header += f"Activity: {activity}\n"
-        header += "=" * 50 + "\n"
-
-        return header + results
-
-    except Exception as e:
-        return f"Error finding scenic routes: {e!s}"

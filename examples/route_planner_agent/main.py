@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
 """
-Route Planner Agent - Simplified Implementation
+Route Planner Agent - Tutorial with AgentC Integration
 
-A basic route planning agent demonstrating Agent Catalog tools
-for intelligent travel planning.
+This tutorial demonstrates how to build an AI agent using:
+- Agent Catalog (agentc) for tool discovery, prompt management, and span logging
+- Couchbase Capella as vector store
+- Capella AI Services for embeddings and LLM
+- LlamaIndex for RAG pipeline and agent execution
+
+The agent uses two tools discovered via AgentC:
+1. search_routes - Find routes using vector search
+2. calculate_distance - Calculate distances between cities
 """
 
 import json
 import logging
 import os
 import sys
+import base64
 import time
 from datetime import timedelta
-from typing import Dict, List, Any, Optional
+from typing import List
 
 import agentc
-import dotenv
+from agentc_llamaindex.chat import Callback
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
@@ -23,696 +31,439 @@ from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from couchbase.exceptions import CouchbaseException
 
-from llama_index.core import Settings, Document
+from llama_index.core import Settings, Document, VectorStoreIndex
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import FunctionTool
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.openai_like import OpenAILike
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-dotenv.load_dotenv(override=True)
+
+def _set_if_undefined(var: str):
+    """Helper function to prompt for missing environment variables."""
+    if os.environ.get(var) is None:
+        import getpass
+        os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
 
 
-class RouteDataLoader:
-    """Load route data for vector search."""
+def setup_environment():
+    """Setup environment variables with defaults and validation."""
+    required_vars = ['CB_HOST', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET_NAME']
+    for var in required_vars:
+        _set_if_undefined(var)
+    
+    # Optional Capella AI variables
+    optional_vars = ['CAPELLA_API_ENDPOINT', 'CAPELLA_API_EMBEDDING_MODEL', 'CAPELLA_API_LLM_MODEL']
+    for var in optional_vars:
+        if not os.environ.get(var):
+            print(f"ℹ️ {var} not provided - will use OpenAI fallback")
+    
+    # Set defaults
+    defaults = {
+        'CB_HOST': 'couchbase://localhost',
+        'CB_USERNAME': 'Administrator',
+        'CB_PASSWORD': 'password',
+        'CB_BUCKET_NAME': 'route_planner',
+        'INDEX_NAME': 'route_search_index',
+        'SCOPE_NAME': 'shared',
+        'COLLECTION_NAME': 'routes',
+        'CAPELLA_API_EMBEDDING_MODEL': 'intfloat/e5-mistral-7b-instruct',
+        'CAPELLA_API_LLM_MODEL': 'meta-llama/Llama-3.1-8B-Instruct'
+    }
+    
+    for key, default_value in defaults.items():
+        if not os.environ.get(key):
+            os.environ[key] = default_value
+    
+    # Generate Capella AI API key if endpoint is provided
+    if os.environ.get('CAPELLA_API_ENDPOINT'):
+        os.environ['CAPELLA_API_KEY'] = base64.b64encode(
+            f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode("utf-8")
+        ).decode("utf-8")
+        
+        # Use endpoint as provided
+        print(f"Using Capella AI endpoint: {os.environ['CAPELLA_API_ENDPOINT']}")
 
-    def __init__(self):
-        self.data_path = "data/route_data.py"
 
-    def load_route_data(self) -> List[str]:
-        """Load route data from the data file."""
+def setup_couchbase_connection():
+    """Setup Couchbase cluster connection."""
+    try:
+        auth = PasswordAuthenticator(os.environ['CB_USERNAME'], os.environ['CB_PASSWORD'])
+        options = ClusterOptions(auth)
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+        cluster = Cluster(os.environ['CB_HOST'], options)
+        cluster.wait_until_ready(timedelta(seconds=15))
+        print("✅ Successfully connected to Couchbase")
+        return cluster
+    except Exception as e:
+        raise ConnectionError(f"❌ Failed to connect to Couchbase: {str(e)}")
+
+
+def setup_collection(cluster, bucket_name, scope_name, collection_name):
+    """Setup bucket, scope, and collection."""
+    try:
+        # Create bucket if needed
         try:
-            # Import the route data
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            data_dir = os.path.join(current_dir, "data")
-            sys.path.insert(0, data_dir)
-            from route_data import get_travel_knowledge_base
-
-            travel_data = get_travel_knowledge_base()
-            route_texts = []
-
-            for item in travel_data:
-                # Create a comprehensive text description for each route/POI
-                text = f"{item['title']}. {item['content']}"
-
-                # Add metadata information
-                metadata = item.get("metadata", {})
-                if metadata.get("distance"):
-                    text += f" Distance: {metadata['distance']}."
-                if metadata.get("duration"):
-                    text += f" Duration: {metadata['duration']}."
-                if metadata.get("cities"):
-                    text += f" Cities: {', '.join(metadata['cities'])}."
-                if metadata.get("transport_mode"):
-                    text += f" Transportation: {metadata['transport_mode']}."
-                if metadata.get("difficulty"):
-                    text += f" Difficulty: {metadata['difficulty']}."
-                if metadata.get("region"):
-                    text += f" Region: {metadata['region']}."
-
-                route_texts.append(text.strip())
-
-            logger.info(f"Loaded {len(route_texts)} route descriptions")
-            return route_texts
-
-        except Exception as e:
-            logger.error(f"Error loading route data: {e}")
-            return []
-
-
-class CouchbaseSetup:
-    """Handle Couchbase cluster setup and configuration."""
-
-    def __init__(self):
-        self.cluster = None
-        self.collection = None
-
-    def setup_environment(self):
-        """Setup required environment variables."""
-        required_vars = [
-            "OPENAI_API_KEY",
-            "CB_HOST",
-            "CB_USERNAME",
-            "CB_PASSWORD",
-            "CB_BUCKET_NAME",
-        ]
-
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
-        if missing_vars:
-            raise ValueError(f"Missing required environment variables: {missing_vars}")
-
-        # Set defaults for optional variables
-        if not os.getenv("INDEX_NAME"):
-            os.environ["INDEX_NAME"] = "vector_search_agentcatalog"
-        if not os.getenv("SCOPE_NAME"):
-            os.environ["SCOPE_NAME"] = "shared"
-        if not os.getenv("COLLECTION_NAME"):
-            os.environ["COLLECTION_NAME"] = "agentcatalog"
-
-        logger.info(f"Using Couchbase connection: {os.getenv('CB_HOST')}")
-        logger.info(f"Using bucket: {os.getenv('CB_BUCKET_NAME')}")
-        logger.info(f"Using scope: {os.getenv('SCOPE_NAME')}")
-        logger.info(f"Using collection: {os.getenv('COLLECTION_NAME')}")
-        logger.info(f"Using index: {os.getenv('INDEX_NAME')}")
-
-    def setup_couchbase_connection(self):
-        """Setup Couchbase cluster connection."""
-        try:
-            auth = PasswordAuthenticator(os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"])
-            options = ClusterOptions(auth)
-            self.cluster = Cluster(os.environ["CB_HOST"], options)
-            self.cluster.wait_until_ready(timedelta(seconds=10))
-            logger.info("Successfully connected to Couchbase cluster")
-            return self.cluster
-        except CouchbaseException as e:
-            raise ConnectionError(f"Failed to connect to Couchbase: {e}")
-
-    def setup_bucket_scope_collection(self):
-        """Setup bucket, scope, and collection."""
-        try:
-            bucket_name = os.environ["CB_BUCKET_NAME"]
-            scope_name = os.environ["SCOPE_NAME"]
-            collection_name = os.environ["COLLECTION_NAME"]
-
-            # Check bucket
-            try:
-                bucket = self.cluster.bucket(bucket_name)
-                logger.info(f"Bucket '{bucket_name}' exists")
-            except Exception:
-                logger.info(f"Creating bucket '{bucket_name}'...")
-                bucket_settings = CreateBucketSettings(
-                    name=bucket_name,
-                    bucket_type="couchbase",
-                    ram_quota_mb=1024,
-                    flush_enabled=True,
-                    num_replicas=0,
-                )
-                self.cluster.buckets().create_bucket(bucket_settings)
-                time.sleep(5)
-                bucket = self.cluster.bucket(bucket_name)
-                logger.info(f"Bucket '{bucket_name}' created successfully")
-
-            # Setup scope and collection
-            bucket_manager = bucket.collections()
-
-            scopes = bucket_manager.get_all_scopes()
-            scope_exists = any(scope.name == scope_name for scope in scopes)
-
-            if not scope_exists and scope_name != "_default":
-                logger.info(f"Creating scope '{scope_name}'...")
-                bucket_manager.create_scope(scope_name)
-                logger.info(f"Scope '{scope_name}' created successfully")
-
-            collections = bucket_manager.get_all_scopes()
-            collection_exists = any(
-                scope.name == scope_name
-                and collection_name in [col.name for col in scope.collections]
-                for scope in collections
+            bucket = cluster.bucket(bucket_name)
+            print(f"✅ Bucket '{bucket_name}' exists")
+        except Exception:
+            print(f"📦 Creating bucket '{bucket_name}'...")
+            bucket_settings = CreateBucketSettings(
+                name=bucket_name,
+                bucket_type='couchbase',
+                ram_quota_mb=1024,
+                flush_enabled=True,
+                num_replicas=0
             )
+            cluster.buckets().create_bucket(bucket_settings)
+            time.sleep(5)
+            bucket = cluster.bucket(bucket_name)
+            print(f"✅ Bucket '{bucket_name}' created successfully")
 
-            if not collection_exists:
-                logger.info(f"Creating collection '{collection_name}'...")
-                bucket_manager.create_collection(scope_name, collection_name)
-                logger.info(f"Collection '{collection_name}' created successfully")
+        # Setup scope and collection
+        bucket_manager = bucket.collections()
+        scopes = bucket_manager.get_all_scopes()
+        scope_exists = any(scope.name == scope_name for scope in scopes)
+        
+        if not scope_exists and scope_name != "_default":
+            print(f"📁 Creating scope '{scope_name}'...")
+            bucket_manager.create_scope(scope_name)
+            print(f"✅ Scope '{scope_name}' created successfully")
 
-            self.collection = bucket.scope(scope_name).collection(collection_name)
-            time.sleep(3)
+        collections = bucket_manager.get_all_scopes()
+        collection_exists = any(
+            scope.name == scope_name and collection_name in [col.name for col in scope.collections]
+            for scope in collections
+        )
 
-            # Create primary index
-            try:
-                self.cluster.query(
-                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
-                ).execute()
-                logger.info("Primary index created successfully")
-            except Exception as e:
-                logger.warning(f"Error creating primary index: {e}")
+        if not collection_exists:
+            print(f"📄 Creating collection '{collection_name}'...")
+            bucket_manager.create_collection(scope_name, collection_name)
+            print(f"✅ Collection '{collection_name}' created successfully")
 
-            return self.collection
+        # Create primary index
+        collection = bucket.scope(scope_name).collection(collection_name)
+        time.sleep(3)
 
-        except Exception as e:
-            raise RuntimeError(f"Error setting up bucket/scope/collection: {e}")
-
-    def setup_vector_search_index(self):
-        """Setup vector search index."""
         try:
-            # Load index definition from agentcatalog_index.json
-            index_file = "agentcatalog_index.json"
-            if os.path.exists(index_file):
-                with open(index_file, "r") as f:
-                    index_definition = json.load(f)
-
-                scope_index_manager = (
-                    self.cluster.bucket(os.environ["CB_BUCKET_NAME"])
-                    .scope(os.environ["SCOPE_NAME"])
-                    .search_indexes()
-                )
-
-                existing_indexes = scope_index_manager.get_all_indexes()
-                index_name = index_definition["name"]
-
-                if index_name not in [index.name for index in existing_indexes]:
-                    logger.info(f"Creating vector search index '{index_name}'...")
-                    search_index = SearchIndex.from_json(index_definition)
-                    scope_index_manager.upsert_index(search_index)
-                    logger.info(f"Vector search index '{index_name}' created successfully")
-                else:
-                    logger.info(f"Vector search index '{index_name}' already exists")
-            else:
-                logger.warning(f"Index definition file {index_file} not found")
-
+            cluster.query(f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`").execute()
+            print("✅ Primary index created successfully")
         except Exception as e:
-            logger.error(f"Error setting up vector search index: {e}")
+            print(f"⚠️ Warning: Error creating primary index: {str(e)}")
+
+        return collection
+    except Exception as e:
+        raise RuntimeError(f"❌ Error setting up collection: {str(e)}")
 
 
-class RouteplannerAgent:
-    """Route planner agent using Agent Catalog tools and Couchbase vector store."""
+def setup_vector_search_index(cluster, index_definition):
+    """Setup vector search index."""
+    try:
+        scope_index_manager = cluster.bucket(os.environ['CB_BUCKET_NAME']).scope(os.environ['SCOPE_NAME']).search_indexes()
+        
+        existing_indexes = scope_index_manager.get_all_indexes()
+        index_name = index_definition["name"]
 
-    def __init__(self, span=None):
-        self.logger = logging.getLogger(__name__)
-        self.span = span
-        
-        # Initialize catalog and get prompt
-        self.catalog = agentc.Catalog()
-        self.prompt = self.catalog.find("prompt", name="route_planner_assistant")
-        
-        if not self.prompt:
-            raise ValueError("Could not find route_planner_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
-        
-        self.data_loader = RouteDataLoader()
-        self.vector_store = self._setup_vector_store()
-        self.ingest_route_data()
-        
-        # Get tools from prompt - use getattr for safe access
-        self.tools = getattr(self.prompt, 'tools', [])
-        
-        # Use safe attribute access for name from meta
-        prompt_name = getattr(self.prompt.meta, 'name', 'route_planner_assistant') if hasattr(self.prompt, 'meta') else 'route_planner_assistant'
-        self.logger.info(f"✅ RouteplannerAgent initialized with prompt: {prompt_name}")
-        self.logger.info(f"📋 Available tools: {len(self.tools)} tools loaded from catalog")
+        if index_name not in [index.name for index in existing_indexes]:
+            print(f"🔍 Creating vector search index '{index_name}'...")
+            search_index = SearchIndex.from_json(index_definition)
+            scope_index_manager.upsert_index(search_index)
+            print(f"✅ Vector search index '{index_name}' created successfully")
+        else:
+            print(f"✅ Vector search index '{index_name}' already exists")
+    except Exception as e:
+        raise RuntimeError(f"❌ Error setting up vector search index: {str(e)}")
 
-    def _setup_vector_store(self):
-        """Setup Couchbase vector store."""
-        try:
-            # Setup environment first
-            self.couchbase_setup = CouchbaseSetup()
-            self.couchbase_setup.setup_environment()
-            
-            # Setup Couchbase connection
-            cluster = self.couchbase_setup.setup_couchbase_connection()
-            collection = self.couchbase_setup.setup_bucket_scope_collection()
-            self.couchbase_setup.setup_vector_search_index()
-            
-            # Setup LLM and embeddings
-            Settings.llm = OpenAI(
-                api_key=os.environ["OPENAI_API_KEY"], model="gpt-4o", temperature=0.1
-            )
+
+def setup_ai_models(span):
+    """Setup embeddings and LLM using Capella AI Services or OpenAI."""
+    try:
+        if os.environ.get('CAPELLA_API_ENDPOINT') and os.environ.get('CAPELLA_API_KEY'):
+            # Use Capella AI Services
+            print("🔧 Setting up Capella AI Services...")
             
             embed_model = OpenAIEmbedding(
-                api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-3-small"
-            )
-            Settings.embed_model = embed_model
-            
-            vector_store = CouchbaseSearchVectorStore(
-                cluster=cluster,
-                bucket_name=os.environ["CB_BUCKET_NAME"],
-                scope_name=os.environ["SCOPE_NAME"],
-                collection_name=os.environ["COLLECTION_NAME"],
-                index_name=os.environ["INDEX_NAME"],
+                api_key=os.environ['CAPELLA_API_KEY'],
+                api_base=os.environ['CAPELLA_API_ENDPOINT'] + '/v1',
+                model_name=os.environ['CAPELLA_API_EMBEDDING_MODEL'],
+                embed_batch_size=30
             )
             
-            self.logger.info("✅ Couchbase vector store setup completed")
-            return vector_store
+            llm = OpenAILike(
+                api_base=os.environ['CAPELLA_API_ENDPOINT'] + '/v1',
+                api_key=os.environ['CAPELLA_API_KEY'],
+                model=os.environ['CAPELLA_API_LLM_MODEL'],
+                temperature=0,
+                # Add AgentC callback for LlamaIndex
+                callbacks=[Callback(span=span)]
+            )
             
-        except Exception as e:
-            self.logger.error(f"❌ Failed to setup vector store: {e}")
-            raise
+            print("✅ Using Capella AI Services for embeddings and LLM")
+        else:
+            # Fallback to OpenAI
+            print("🔧 Setting up OpenAI (Capella AI not configured)...")
+            _set_if_undefined("OPENAI_API_KEY")
+            
+            embed_model = OpenAIEmbedding(
+                api_key=os.environ["OPENAI_API_KEY"],
+                model="text-embedding-3-small"
+            )
+            
+            from llama_index.llms.openai import OpenAI
+            llm = OpenAI(
+                api_key=os.environ["OPENAI_API_KEY"],
+                model="gpt-4o",
+                temperature=0,
+                callbacks=[Callback(span=span)]
+            )
+            
+            print("✅ Using OpenAI for embeddings and LLM")
+        
+        # Configure LlamaIndex global settings
+        Settings.embed_model = embed_model
+        Settings.llm = llm
+        
+        return embed_model, llm
+        
+    except Exception as e:
+        raise RuntimeError(f"❌ Failed to setup AI models: {str(e)}")
 
-    def ingest_route_data(self):
-        """Ingest route data into the vector store."""
-        try:
-            route_texts = self.data_loader.load_route_data()
 
-            if not route_texts:
-                logger.warning("No route data loaded")
-                return
+def get_sample_route_data():
+    """Get sample route data for the demo."""
+    return [
+        "New York to Boston: A scenic coastal route through Connecticut and Rhode Island. Take I-95 for the fastest route (4.5 hours) or Route 1 for scenic coastal views. Must-see stops include Mystic Seaport and Newport mansions.",
+        "San Francisco to Los Angeles: The iconic Pacific Coast Highway (PCH) offers breathtaking ocean views. The 380-mile journey takes 6-8 hours of driving time. Don't miss Big Sur, Monterey Bay, and Santa Barbara.",
+        "Chicago to Milwaukee: A short 90-mile drive north through Wisconsin farmland. Takes about 1.5 hours via I-94. Alternative scenic route through Lake Geneva adds beautiful lake views.",
+        "Denver to Aspen: A mountain route through the Rockies covering 160 miles. Take I-70 west then Highway 82 south. Allow 3-4 hours for mountain driving. Spectacular views of the Continental Divide.",
+        "Seattle to Portland: The I-5 corridor through the Pacific Northwest. 173 miles taking about 3 hours. Consider stopping at Mount St. Helens or taking the scenic Route 14 along the Columbia River.",
+        "Miami to Key West: The famous Overseas Highway (US-1) crosses 42 bridges over the Florida Keys. 160 miles of tropical paradise taking 3.5 hours. Amazing views of the Atlantic and Gulf waters.",
+        "Las Vegas to Grand Canyon: Two main routes - the South Rim (4.5 hours) or North Rim (5 hours). South Rim is open year-round. Take Highway 64 for the most direct route to the main visitor areas.",
+        "Nashville to Memphis: The musical highway through Tennessee. 210 miles on I-40 west taking about 3 hours. Consider stopping in Jackson for BBQ and music history.",
+        "Phoenix to Sedona: A desert-to-red-rock transition covering 120 miles. Take I-17 north then Highway 179 for the most scenic approach. About 2 hours of driving with stunning desert landscapes.",
+        "Austin to San Antonio: A quick 80-mile drive through Texas Hill Country. Take I-35 south for the fastest route (1.5 hours) or Highway 46 for scenic hill country views and wine country."
+    ]
 
-            # Force reingest data to ensure it's properly loaded
-            logger.info("Force ingesting route data into vector store...")
 
-            # Create documents
-            documents = [Document(text=text) for text in route_texts]
-
-            # Setup ingestion pipeline
+def ingest_route_data(vector_store, span):
+    """Ingest sample route data into the vector store."""
+    try:
+        with span.new("Route Data Loading"):
+            route_texts = get_sample_route_data()
+            
+            # Create LlamaIndex documents
+            documents = []
+            for i, text in enumerate(route_texts):
+                doc = Document(
+                    text=text,
+                    metadata={
+                        "source": "route_database",
+                        "route_id": i,
+                        "type": "route_description"
+                    }
+                )
+                documents.append(doc)
+            
+            # Create ingestion pipeline
             pipeline = IngestionPipeline(
                 transformations=[
                     SentenceSplitter(chunk_size=512, chunk_overlap=50),
-                    Settings.embed_model,
+                    Settings.embed_model
                 ],
-                vector_store=self.vector_store,
+                vector_store=vector_store
             )
-
+            
             # Ingest documents
+            print(f"⚡ Ingesting {len(documents)} route documents...")
             pipeline.run(documents=documents)
-            logger.info(f"Successfully ingested {len(documents)} route documents")
-
-        except Exception as e:
-            logger.error(f"Error ingesting route data: {e}")
-
-    def search_routes_with_vector_store(self, query: str) -> str:
-        """Search routes using vector store."""
-        try:
-            if not self.vector_store:
-                return "Vector store not initialized"
-
-            from llama_index.core.vector_stores import VectorStoreQuery
-
-            # Generate query embedding
-            embed_model = Settings.embed_model
-            query_embedding = embed_model.get_query_embedding(query)
-
-            # Create vector store query
-            query_obj = VectorStoreQuery(
-                query_embedding=query_embedding, 
-                similarity_top_k=5
-            )
+            print("✅ Route data ingestion complete")
             
-            # Query the vector store
-            search_results = self.vector_store.query(query_obj)
+    except Exception as e:
+        raise RuntimeError(f"❌ Error ingesting route data: {str(e)}")
 
-            if not search_results or not search_results.nodes:
-                return "No routes found in vector store. The vector store may be empty or the query didn't match any content."
 
-            response = f"Found {len(search_results.nodes)} relevant routes from vector store:\n\n"
-            for i, node in enumerate(search_results.nodes, 1):
-                response += f"{i}. {node.text}\n"
-                if hasattr(node, "score") and node.score:
-                    response += f"   (Relevance score: {node.score:.3f})\n"
-                response += "\n"
-
-            return response
-
-        except Exception as e:
-            logger.error(f"Vector store search error: {e}")
-            return f"Error searching routes with vector store: {e}"
-
-    def check_vector_store_data(self) -> str:
-        """Check if vector store has data."""
-        try:
-            from llama_index.core.vector_stores import VectorStoreQuery
-
-            embed_model = Settings.embed_model
-            query_embedding = embed_model.get_query_embedding("route")
-
-            query_obj = VectorStoreQuery(
-                query_embedding=query_embedding, 
-                similarity_top_k=1
-            )
+def create_llamaindex_agent(catalog, span):
+    """Create LlamaIndex ReActAgent using tools and prompts from AgentC."""
+    try:
+        with span.new("Tool Discovery"):
+            # Find tools from Agent Catalog
+            tool_search = catalog.find("tool", name="search_routes")
+            tool_distance = catalog.find("tool", name="calculate_distance")
             
-            search_results = self.vector_store.query(query_obj)
+            if not tool_search:
+                raise ValueError("Could not find search_routes tool. Make sure it's indexed with 'agentc index tools/'")
+            if not tool_distance:
+                raise ValueError("Could not find calculate_distance tool. Make sure it's indexed with 'agentc index tools/'")
             
-            if search_results and search_results.nodes:
-                return f"Vector store contains {len(search_results.nodes)} documents"
-            else:
-                return "Vector store appears to be empty"
-        except Exception as e:
-            return f"Error checking vector store: {e}"
-
-    def clear_vector_store_data(self):
-        """Clear all data from vector store."""
-        try:
-            # Use Couchbase collection to clear all documents
-            collection = self.couchbase_setup.collection
-            if collection:
-                # Delete all documents in the collection
-                try:
-                    cluster = self.couchbase_setup.cluster
-                    bucket_name = os.environ["CB_BUCKET_NAME"]
-                    scope_name = os.environ["SCOPE_NAME"]
-                    collection_name = os.environ["COLLECTION_NAME"]
-                    
-                    # Delete all documents in the collection
-                    query = f"DELETE FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
-                    cluster.query(query).execute()
-                    logger.info("Cleared all documents from vector store")
-                except Exception as e:
-                    logger.error(f"Error clearing vector store: {e}")
-        except Exception as e:
-            logger.error(f"Error clearing vector store: {e}")
-
-    def plan_route(self, query: str) -> str:
-        """Plan a route based on user query using the LLM with the catalog prompt."""
-        try:
-            if not self.catalog or not self.prompt:
-                return "Route planner not properly initialized. Please check your configuration."
-
-            # Get the system prompt from the catalog
-            system_prompt = self.prompt.content
-            
-            # Create a conversational prompt with user query
-            conversation_prompt = f"""{system_prompt}
-
-User Query: {query}
-
-Please help the user with their route planning request. You can use the available tools to search for routes and calculate distances. Provide a comprehensive and helpful response."""
-
-            # Use the LLM to process the request
-            llm = Settings.llm
-            if not llm:
-                return "LLM not properly configured. Please check your setup."
-            
-            logger.info("Using LLM with catalog prompt to process route request")
-            
-            # Create a proper conversation with tool calling capability
-            from llama_index.core.llms import ChatMessage, MessageRole
-            
-            messages = [
-                ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
-                ChatMessage(role=MessageRole.USER, content=query)
+            # Create LlamaIndex FunctionTool objects
+            tools = [
+                FunctionTool.from_defaults(
+                    fn=tool_search.func,
+                    name=tool_search.meta.name,
+                    description=tool_search.meta.description
+                ),
+                FunctionTool.from_defaults(
+                    fn=tool_distance.func,
+                    name=tool_distance.meta.name,
+                    description=tool_distance.meta.description
+                )
             ]
             
-            # Get response from LLM
-            response = llm.chat(messages)
+            print(f"✅ Found {len(tools)} tools: {[tool.metadata.name for tool in tools]}")
+        
+        with span.new("Prompt Discovery"):
+            # Get prompt from Agent Catalog
+            route_prompt = catalog.find("prompt", name="route_planner_assistant")
+            if not route_prompt:
+                raise ValueError("Could not find route_planner_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
             
-            # For now, also add tool results as additional context
-            vector_status = self.check_vector_store_data()
-            vector_result = self.search_routes_with_vector_store(query)
+            print(f"✅ Found prompt: {route_prompt.meta.name}")
             
-            # Enhance response with tool results
-            enhanced_response = f"""{response.message.content}
-
-=== Additional Route Information ===
-Vector Store Status: {vector_status}
-
-=== Relevant Routes Found ===
-{vector_result}
-"""
+            # Use the prompt content as system message
+            system_prompt = route_prompt.content.strip()
+        
+        with span.new("Agent Creation"):
+            # Create ReAct agent with tools and system prompt
+            agent = ReActAgent.from_tools(
+                tools=tools,
+                llm=Settings.llm,
+                system_prompt=system_prompt,
+                verbose=True,
+                max_iterations=10
+            )
             
-            return enhanced_response.strip()
+            print("✅ LlamaIndex ReActAgent created successfully")
+            return agent
+        
+    except Exception as e:
+        raise RuntimeError(f"❌ Error creating LlamaIndex agent: {str(e)}")
 
-        except Exception as e:
-            logger.error(f"Error in plan_route: {e}")
-            return f"Error planning route: {e!s}"
 
-    def calculate_distance(self, origin: str, destination: str) -> str:
-        """Calculate distance between two locations."""
-        try:
-            if not self.catalog:
-                return "Route planner not properly initialized. Please check your configuration."
-
-            # Try to find and use the calculate_distance tool
-            try:
-                tool_obj = self.catalog.find("tool", name="calculate_distance")
-                if tool_obj and hasattr(tool_obj, "func"):
-                    result = tool_obj.func(origin=origin, destination=destination)
-                    return str(result)
-                else:
-                    # Use find_tools with proper parameters to avoid None name issue
-                    try:
-                        available_tools = list(self.catalog.find_tools(query="", limit=20))
-                        tool_names = []
-                        for t in available_tools:
-                            try:
-                                if hasattr(t, "meta") and t.meta and hasattr(t.meta, "name"):
-                                    tool_names.append(t.meta.name)
-                                elif hasattr(t, "__name__"):
-                                    tool_names.append(t.__name__)
-                                else:
-                                    tool_names.append(str(t))
-                            except Exception:
-                                tool_names.append("<unknown_tool>")
-                        return f"calculate_distance tool not found. Available tools: {tool_names}"
-                    except Exception as list_error:
-                        return (
-                            f"calculate_distance tool not found. Error listing tools: {list_error}"
-                        )
-            except Exception as e:
-                return f"Error calculating distance: {e!s}"
-
-        except Exception as e:
-            return f"Error calculating distance: {e!s}"
-
-    def list_available_tools(self) -> str:
-        """List available tools in the catalog."""
-        try:
-            if not self.catalog:
-                return "Catalog not initialized"
-
-            # Use find_tools with empty query and reasonable limit to get all tools
-            # This avoids the None name issue that caused embedding problems
-            try:
-                tools = list(self.catalog.find_tools(query="", limit=20))
-                if not tools:
-                    return "No tools found in catalog"
-
-                tool_names = []
-                for tool in tools:
-                    try:
-                        if hasattr(tool, "meta") and tool.meta and hasattr(tool.meta, "name"):
-                            tool_names.append(tool.meta.name)
-                        elif hasattr(tool, "__name__"):
-                            tool_names.append(tool.__name__)
-                        else:
-                            tool_names.append(str(tool))
-                    except Exception as e:
-                        tool_names.append(f"<unknown_tool: {e}>")
-                        continue
-
-                return f"Available tools ({len(tool_names)}): {', '.join(tool_names)}"
-
-            except Exception as e:
-                logger.error(f"Error calling find_tools: {e}")
-
-                # Fallback: try to access tools directly from the local catalog
+def run_agent_demo(agent, span):
+    """Run the agent demo with sample queries."""
+    try:
+        # Demo queries
+        demo_queries = [
+            "Find routes from New York to Boston",
+            "Calculate distance between San Francisco and Los Angeles by car",
+            "What are some scenic routes in California?",
+            "Calculate the distance from Denver to Aspen by train"
+        ]
+        
+        print(f"\n🗺️ Route Planner Agent Demo")
+        print("=" * 60)
+        
+        for i, query in enumerate(demo_queries, 1):
+            with span.new(f"Query_{i}") as query_span:
+                print(f"\n🔍 Query {i}: {query}")
+                print("-" * 40)
+                
                 try:
-                    if hasattr(self.catalog, "_tool_provider") and hasattr(
-                        self.catalog._tool_provider, "catalog"
-                    ):
-                        tool_catalog = self.catalog._tool_provider.catalog
-                        if hasattr(tool_catalog, "_tools"):
-                            tools = tool_catalog._tools
-                            tool_names = []
-                            for tool_id, tool_data in tools.items():
-                                try:
-                                    if isinstance(tool_data, dict):
-                                        name = (
-                                            tool_data.get("name")
-                                            or tool_data.get("meta", {}).get("name")
-                                            or tool_id
-                                        )
-                                    else:
-                                        name = getattr(tool_data, "name", str(tool_data))
-                                    tool_names.append(str(name))
-                                except Exception:
-                                    tool_names.append(f"<tool_{tool_id}>")
-
-                            if tool_names:
-                                return (
-                                    f"Available tools ({len(tool_names)}): {', '.join(tool_names)}"
-                                )
-
-                    # Final fallback: scan local tools directory
-                    tool_names = []
-                    import os
-
-                    tools_dir = os.path.join(os.path.dirname(__file__), "tools")
-                    if os.path.exists(tools_dir):
-                        for filename in os.listdir(tools_dir):
-                            if filename.endswith(".py") and not filename.startswith("__"):
-                                tool_name = filename[:-3]  # Remove .py extension
-                                tool_names.append(tool_name)
-
-                    if tool_names:
-                        return f"Local tools found ({len(tool_names)}): {', '.join(tool_names)}"
-
-                    return f"Error accessing tools: {e}"
-
-                except Exception as inner_e:
-                    logger.error(f"Fallback method also failed: {inner_e}")
-                    return f"Error accessing tools: {e}"
-
-        except Exception as e:
-            logger.error(f"Error listing tools: {e}")
-            return f"Error listing tools: {e}"
-
-
-def run_interactive_demo():
-    """Run interactive demo of the route planner."""
-    logger.info("Starting Route Planner Agent - Interactive Demo")
-    logger.info("=" * 50)
-
-    try:
-        catalog = agentc.Catalog()
-        application_span = catalog.Span(name="Route Planner Agent")
-        planner = RouteplannerAgent(span=application_span)
-        logger.info("Route planner initialized successfully!")
-
-        logger.info(planner.list_available_tools())
-
-        logger.info("Available commands:")
-        logger.info("- 'plan <query>' - Plan a route (e.g., 'plan route from New York to Boston')")
-        logger.info("- 'distance <origin> to <destination>' - Calculate distance")
-        logger.info("- 'tools' - List available tools")
-        logger.info("- 'quit' - Exit the demo")
-        logger.info(
-            "Try asking: 'plan scenic route in California' or 'distance San Francisco to Los Angeles'"
-        )
-        logger.info("-" * 50)
-
-        with application_span.new("Interactive Demo") as span:
-            while True:
-                user_input = input("\nEnter your request: ").strip()
-
-                if user_input.lower() in ["quit", "exit", "q"]:
-                    logger.info("Thanks for using the Route Planner!")
-                    break
-
-                with span.new(f"Request: {user_input}") as request_span:
-                    if user_input.lower() == "tools":
-                        logger.info(planner.list_available_tools())
-                        continue
-
-                    if user_input.lower().startswith("plan "):
-                        query = user_input[5:]  # Remove 'plan ' prefix
-                        result = planner.plan_route(query)
-                        request_span["result"] = result
-                        logger.info(f"Route Planning Results:\n{result}")
-
-                    elif " to " in user_input.lower() and any(
-                        word in user_input.lower() for word in ["distance", "from"]
-                    ):
-                        # Parse distance query
-                        parts = (
-                            user_input.lower()
-                            .replace("distance", "")
-                            .replace("from", "")
-                            .strip()
-                            .split(" to ")
-                        )
-                        if len(parts) == 2:
-                            origin = parts[0].strip()
-                            destination = parts[1].strip()
-                            result = planner.calculate_distance(origin, destination)
-                            request_span["result"] = result
-                            logger.info(f"Distance Calculation Results:\n{result}")
-                        else:
-                            logger.info("Please use format: 'distance <origin> to <destination>'")
-
-                    else:
-                        # Default to route planning
-                        result = planner.plan_route(user_input)
-                        request_span["result"] = result
-                        logger.info(f"Route Planning Results:\n{result}")
-
+                    # Use LlamaIndex agent
+                    response = agent.chat(query)
+                    query_span["query"] = query
+                    query_span["response"] = str(response)
+                    print(f"📝 Response: {response}")
+                    print("-" * 40)
+                except Exception as e:
+                    query_span["query"] = query
+                    query_span["error"] = str(e)
+                    print(f"❌ Error: {e}")
+                    print("-" * 40)
+        
     except Exception as e:
-        logger.error(f"Error in interactive demo: {e}")
+        raise RuntimeError(f"❌ Error in agent demo: {str(e)}")
 
 
-def run_test():
-    """Run a quick test of the route planner."""
-    logger.info("Running Route Planner Test")
-    logger.info("=" * 30)
-
+def main():
+    """Main function to run the Route Planner Agent tutorial."""
     try:
+        # Load environment variables
+        import dotenv
+        dotenv.load_dotenv(override=True)
+        
+        # Initialize Agent Catalog and main span
         catalog = agentc.Catalog()
-        application_span = catalog.Span(name="Route Planner Agent Test")
-        planner = RouteplannerAgent(span=application_span)
-
-        with application_span.new("Distance Calculation Test") as span:
-            # Test distance calculation
-            logger.info("Testing distance calculation...")
-            result = planner.calculate_distance("San Francisco", "Los Angeles")
-            span["result"] = result
-            logger.info(f"Distance Test Result: {result}")
-
-        with application_span.new("Route Planning Test") as span:
-            # Test route planning
-            logger.info("Testing route planning...")
-            result = planner.plan_route("scenic route in California")
-            span["result"] = result
-            logger.info(f"Route Planning Test Result: {result}")
-
-        logger.info("Test completed successfully!")
-
+        application_span = catalog.Span(name="Route Planner Agent Tutorial")
+        
+        print("🚀 Route Planner Agent Tutorial")
+        print("=" * 60)
+        print("This tutorial demonstrates:")
+        print("• AgentC for tool discovery, prompt management, and span logging")
+        print("• Couchbase Capella as vector store")
+        print("• Capella AI Services for embeddings and LLM")
+        print("• LlamaIndex ReActAgent for agent execution")
+        print("=" * 60)
+        
+        with application_span.new("Environment Setup"):
+            setup_environment()
+        
+        with application_span.new("Couchbase Connection"):
+            cluster = setup_couchbase_connection()
+        
+        with application_span.new("Collection Setup"):
+            setup_collection(
+                cluster,
+                os.environ['CB_BUCKET_NAME'],
+                os.environ['SCOPE_NAME'],
+                os.environ['COLLECTION_NAME']
+            )
+        
+        with application_span.new("Vector Index Setup"):
+            try:
+                with open('agentcatalog_index.json', 'r') as file:
+                    index_definition = json.load(file)
+                print("✅ Loaded vector search index definition from agentcatalog_index.json")
+            except Exception as e:
+                print(f"⚠️ Could not load index definition: {str(e)}")
+                # Continue without index for demo purposes
+                index_definition = None
+            
+            if index_definition:
+                setup_vector_search_index(cluster, index_definition)
+        
+        with application_span.new("AI Models Setup"):
+            embed_model, llm = setup_ai_models(application_span)
+        
+        with application_span.new("Vector Store Setup"):
+            vector_store = CouchbaseSearchVectorStore(
+                cluster=cluster,
+                bucket_name=os.environ['CB_BUCKET_NAME'],
+                scope_name=os.environ['SCOPE_NAME'],
+                collection_name=os.environ['COLLECTION_NAME'],
+                index_name=os.environ['INDEX_NAME']
+            )
+            
+            # Ingest route data
+            ingest_route_data(vector_store, application_span)
+        
+        with application_span.new("Agent Setup"):
+            agent = create_llamaindex_agent(catalog, application_span)
+        
+        with application_span.new("Demo Execution"):
+            run_agent_demo(agent, application_span)
+        
+        print("\n✅ Tutorial completed successfully!")
+        print("Next steps:")
+        print("• Check AgentC span logs for detailed execution traces")
+        print("• Try asking your own route questions")
+        print("• Modify the tools to add new capabilities")
+        print("• Explore different LlamaIndex agent configurations")
+        
     except Exception as e:
-        logger.error(f"Test failed: {e}")
-
-
-def run_nyc_boston_test():
-    """Run a specific test for New York to Boston route."""
-    logger.info("Running New York to Boston Route Test")
-    logger.info("=" * 40)
-
-    try:
-        catalog = agentc.Catalog()
-        application_span = catalog.Span(name="Route Planner Agent - NYC to Boston Test")
-        planner = RouteplannerAgent(span=application_span)
-
-        with application_span.new("NYC to Boston Route Test") as span:
-            logger.info("Testing route planning from New York to Boston...")
-            result = planner.plan_route("plan a route from new york to boston")
-            span["result"] = result
-            logger.info(f"NYC to Boston Route Result:\n{result}")
-
-        logger.info("NYC to Boston test completed successfully!")
-
-    except Exception as e:
-        logger.error(f"NYC to Boston test failed: {e}")
+        logger.error(f"❌ Tutorial failed: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "test":
-            run_test()
-        elif sys.argv[1] == "nyc":
-            run_nyc_boston_test()
-        else:
-            run_interactive_demo()
-    else:
-        run_interactive_demo()
+    main()
