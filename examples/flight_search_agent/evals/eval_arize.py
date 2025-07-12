@@ -53,8 +53,13 @@ try:
         QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
+        HallucinationEvaluator,
+        ToxicityEvaluator,
+        RelevanceEvaluator,
+        QAEvaluator,
         OpenAIModel,
         llm_classify,
+        run_evals,
     )
     from phoenix.otel import register
 
@@ -326,7 +331,7 @@ class ArizeFlightSearchEvaluator:
 
     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """
-        Run Arize-based LLM evaluations on the results.
+        Run comprehensive Arize-based LLM evaluations on the results using Phoenix evaluators.
 
         Args:
             results_df: DataFrame with evaluation results
@@ -338,10 +343,12 @@ class ArizeFlightSearchEvaluator:
             logger.warning("⚠️ Arize not available - skipping LLM evaluations")
             return results_df
 
-        logger.info(f"🧠 Running Arize LLM evaluations on {len(results_df)} responses...")
+        logger.info(f"🧠 Running Comprehensive Phoenix Evaluations on {len(results_df)} responses...")
         logger.info("   📋 Evaluation criteria:")
         logger.info("      🔍 Relevance: Does the response address the flight search query?")
         logger.info("      🎯 Correctness: Is the flight information accurate and helpful?")
+        logger.info("      🚨 Hallucination: Does the response contain fabricated information?")
+        logger.info("      ☠️  Toxicity: Is the response harmful or inappropriate?")
 
         # Sample evaluation data preview
         if len(results_df) > 0:
@@ -358,95 +365,124 @@ class ArizeFlightSearchEvaluator:
                     {
                         "input": row["query"],
                         "output": row["response"],
-                        "reference": f"A helpful response about {row['query_type'].replace('_', ' ')}",
+                        "reference": f"A helpful and accurate response about {row['query_type'].replace('_', ' ')} with specific flight information",
                         "context": row["response"],  # Use response as context for relevance
                     }
                 )
 
             eval_df = pd.DataFrame(evaluation_data)
 
-            # Run relevance evaluation
-            logger.info(f"\n   🔍 Evaluating relevance...")
+            # Initialize evaluators with the model
+            evaluators = {
+                'relevance': RelevanceEvaluator(self.evaluator_llm),
+                'qa': QAEvaluator(self.evaluator_llm),
+                'hallucination': HallucinationEvaluator(self.evaluator_llm), 
+                'toxicity': ToxicityEvaluator(self.evaluator_llm),
+            }
+
+            # Run comprehensive evaluations using Phoenix evaluators
+            logger.info(f"\n   🧠 Running advanced Phoenix evaluations...")
+
             try:
-                relevance_results = llm_classify(
-                    dataframe=eval_df[["input", "context"]],
-                    model=self.evaluator_llm,
-                    template=RAG_RELEVANCY_PROMPT_TEMPLATE,
-                    rails=self.relevance_rails,
+                # Run all evaluations using run_evals for comprehensive analysis
+                evaluation_results = run_evals(
+                    dataframe=eval_df,
+                    evaluators=list(evaluators.values()),
                     provide_explanation=True,
                 )
 
-                # Add relevance results
-                if hasattr(relevance_results, "columns") and "label" in relevance_results.columns:
-                    results_df["arize_relevance"] = relevance_results["label"]
-                    results_df["arize_relevance_explanation"] = relevance_results.get(
-                        "explanation", ""
-                    )
+                # Add evaluation results to our DataFrame
+                if evaluation_results is not None and not evaluation_results.empty:
+                    # Map evaluator results to our DataFrame
+                    for evaluator_name in evaluators.keys():
+                        eval_col = f"{evaluator_name}_eval"
+                        explanation_col = f"{evaluator_name}_explanation"
+                        score_col = f"{evaluator_name}_score"
+
+                        if eval_col in evaluation_results.columns:
+                            results_df[f"arize_{evaluator_name}"] = evaluation_results[eval_col]
+                        if explanation_col in evaluation_results.columns:
+                            results_df[f"arize_{evaluator_name}_explanation"] = evaluation_results[explanation_col]
+                        if score_col in evaluation_results.columns:
+                            results_df[f"arize_{evaluator_name}_score"] = evaluation_results[score_col]
+
+                    logger.info(f"   ✅ Comprehensive evaluations completed successfully")
+
                 else:
-                    results_df["arize_relevance"] = "unknown"
-                    results_df["arize_relevance_explanation"] = "Evaluation failed"
+                    logger.warning(f"   ⚠️ Phoenix evaluators returned empty results")
+                    # Fall back to individual evaluations
+                    self._run_individual_evaluations(eval_df, results_df, evaluators)
 
             except Exception as e:
-                logger.warning(f"   ⚠️ Relevance evaluation failed: {e}")
-                results_df["arize_relevance"] = "unknown"
-                results_df["arize_relevance_explanation"] = f"Error: {e}"
+                logger.warning(f"   ⚠️ run_evals failed: {e}, falling back to individual evaluations")
+                self._run_individual_evaluations(eval_df, results_df, evaluators)
 
-            # Run correctness evaluation
-            logger.info(f"   🎯 Evaluating correctness...")
-            try:
-                correctness_results = llm_classify(
-                    dataframe=eval_df[["input", "output", "reference"]],
-                    model=self.evaluator_llm,
-                    template=QA_PROMPT_TEMPLATE,
-                    rails=self.qa_rails,
-                    provide_explanation=True,
-                )
-
-                # Add correctness results
-                if (
-                    hasattr(correctness_results, "columns")
-                    and "label" in correctness_results.columns
-                ):
-                    results_df["arize_correctness"] = correctness_results["label"]
-                    results_df["arize_correctness_explanation"] = correctness_results.get(
-                        "explanation", ""
-                    )
-                else:
-                    results_df["arize_correctness"] = "unknown"
-                    results_df["arize_correctness_explanation"] = "Evaluation failed"
-
-            except Exception as e:
-                logger.warning(f"   ⚠️ Correctness evaluation failed: {e}")
-                results_df["arize_correctness"] = "unknown"
-                results_df["arize_correctness_explanation"] = f"Error: {e}"
-
-            # Display sample explanations
+            # Display sample evaluation results
             if len(results_df) > 0:
-                logger.info(f"\n   📝 Sample evaluation explanations:")
+                logger.info(f"\n   📝 Sample evaluation results:")
                 for i in range(min(2, len(results_df))):
                     row = results_df.iloc[i]
                     logger.info(f"      Query: {row['query']}")
-                    if "arize_relevance_explanation" in row:
-                        logger.info(
-                            f"      Relevance ({row['arize_relevance']}): {str(row['arize_relevance_explanation'])[:100]}..."
-                        )
-                    if "arize_correctness_explanation" in row:
-                        logger.info(
-                            f"      Correctness ({row['arize_correctness']}): {str(row['arize_correctness_explanation'])[:100]}..."
-                        )
+                    
+                    for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+                        eval_col = f"arize_{eval_type}"
+                        explanation_col = f"arize_{eval_type}_explanation"
+                        
+                        if eval_col in row:
+                            evaluation = row[eval_col]
+                            explanation = str(row.get(explanation_col, "No explanation"))[:80] + "..."
+                            logger.info(f"      {eval_type.title()}: {evaluation} - {explanation}")
                     logger.info("")
 
-            logger.info(f"   ✅ Arize LLM evaluations completed")
+            logger.info(f"   ✅ All Phoenix evaluations completed")
 
         except Exception as e:
-            logger.error(f"   ❌ Error running Arize LLM evaluations: {e}")
+            logger.error(f"   ❌ Error running Phoenix evaluations: {e}")
             # Add default values if evaluation fails
-            results_df["arize_relevance"] = "unknown"
-            results_df["arize_relevance_explanation"] = f"Error: {e}"
-            results_df["arize_correctness"] = "unknown"
-            results_df["arize_correctness_explanation"] = f"Error: {e}"
+            for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+                results_df[f"arize_{eval_type}"] = "unknown"
+                results_df[f"arize_{eval_type}_explanation"] = f"Error: {e}"
 
         return results_df
+
+    def _run_individual_evaluations(self, eval_df: pd.DataFrame, results_df: pd.DataFrame, evaluators: dict):
+        """Run individual evaluations when run_evals fails."""
+        logger.info(f"   🔄 Running individual evaluations...")
+
+        for eval_name, evaluator in evaluators.items():
+            try:
+                logger.info(f"      📊 Running {eval_name} evaluation...")
+                
+                # Prepare data for each evaluator based on its requirements
+                if eval_name == 'relevance':
+                    eval_data = eval_df[["input", "context"]]
+                elif eval_name == 'qa':
+                    eval_data = eval_df[["input", "output", "reference"]]
+                elif eval_name == 'hallucination':
+                    eval_data = eval_df[["output", "context"]]
+                elif eval_name == 'toxicity':
+                    eval_data = eval_df[["output"]]
+                else:
+                    eval_data = eval_df
+
+                # Run individual evaluator
+                eval_results = evaluator.evaluate(eval_data)
+
+                # Add results to our DataFrame
+                if eval_results is not None and hasattr(eval_results, 'columns'):
+                    if 'label' in eval_results.columns:
+                        results_df[f"arize_{eval_name}"] = eval_results['label']
+                    if 'score' in eval_results.columns:
+                        results_df[f"arize_{eval_name}_score"] = eval_results['score']
+                    if 'explanation' in eval_results.columns:
+                        results_df[f"arize_{eval_name}_explanation"] = eval_results['explanation']
+
+                logger.info(f"      ✅ {eval_name} evaluation completed")
+
+            except Exception as e:
+                logger.warning(f"      ⚠️ {eval_name} evaluation failed: {e}")
+                results_df[f"arize_{eval_name}"] = "unknown"
+                results_df[f"arize_{eval_name}_explanation"] = f"Error: {e}"
 
     def create_arize_dataset(self, results_df: pd.DataFrame) -> str:
         """Create an Arize dataset from evaluation results."""
