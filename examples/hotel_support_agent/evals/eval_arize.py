@@ -74,6 +74,10 @@ try:
         QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
+        HALLUCINATION_PROMPT_RAILS_MAP,
+        HALLUCINATION_PROMPT_TEMPLATE,
+        TOXICITY_PROMPT_RAILS_MAP,
+        TOXICITY_PROMPT_TEMPLATE,
         HallucinationEvaluator,
         ToxicityEvaluator,
         RelevanceEvaluator,
@@ -122,6 +126,8 @@ class ArizeHotelSupportEvaluator:
             # Define evaluation rails
             self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
             self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
+            self.hallucination_rails = list(HALLUCINATION_PROMPT_RAILS_MAP.values())
+            self.toxicity_rails = list(TOXICITY_PROMPT_RAILS_MAP.values())
         else:
             print("⚠️ Arize not available - running basic evaluation only")
 
@@ -474,15 +480,20 @@ class ArizeHotelSupportEvaluator:
             print(f"      Response: {sample_row['output'][:100]}...")
 
         try:
-            # Prepare data for evaluation with correct column names
+            # Prepare data for evaluation with correct column names for Phoenix evaluators
             evaluation_data = []
             for _, row in results_df.iterrows():
                 evaluation_data.append(
                     {
+                        # Standard columns for all evaluations
                         "input": row["query"],
                         "output": row["output"],
-                        "reference": f"A helpful and accurate response about hotels with specific details",
-                        "context": row["output"],  # Use output as context for relevance
+                        "reference": f"A helpful and accurate response about hotels with specific details and no fabricated information",
+                        
+                        # Specific columns for different evaluations
+                        "query": row["query"],  # For hallucination evaluation
+                        "response": row["output"],  # For hallucination evaluation
+                        "text": row["output"],  # For toxicity evaluation
                     }
                 )
 
@@ -508,24 +519,29 @@ class ArizeHotelSupportEvaluator:
                 )
 
                 # Add evaluation results to our DataFrame
-                if evaluation_results is not None and not evaluation_results.empty:
-                    # Map evaluator results to our DataFrame
-                    for evaluator_name in evaluators.keys():
-                        eval_col = f"{evaluator_name}_eval"
-                        explanation_col = f"{evaluator_name}_explanation"
-                        score_col = f"{evaluator_name}_score"
+                if evaluation_results is not None:
+                    # Handle both DataFrame and list results from run_evals
+                    if hasattr(evaluation_results, 'empty') and not evaluation_results.empty:
+                        # It's a DataFrame
+                        for evaluator_name in evaluators.keys():
+                            eval_col = f"{evaluator_name}_eval"
+                            explanation_col = f"{evaluator_name}_explanation"
+                            score_col = f"{evaluator_name}_score"
 
-                        if eval_col in evaluation_results.columns:
-                            results_df[f"arize_{evaluator_name}"] = evaluation_results[eval_col]
-                        if explanation_col in evaluation_results.columns:
-                            results_df[f"arize_{evaluator_name}_explanation"] = evaluation_results[explanation_col]
-                        if score_col in evaluation_results.columns:
-                            results_df[f"arize_{evaluator_name}_score"] = evaluation_results[score_col]
+                            if eval_col in evaluation_results.columns:
+                                results_df[f"arize_{evaluator_name}"] = evaluation_results[eval_col]
+                            if explanation_col in evaluation_results.columns:
+                                results_df[f"arize_{evaluator_name}_explanation"] = evaluation_results[explanation_col]
+                            if score_col in evaluation_results.columns:
+                                results_df[f"arize_{evaluator_name}_score"] = evaluation_results[score_col]
 
-                    print(f"   ✅ Comprehensive evaluations completed successfully")
-
+                        print(f"   ✅ Comprehensive evaluations completed successfully")
+                    else:
+                        print(f"   ⚠️ Phoenix evaluators returned unexpected format: {type(evaluation_results)}")
+                        # Fall back to individual evaluations
+                        self._run_individual_evaluations(eval_df, results_df, evaluators)
                 else:
-                    print(f"   ⚠️ Phoenix evaluators returned empty results")
+                    print(f"   ⚠️ Phoenix evaluators returned None")
                     # Fall back to individual evaluations
                     self._run_individual_evaluations(eval_df, results_df, evaluators)
 
@@ -569,20 +585,45 @@ class ArizeHotelSupportEvaluator:
             try:
                 print(f"      📊 Running {eval_name} evaluation...")
                 
-                # Prepare data for each evaluator based on its requirements
+                # Use llm_classify for individual evaluations with proper templates
                 if eval_name == 'relevance':
-                    eval_data = eval_df[["input", "context"]]
+                    eval_results = llm_classify(
+                        dataframe=eval_df[["input", "reference"]],
+                        model=self.evaluator_llm,
+                        template=RAG_RELEVANCY_PROMPT_TEMPLATE,
+                        rails=self.relevance_rails,
+                        provide_explanation=True,
+                    )
                 elif eval_name == 'qa':
-                    eval_data = eval_df[["input", "output", "reference"]]
+                    eval_results = llm_classify(
+                        dataframe=eval_df[["input", "output", "reference"]],
+                        model=self.evaluator_llm,
+                        template=QA_PROMPT_TEMPLATE,
+                        rails=self.qa_rails,
+                        provide_explanation=True,
+                    )
                 elif eval_name == 'hallucination':
-                    eval_data = eval_df[["output", "context"]]
+                    eval_results = llm_classify(
+                        dataframe=eval_df[["input", "reference", "output"]],
+                        model=self.evaluator_llm,
+                        template=HALLUCINATION_PROMPT_TEMPLATE,
+                        rails=self.hallucination_rails,
+                        provide_explanation=True,
+                    )
                 elif eval_name == 'toxicity':
-                    eval_data = eval_df[["output"]]
+                    eval_results = llm_classify(
+                        dataframe=eval_df[["input"]],
+                        model=self.evaluator_llm,
+                        template=TOXICITY_PROMPT_TEMPLATE,
+                        rails=self.toxicity_rails,
+                        provide_explanation=True,
+                    )
                 else:
-                    eval_data = eval_df
-
-                # Run individual evaluator
-                eval_results = evaluator.evaluate(eval_data)
+                    # Fallback for unknown evaluators
+                    print(f"      ⚠️ Unknown evaluator {eval_name}, setting defaults")
+                    results_df[f"arize_{eval_name}"] = "not_evaluated"
+                    results_df[f"arize_{eval_name}_explanation"] = f"{eval_name} evaluation not implemented"
+                    continue
 
                 # Add results to our DataFrame
                 if eval_results is not None and hasattr(eval_results, 'columns'):
@@ -592,6 +633,10 @@ class ArizeHotelSupportEvaluator:
                         results_df[f"arize_{eval_name}_score"] = eval_results['score']
                     if 'explanation' in eval_results.columns:
                         results_df[f"arize_{eval_name}_explanation"] = eval_results['explanation']
+                else:
+                    # Set default values if evaluation returns unexpected format
+                    results_df[f"arize_{eval_name}"] = "unknown"
+                    results_df[f"arize_{eval_name}_explanation"] = "Evaluation returned unexpected format"
 
                 print(f"      ✅ {eval_name} evaluation completed")
 
@@ -649,17 +694,25 @@ def eval_hotel_search_basic():
     print(f"   🛏️ Queries with amenities: {queries_with_amenities}")
     print(f"   ✅ Appropriate responses: {appropriate_responses}")
 
-    if ARIZE_AVAILABLE and "arize_relevance" in results_df.columns:
-        relevance_scores = results_df["arize_relevance"].value_counts()
-        correctness_scores = results_df["arize_correctness"].value_counts()
-
-        # Convert to regular Python dict with int values
-        relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
-        correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
-
-        print(f"\n🔍 Arize Evaluation Results:")
-        print(f"   📋 Relevance: {relevance_dict}")
-        print(f"   ✅ Correctness: {correctness_dict}")
+    if ARIZE_AVAILABLE:
+        arize_results = {}
+        
+        # Check which Arize evaluation columns exist and process them
+        for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+            col_name = f"arize_{eval_type}"
+            if col_name in results_df.columns:
+                try:
+                    scores = results_df[col_name].value_counts()
+                    arize_results[eval_type] = {k: int(v) for k, v in scores.items()}
+                except Exception as e:
+                    print(f"   ⚠️ Error processing {eval_type} results: {e}")
+        
+        if arize_results:
+            print(f"\n🔍 Arize Evaluation Results:")
+            for eval_type, scores in arize_results.items():
+                print(f"   📋 {eval_type.title()}: {scores}")
+        else:
+            print(f"\n⚠️ No Arize evaluation results available (evaluations may have failed)")
 
     print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
 
