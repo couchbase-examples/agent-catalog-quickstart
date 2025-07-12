@@ -9,7 +9,7 @@ that uses LlamaIndex with Couchbase vector store and has 2 tools:
 
 Features:
 - Phoenix UI for trace visualization
-- LLM-based evaluation with Phoenix evaluators
+- LLM-based evaluation with Phoenix evaluators (Relevance + QA)
 - Integration with actual route planner agent
 - Comprehensive evaluation metrics with route-specific checks
 """
@@ -18,40 +18,18 @@ import os
 import sys
 import logging
 import json
+import time
+import warnings
 from typing import List, Dict, Any
 import pandas as pd
-import warnings
 from dotenv import load_dotenv
-import time
 
-# Don't suppress warnings - we'll fix the root causes instead
-# Import sqlalchemy to handle database reflection warnings appropriately
-try:
-    import sqlalchemy
-    import sqlalchemy.exc
-except ImportError:
-    pass
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler("evaluation.log")],
-)
-logger = logging.getLogger(__name__)
-
-# Keep important third-party logs at reasonable levels but don't suppress warnings
-logging.getLogger("requests").setLevel(logging.INFO)
-logging.getLogger("urllib3").setLevel(logging.INFO)
-
-# Add parent directory for imports
+# Path-related imports and setup - keep these at the top for sys.path modification
 parent_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, parent_dir)
 
-# Load environment variables from multiple locations
-# Load from parent directories first (has OpenAI API key)
+# Environment setup
 load_dotenv(dotenv_path=os.path.join(parent_dir, "../../.env"))
-# Load from current directory last (has correct Couchbase config) - should take precedence
 load_dotenv(dotenv_path=os.path.join(parent_dir, ".env"), override=True)
 
 # Phoenix imports
@@ -68,10 +46,7 @@ try:
         RAG_RELEVANCY_PROMPT_TEMPLATE,
         QA_PROMPT_TEMPLATE,
     )
-
-    # Import urllib3 for potential connection handling
     import urllib3
-
     PHOENIX_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Phoenix dependencies not available: {e}")
@@ -91,11 +66,29 @@ try:
     )
     from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
     from llama_index.core import Settings
-
     AGENT_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Agent dependencies not available: {e}")
     AGENT_AVAILABLE = False
+
+# SQLAlchemy imports for handling warnings
+try:
+    import sqlalchemy
+    import sqlalchemy.exc
+except ImportError:
+    pass
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler("evaluation.log")],
+)
+logger = logging.getLogger(__name__)
+
+# Keep important third-party logs at reasonable levels
+logging.getLogger("requests").setLevel(logging.INFO)
+logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
 class RouteEvaluator:
@@ -107,8 +100,6 @@ class RouteEvaluator:
         self.tracer_provider = None
         self.agent = None
         self.evaluation_model = None
-
-        # SQLAlchemy warnings are handled at the database level - they're informational only
 
         # Initialize Phoenix if available
         if PHOENIX_AVAILABLE:
@@ -126,25 +117,15 @@ class RouteEvaluator:
         try:
             logger.info("🔥 Setting up Phoenix instrumentation...")
 
-            # Set Phoenix environment variables (proper way instead of deprecated parameters)
+            # Set Phoenix environment variables
             os.environ["PHOENIX_HOST"] = "0.0.0.0"
             os.environ["PHOENIX_PORT"] = "6006"
 
-            # Launch Phoenix session - this starts the local Phoenix server
+            # Launch Phoenix session
             self.phoenix_session = px.launch_app()
-
-            # Wait a moment for the server to start
-            import time
-
             time.sleep(2)
 
             # Set up Phoenix instrumentation without external trace export
-            from phoenix.otel import register
-            from opentelemetry import trace
-            from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-
-            # Check if there's already a tracer provider to avoid conflicts
             current_tracer_provider = trace.get_tracer_provider()
             if hasattr(current_tracer_provider, "__class__") and "TraceProvider" in str(
                 current_tracer_provider.__class__
@@ -152,26 +133,18 @@ class RouteEvaluator:
                 logger.info("🔄 Tracer provider already exists, using existing one")
                 tracer_provider = current_tracer_provider
             else:
-                # Configure Phoenix without HTTP export (avoids 405 errors)
-                # Use the local Phoenix database instead of trying to export traces
                 tracer_provider = register(
                     project_name="route_planner_evaluation",
-                    # Don't specify endpoint to avoid HTTP export issues
-                    set_global_tracer_provider=False,  # Avoid override warning
+                    set_global_tracer_provider=False,
                 )
-
-                # Set it as global tracer provider manually
                 trace.set_tracer_provider(tracer_provider)
 
             # Instrument LlamaIndex with Phoenix
-            from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-
             if not LlamaIndexInstrumentor().is_instrumented_by_opentelemetry:
                 LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
 
             logger.info("✅ Phoenix instrumentation setup complete")
             logger.info(f"🌐 Phoenix UI available at: http://localhost:6006/")
-
             return True
 
         except Exception as e:
@@ -182,7 +155,6 @@ class RouteEvaluator:
         """Clean up Phoenix session properly."""
         if self.phoenix_session:
             try:
-                # Try different cleanup methods
                 if hasattr(self.phoenix_session, "close"):
                     self.phoenix_session.close()
                 elif hasattr(self.phoenix_session, "stop"):
@@ -268,10 +240,7 @@ class RouteEvaluator:
             try:
                 # Get agent response
                 response = self.agent.chat(query)
-                response_text = str(response)
-
-                # Remove debug information to get clean response
-                # response_text = self._clean_response(response_text)
+                response_text = self._clean_response(str(response))
 
                 # Create response preview
                 preview = (
@@ -336,35 +305,25 @@ class RouteEvaluator:
         if "Answer:" in response:
             response = response.split("Answer:")[-1].strip()
 
-        # Handle excessive repetition more aggressively
-        # Split by sentences and look for patterns
+        # Handle excessive repetition
         sentences = response.split(". ")
         if len(sentences) > 3:
-            # Look for the first complete sentence that's repeated
             first_sentence = sentences[0] + "."
-
-            # Count occurrences of first sentence
             count = response.count(first_sentence)
 
             if count > 2:
-                # Find the end of the first meaningful paragraph
-                # Look for the first occurrence and keep only until next repetition
                 first_occurrence = response.find(first_sentence)
                 if first_occurrence != -1:
-                    # Find the second occurrence
                     second_occurrence = response.find(
                         first_sentence, first_occurrence + len(first_sentence)
                     )
                     if second_occurrence != -1:
-                        # Keep only the content before the second occurrence
                         response = response[:second_occurrence].strip()
-                        # Remove trailing incomplete sentences
                         last_period = response.rfind(".")
                         if last_period != -1:
                             response = response[: last_period + 1]
 
-        # Additional cleanup for common patterns
-        # Remove trailing incomplete sentences that might be cut off
+        # Remove trailing incomplete sentences
         if response.endswith(" The ") or response.endswith(" However, "):
             last_period = response.rfind(".")
             if last_period != -1:
@@ -375,18 +334,8 @@ class RouteEvaluator:
     def _check_route_info(self, response: str) -> bool:
         """Check if response contains route information."""
         route_indicators = [
-            "route",
-            "highway",
-            "interstate",
-            "road",
-            "miles",
-            "distance",
-            "drive",
-            "travel",
-            "direction",
-            "via",
-            "through",
-            "along",
+            "route", "highway", "interstate", "road", "miles", "distance",
+            "drive", "travel", "direction", "via", "through", "along",
         ]
         return any(indicator in response.lower() for indicator in route_indicators)
 
@@ -406,69 +355,65 @@ class RouteEvaluator:
 
     def _check_relevance(self, query: str, response: str) -> bool:
         """Check if response is relevant to the query."""
-        # Extract key terms from query
         query_terms = query.lower().split()
         response_lower = response.lower()
-
-        # Check if at least 30% of query terms appear in response
         matching_terms = sum(1 for term in query_terms if term in response_lower)
         return matching_terms >= max(1, len(query_terms) * 0.3)
 
     def _calculate_quality_score(
-        self,
-        has_route_info: bool,
-        has_distance_info: bool,
-        has_travel_time: bool,
-        appropriate_length: bool,
-        is_relevant: bool,
+        self, has_route_info: bool, has_distance_info: bool, has_travel_time: bool,
+        appropriate_length: bool, is_relevant: bool,
     ) -> float:
         """Calculate overall quality score (0-10)."""
         score = 0
-        if has_route_info:
-            score += 2
-        if has_distance_info:
-            score += 2
-        if has_travel_time:
-            score += 2
-        if appropriate_length:
-            score += 2
-        if is_relevant:
-            score += 2
+        if has_route_info: score += 2
+        if has_distance_info: score += 2
+        if has_travel_time: score += 2
+        if appropriate_length: score += 2
+        if is_relevant: score += 2
         return score
 
     def _run_phoenix_evaluations(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Run Phoenix LLM evaluations."""
+        """Run Phoenix LLM evaluations (Relevance + QA)."""
         try:
             logger.info("🧠 Running Phoenix LLM evaluations...")
 
             # Prepare evaluation data
             eval_data = []
             for _, row in df.iterrows():
-                eval_data.append(
-                    {
-                        "input": row["query"],
-                        "output": row["response"],
-                        "reference": row[
-                            "response"
-                        ],  # Use response as reference for self-evaluation
-                    }
-                )
+                eval_data.append({
+                    "input": row["query"],
+                    "output": row["response"],
+                    "reference": self._get_reference_answer(row["query"]),
+                })
 
             eval_df = pd.DataFrame(eval_data)
 
             # Run relevance evaluation
             logger.info("  🔍 Evaluating relevance...")
             relevance_results = llm_classify(
-                data=eval_df,  # Use 'data' instead of deprecated 'dataframe'
+                data=eval_df,
                 model=self.evaluation_model,
                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
                 rails=["relevant", "irrelevant"],
                 provide_explanation=True,
             )
 
+            # Run QA evaluation
+            logger.info("  🧠 Evaluating QA correctness...")
+            qa_results = llm_classify(
+                data=eval_df,
+                model=self.evaluation_model,
+                template=QA_PROMPT_TEMPLATE,
+                rails=["correct", "incorrect"],
+                provide_explanation=True,
+            )
+
             # Add results to dataframe
             df["phoenix_relevance"] = relevance_results["label"]
             df["phoenix_relevance_explanation"] = relevance_results["explanation"]
+            df["phoenix_qa_correctness"] = qa_results["label"]
+            df["phoenix_qa_explanation"] = qa_results["explanation"]
 
             logger.info("✅ Phoenix evaluations completed")
 
@@ -476,6 +421,26 @@ class RouteEvaluator:
             logger.error(f"❌ Phoenix evaluation failed: {e}")
 
         return df
+
+    def _get_reference_answer(self, query: str) -> str:
+        """Get reference answer for QA evaluation."""
+        # Simple reference answers based on query type
+        query_lower = query.lower()
+        
+        if "new york" in query_lower and "boston" in query_lower:
+            return "Route from New York to Boston is approximately 215 miles via I-95, taking about 4-5 hours by car."
+        elif "san francisco" in query_lower and "los angeles" in query_lower:
+            return "Distance from San Francisco to Los Angeles is about 380-400 miles, taking 6-8 hours by car via Highway 101 or PCH."
+        elif "california" in query_lower and "scenic" in query_lower:
+            return "Scenic routes in California include Pacific Coast Highway (PCH), Napa Valley wine country, and Highway 1 through Big Sur."
+        elif "miami" in query_lower and "new york" in query_lower:
+            return "Flight distance from Miami to New York is approximately 1,090 miles, taking about 2.5-3 hours by air."
+        elif "colorado" in query_lower and "mountain" in query_lower:
+            return "Mountain routes in Colorado include Denver to Aspen (160 miles), I-70 through the Rockies, and scenic drives through Rocky Mountain National Park."
+        elif "chicago" in query_lower and "detroit" in query_lower:
+            return "Train travel from Chicago to Detroit is approximately 280 miles, taking about 5-6 hours by train."
+        else:
+            return "This query requires route or distance information based on the available tools."
 
     def print_summary(self, df: pd.DataFrame):
         """Print evaluation summary."""
@@ -502,7 +467,11 @@ class RouteEvaluator:
         if "phoenix_relevance" in df.columns:
             relevance_counts = df["phoenix_relevance"].value_counts()
             print(f"\n🔍 Phoenix LLM Evaluations:")
-            print(f"   Relevance scores: {dict(relevance_counts)}")
+            print(f"   Relevance: {dict(relevance_counts)}")
+            
+            if "phoenix_qa_correctness" in df.columns:
+                qa_counts = df["phoenix_qa_correctness"].value_counts()
+                print(f"   QA Correctness: {dict(qa_counts)}")
 
         if self.phoenix_session:
             print(f"\n🔗 Phoenix UI: http://localhost:6006/")
@@ -561,21 +530,9 @@ def main():
         print(f"❌ Evaluation failed: {e}")
         logger.error(f"Evaluation error: {e}")
     finally:
-        # Cleanup Phoenix session properly
+        # Cleanup Phoenix session
         if hasattr(evaluator, "cleanup_phoenix"):
             evaluator.cleanup_phoenix()
-        elif hasattr(evaluator, "phoenix_session") and evaluator.phoenix_session:
-            try:
-                # Give time for final traces to be sent
-                import time
-
-                time.sleep(1)
-
-                # Close the session
-                evaluator.phoenix_session.close()
-                logger.info("✅ Phoenix session closed")
-            except Exception as e:
-                logger.warning(f"Phoenix session cleanup warning: {e}")
 
 
 if __name__ == "__main__":

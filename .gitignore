@@ -6,6 +6,9 @@ agent-catalog/
 .agent-activity/
 .model-cache/
 
+# Arize
+*.csv
+
 # VS Code and Cursor stuff
 .vscode/
 .cursorignore
