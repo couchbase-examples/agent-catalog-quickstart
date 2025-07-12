@@ -1,797 +1,548 @@
-# #!/usr/bin/env python3
-# """
-# Arize AI Integration for Route Planner Agent Evaluation
+#!/usr/bin/env python3
+"""
+Arize Phoenix Integration for Route Planner Agent
 
-# This module provides comprehensive evaluation capabilities using Arize AI observability
-# platform for the route planner agent. It demonstrates how to:
+This script demonstrates how to use Arize Phoenix to evaluate the route planner agent
+that uses LlamaIndex with Couchbase vector store and has 2 tools:
+- search_routes: Semantic search for route information
+- calculate_distance: Calculate distance and time between locations
 
-# 1. Set up Arize observability for LlamaIndex-based agents
-# 2. Create and manage evaluation datasets for route planning scenarios
-# 3. Run automated evaluations with LLM-as-a-judge for route quality
-# 4. Track performance metrics and traces for travel planning systems
-# 5. Monitor tool usage and route optimization effectiveness
+Features:
+- Phoenix UI for trace visualization
+- LLM-based evaluation with Phoenix evaluators
+- Integration with actual route planner agent
+- Comprehensive evaluation metrics with route-specific checks
+"""
 
-# The implementation integrates with the existing Agent Catalog infrastructure
-# while extending it with Arize AI capabilities for production monitoring.
-# """
+import os
+import sys
+import logging
+import json
+from typing import List, Dict, Any
+import pandas as pd
+import warnings
+from dotenv import load_dotenv
+import time
 
-# import json
-# import os
-# import pathlib
-# import sys
-# import unittest.mock
-# import logging
-# import time
-# from typing import Dict, List
-# from uuid import uuid4
+# Don't suppress warnings - we'll fix the root causes instead
+# Import sqlalchemy to handle database reflection warnings appropriately
+try:
+    import sqlalchemy
+    import sqlalchemy.exc
+except ImportError:
+    pass
 
-# import agentc
-# import pandas as pd
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('evaluation.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
-# # Configure logging to reduce verbosity
-# logging.basicConfig(level=logging.INFO)
-# # Suppress verbose HTTP logs and embeddings
-# logging.getLogger("httpx").setLevel(logging.WARNING)
-# logging.getLogger("opentelemetry").setLevel(logging.WARNING)
-# logging.getLogger("phoenix").setLevel(logging.WARNING)
-# logging.getLogger("openai").setLevel(logging.WARNING)  # Suppress OpenAI API logs
-# logging.getLogger("llama_index").setLevel(logging.WARNING)  # Suppress LlamaIndex logs
+# Keep important third-party logs at reasonable levels but don't suppress warnings
+logging.getLogger('requests').setLevel(logging.INFO)
+logging.getLogger('urllib3').setLevel(logging.INFO)
 
-# # Configuration constants
-# SPACE_ID = os.getenv("ARIZE_SPACE_ID", "your-space-id")
-# API_KEY = os.getenv("ARIZE_API_KEY", "your-api-key")
-# # Note: Developer keys are deprecated in favor of User API Keys
-# # DEVELOPER_KEY = os.getenv("ARIZE_DEVELOPER_KEY", "your-developer-key")  # Deprecated
-# PROJECT_NAME = "route-planner-agent-evaluation"
+# Add parent directory for imports
+parent_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, parent_dir)
 
-# # Import the route planner agent components
-# sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-# from main import RouteDataLoader, CouchbaseSetup, RouteplannerAgent
-# from ground_truth import GroundTruthValidator
+# Load environment variables from multiple locations
+# Load from parent directories first (has OpenAI API key)
+load_dotenv(dotenv_path=os.path.join(parent_dir, '../../.env'))
+# Load from current directory last (has correct Couchbase config) - should take precedence
+load_dotenv(dotenv_path=os.path.join(parent_dir, '.env'), override=True)
 
-# # Try to import Arize dependencies with fallback
-# try:
-#     from arize.experimental.datasets import ArizeDatasetsClient
-#     from arize.experimental.datasets.experiments.types import (
-#         ExperimentTaskResultColumnNames,
-#         EvaluationResultColumnNames,
-#     )
-#     from arize.experimental.datasets.utils.constants import GENERATIVE
-#     from phoenix.otel import register
-#     from openinference.instrumentation.langchain import LangChainInstrumentor
-#     from openinference.instrumentation.openai import OpenAIInstrumentor
-#     from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-#     from opentelemetry import trace
-#     from opentelemetry.sdk.trace import TracerProvider
-#     from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
-#     from phoenix.evals import (
-#         QA_PROMPT_RAILS_MAP,
-#         QA_PROMPT_TEMPLATE,
-#         RAG_RELEVANCY_PROMPT_RAILS_MAP,
-#         RAG_RELEVANCY_PROMPT_TEMPLATE,
-#         OpenAIModel,
-#         llm_classify,
-#     )
-#     ARIZE_AVAILABLE = True
-# except ImportError as e:
-#     print(f"⚠️ Arize dependencies not available: {e}")
-#     print("   Running in local evaluation mode only...")
-#     ARIZE_AVAILABLE = False
-
-
-# class ArizeRoutePlannerEvaluator:
-#     """
-#     Comprehensive evaluation system for route planner agents using Arize AI.
+# Phoenix imports
+try:
+    import phoenix as px
+    from phoenix.otel import register
+    from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from phoenix.evals import (
+        OpenAIModel,
+        llm_classify,
+        RAG_RELEVANCY_PROMPT_TEMPLATE,
+        QA_PROMPT_TEMPLATE,
+    )
     
-#     This class provides:
-#     - Route planning performance evaluation with multiple metrics
-#     - Tool effectiveness monitoring (search, distance, POI, transport)
-#     - Route quality assessment and optimization tracking
-#     - Comparative analysis of different routing strategies
-#     """
+    # Import urllib3 for potential connection handling
+    import urllib3
+    
+    PHOENIX_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Phoenix dependencies not available: {e}")
+    PHOENIX_AVAILABLE = False
 
-#     def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
-#         """Initialize the Arize evaluator with Agent Catalog integration."""
-#         self.catalog = catalog
-#         self.span = span
-#         self.arize_client = None
-#         self.dataset_id = None
-#         self.tracer_provider = None
-        
-#         # Initialize ground truth validator
-#         self.ground_truth_validator = GroundTruthValidator()
-        
-#         # Initialize Arize observability if available
-#         if ARIZE_AVAILABLE:
-#             self._setup_arize_observability()
-            
-#             # Initialize evaluation models
-#             self.evaluator_llm = OpenAIModel(model="gpt-4o")
-            
-#             # Define evaluation rails
-#             self.relevance_rails = list(RAG_RELEVANCY_PROMPT_RAILS_MAP.values())
-#             self.qa_rails = list(QA_PROMPT_RAILS_MAP.values())
-#         else:
-#             print("⚠️ Arize not available - running basic evaluation only")
+# Agent imports
+try:
+    import agentc
+    from main import (
+        setup_environment,
+        setup_couchbase_connection,
+        setup_collection,
+        setup_vector_search_index,
+        setup_ai_models,
+        ingest_route_data,
+        create_llamaindex_agent
+    )
+    from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
+    from llama_index.core import Settings
+    AGENT_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Agent dependencies not available: {e}")
+    AGENT_AVAILABLE = False
 
-#     def setup_couchbase_infrastructure(self):
-#         """Setup Couchbase infrastructure for evaluation."""
-#         logger = logging.getLogger(__name__)
-        
-#         try:
-#             couchbase_setup = CouchbaseSetup()
-#             couchbase_setup.setup_environment()
-#             cluster = couchbase_setup.setup_couchbase_connection()
-#             collection = couchbase_setup.setup_bucket_scope_collection()
-#             couchbase_setup.setup_vector_search_index()
-#             logger.info("Couchbase infrastructure setup complete for evaluation")
-#             return cluster
-#         except Exception as e:
-#             logger.error(f"Error setting up Couchbase infrastructure: {e}")
-#             raise
 
-#     def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
-#         """Create a route planner agent for evaluation."""
-#         logger = logging.getLogger(__name__)
+class RouteEvaluator:
+    """Route planner agent evaluator with Phoenix integration."""
+    
+    def __init__(self):
+        """Initialize the evaluator."""
+        self.phoenix_session = None
+        self.tracer_provider = None
+        self.agent = None
+        self.evaluation_model = None
         
-#         try:
-#             agent = RouteplannerAgent(span=span)
-#             logger.info("Route planner agent created for evaluation")
-#             return agent
-#         except Exception as e:
-#             logger.error(f"Error creating agent: {e}")
-#             raise
-
-#     def _setup_arize_observability(self):
-#         """Configure Arize observability with OpenTelemetry instrumentation."""
-#         try:
-#             # Setup tracer provider for Phoenix (local only, no remote collector)
-#             # Use simple local tracer to avoid connection issues
-#             self.tracer_provider = TracerProvider()
-            
-#             # Skip console span processor to reduce verbose output
-#             # Only use it for debugging if needed
-#             # console_processor = SimpleSpanProcessor(ConsoleSpanExporter())
-#             # self.tracer_provider.add_span_processor(console_processor)
-            
-#             # Set as global tracer provider
-#             trace.set_tracer_provider(self.tracer_provider)
-            
-#             print("✅ Local tracing configured successfully")
-            
-#             # Instrument LangChain, OpenAI, and LlamaIndex (only if not already instrumented)
-#             # Skip instrumentation if auto_instrument was used or if already done
-#             instrumentors = [
-#                 ("LangChain", LangChainInstrumentor),
-#                 ("OpenAI", OpenAIInstrumentor),
-#                 # Skip LlamaIndex due to private attributes error
-#                 # ("LlamaIndex", LlamaIndexInstrumentor)
-#             ]
-            
-#             for name, instrumentor_class in instrumentors:
-#                 try:
-#                     instrumentor = instrumentor_class()
-#                     if not instrumentor.is_instrumented_by_opentelemetry:
-#                         instrumentor.instrument(tracer_provider=self.tracer_provider)
-#                         print(f"✅ {name} instrumented successfully")
-#                     else:
-#                         print(f"ℹ️ {name} already instrumented, skipping")
-#                 except Exception as e:
-#                     print(f"⚠️ {name} instrumentation failed: {e}")
-#                     continue
-                    
-#             # Skip LlamaIndex instrumentation for now due to compatibility issues
-#             print("ℹ️ LlamaIndex instrumentation skipped (compatibility issue)")
-            
-#             # Initialize Arize datasets client
-#             # Note: Using API_KEY for both parameters as developer keys are deprecated
-#             if API_KEY != "your-api-key":
-#                 try:
-#                     self.arize_client = ArizeDatasetsClient(
-#                         developer_key=API_KEY,  # Use API key for both
-#                         api_key=API_KEY
-#                     )
-#                     print("✅ Arize datasets client initialized")
-#                 except Exception as e:
-#                     print(f"⚠️ Could not initialize Arize datasets client: {e}")
-#                     self.arize_client = None
-            
-#             print("✅ Arize observability configured successfully")
-            
-#         except Exception as e:
-#             print(f"⚠️ Warning: Could not configure Arize observability: {e}")
-#             print("   Continuing with local evaluation only...")
-
-#     def run_route_planning_evaluation(self, test_inputs: List[str]) -> pd.DataFrame:
-#         """
-#         Run route planning evaluation with agent responses.
+        # SQLAlchemy warnings are handled at the database level - they're informational only
         
-#         Args:
-#             test_inputs: List of test queries to evaluate
+        # Initialize Phoenix if available
+        if PHOENIX_AVAILABLE:
+            self.setup_phoenix()
+        
+        # Initialize evaluation model
+        if os.getenv("OPENAI_API_KEY"):
+            try:
+                self.evaluation_model = OpenAIModel(
+                    model="gpt-4o",
+                    temperature=0.1
+                )
+            except Exception as e:
+                logger.warning(f"Could not initialize evaluation model: {e}")
+    
+    def setup_phoenix(self):
+        """Setup Phoenix instrumentation and launch UI."""
+        try:
+            logger.info("🔥 Setting up Phoenix instrumentation...")
             
-#         Returns:
-#             DataFrame with evaluation results
-#         """
-#         results = []
-        
-#         print(f"🚀 Running evaluation on {len(test_inputs)} queries...")
-        
-#         # Setup infrastructure once
-#         print("🔧 Setting up Couchbase infrastructure...")
-#         self.setup_couchbase_infrastructure()
-        
-#         # Create agent once
-#         print("🤖 Creating route planner agent...")
-#         agent = self.create_agent(self.catalog, self.span)
-        
-#         for i, query in enumerate(test_inputs, 1):
-#             print(f"  📝 Query {i}/{len(test_inputs)}: {query[:50]}{'...' if len(query) > 50 else ''}")
+            # Set Phoenix environment variables (proper way instead of deprecated parameters)
+            os.environ["PHOENIX_HOST"] = "0.0.0.0"
+            os.environ["PHOENIX_PORT"] = "6006"
             
-#             try:
-#                 # Get agent response
-#                 print(f"     🔄 Agent processing query (using vector search + LLM)...")
-#                 response = agent.plan_route(query)
-#                 response_text = str(response) if response else "No response"
+            # Launch Phoenix session - this starts the local Phoenix server
+            self.phoenix_session = px.launch_app()
+            
+            # Wait a moment for the server to start
+            import time
+            time.sleep(2)
+            
+            # Set up Phoenix instrumentation without external trace export
+            from phoenix.otel import register
+            from opentelemetry import trace
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+            
+            # Check if there's already a tracer provider to avoid conflicts
+            current_tracer_provider = trace.get_tracer_provider()
+            if (hasattr(current_tracer_provider, '__class__') and 
+                'TraceProvider' in str(current_tracer_provider.__class__)):
+                logger.info("🔄 Tracer provider already exists, using existing one")
+                tracer_provider = current_tracer_provider
+            else:
+                # Configure Phoenix without HTTP export (avoids 405 errors)
+                # Use the local Phoenix database instead of trying to export traces
+                tracer_provider = register(
+                    project_name="route_planner_evaluation",
+                    # Don't specify endpoint to avoid HTTP export issues
+                    set_global_tracer_provider=False  # Avoid override warning
+                )
                 
-#                 # Check if response contains route information
-#                 has_route_info = self._check_route_info(response_text)
-#                 has_directions = self._check_directions(response_text)
-#                 has_transport_info = self._check_transport_info(response_text)
-#                 has_poi_info = self._check_poi_info(response_text)
-#                 response_length = len(response_text)
+                # Set it as global tracer provider manually
+                trace.set_tracer_provider(tracer_provider)
+            
+            # Instrument LlamaIndex with Phoenix
+            from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
+            if not LlamaIndexInstrumentor().is_instrumented_by_opentelemetry:
+                LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
+            
+            logger.info("✅ Phoenix instrumentation setup complete")
+            logger.info(f"🌐 Phoenix UI available at: http://localhost:6006/")
+            
+            return True
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Phoenix setup failed (evaluation will continue): {e}")
+            return False
+    
+    def cleanup_phoenix(self):
+        """Clean up Phoenix session properly."""
+        if self.phoenix_session:
+            try:
+                # Try different cleanup methods
+                if hasattr(self.phoenix_session, 'close'):
+                    self.phoenix_session.close()
+                elif hasattr(self.phoenix_session, 'stop'):
+                    self.phoenix_session.stop()
+                elif hasattr(self.phoenix_session, 'shutdown'):
+                    self.phoenix_session.shutdown()
+                else:
+                    logger.info("Phoenix session cleanup - no explicit close method needed")
+            except Exception as e:
+                logger.warning(f"Phoenix session cleanup warning: {e}")
+            finally:
+                self.phoenix_session = None
+    
+    def setup_agent(self):
+        """Setup the route planner agent."""
+        try:
+            logger.info("🔧 Setting up route planner agent...")
+            
+            # Initialize Agent Catalog and span
+            catalog = agentc.Catalog()
+            span = catalog.Span(name="Route Planner Evaluation Setup")
+            
+            # Setup environment
+            setup_environment()
+            
+            # Setup Couchbase connection
+            cluster = setup_couchbase_connection()
+            
+            # Setup collection
+            setup_collection(
+                cluster,
+                os.environ['CB_BUCKET_NAME'],
+                os.environ['SCOPE_NAME'],
+                os.environ['COLLECTION_NAME']
+            )
+            
+            # Setup vector search index
+            try:
+                with open('agentcatalog_index.json', 'r') as file:
+                    index_definition = json.load(file)
+                setup_vector_search_index(cluster, index_definition)
+            except Exception as e:
+                logger.warning(f"⚠️ Could not setup vector search index: {e}")
+            
+            # Setup AI models
+            embed_model, llm = setup_ai_models(span)
+            
+            # Setup vector store
+            vector_store = CouchbaseSearchVectorStore(
+                cluster=cluster,
+                bucket_name=os.environ['CB_BUCKET_NAME'],
+                scope_name=os.environ['SCOPE_NAME'],
+                collection_name=os.environ['COLLECTION_NAME'],
+                index_name=os.environ['INDEX_NAME']
+            )
+            
+            # Ingest route data
+            ingest_route_data(vector_store, span)
+            
+            # Create agent
+            self.agent = create_llamaindex_agent(catalog, span)
+            
+            logger.info("✅ Route planner agent setup complete")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Agent setup failed: {e}")
+            return False
+    
+    def run_evaluation(self, test_queries: List[str]) -> pd.DataFrame:
+        """Run evaluation on test queries."""
+        logger.info(f"🧪 Running evaluation with {len(test_queries)} queries...")
+        
+        if not self.agent:
+            logger.error("❌ Agent not initialized")
+            return pd.DataFrame()
+        
+        results = []
+        
+        for i, query in enumerate(test_queries, 1):
+            logger.info(f"\n📝 Query {i}/{len(test_queries)}: {query}")
+            
+            try:
+                # Get agent response
+                response = self.agent.chat(query)
+                response_text = str(response)
                 
-#                 # Run ground truth validation
-#                 ground_truth_assessment = self.ground_truth_validator.evaluate_response_quality(query, response_text)
+                # Remove debug information to get clean response
+                response_text = self._clean_response(response_text)
                 
-#                 results.append({
-#                     "input": query,
-#                     "output": response_text,
-#                     "has_route_info": has_route_info,
-#                     "has_directions": has_directions,
-#                     "has_transport_info": has_transport_info,
-#                     "has_poi_info": has_poi_info,
-#                     "response_length": response_length,
-#                     "ground_truth_quality_score": ground_truth_assessment.get("overall_quality_score", 0.0),
-#                     "hallucination_risk": ground_truth_assessment.get("existence_validation", {}).get("hallucination_risk", False),
-#                     "appropriate_response": ground_truth_assessment.get("existence_validation", {}).get("appropriate_response", True),
-#                     "factual_accuracy_score": ground_truth_assessment.get("factual_validation", {}).get("overall_accuracy_score", 0.0),
-#                 })
+                # Create response preview
+                preview = (response_text[:150] + "...") if len(response_text) > 150 else response_text
+                logger.info(f"✅ Response ({len(response_text)} chars): {preview}")
                 
-#                 # Show what kind of info was found
-#                 route_types = []
-#                 if "distance" in response_text.lower() or "miles" in response_text.lower() or "km" in response_text.lower():
-#                     route_types.append("distance info")
-#                 if any(word in response_text.lower() for word in ["direction", "turn", "north", "south", "east", "west"]):
-#                     route_types.append("directions")
-#                 if any(word in response_text.lower() for word in ["car", "drive", "flight", "train", "bus"]):
-#                     route_types.append("transport options")
+                # Evaluate response
+                has_route_info = self._check_route_info(response_text)
+                has_distance_info = self._check_distance_info(response_text)
+                has_travel_time = self._check_travel_time(response_text)
+                appropriate_length = self._check_appropriate_length(response_text)
+                is_relevant = self._check_relevance(query, response_text)
                 
-#                 route_details = f" ({', '.join(route_types)})" if route_types else ""
-#                 print(f"     ✅ Response received ({'with route info' if has_route_info else 'no route info'}){route_details}")
+                results.append({
+                    "query": query,
+                    "response": response_text,
+                    "response_length": len(response_text),
+                    "has_route_info": has_route_info,
+                    "has_distance_info": has_distance_info,
+                    "has_travel_time": has_travel_time,
+                    "appropriate_length": appropriate_length,
+                    "is_relevant": is_relevant,
+                    "quality_score": self._calculate_quality_score(
+                        has_route_info, has_distance_info, has_travel_time, 
+                        appropriate_length, is_relevant
+                    )
+                })
                 
-#                 # Show a sample of the response for debugging
-#                 response_preview = response_text[:300].replace('\n', ' ')
-#                 print(f"     💬 Response preview: {response_preview}{'...' if len(response_text) > 300 else ''}")
+            except Exception as e:
+                logger.error(f"❌ Error processing query: {e}")
+                results.append({
+                    "query": query,
+                    "response": f"Error: {str(e)}",
+                    "response_length": 0,
+                    "has_route_info": False,
+                    "has_distance_info": False,
+                    "has_travel_time": False,
+                    "appropriate_length": False,
+                    "is_relevant": False,
+                    "quality_score": 0
+                })
+        
+        df = pd.DataFrame(results)
+        
+        # Run Phoenix LLM evaluations if available
+        if PHOENIX_AVAILABLE and self.evaluation_model:
+            df = self._run_phoenix_evaluations(df)
+        
+        return df
+    
+    def _clean_response(self, response: str) -> str:
+        """Clean response by removing debug information and excessive repetition."""
+        # Remove common debug prefixes
+        if "Answer:" in response:
+            response = response.split("Answer:")[-1].strip()
+        
+        # Handle excessive repetition more aggressively
+        # Split by sentences and look for patterns
+        sentences = response.split(". ")
+        if len(sentences) > 3:
+            # Look for the first complete sentence that's repeated
+            first_sentence = sentences[0] + "."
+            
+            # Count occurrences of first sentence
+            count = response.count(first_sentence)
+            
+            if count > 2:
+                # Find the end of the first meaningful paragraph
+                # Look for the first occurrence and keep only until next repetition
+                first_occurrence = response.find(first_sentence)
+                if first_occurrence != -1:
+                    # Find the second occurrence
+                    second_occurrence = response.find(first_sentence, first_occurrence + len(first_sentence))
+                    if second_occurrence != -1:
+                        # Keep only the content before the second occurrence
+                        response = response[:second_occurrence].strip()
+                        # Remove trailing incomplete sentences
+                        last_period = response.rfind('.')
+                        if last_period != -1:
+                            response = response[:last_period + 1]
+        
+        # Additional cleanup for common patterns
+        # Remove trailing incomplete sentences that might be cut off
+        if response.endswith(' The ') or response.endswith(' However, '):
+            last_period = response.rfind('.')
+            if last_period != -1:
+                response = response[:last_period + 1]
+        
+        return response.strip()
+    
+    def _check_route_info(self, response: str) -> bool:
+        """Check if response contains route information."""
+        route_indicators = [
+            "route", "highway", "interstate", "road", "miles", "distance",
+            "drive", "travel", "direction", "via", "through", "along"
+        ]
+        return any(indicator in response.lower() for indicator in route_indicators)
+    
+    def _check_distance_info(self, response: str) -> bool:
+        """Check if response contains distance information."""
+        distance_indicators = ["miles", "km", "kilometers", "distance", "far"]
+        return any(indicator in response.lower() for indicator in distance_indicators)
+    
+    def _check_travel_time(self, response: str) -> bool:
+        """Check if response contains travel time information."""
+        time_indicators = ["hours", "minutes", "time", "duration", "takes"]
+        return any(indicator in response.lower() for indicator in time_indicators)
+    
+    def _check_appropriate_length(self, response: str) -> bool:
+        """Check if response has appropriate length."""
+        return 50 <= len(response) <= 1000
+    
+    def _check_relevance(self, query: str, response: str) -> bool:
+        """Check if response is relevant to the query."""
+        # Extract key terms from query
+        query_terms = query.lower().split()
+        response_lower = response.lower()
+        
+        # Check if at least 30% of query terms appear in response
+        matching_terms = sum(1 for term in query_terms if term in response_lower)
+        return matching_terms >= max(1, len(query_terms) * 0.3)
+    
+    def _calculate_quality_score(self, has_route_info: bool, has_distance_info: bool, 
+                               has_travel_time: bool, appropriate_length: bool, 
+                               is_relevant: bool) -> float:
+        """Calculate overall quality score (0-10)."""
+        score = 0
+        if has_route_info: score += 2
+        if has_distance_info: score += 2
+        if has_travel_time: score += 2
+        if appropriate_length: score += 2
+        if is_relevant: score += 2
+        return score
+    
+    def _run_phoenix_evaluations(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Run Phoenix LLM evaluations."""
+        try:
+            logger.info("🧠 Running Phoenix LLM evaluations...")
+            
+            # Prepare evaluation data
+            eval_data = []
+            for _, row in df.iterrows():
+                eval_data.append({
+                    "input": row["query"],
+                    "output": row["response"],
+                    "reference": row["response"]  # Use response as reference for self-evaluation
+                })
+            
+            eval_df = pd.DataFrame(eval_data)
+            
+            # Run relevance evaluation
+            logger.info("  🔍 Evaluating relevance...")
+            relevance_results = llm_classify(
+                data=eval_df,  # Use 'data' instead of deprecated 'dataframe'
+                model=self.evaluation_model,
+                template=RAG_RELEVANCY_PROMPT_TEMPLATE,
+                rails=["relevant", "irrelevant"],
+                provide_explanation=True
+            )
+            
+            # Add results to dataframe
+            df["phoenix_relevance"] = relevance_results["label"]
+            df["phoenix_relevance_explanation"] = relevance_results["explanation"]
+            
+            logger.info("✅ Phoenix evaluations completed")
+            
+        except Exception as e:
+            logger.error(f"❌ Phoenix evaluation failed: {e}")
+        
+        return df
+    
+    def print_summary(self, df: pd.DataFrame):
+        """Print evaluation summary."""
+        total_queries = len(df)
+        successful_queries = len(df[df["quality_score"] > 0])
+        avg_quality = df["quality_score"].mean()
+        
+        print("\n" + "="*80)
+        print("📊 ARIZE PHOENIX EVALUATION SUMMARY")
+        print("="*80)
+        print(f"\n📈 Overall Results:")
+        print(f"   Total queries: {total_queries}")
+        print(f"   Successful responses: {successful_queries}/{total_queries}")
+        print(f"   Success rate: {successful_queries/total_queries*100:.1f}%")
+        print(f"   Average quality score: {avg_quality:.1f}/10")
+        
+        print(f"\n📋 Content Analysis:")
+        print(f"   Responses with route info: {df['has_route_info'].sum()}/{total_queries}")
+        print(f"   Responses with distance info: {df['has_distance_info'].sum()}/{total_queries}")
+        print(f"   Responses with travel time: {df['has_travel_time'].sum()}/{total_queries}")
+        print(f"   Appropriate length: {df['appropriate_length'].sum()}/{total_queries}")
+        print(f"   Relevant responses: {df['is_relevant'].sum()}/{total_queries}")
+        
+        if "phoenix_relevance" in df.columns:
+            relevance_counts = df["phoenix_relevance"].value_counts()
+            print(f"\n🔍 Phoenix LLM Evaluations:")
+            print(f"   Relevance scores: {dict(relevance_counts)}")
+        
+        if self.phoenix_session:
+            print(f"\n🔗 Phoenix UI: http://localhost:6006/")
+            print("   View detailed traces and evaluation results in Phoenix")
+        
+        print("="*80)
+        
+        # Save results
+        output_file = "phoenix_evaluation_results.csv"
+        df.to_csv(output_file, index=False)
+        logger.info(f"💾 Results saved to {output_file}")
+
+
+def main():
+    """Main evaluation function."""
+    print("🚀 Starting Route Planner Agent Evaluation with Arize Phoenix")
+    print("="*80)
+    
+    # Test queries focused on the 2 available tools
+    test_queries = [
+        "Find routes from New York to Boston",
+        "Calculate the driving distance from San Francisco to Los Angeles", 
+        "What are scenic routes in California?",
+        "How far is it to fly from Miami to New York?",
+        "Find mountain routes in Colorado",
+        "Calculate train travel time from Chicago to Detroit"
+    ]
+    
+    # Initialize evaluator
+    evaluator = RouteEvaluator()
+    
+    try:
+        # Setup agent
+        if not evaluator.setup_agent():
+            print("❌ Could not setup agent. Exiting.")
+            return
+        
+        # Run evaluation
+        results_df = evaluator.run_evaluation(test_queries)
+        
+        # Print summary
+        evaluator.print_summary(results_df)
+        
+        # Keep Phoenix UI running
+        if evaluator.phoenix_session:
+            print(f"\n🌟 Phoenix UI is running at: http://localhost:6006/")
+            print("Keep this window open to explore traces and evaluations.")
+            print("\nPress Enter to close Phoenix session and exit...")
+            input()
+        
+        print("✅ Evaluation completed successfully!")
+        
+    except KeyboardInterrupt:
+        print("\n⚠️ Evaluation interrupted by user")
+    except Exception as e:
+        print(f"❌ Evaluation failed: {e}")
+        logger.error(f"Evaluation error: {e}")
+    finally:
+        # Cleanup Phoenix session properly
+        if hasattr(evaluator, 'cleanup_phoenix'):
+            evaluator.cleanup_phoenix()
+        elif hasattr(evaluator, 'phoenix_session') and evaluator.phoenix_session:
+            try:
+                # Give time for final traces to be sent
+                import time
+                time.sleep(1)
                 
-#             except Exception as e:
-#                 print(f"     ❌ Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}")
-#                 error_text = f"Error: {e}"
-#                 results.append({
-#                     "input": query,
-#                     "output": error_text,
-#                     "has_route_info": False,
-#                     "has_directions": False,
-#                     "has_transport_info": False,
-#                     "has_poi_info": False,
-#                     "response_length": len(error_text),
-#                     "ground_truth_quality_score": 0.0,
-#                     "hallucination_risk": False,
-#                     "appropriate_response": False,
-#                     "factual_accuracy_score": 0.0,
-#                 })
-        
-#         return pd.DataFrame(results)
-    
-#     def _check_route_info(self, response_text: str) -> bool:
-#         """Check if response contains route-related information."""
-#         route_keywords = ["route", "distance", "travel", "miles", "km", "minutes", "hours", 
-#                          "direction", "turn", "north", "south", "east", "west",
-#                          "car", "drive", "flight", "train", "bus"]
-#         return any(keyword in response_text.lower() for keyword in route_keywords)
-    
-#     def _check_directions(self, response_text: str) -> bool:
-#         """Check if response contains directional information."""
-#         direction_keywords = ["direction", "turn", "north", "south", "east", "west", 
-#                             "left", "right", "straight", "highway", "exit", "street"]
-#         return any(keyword in response_text.lower() for keyword in direction_keywords)
-    
-#     def _check_transport_info(self, response_text: str) -> bool:
-#         """Check if response contains transportation information."""
-#         transport_keywords = ["car", "drive", "flight", "train", "bus", "subway", "walk",
-#                              "taxi", "uber", "lyft", "ferry", "bike", "transport"]
-#         return any(keyword in response_text.lower() for keyword in transport_keywords)
-    
-#     def _check_poi_info(self, response_text: str) -> bool:
-#         """Check if response contains points of interest information."""
-#         poi_keywords = ["restaurant", "hotel", "attraction", "park", "museum", "landmark",
-#                        "shopping", "gas station", "rest stop", "scenic", "tourist"]
-#         return any(keyword in response_text.lower() for keyword in poi_keywords)
-
-#     def run_arize_evaluations(self, results_df: pd.DataFrame) -> pd.DataFrame:
-#         """
-#         Run Arize LLM-based evaluations on agent responses.
-        
-#         Args:
-#             results_df: DataFrame with agent inputs and outputs
-            
-#         Returns:
-#             DataFrame with Arize evaluation scores added
-#         """
-#         if not ARIZE_AVAILABLE:
-#             print("⚠️ Arize evaluations not available - dependencies missing")
-#             return results_df
-            
-#         try:
-#             # Prepare data for evaluation - add reference field and rename columns
-#             eval_df = results_df.copy()
-#             # Use the agent's response as the reference text for evaluation
-#             # This allows the evaluator to check if the response is relevant to the query
-#             eval_df["reference"] = eval_df["output"]  # Agent response as reference
-#             eval_df["query"] = eval_df["input"]       # User query
-#             eval_df["response"] = eval_df["output"]   # Agent response (for correctness evaluation)
-            
-#             print(f"🧠 Running LLM-based evaluations on {len(eval_df)} responses...")
-#             print("   📋 Evaluation criteria:")
-#             print("      🔍 Relevance: Does the response address the route planning query?")
-#             print("      🎯 Correctness: Is the route information accurate and helpful?")
-            
-#             # Show sample evaluation data being sent
-#             print("\n   🔍 Sample evaluation data:")
-#             for i, row in eval_df.head(1).iterrows():  # Show first example
-#                 print(f"      Query: {row['query']}")
-#                 print(f"      Reference: {row['reference'][:100]}{'...' if len(row['reference']) > 100 else ''}")
-#                 print(f"      Response: {row['response'][:100]}{'...' if len(row['response']) > 100 else ''}")
-#                 break
-            
-#             # Relevance evaluation
-#             print("\n   🔍 Evaluating relevance...")
-#             relevance_eval_df = llm_classify(
-#                 data=eval_df,
-#                 template=RAG_RELEVANCY_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.relevance_rails,
-#                 provide_explanation=True,
-#                 include_prompt=False,  # Reduce output verbosity
-#                 concurrency=2,
-#                 verbose=False,  # Reduce progress bar verbosity
-#             )
-            
-#             # Correctness evaluation
-#             print("   🎯 Evaluating correctness...")
-#             correctness_eval_df = llm_classify(
-#                 data=eval_df,
-#                 template=QA_PROMPT_TEMPLATE,
-#                 model=self.evaluator_llm,
-#                 rails=self.qa_rails,
-#                 provide_explanation=True,
-#                 include_prompt=False,  # Reduce output verbosity
-#                 concurrency=2,
-#                 verbose=False,  # Reduce progress bar verbosity
-#             )
-            
-#             # Merge evaluations
-#             merged_df = results_df.copy()
-#             merged_df["arize_relevance"] = relevance_eval_df.get("label", "unknown")
-#             merged_df["arize_relevance_explanation"] = relevance_eval_df.get("explanation", "")
-#             merged_df["arize_correctness"] = correctness_eval_df.get("label", "unknown")
-#             merged_df["arize_correctness_explanation"] = correctness_eval_df.get("explanation", "")
-            
-#             # Show sample evaluation explanations
-#             print("\n   📝 Sample evaluation explanations:")
-#             for i, row in merged_df.head(2).iterrows():  # Show first 2 examples
-#                 print(f"      Query: {row['input']}")
-#                 print(f"      Relevance ({row['arize_relevance']}): {row['arize_relevance_explanation'][:200]}{'...' if len(row['arize_relevance_explanation']) > 200 else ''}")
-#                 print(f"      Correctness ({row['arize_correctness']}): {row['arize_correctness_explanation'][:200]}{'...' if len(row['arize_correctness_explanation']) > 200 else ''}")
-#                 print()
-            
-#             print("   ✅ LLM evaluations completed")
-#             return merged_df
-            
-#         except Exception as e:
-#             print(f"❌ Error running Arize evaluations: {e}")
-#             return results_df
-
-#     def evaluate_route_planning_scenarios(self) -> Dict[str, pd.DataFrame]:
-#         """
-#         Run comprehensive evaluation on different route planning scenarios.
-        
-#         Returns:
-#             Dictionary of scenario names to evaluation results
-#         """
-#         scenarios = {
-#             "basic_routing": [
-#                 "Plan a route from New York to Boston",
-#                 "How far is Los Angeles from San Francisco?",
-#                 "Best way to travel from Chicago to Detroit",
-#                 "Route from San Francisco to Los Angeles",
-#             ],
-#             "multi_stop_journeys": [
-#                 "Plan a road trip from Seattle to Portland to San Francisco",
-#                 "Route with stops in New York, Philadelphia, and Washington DC",
-#                 "Multi-city tour: Los Angeles, Las Vegas, Grand Canyon",
-#                 "Travel itinerary covering Boston, New York, and Philadelphia",
-#             ],
-#             "transportation_comparisons": [
-#                 "Compare driving vs flying from New York to Los Angeles",
-#                 "Best way to travel from Boston to Washington DC",
-#                 "Train vs car from San Francisco to Los Angeles",
-#                 "Most efficient transport from Chicago to New York",
-#             ],
-#             "scenic_routes": [
-#                 "Scenic route through Colorado",
-#                 "Beautiful drive from San Francisco to Los Angeles",
-#                 "Scenic highway from Seattle to Vancouver",
-#                 "Picturesque route through the Rocky Mountains",
-#             ],
-#             "distance_calculations": [
-#                 "How far is it from New York to Miami?",
-#                 "Distance and travel time from Los Angeles to Seattle",
-#                 "Calculate driving distance from Chicago to Houston",
-#                 "Flight distance between Boston and Los Angeles",
-#             ],
-#             "poi_discovery": [
-#                 "Points of interest between New York and Boston",
-#                 "Attractions along the route from LA to San Francisco",
-#                 "Restaurants and hotels on the way to Las Vegas",
-#                 "Tourist spots between Chicago and Detroit",
-#             ],
-#             "hallucination_tests": [
-#                 "Plan a route from Atlantis to Mars",
-#                 "How do I travel from New York to Pluto?",
-#                 "Distance from Fictional City to Imaginary Town",
-#                 "Route planning to Narnia",
-#             ],
-#             "edge_cases": [
-#                 "Route from nowhere to somewhere",
-#                 "Plan a trip to [invalid location]",
-#                 "Travel from X to Y where X and Y don't exist",
-#                 "How far is it from here to there?",
-#             ],
-#             "irrelevant_queries": [
-#                 "What's the weather like today?",
-#                 "How do I cook dinner?",
-#                 "Tell me about stock markets",
-#                 "What is quantum physics?",
-#             ],
-#         }
-        
-#         results = {}
-        
-#         for scenario_name, queries in scenarios.items():
-#             print(f"\n🚀 Evaluating scenario: {scenario_name}")
-#             print(f"   Running {len(queries)} queries...")
-            
-#             # Run route planning evaluation
-#             agent_results = self.run_route_planning_evaluation(queries)
-            
-#             # Run Arize evaluations if available
-#             if ARIZE_AVAILABLE:
-#                 evaluated_results = self.run_arize_evaluations(agent_results)
-#             else:
-#                 evaluated_results = agent_results
-            
-#             results[scenario_name] = evaluated_results
-            
-#             # Print summary
-#             total_queries = len(evaluated_results)
-#             route_info_count = sum(evaluated_results["has_route_info"])
-#             directions_count = sum(evaluated_results["has_directions"])
-#             transport_info_count = sum(evaluated_results["has_transport_info"])
-#             poi_info_count = sum(evaluated_results["has_poi_info"])
-#             hallucination_count = sum(evaluated_results["hallucination_risk"])
-#             appropriate_responses = sum(evaluated_results["appropriate_response"])
-#             avg_ground_truth_score = evaluated_results["ground_truth_quality_score"].mean()
-#             avg_factual_score = evaluated_results["factual_accuracy_score"].mean()
-            
-#             print(f"   ✅ Completed: {route_info_count}/{total_queries} queries with route info")
-#             print(f"   🧭 Directions: {directions_count}/{total_queries} queries")
-#             print(f"   🚗 Transport info: {transport_info_count}/{total_queries} queries")
-#             print(f"   📍 POI info: {poi_info_count}/{total_queries} queries")
-#             print(f"   ⚠️ Hallucination risk: {hallucination_count}/{total_queries} queries")
-#             print(f"   ✅ Appropriate responses: {appropriate_responses}/{total_queries} queries")
-#             print(f"   📊 Avg Ground Truth Score: {avg_ground_truth_score:.2f}")
-#             print(f"   📊 Avg Factual Accuracy: {avg_factual_score:.2f}")
-            
-#             if ARIZE_AVAILABLE and "arize_relevance" in evaluated_results.columns:
-#                 avg_relevance = self._calculate_average_score(evaluated_results["arize_relevance"])
-#                 avg_correctness = self._calculate_average_score(evaluated_results["arize_correctness"])
-#                 print(f"   📊 Avg Relevance: {avg_relevance:.2f}")
-#                 print(f"   📊 Avg Correctness: {avg_correctness:.2f}")
-        
-#         return results
-
-#     def _calculate_average_score(self, scores: List[str]) -> float:
-#         """Calculate average score from evaluation labels."""
-#         if not scores:
-#             return 0.0
-        
-#         # Map evaluation labels to numeric scores
-#         score_map = {
-#             "correct": 1.0,
-#             "incorrect": 0.0,
-#             "relevant": 1.0,
-#             "irrelevant": 0.0,
-#             "unknown": 0.5,
-#         }
-        
-#         numeric_scores = [score_map.get(str(score).lower(), 0.5) for score in scores]
-#         return sum(numeric_scores) / len(numeric_scores)
-
-#     def generate_evaluation_report(self, results: Dict[str, pd.DataFrame]) -> str:
-#         """
-#         Generate a comprehensive evaluation report.
-        
-#         Args:
-#             results: Dictionary of scenario results
-            
-#         Returns:
-#             Formatted evaluation report
-#         """
-#         report = []
-#         report.append("# Route Planner Agent Evaluation Report")
-#         report.append("=" * 60)
-#         report.append("")
-        
-#         total_queries = 0
-#         total_route_info = 0
-#         total_directions = 0
-#         total_transport_info = 0
-#         total_poi_info = 0
-        
-#         for scenario_name, df in results.items():
-#             report.append(f"## {scenario_name.replace('_', ' ').title()}")
-#             report.append(f"- Total Queries: {len(df)}")
-#             report.append(f"- With Route Info: {sum(df['has_route_info'])}")
-#             report.append(f"- With Directions: {sum(df['has_directions'])}")
-#             report.append(f"- With Transport Info: {sum(df['has_transport_info'])}")
-#             report.append(f"- With POI Info: {sum(df['has_poi_info'])}")
-#             report.append(f"- Success Rate: {sum(df['has_route_info']) / len(df) * 100:.1f}%")
-            
-#             # Arize metrics
-#             if ARIZE_AVAILABLE and "arize_relevance" in df.columns:
-#                 avg_relevance = self._calculate_average_score(df["arize_relevance"])
-#                 avg_correctness = self._calculate_average_score(df["arize_correctness"])
-#                 report.append(f"- Avg Relevance: {avg_relevance:.2f}")
-#                 report.append(f"- Avg Correctness: {avg_correctness:.2f}")
-            
-#             # Response quality metrics
-#             avg_response_length = df["response_length"].mean()
-#             report.append(f"- Avg Response Length: {avg_response_length:.0f} chars")
-            
-#             report.append("")
-            
-#             total_queries += len(df)
-#             total_route_info += sum(df["has_route_info"])
-#             total_directions += sum(df["has_directions"])
-#             total_transport_info += sum(df["has_transport_info"])
-#             total_poi_info += sum(df["has_poi_info"])
-        
-#         report.append("## Overall Summary")
-#         report.append(f"- Total Queries Evaluated: {total_queries}")
-#         report.append(f"- Total With Route Info: {total_route_info}")
-#         report.append(f"- Overall Success Rate: {total_route_info / total_queries * 100:.1f}%")
-#         report.append(f"- Directions Coverage: {total_directions / total_queries * 100:.1f}%")
-#         report.append(f"- Transport Info Coverage: {total_transport_info / total_queries * 100:.1f}%")
-#         report.append(f"- POI Info Coverage: {total_poi_info / total_queries * 100:.1f}%")
-#         report.append("")
-        
-#         if ARIZE_AVAILABLE and self.arize_client:
-#             report.append("## Arize AI Dashboard")
-#             report.append("View detailed traces and metrics in your Arize workspace:")
-#             report.append(f"- Project: {PROJECT_NAME}")
-#             report.append(f"- Space ID: {SPACE_ID}")
-#             report.append("")
-        
-#         return "\n".join(report)
-
-#     def log_experiment_to_arize(self, results_df: pd.DataFrame, experiment_name: str) -> str:
-#         """
-#         Log experiment results to Arize for analysis and comparison.
-        
-#         Args:
-#             results_df: DataFrame with evaluation results
-#             experiment_name: Name for the experiment
-            
-#         Returns:
-#             Experiment ID if successful, None otherwise
-#         """
-#         try:
-#             if not self.arize_client or not ARIZE_AVAILABLE:
-#                 print("⚠️ No Arize client available, skipping logging")
-#                 return None
-            
-#             # Define column mappings
-#             task_cols = ExperimentTaskResultColumnNames(
-#                 example_id="example_id",
-#                 result="output"
-#             )
-            
-#             evaluator_columns = {}
-            
-#             if "arize_relevance" in results_df.columns:
-#                 evaluator_columns["arize_relevance"] = EvaluationResultColumnNames(
-#                     label="arize_relevance",
-#                     explanation="arize_relevance_explanation",
-#                 )
-            
-#             if "arize_correctness" in results_df.columns:
-#                 evaluator_columns["arize_correctness"] = EvaluationResultColumnNames(
-#                     label="arize_correctness",
-#                     explanation="arize_correctness_explanation",
-#                 )
-            
-#             # Log experiment to Arize
-#             experiment_id = self.arize_client.log_experiment(
-#                 space_id=SPACE_ID,
-#                 experiment_name=f"{experiment_name}-{str(uuid4())[:4]}",
-#                 experiment_df=results_df,
-#                 task_columns=task_cols,
-#                 evaluator_columns=evaluator_columns,
-#                 dataset_name=f"route-planner-eval-{str(uuid4())[:8]}",
-#             )
-            
-#             print(f"✅ Logged experiment to Arize: {experiment_name}")
-#             return experiment_id
-            
-#         except Exception as e:
-#             print(f"❌ Error logging experiment to Arize: {e}")
-#             return None
+                # Close the session
+                evaluator.phoenix_session.close()
+                logger.info("✅ Phoenix session closed")
+            except Exception as e:
+                logger.warning(f"Phoenix session cleanup warning: {e}")
 
 
-# # Standalone helper functions for external use
-# def setup_couchbase_infrastructure():
-#     """Standalone function to setup Couchbase infrastructure for evaluation."""
-#     logger = logging.getLogger(__name__)
-    
-#     try:
-#         couchbase_setup = CouchbaseSetup()
-#         couchbase_setup.setup_environment()
-#         cluster = couchbase_setup.setup_couchbase_connection()
-#         collection = couchbase_setup.setup_bucket_scope_collection()
-#         couchbase_setup.setup_vector_search_index()
-#         logger.info("Couchbase infrastructure setup complete for evaluation")
-#         return cluster
-#     except Exception as e:
-#         logger.error(f"Error setting up Couchbase infrastructure: {e}")
-#         raise
-
-
-# def create_agent(catalog: agentc.Catalog, span: agentc.Span):
-#     """Standalone function to create a route planner agent for evaluation."""
-#     logger = logging.getLogger(__name__)
-    
-#     try:
-#         agent = RouteplannerAgent(span=span)
-#         logger.info("Route planner agent created for evaluation")
-#         return agent
-#     except Exception as e:
-#         logger.error(f"Error creating agent: {e}")
-#         raise
-
-
-# def eval_route_planning_basic():
-#     """Run basic route planning evaluation with a small set of test queries."""
-#     print("🔍 Running basic route planning evaluation...")
-#     print("📋 This evaluation tests:")
-#     print("   • Agent's ability to understand route planning queries")
-#     print("   • Quality of responses using vector search + LLM")
-#     print("   • LLM-based relevance and correctness scoring")
-    
-#     # Enhanced test queries for route planning with anti-hallucination checks
-#     test_inputs = [
-#         "Plan a route from New York to Boston",
-#         "How far is Los Angeles from San Francisco?", 
-#         "Best way to travel from Chicago to Detroit",
-#         "Scenic route through Colorado",
-#         # Hallucination test cases
-#         "Plan a route from Atlantis to Mars",
-#         "How do I travel from New York to Pluto?",
-#     ]
-    
-#     # Initialize evaluation components
-#     catalog = agentc.Catalog()
-#     span = catalog.Span(name="RouteplannerEvaluation")
-    
-#     evaluator = ArizeRoutePlannerEvaluator(catalog, span)
-    
-#     # Run the evaluation
-#     results_df = evaluator.run_route_planning_evaluation(test_inputs)
-    
-#     # Run Arize evaluations if available
-#     if ARIZE_AVAILABLE:
-#         results_df = evaluator.run_arize_evaluations(results_df)
-    
-#     # Calculate metrics
-#     total_queries = len(results_df)
-#     queries_with_route_info = results_df['has_route_info'].sum()
-#     success_rate = (queries_with_route_info / total_queries) * 100
-#     hallucination_count = results_df['hallucination_risk'].sum()
-#     appropriate_responses = results_df['appropriate_response'].sum()
-#     avg_ground_truth_score = results_df['ground_truth_quality_score'].mean()
-#     avg_factual_score = results_df['factual_accuracy_score'].mean()
-    
-#     # Print summary
-#     print(f"\n✅ Basic route planning evaluation completed:")
-#     print(f"   📊 Total queries processed: {total_queries}")
-#     print(f"   🎯 Queries with route info: {queries_with_route_info}")
-#     print(f"   📈 Success rate: {success_rate:.1f}%")
-#     print(f"   ⚠️ Hallucination risk detected: {hallucination_count} queries")
-#     print(f"   ✅ Appropriate responses: {appropriate_responses} queries")
-#     print(f"   📊 Avg Ground Truth Score: {avg_ground_truth_score:.2f}")
-#     print(f"   📊 Avg Factual Accuracy: {avg_factual_score:.2f}")
-    
-#     if ARIZE_AVAILABLE and 'arize_relevance' in results_df.columns:
-#         relevance_scores = results_df['arize_relevance'].value_counts()
-#         correctness_scores = results_df['arize_correctness'].value_counts()
-        
-#         # Convert to regular Python dict with int values
-#         relevance_dict = {k: int(v) for k, v in relevance_scores.items()}
-#         correctness_dict = {k: int(v) for k, v in correctness_scores.items()}
-        
-#         print(f"\n🔍 Arize Evaluation Results:")
-#         print(f"   📋 Relevance: {relevance_dict}")
-#         print(f"   ✅ Correctness: {correctness_dict}")
-    
-#     print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
-    
-#     return results_df
-
-
-# def eval_route_planning_comprehensive():
-#     """
-#     Run comprehensive evaluation across all route planning scenarios.
-    
-#     This function provides a complete evaluation suite that tests the
-#     agent across different types of route planning queries and use cases.
-#     """
-#     print("🚀 Starting comprehensive route planner agent evaluation...")
-    
-#     # Initialize Agent Catalog
-#     catalog = agentc.Catalog()
-#     root_span = catalog.Span(name="RoutePlannerComprehensiveEval")
-    
-#     # Initialize evaluator
-#     evaluator = ArizeRoutePlannerEvaluator(catalog=catalog, span=root_span)
-    
-#     # Run comprehensive evaluation
-#     results = evaluator.evaluate_route_planning_scenarios()
-    
-#     # Generate report
-#     report = evaluator.generate_evaluation_report(results)
-    
-#     # Save report
-#     report_file = pathlib.Path("evals") / "route_planner_evaluation_report.md"
-#     with report_file.open("w") as f:
-#         f.write(report)
-    
-#     print(f"✅ Comprehensive evaluation completed!")
-#     print(f"   📊 Report saved to: {report_file}")
-#     print("\n" + "=" * 60)
-#     print(report)
-
-
-# if __name__ == "__main__":
-#     import sys
-    
-#     # Check if specific evaluation is requested
-#     if len(sys.argv) > 1:
-#         if sys.argv[1] == "basic":
-#             eval_route_planning_basic()
-#         elif sys.argv[1] == "comprehensive":
-#             eval_route_planning_comprehensive()
-#         else:
-#             print("Usage: python eval_arize.py [basic|comprehensive]")
-#     else:
-#         # Run comprehensive evaluation by default
-#         print("🔍 Running comprehensive route planner agent evaluation...")
-#         eval_route_planning_comprehensive()
+if __name__ == "__main__":
+    main()

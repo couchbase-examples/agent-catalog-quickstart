@@ -10,7 +10,7 @@ requires-python = ">=3.12,<3.13"
 
 dependencies = [
     # LlamaIndex core and integrations
-    "llama-index>=0.12.37,<0.13.0",
+    "llama-index>=0.12.0,<0.12.30",
     "llama-index-vector-stores-couchbase>=0.4.0,<0.5.0",
     "llama-index-embeddings-openai>=0.3.1,<0.4.0",
     "llama-index-llms-openai-like>=0.3.5,<0.4.0",
@@ -38,7 +38,8 @@ dependencies = [
     "openinference-instrumentation>=0.1.32,<0.2.0",
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",
     "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
-    "openinference-instrumentation-llama-index>=2.0.0,<3.0.0",
+    "openinference-instrumentation-llama-index>=4.0.0,<5.0.0",
+    "pysocks (>=1.7.1,<2.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -55,6 +56,10 @@ analysis = [
 
 [tool.poetry]
 package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+arize-phoenix = "^11.6.2"
+pydantic = "^2.11.7"
 
 [build-system]
 requires = ["poetry-core"]
