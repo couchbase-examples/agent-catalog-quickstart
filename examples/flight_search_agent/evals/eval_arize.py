@@ -472,7 +472,7 @@ class ArizeFlightSearchEvaluator:
                 # Use llm_classify for individual evaluations with proper templates
                 if eval_name == 'relevance':
                     eval_results = llm_classify(
-                        dataframe=eval_df[["input", "reference"]],
+                        data=eval_df[["input", "reference"]],
                         model=self.evaluator_llm,
                         template=RAG_RELEVANCY_PROMPT_TEMPLATE,
                         rails=self.relevance_rails,
@@ -480,7 +480,7 @@ class ArizeFlightSearchEvaluator:
                     )
                 elif eval_name == 'qa':
                     eval_results = llm_classify(
-                        dataframe=eval_df[["input", "output", "reference"]],
+                        data=eval_df[["input", "output", "reference"]],
                         model=self.evaluator_llm,
                         template=QA_PROMPT_TEMPLATE,
                         rails=self.qa_rails,
@@ -488,7 +488,7 @@ class ArizeFlightSearchEvaluator:
                     )
                 elif eval_name == 'hallucination':
                     eval_results = llm_classify(
-                        dataframe=eval_df[["input", "reference", "output"]],
+                        data=eval_df[["input", "reference", "output"]],
                         model=self.evaluator_llm,
                         template=HALLUCINATION_PROMPT_TEMPLATE,
                         rails=self.hallucination_rails,
@@ -496,7 +496,7 @@ class ArizeFlightSearchEvaluator:
                     )
                 elif eval_name == 'toxicity':
                     eval_results = llm_classify(
-                        dataframe=eval_df[["input"]],
+                        data=eval_df[["input"]],
                         model=self.evaluator_llm,
                         template=TOXICITY_PROMPT_TEMPLATE,
                         rails=self.toxicity_rails,
@@ -552,7 +552,9 @@ class ArizeFlightSearchEvaluator:
                         "success": row["success"],
                         "quality_score": row["quality_score"],
                         "arize_relevance": row.get("arize_relevance", "unknown"),
-                        "arize_correctness": row.get("arize_correctness", "unknown"),
+                        "arize_qa": row.get("arize_qa", "unknown"),
+                        "arize_hallucination": row.get("arize_hallucination", "unknown"),
+                        "arize_toxicity": row.get("arize_toxicity", "unknown"),
                     }
                 )
 
@@ -643,11 +645,23 @@ class ArizeFlightSearchEvaluator:
         # Arize results if available
         if "arize_relevance" in results_df.columns:
             relevance_counts = results_df["arize_relevance"].value_counts()
-            correctness_counts = results_df["arize_correctness"].value_counts()
-
             logger.info(f"\n🔍 Arize LLM Evaluation Results:")
             logger.info(f"   📋 Relevance: {dict(relevance_counts)}")
-            logger.info(f"   ✅ Correctness: {dict(correctness_counts)}")
+            
+            # Check for QA (correctness) results
+            if "arize_qa" in results_df.columns:
+                qa_counts = results_df["arize_qa"].value_counts()
+                logger.info(f"   ✅ QA/Correctness: {dict(qa_counts)}")
+            
+            # Check for hallucination results
+            if "arize_hallucination" in results_df.columns:
+                hallucination_counts = results_df["arize_hallucination"].value_counts()
+                logger.info(f"   🚨 Hallucination: {dict(hallucination_counts)}")
+            
+            # Check for toxicity results  
+            if "arize_toxicity" in results_df.columns:
+                toxicity_counts = results_df["arize_toxicity"].value_counts()
+                logger.info(f"   ☠️  Toxicity: {dict(toxicity_counts)}")
 
         # Dataset info
         if dataset_id:
