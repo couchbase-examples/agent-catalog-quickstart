@@ -53,15 +53,7 @@ from main import (
     clear_collection_data,
 )
 
-# Import necessary dependencies for CouchbaseSetup
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import Cluster
-from couchbase.management.buckets import CreateBucketSettings
-from couchbase.management.search import SearchIndex
-from couchbase.options import ClusterOptions
-from couchbase.exceptions import CouchbaseException
-from datetime import timedelta
-import time
+# Couchbase imports removed - using functions from main.py instead
 
 # Try to import Arize dependencies with fallback
 try:
@@ -93,173 +85,7 @@ except ImportError as e:
     ARIZE_AVAILABLE = False
 
 
-class CouchbaseSetup:
-    """Handle Couchbase cluster setup and configuration for hotel support evaluation."""
-
-    def __init__(self):
-        self.cluster = None
-        self.collection = None
-        self.logger = logging.getLogger(__name__)
-
-    def setup_environment(self):
-        """Setup required environment variables."""
-        required_vars = [
-            "OPENAI_API_KEY",
-            "CB_HOST",
-            "CB_USERNAME",
-            "CB_PASSWORD",
-            "CB_BUCKET_NAME",
-        ]
-
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
-        if missing_vars:
-            # Set defaults for missing variables
-            defaults = {
-                "CB_HOST": "couchbase://localhost",
-                "CB_USERNAME": "Administrator",
-                "CB_PASSWORD": "password",
-                "CB_BUCKET_NAME": "vector-search-testing",
-            }
-
-            for var in missing_vars:
-                if var in defaults:
-                    os.environ[var] = defaults[var]
-                    self.logger.info(f"Set default for {var}: {defaults[var]}")
-
-        # Set defaults for optional variables
-        if not os.getenv("INDEX_NAME"):
-            os.environ["INDEX_NAME"] = "vector_search_agentcatalog"
-        if not os.getenv("SCOPE_NAME"):
-            os.environ["SCOPE_NAME"] = "shared"
-        if not os.getenv("COLLECTION_NAME"):
-            os.environ["COLLECTION_NAME"] = "agentcatalog"
-
-        self.logger.info(f"Using Couchbase connection: {os.getenv('CB_HOST')}")
-        self.logger.info(f"Using bucket: {os.getenv('CB_BUCKET_NAME')}")
-        self.logger.info(f"Using scope: {os.getenv('SCOPE_NAME')}")
-        self.logger.info(f"Using collection: {os.getenv('COLLECTION_NAME')}")
-        self.logger.info(f"Using index: {os.getenv('INDEX_NAME')}")
-
-    def setup_couchbase_connection(self):
-        """Setup Couchbase cluster connection."""
-        try:
-            auth = PasswordAuthenticator(
-                os.environ["CB_USERNAME"], os.environ["CB_PASSWORD"]
-            )
-            options = ClusterOptions(auth)
-            self.cluster = Cluster(os.environ["CB_HOST"], options)
-            self.cluster.wait_until_ready(timedelta(seconds=10))
-            self.logger.info("Successfully connected to Couchbase cluster")
-            return self.cluster
-        except CouchbaseException as e:
-            raise ConnectionError(f"Failed to connect to Couchbase: {e}")
-
-    def setup_bucket_scope_collection(self):
-        """Setup bucket, scope, and collection."""
-        try:
-            bucket_name = os.environ["CB_BUCKET_NAME"]
-            scope_name = os.environ["SCOPE_NAME"]
-            collection_name = os.environ["COLLECTION_NAME"]
-
-            # Check bucket
-            try:
-                bucket = self.cluster.bucket(bucket_name)
-                self.logger.info(f"Bucket '{bucket_name}' exists")
-            except Exception:
-                self.logger.info(f"Creating bucket '{bucket_name}'...")
-                bucket_settings = CreateBucketSettings(
-                    name=bucket_name,
-                    bucket_type="couchbase",
-                    ram_quota_mb=1024,
-                    flush_enabled=True,
-                    num_replicas=0,
-                )
-                self.cluster.buckets().create_bucket(bucket_settings)
-                time.sleep(5)
-                bucket = self.cluster.bucket(bucket_name)
-                self.logger.info(f"Bucket '{bucket_name}' created successfully")
-
-            # Setup scope and collection
-            bucket_manager = bucket.collections()
-
-            scopes = bucket_manager.get_all_scopes()
-            scope_exists = any(scope.name == scope_name for scope in scopes)
-
-            if not scope_exists and scope_name != "_default":
-                self.logger.info(f"Creating scope '{scope_name}'...")
-                bucket_manager.create_scope(scope_name)
-                self.logger.info(f"Scope '{scope_name}' created successfully")
-
-            collections = bucket_manager.get_all_scopes()
-            collection_exists = any(
-                scope.name == scope_name
-                and collection_name in [col.name for col in scope.collections]
-                for scope in collections
-            )
-
-            if not collection_exists:
-                self.logger.info(f"Creating collection '{collection_name}'...")
-                bucket_manager.create_collection(scope_name, collection_name)
-                self.logger.info(f"Collection '{collection_name}' created successfully")
-
-            self.collection = bucket.scope(scope_name).collection(collection_name)
-            time.sleep(3)
-
-            # Create primary index
-            try:
-                self.cluster.query(
-                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
-                ).execute()
-                self.logger.info("Primary index created successfully")
-            except Exception as e:
-                self.logger.warning(f"Error creating primary index: {e}")
-
-            return self.collection
-
-        except Exception as e:
-            raise RuntimeError(f"Error setting up bucket/scope/collection: {e}")
-
-    def setup_vector_search_index(self):
-        """Setup vector search index."""
-        try:
-            # Load index definition from agentcatalog_index.json
-            index_file = "agentcatalog_index.json"
-
-            # Look for the index file in the current directory
-            if not os.path.exists(index_file):
-                # Try looking in the parent directory
-                parent_dir = os.path.dirname(os.path.dirname(__file__))
-                index_file = os.path.join(parent_dir, "agentcatalog_index.json")
-
-            if os.path.exists(index_file):
-                with open(index_file, "r") as f:
-                    index_definition = json.load(f)
-
-                scope_index_manager = (
-                    self.cluster.bucket(os.environ["CB_BUCKET_NAME"])
-                    .scope(os.environ["SCOPE_NAME"])
-                    .search_indexes()
-                )
-
-                existing_indexes = scope_index_manager.get_all_indexes()
-                index_name = index_definition["name"]
-
-                if index_name not in [index.name for index in existing_indexes]:
-                    self.logger.info(f"Creating vector search index '{index_name}'...")
-                    search_index = SearchIndex.from_json(index_definition)
-                    scope_index_manager.upsert_index(search_index)
-                    self.logger.info(
-                        f"Vector search index '{index_name}' created successfully"
-                    )
-                else:
-                    self.logger.info(
-                        f"Vector search index '{index_name}' already exists"
-                    )
-            else:
-                self.logger.warning(f"Index definition file {index_file} not found")
-
-        except Exception as e:
-            self.logger.error(f"Error setting up vector search index: {e}")
+# CouchbaseSetup class removed - now using functions imported from main.py instead of duplicating code
 
 
 class ArizeHotelSupportEvaluator:
@@ -295,23 +121,47 @@ class ArizeHotelSupportEvaluator:
             print("⚠️ Arize not available - running basic evaluation only")
 
     def setup_couchbase_infrastructure(self):
-        """Setup Couchbase infrastructure for evaluation."""
+        """Setup Couchbase infrastructure for evaluation using functions from main.py."""
         logger = logging.getLogger(__name__)
 
         try:
-            couchbase_setup = CouchbaseSetup()
-            couchbase_setup.setup_environment()
-            cluster = couchbase_setup.setup_couchbase_connection()
-            collection = couchbase_setup.setup_bucket_scope_collection()
-            couchbase_setup.setup_vector_search_index()
+            # Use imported functions from main.py instead of duplicated CouchbaseSetup class
+            logger.info("🔧 Setting up environment...")
+            setup_environment()
+            
+            logger.info("🔧 Connecting to Couchbase...")
+            cluster = setup_couchbase_connection()
+            
+            logger.info("🔧 Setting up collection...")
+            collection = setup_collection(
+                cluster,
+                os.environ['CB_BUCKET_NAME'], 
+                os.environ['SCOPE_NAME'], 
+                os.environ['COLLECTION_NAME']
+            )
+            
+            # Load index definition for vector search setup
+            index_file = "agentcatalog_index.json"
+            if not os.path.exists(index_file):
+                parent_dir = os.path.dirname(os.path.dirname(__file__))
+                index_file = os.path.join(parent_dir, "agentcatalog_index.json")
+            
+            if os.path.exists(index_file):
+                logger.info("🔧 Setting up vector search index...")
+                with open(index_file, "r") as f:
+                    index_definition = json.load(f)
+                setup_vector_search_index(cluster, index_definition)
+            else:
+                logger.warning(f"Index definition file {index_file} not found")
 
-            # Setup vector store using the existing method
+            # Setup vector store using the imported method
+            logger.info("🔧 Setting up vector store...")
             vector_store = setup_vector_store(cluster)
 
-            logger.info("Couchbase infrastructure setup complete for evaluation")
+            logger.info("✅ Couchbase infrastructure setup complete for evaluation")
             return cluster, vector_store
         except Exception as e:
-            logger.error(f"Error setting up Couchbase infrastructure: {e}")
+            logger.error(f"❌ Error setting up Couchbase infrastructure: {e}")
             raise
 
     def create_agent(self, catalog: agentc.Catalog, span: agentc.Span):
