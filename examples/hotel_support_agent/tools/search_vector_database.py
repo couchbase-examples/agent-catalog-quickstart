@@ -62,7 +62,7 @@ def search_vector_database(query: str) -> str:
         # Get fresh cluster connection
         cluster = get_cluster_connection()
         if not cluster:
-            return "Could not connect to database. Please try again later."
+            return "Database connection failed. Please try again or contact support for assistance."
         
         # Use Capella AI embeddings to match the data loading embeddings
         try:
@@ -75,7 +75,7 @@ def search_vector_database(query: str) -> str:
             else:
                 raise Exception("Capella credentials not available")
         except Exception as e:
-            raise RuntimeError(f"⚠️ Capella AI not available {str(e)}")
+            return f"Search service unavailable: {str(e)}. Please try again later."
         
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
@@ -86,47 +86,41 @@ def search_vector_database(query: str) -> str:
             index_name=os.environ.get('CB_INDEX', 'hotel_data_index'),
         )
         
-        # Search with filter to ensure we only get hotel data
+        # Search without filter to avoid issues, get more results initially
         try:
-            search_results = vector_store.similarity_search_with_score(
-                query, 
-                k=10,
-                filter={"type": "hotel", "source": "hotel_data"}
-            )
-        except Exception as filter_error:
-            # Fallback to unfiltered search if filter fails
             search_results = vector_store.similarity_search_with_score(query, k=10)
+        except Exception as search_error:
+            return f"Search failed: {str(search_error)}. Please try again with different terms."
         
         if not search_results:
-            return "No hotels found matching your criteria. Please try a different search query."
+            return f"No hotels found matching '{query}'. Please try broader search terms or different locations."
         
-        # Deduplicate results based on content
-        seen_content = set()
+        # Remove duplicates and get unique hotels
         unique_results = []
+        seen_hotels = set()
         
         for doc, score in search_results:
-            content = doc.page_content.strip()
-            if content not in seen_content:
-                seen_content.add(content)
+            hotel_content = doc.page_content
+            # Use first part of content as identifier to avoid duplicates
+            hotel_identifier = hotel_content.split('.')[0]
+            
+            if hotel_identifier not in seen_hotels:
                 unique_results.append((doc, score))
+                seen_hotels.add(hotel_identifier)
                 
-                # Limit to top 3 unique results for cleaner output
-                if len(unique_results) >= 3:
-                    break
+            # Stop at 3 unique results for simplicity
+            if len(unique_results) >= 3:
+                break
         
-        # Format results with clear separators and numbering
-        formatted_results = []
-        for i, (doc, score) in enumerate(unique_results, 1):
-            result_text = f"""HOTEL {i}:
-Match Score: {score:.3f}
-Hotel Details: {doc.page_content}
-{'='*60}"""
-            formatted_results.append(result_text)
-        
-        # Add summary at the end
-        summary = f"\nSEARCH SUMMARY: Found {len(unique_results)} unique hotels matching your criteria."
-        
-        return "\n\n".join(formatted_results) + summary
+        # Simple, clean format - no confusing guidance text
+        if len(unique_results) == 1:
+            return f"Found 1 hotel:\n\n{unique_results[0][0].page_content}"
+        else:
+            formatted_results = []
+            for i, (doc, score) in enumerate(unique_results, 1):
+                formatted_results.append(f"Hotel {i}: {doc.page_content}")
+            
+            return f"Found {len(unique_results)} hotels:\n\n" + "\n\n".join(formatted_results)
         
     except Exception as e:
-        raise RuntimeError(f"Failed to search hotel database: {str(e)}")
+        return f"Search error: {str(e)}. Please try again with different search terms."

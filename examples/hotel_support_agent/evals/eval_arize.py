@@ -259,12 +259,13 @@ class ArizeHotelSupportEvaluator:
             # Create ReAct agent
             agent = create_react_agent(llm, tools, custom_prompt)
             agent_executor = AgentExecutor(
-                agent=agent,
-                tools=tools,
-                verbose=True,
+                agent=agent, 
+                tools=tools, 
+                verbose=True, 
                 handle_parsing_errors=True,
-                max_iterations=5,
-                return_intermediate_steps=True,
+                max_iterations=3,  # Reduced from 10 to 3 to prevent infinite loops
+                max_execution_time=30,  # Add execution timeout
+                return_intermediate_steps=True
             )
 
             logger.info("Hotel support agent created for evaluation")
