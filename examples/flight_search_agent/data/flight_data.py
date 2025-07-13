@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Comprehensive Flight Data for Vector Search Ingestion
+Simplified Flight Data for Vector Search Ingestion
 
-Enhanced flight data covering policies, routes, schedules, and booking information.
-This data will be used to populate the vector database for semantic search in the flight search agent.
+Only contains flight policies as per project requirements.
+Flight routes are sourced from travel-sample.inventory.route database.
+Flight bookings are handled by save_flight_booking.py tool.
 """
 
-# Flight Policy Documents
+# Flight Policy Documents (ONLY data we keep as mock)
 FLIGHT_POLICIES = [
     {
         "policy_id": "CANCEL_001",
@@ -38,348 +39,167 @@ FLIGHT_POLICIES = [
         "category": "weather",
         "content": """Weather-related delays and cancellations are considered extraordinary circumstances beyond airline control. Passengers are rebooked on next available flight at no additional cost. Hotel accommodations not provided for weather delays, but airport vouchers may be issued for extended delays. Travel insurance recommended to cover weather-related expenses. Real-time flight status updates provided via app, email, and SMS.""",
     },
-]
-
-# Flight Route and Schedule Data
-FLIGHT_ROUTES = [
     {
-        "route_id": "NYC_LAX_001",
-        "departure_airport": "JFK",
-        "departure_city": "New York",
-        "arrival_airport": "LAX",
-        "arrival_city": "Los Angeles",
-        "airline": "American Airlines",
-        "flight_number": "AA123",
-        "aircraft_type": "Boeing 777-200",
-        "duration_hours": 6.5,
-        "distance_miles": 2475,
-        "departure_times": ["06:00", "12:30", "18:45"],
-        "frequency": "Daily",
-        "price_economy": 299,
-        "price_business": 899,
-        "price_first": 1499,
+        "policy_id": "UPGRADE_001",
+        "title": "Flight Upgrade and Change Policy",
+        "category": "upgrade",
+        "content": """Flight upgrades available based on availability and passenger status. Elite members receive complimentary upgrades 24-72 hours before departure. Paid upgrades can be purchased at booking, check-in, or at the gate. Change fees apply: $200 domestic, $400 international for economy tickets. Same-day changes available for $75 fee. Premium class tickets allow free changes up to 24 hours before departure.""",
     },
     {
-        "route_id": "LAX_NYC_001",
-        "departure_airport": "LAX",
-        "departure_city": "Los Angeles",
-        "arrival_airport": "JFK",
-        "arrival_city": "New York",
-        "airline": "Delta Airlines",
-        "flight_number": "DL456",
-        "aircraft_type": "Airbus A330-300",
-        "duration_hours": 5.5,
-        "distance_miles": 2475,
-        "departure_times": ["08:15", "14:20", "20:10"],
-        "frequency": "Daily",
-        "price_economy": 319,
-        "price_business": 949,
-        "price_first": 1599,
+        "policy_id": "SPECIAL_001",
+        "title": "Special Assistance and Medical Equipment",
+        "category": "special_assistance",
+        "content": """Special assistance available for passengers with disabilities, unaccompanied minors, and medical needs. Wheelchair assistance provided free of charge with advance notice. Medical equipment like CPAP machines, oxygen concentrators allowed with proper documentation. Service animals travel free in cabin. Emotional support animals require advance approval and documentation. Medical prescriptions exempt from liquid restrictions.""",
     },
     {
-        "route_id": "SFO_CHI_001",
-        "departure_airport": "SFO",
-        "departure_city": "San Francisco",
-        "arrival_airport": "ORD",
-        "arrival_city": "Chicago",
-        "airline": "United Airlines",
-        "flight_number": "UA789",
-        "aircraft_type": "Boeing 737-800",
-        "duration_hours": 4.5,
-        "distance_miles": 1846,
-        "departure_times": ["07:30", "13:45", "19:00"],
-        "frequency": "Daily",
-        "price_economy": 249,
-        "price_business": 649,
-        "price_first": 1049,
-    },
-    {
-        "route_id": "MIA_ATL_001",
-        "departure_airport": "MIA",
-        "departure_city": "Miami",
-        "arrival_airport": "ATL",
-        "arrival_city": "Atlanta",
-        "airline": "Delta Airlines",
-        "flight_number": "DL234",
-        "aircraft_type": "Boeing 757-200",
-        "duration_hours": 2.5,
-        "distance_miles": 594,
-        "departure_times": ["09:00", "15:30", "21:15"],
-        "frequency": "Daily",
-        "price_economy": 159,
-        "price_business": 399,
-        "price_first": 699,
-    },
-    {
-        "route_id": "SEA_DEN_001",
-        "departure_airport": "SEA",
-        "departure_city": "Seattle",
-        "arrival_airport": "DEN",
-        "arrival_city": "Denver",
-        "airline": "Southwest Airlines",
-        "flight_number": "WN567",
-        "aircraft_type": "Boeing 737-700",
-        "duration_hours": 2.75,
-        "distance_miles": 1024,
-        "departure_times": ["10:45", "16:20"],
-        "frequency": "Daily",
-        "price_economy": 179,
-        "price_business": 299,
-        "price_first": 499,
-    },
-]
-
-# Airline Information
-AIRLINES = [
-    {
-        "airline_code": "AA",
-        "airline_name": "American Airlines",
-        "hub_airports": ["DFW", "CLT", "PHX", "MIA"],
-        "alliance": "Oneworld",
-        "baggage_policy": "First bag $35 domestic, $60 international",
-        "cancellation_policy": "24-hour free cancellation, $200 domestic/$400 international fee after",
-        "fleet_size": 950,
-        "destinations": 350,
-    },
-    {
-        "airline_code": "DL",
-        "airline_name": "Delta Airlines",
-        "hub_airports": ["ATL", "DTW", "MSP", "SEA"],
-        "alliance": "SkyTeam",
-        "baggage_policy": "First bag $35 domestic, $60 international",
-        "cancellation_policy": "24-hour free cancellation, $200 domestic/$400 international fee after",
-        "fleet_size": 900,
-        "destinations": 325,
-    },
-    {
-        "airline_code": "UA",
-        "airline_name": "United Airlines",
-        "hub_airports": ["ORD", "IAH", "EWR", "SFO"],
-        "alliance": "Star Alliance",
-        "baggage_policy": "First bag $35 domestic, $60 international",
-        "cancellation_policy": "24-hour free cancellation, $200 domestic/$400 international fee after",
-        "fleet_size": 850,
-        "destinations": 340,
-    },
-    {
-        "airline_code": "WN",
-        "airline_name": "Southwest Airlines",
-        "hub_airports": ["DAL", "BWI", "MDW", "PHX"],
-        "alliance": "None",
-        "baggage_policy": "First two bags free",
-        "cancellation_policy": "No cancellation fees, credit valid for 12 months",
-        "fleet_size": 800,
-        "destinations": 120,
-    },
-]
-
-# Airport Information
-AIRPORTS = [
-    {
-        "airport_code": "JFK",
-        "airport_name": "John F. Kennedy International Airport",
-        "city": "New York",
-        "state": "NY",
-        "country": "USA",
-        "timezone": "EST",
-        "terminals": 6,
-        "airlines": ["AA", "DL", "UA", "B6", "AF"],
-        "amenities": ["WiFi", "Restaurants", "Shops", "Lounges", "Hotels"],
-    },
-    {
-        "airport_code": "LAX",
-        "airport_name": "Los Angeles International Airport",
-        "city": "Los Angeles",
-        "state": "CA",
-        "country": "USA",
-        "timezone": "PST",
-        "terminals": 9,
-        "airlines": ["AA", "DL", "UA", "WN", "AS"],
-        "amenities": ["WiFi", "Restaurants", "Shops", "Lounges", "Hotels"],
-    },
-    {
-        "airport_code": "ORD",
-        "airport_name": "O'Hare International Airport",
-        "city": "Chicago",
-        "state": "IL",
-        "country": "USA",
-        "timezone": "CST",
-        "terminals": 4,
-        "airlines": ["UA", "AA", "DL", "WN"],
-        "amenities": ["WiFi", "Restaurants", "Shops", "Lounges", "Hotels"],
-    },
-]
-
-# Booking and Travel Information
-BOOKING_CLASSES = [
-    {
-        "class_code": "Y",
-        "class_name": "Economy",
-        "description": "Standard seating with basic amenities",
-        "baggage_allowance": "1 carry-on, 1 personal item",
-        "meal_service": "Purchase required on most flights",
-        "seat_selection": "Fee required for preferred seats",
-        "changes_allowed": "Yes, with fees",
-        "upgrades_available": "Yes, subject to availability",
-    },
-    {
-        "class_code": "W",
-        "class_name": "Premium Economy",
-        "description": "Enhanced economy with extra legroom and priority boarding",
-        "baggage_allowance": "1 carry-on, 1 personal item, priority handling",
-        "meal_service": "Complimentary snacks and beverages",
-        "seat_selection": "Included in fare",
-        "changes_allowed": "Yes, reduced fees",
-        "upgrades_available": "Yes, to business class",
-    },
-    {
-        "class_code": "J",
-        "class_name": "Business Class",
-        "description": "Premium cabin with lie-flat seats and enhanced service",
-        "baggage_allowance": "2 carry-on, 2 checked bags free",
-        "meal_service": "Multi-course meals with wine service",
-        "seat_selection": "Included, priority seating",
-        "changes_allowed": "Yes, minimal or no fees",
-        "upgrades_available": "Yes, to first class",
-    },
-    {
-        "class_code": "F",
-        "class_name": "First Class",
-        "description": "Luxury cabin with private suites and concierge service",
-        "baggage_allowance": "3 carry-on, 3 checked bags free",
-        "meal_service": "Gourmet dining with premium beverages",
-        "seat_selection": "Included, best available seats",
-        "changes_allowed": "Yes, no fees",
-        "upgrades_available": "None, highest class",
-    },
+        "policy_id": "LOYALTY_001",
+        "title": "Frequent Flyer and Elite Benefits",
+        "category": "loyalty",
+        "content": """Frequent flyer program offers miles for flights, upgrades, and partner purchases. Elite status levels: Silver (25k miles), Gold (50k miles), Platinum (75k miles), Diamond (100k miles). Benefits include priority boarding, free checked bags, seat upgrades, and lounge access. Miles expire after 24 months of inactivity. Elite members receive bonus miles and priority customer service.""",
+    }
 ]
 
 
+def get_flight_policies():
+    """Return flight policies for vector search ingestion."""
+    return FLIGHT_POLICIES
+
+
+def get_policy_by_category(category):
+    """Get policies by category (e.g., 'baggage', 'cancellation')."""
+    return [policy for policy in FLIGHT_POLICIES if policy["category"] == category]
+
+
+def get_policy_by_id(policy_id):
+    """Get a specific policy by ID."""
+    for policy in FLIGHT_POLICIES:
+        if policy["policy_id"] == policy_id:
+            return policy
+    return None
+
+
+def search_policies(query_text):
+    """Simple text search in policy content."""
+    results = []
+    query_lower = query_text.lower()
+    
+    for policy in FLIGHT_POLICIES:
+        if (query_lower in policy["title"].lower() or 
+            query_lower in policy["content"].lower() or 
+            query_lower in policy["category"].lower()):
+            results.append(policy)
+    
+    return results
+
+
+# Legacy function for compatibility (now returns only policies)
 def get_all_flight_data():
     """Return all flight-related data for vector search ingestion."""
-    all_data = []
+    return {
+        "policies": FLIGHT_POLICIES,
+        "routes": [],  # Now sourced from travel-sample database
+        "bookings": []  # Now handled by booking tools
+    }
 
-    # Add policies
-    for policy in FLIGHT_POLICIES:
-        all_data.append(
-            {
-                "type": "policy",
-                "id": policy["policy_id"],
+
+def load_flight_policies_to_couchbase(cluster, bucket_name, scope_name, collection_name, embeddings, index_name=None):
+    """Load flight policies into Couchbase vector store.
+    
+    Args:
+        cluster: Connected Couchbase cluster
+        bucket_name: Name of the bucket
+        scope_name: Name of the scope
+        collection_name: Name of the collection
+        embeddings: Configured embeddings model
+        index_name: Optional index name (defaults to collection_name + '_index')
+    """
+    from langchain_couchbase.vectorstores import CouchbaseVectorStore
+    import time
+    
+    if not index_name:
+        index_name = f"{collection_name}_index"
+    
+    print(f"Loading flight policies to {bucket_name}.{scope_name}.{collection_name}")
+    
+    def add_documents_with_retry(vector_store, texts, metadatas, max_retries=3, batch_size=3):
+        """Add documents with retry logic and batching to handle timeouts."""
+        total_docs = len(texts)
+        successful_docs = 0
+        
+        # Process in smaller batches to avoid timeouts
+        for i in range(0, total_docs, batch_size):
+            batch_texts = texts[i:i + batch_size]
+            batch_metadatas = metadatas[i:i + batch_size]
+            
+            for attempt in range(max_retries):
+                try:
+                    print(f"Processing batch {i//batch_size + 1}/{(total_docs + batch_size - 1)//batch_size} (docs {i+1}-{min(i+batch_size, total_docs)})")
+                    
+                    # Add batch with longer timeout
+                    vector_store.add_texts(texts=batch_texts, metadatas=batch_metadatas)
+                    successful_docs += len(batch_texts)
+                    print(f"✓ Successfully added batch of {len(batch_texts)} documents")
+                    break  # Success, move to next batch
+                    
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                        print(f"⚠️ Batch failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"❌ Batch failed after {max_retries} attempts: {e}")
+                        # Continue with next batch instead of failing completely
+                        continue
+            
+            # Small delay between batches to avoid overwhelming the connection
+            if i + batch_size < total_docs:
+                time.sleep(0.5)
+        
+        return successful_docs
+    
+    try:
+        # Initialize vector store with provided parameters
+        vector_store = CouchbaseVectorStore(
+            cluster=cluster,
+            bucket_name=bucket_name,
+            scope_name=scope_name,
+            collection_name=collection_name,
+            embedding=embeddings,
+            index_name=index_name,
+        )
+        print("✓ Vector store initialized")
+        
+        # Prepare documents for ingestion
+        texts = []
+        metadatas = []
+        
+        for policy in FLIGHT_POLICIES:
+            # Create searchable text combining title and content
+            text = f"{policy['title']}: {policy['content']}"
+            texts.append(text)
+            
+            # Create metadata
+            metadata = {
+                "policy_id": policy["policy_id"],
                 "title": policy["title"],
                 "category": policy["category"],
-                "content": policy["content"],
+                "type": "policy",
+                "source": "flight_policies"
             }
-        )
-
-    # Add route information
-    for route in FLIGHT_ROUTES:
-        content = f"Flight {route['flight_number']} operated by {route['airline']} from {route['departure_city']} ({route['departure_airport']}) to {route['arrival_city']} ({route['arrival_airport']}). Duration: {route['duration_hours']} hours, Distance: {route['distance_miles']} miles. Aircraft: {route['aircraft_type']}. Departure times: {', '.join(route['departure_times'])}. Economy: ${route['price_economy']}, Business: ${route['price_business']}, First: ${route['price_first']}."
-        all_data.append(
-            {
-                "type": "route",
-                "id": route["route_id"],
-                "title": f"{route['departure_city']} to {route['arrival_city']} - {route['airline']}",
-                "category": "flight_schedule",
-                "content": content,
-            }
-        )
-
-    # Add airline information
-    for airline in AIRLINES:
-        content = f"{airline['airline_name']} ({airline['airline_code']}) is a {airline.get('alliance', 'independent')} member airline with {airline['fleet_size']} aircraft serving {airline['destinations']} destinations. Hub airports: {', '.join(airline['hub_airports'])}. Baggage policy: {airline['baggage_policy']}. Cancellation policy: {airline['cancellation_policy']}."
-        all_data.append(
-            {
-                "type": "airline",
-                "id": airline["airline_code"],
-                "title": airline["airline_name"],
-                "category": "airline_info",
-                "content": content,
-            }
-        )
-
-    # Add airport information
-    for airport in AIRPORTS:
-        content = f"{airport['airport_name']} ({airport['airport_code']}) located in {airport['city']}, {airport['state']}, {airport['country']}. Timezone: {airport['timezone']}. Has {airport['terminals']} terminals. Airlines: {', '.join(airport['airlines'])}. Amenities: {', '.join(airport['amenities'])}."
-        all_data.append(
-            {
-                "type": "airport",
-                "id": airport["airport_code"],
-                "title": airport["airport_name"],
-                "category": "airport_info",
-                "content": content,
-            }
-        )
-
-    # Add booking class information
-    for booking_class in BOOKING_CLASSES:
-        content = f"{booking_class['class_name']} ({booking_class['class_code']}): {booking_class['description']}. Baggage: {booking_class['baggage_allowance']}. Meals: {booking_class['meal_service']}. Seat selection: {booking_class['seat_selection']}. Changes: {booking_class['changes_allowed']}. Upgrades: {booking_class['upgrades_available']}."
-        all_data.append(
-            {
-                "type": "booking_class",
-                "id": booking_class["class_code"],
-                "title": f"{booking_class['class_name']} Class",
-                "category": "booking_info",
-                "content": content,
-            }
-        )
-
-    return all_data
-
-
-def get_data_by_category(category):
-    """Return flight data filtered by category."""
-    all_data = get_all_flight_data()
-    return [item for item in all_data if item["category"] == category]
-
-
-def get_data_by_type(data_type):
-    """Return flight data filtered by type."""
-    all_data = get_all_flight_data()
-    return [item for item in all_data if item["type"] == data_type]
-
-
-def search_routes(departure=None, arrival=None):
-    """Search for flight routes by departure and/or arrival airport."""
-    routes = []
-    for route in FLIGHT_ROUTES:
-        if departure and route["departure_airport"].upper() != departure.upper():
-            continue
-        if arrival and route["arrival_airport"].upper() != arrival.upper():
-            continue
-        routes.append(route)
-    return routes
-
-
-def get_airline_info(airline_code):
-    """Get airline information by code."""
-    for airline in AIRLINES:
-        if airline["airline_code"].upper() == airline_code.upper():
-            return airline
-    return None
-
-
-def get_airport_info(airport_code):
-    """Get airport information by code."""
-    for airport in AIRPORTS:
-        if airport["airport_code"].upper() == airport_code.upper():
-            return airport
-    return None
-
-
-if __name__ == "__main__":
-    all_data = get_all_flight_data()
-
-    print(f"Total flight data records: {len(all_data)}")
-    print(f"Policies: {len([d for d in all_data if d['type'] == 'policy'])}")
-    print(f"Routes: {len([d for d in all_data if d['type'] == 'route'])}")
-    print(f"Airlines: {len([d for d in all_data if d['type'] == 'airline'])}")
-    print(f"Airports: {len([d for d in all_data if d['type'] == 'airport'])}")
-    print(f"Booking Classes: {len([d for d in all_data if d['type'] == 'booking_class'])}")
-
-    # Test search functions
-    print(f"\nRoutes from JFK: {len(search_routes(departure='JFK'))}")
-    print(f"Routes to LAX: {len(search_routes(arrival='LAX'))}")
-
-    # Show categories
-    categories = set(d["category"] for d in all_data)
-    print(f"\nCategories: {', '.join(categories)}")
+            metadatas.append(metadata)
+        
+        print(f"Prepared {len(texts)} policy documents for ingestion")
+        
+        # Add documents with retry logic and batching
+        successful_count = add_documents_with_retry(vector_store, texts, metadatas)
+        
+        if successful_count == len(texts):
+            print(f"✅ Successfully loaded all {successful_count} flight policies into vector store")
+        else:
+            print(f"⚠️ Loaded {successful_count}/{len(texts)} flight policies (some failed due to timeouts)")
+        
+        return vector_store
+        
+    except Exception as e:
+        print(f"❌ Error loading flight policies: {e}")
+        raise

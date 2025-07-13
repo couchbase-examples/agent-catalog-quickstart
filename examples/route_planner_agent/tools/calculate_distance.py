@@ -8,7 +8,11 @@ This tool demonstrates:
 """
 
 import math
+import logging
 import agentc
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 # Common US cities with coordinates (expanded set)
 CITY_COORDINATES = {
@@ -51,7 +55,12 @@ CITY_COORDINATES = {
     "grand canyon": (36.0544, -112.1401),
     "yosemite": (37.8651, -119.5383),
     "zion": (37.2982, -113.0263),
+    "zion national park": (37.2982, -113.0263),  # Alias for zion
     "bryce": (37.5930, -112.1871),
+    "bryce canyon": (37.5930, -112.1871),       # Alias for bryce
+    "arches": (38.7331, -109.5925),             # Arches National Park
+    "arches national park": (38.7331, -109.5925), # Alias for arches
+    "moab": (38.5733, -109.5498),               # Near Arches/Canyonlands
     "mammoth": (37.6489, -118.9720),   # Mammoth Lakes
     "steamboat": (40.4850, -106.8317), # Steamboat Springs
     "telluride": (37.9375, -107.8123),
@@ -70,6 +79,7 @@ TRANSPORT_MODES = {
     "flight": {"speed": 500, "cost_per_mile": 0.15}
 }
 
+
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate the great circle distance between two points on Earth in miles."""
     # Convert to radians
@@ -83,6 +93,7 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     
     # Radius of Earth in miles
     return c * 3956
+
 
 def find_city_coordinates(city_name: str) -> tuple:
     """Find coordinates for a city name with fuzzy matching."""
@@ -99,6 +110,7 @@ def find_city_coordinates(city_name: str) -> tuple:
     
     return None
 
+
 @agentc.catalog.tool
 def calculate_distance(origin: str, destination: str, transport_mode: str = "car") -> str:
     """
@@ -113,15 +125,19 @@ def calculate_distance(origin: str, destination: str, transport_mode: str = "car
         Formatted string with distance, time, and cost calculations
     """
     try:
+        logger.info(f"Calculating distance from {origin} to {destination} by {transport_mode}")
+        
         # Find coordinates for both cities
         origin_coords = find_city_coordinates(origin)
         destination_coords = find_city_coordinates(destination)
         
         if not origin_coords:
-            return f"❌ City '{origin}' not found. Available cities: {', '.join(sorted(CITY_COORDINATES.keys()))}"
+            available_cities = ', '.join(sorted(CITY_COORDINATES.keys())[:10])  # Show first 10
+            return f"❌ City '{origin}' not found. Sample available cities: {available_cities}..."
         
         if not destination_coords:
-            return f"❌ City '{destination}' not found. Available cities: {', '.join(sorted(CITY_COORDINATES.keys()))}"
+            available_cities = ', '.join(sorted(CITY_COORDINATES.keys())[:10])  # Show first 10
+            return f"❌ City '{destination}' not found. Sample available cities: {available_cities}..."
         
         # Calculate distance
         distance = calculate_haversine_distance(
@@ -165,7 +181,9 @@ def calculate_distance(origin: str, destination: str, transport_mode: str = "car
         elif transport_mode_lower == "bus":
             result += "🚌 **Note:** Most economical option. May include stops."
         
+        logger.info(f"Distance calculation completed: {distance:.1f} miles")
         return result
         
     except Exception as e:
+        logger.error(f"Error calculating distance: {e}")
         return f"❌ Error calculating distance: {str(e)}"

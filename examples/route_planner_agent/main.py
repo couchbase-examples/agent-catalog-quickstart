@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
 """
-Route Planner Agent - Tutorial with AgentC Integration
+Route Planner Agent - Agent Catalog + LlamaIndex Implementation
 
-This tutorial demonstrates how to build an AI agent using:
-- Agent Catalog (agentc) for tool discovery, prompt management, and span logging
-- Couchbase Capella as vector store
-- Capella AI Services for embeddings and LLM
-- LlamaIndex for RAG pipeline and agent execution
-
-The agent uses two tools discovered via AgentC:
-1. search_routes - Find routes using vector search
-2. calculate_distance - Calculate distances between cities
+A streamlined route planner agent demonstrating Agent Catalog integration
+with LlamaIndex and Couchbase vector search for route planning assistance.
 """
 
+import base64
+import getpass
 import json
 import logging
 import os
 import sys
-import base64
 import time
 from datetime import timedelta
-from typing import List
 
 import agentc
 from agentc_llamaindex.chat import Callback
+import dotenv
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
@@ -41,11 +35,11 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai_like import OpenAILike
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+# Load environment variables
+dotenv.load_dotenv(override=True)
 
 
 def _set_if_undefined(var: str):
@@ -57,7 +51,7 @@ def _set_if_undefined(var: str):
 
 def setup_environment():
     """Setup environment variables with defaults and validation."""
-    required_vars = ['CB_HOST', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET_NAME']
+    required_vars = ['CB_CONN_STRING', 'CB_USERNAME', 'CB_PASSWORD', 'CB_BUCKET']
     for var in required_vars:
         _set_if_undefined(var)
     
@@ -69,13 +63,13 @@ def setup_environment():
     
     # Set defaults
     defaults = {
-        'CB_HOST': 'couchbase://localhost',
-        'CB_USERNAME': 'Administrator',
-        'CB_PASSWORD': 'password',
-        'CB_BUCKET_NAME': 'route_planner',
-        'INDEX_NAME': 'route_search_index',
-        'SCOPE_NAME': 'shared',
-        'COLLECTION_NAME': 'routes',
+        'CB_CONN_STRING': 'couchbases://cb.hlcup4o4jmjr55yf.cloud.couchbase.com',
+        'CB_USERNAME': 'kaustavcluster',
+        'CB_PASSWORD': 'Password@123',
+        'CB_BUCKET': 'vector-search-testing',
+        'CB_INDEX': 'route_data_index',
+        'CB_SCOPE': 'agentc_data',
+        'CB_COLLECTION': 'route_data',
         'CAPELLA_API_EMBEDDING_MODEL': 'intfloat/e5-mistral-7b-instruct',
         'CAPELLA_API_LLM_MODEL': 'meta-llama/Llama-3.1-8B-Instruct'
     }
@@ -94,375 +88,423 @@ def setup_environment():
         print(f"Using Capella AI endpoint: {os.environ['CAPELLA_API_ENDPOINT']}")
 
 
-def setup_couchbase_connection():
-    """Setup Couchbase cluster connection."""
-    try:
-        auth = PasswordAuthenticator(os.environ['CB_USERNAME'], os.environ['CB_PASSWORD'])
-        options = ClusterOptions(auth)
-        # Use WAN profile for better timeout handling with remote clusters
-        options.apply_profile("wan_development")
-        cluster = Cluster(os.environ['CB_HOST'], options)
-        cluster.wait_until_ready(timedelta(seconds=15))
-        print("✅ Successfully connected to Couchbase")
-        return cluster
-    except Exception as e:
-        raise ConnectionError(f"❌ Failed to connect to Couchbase: {str(e)}")
+class CouchbaseClient:
+    """Centralized Couchbase client for all database operations."""
 
+    def __init__(self, conn_string: str, username: str, password: str, bucket_name: str):
+        """Initialize Couchbase client with connection details."""
+        self.conn_string = conn_string
+        self.username = username
+        self.password = password
+        self.bucket_name = bucket_name
+        self.cluster = None
+        self.bucket = None
+        self._collections = {}
 
-def setup_collection(cluster, bucket_name, scope_name, collection_name):
-    """Setup bucket, scope, and collection."""
-    try:
-        # Create bucket if needed
+    def connect(self):
+        """Establish connection to Couchbase cluster."""
         try:
-            bucket = cluster.bucket(bucket_name)
-            print(f"✅ Bucket '{bucket_name}' exists")
-        except Exception:
-            print(f"📦 Creating bucket '{bucket_name}'...")
-            bucket_settings = CreateBucketSettings(
-                name=bucket_name,
-                bucket_type='couchbase',
-                ram_quota_mb=1024,
-                flush_enabled=True,
-                num_replicas=0
+            auth = PasswordAuthenticator(self.username, self.password)
+            options = ClusterOptions(auth)
+            
+            # Use WAN profile for better timeout handling with remote clusters
+            options.apply_profile("wan_development")
+            
+            # Additional timeout configurations for Capella cloud connections
+            from couchbase.options import ClusterTimeoutOptions
+            
+            timeout_options = ClusterTimeoutOptions(
+                kv_timeout=timedelta(seconds=10),
+                kv_durable_timeout=timedelta(seconds=15),
+                query_timeout=timedelta(seconds=30),
+                search_timeout=timedelta(seconds=30),
+                management_timeout=timedelta(seconds=30),
+                bootstrap_timeout=timedelta(seconds=20),
             )
-            cluster.buckets().create_bucket(bucket_settings)
-            time.sleep(5)
-            bucket = cluster.bucket(bucket_name)
-            print(f"✅ Bucket '{bucket_name}' created successfully")
-
-        # Setup scope and collection
-        bucket_manager = bucket.collections()
-        scopes = bucket_manager.get_all_scopes()
-        scope_exists = any(scope.name == scope_name for scope in scopes)
-        
-        if not scope_exists and scope_name != "_default":
-            print(f"📁 Creating scope '{scope_name}'...")
-            bucket_manager.create_scope(scope_name)
-            print(f"✅ Scope '{scope_name}' created successfully")
-
-        collections = bucket_manager.get_all_scopes()
-        collection_exists = any(
-            scope.name == scope_name and collection_name in [col.name for col in scope.collections]
-            for scope in collections
-        )
-
-        if not collection_exists:
-            print(f"📄 Creating collection '{collection_name}'...")
-            bucket_manager.create_collection(scope_name, collection_name)
-            print(f"✅ Collection '{collection_name}' created successfully")
-
-        # Create primary index
-        collection = bucket.scope(scope_name).collection(collection_name)
-        time.sleep(3)
-
-        try:
-            cluster.query(f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`").execute()
-            print("✅ Primary index created successfully")
+            options.timeout_options = timeout_options
+            
+            self.cluster = Cluster(self.conn_string, options)
+            self.cluster.wait_until_ready(timedelta(seconds=20))
+            logger.info("Successfully connected to Couchbase")
+            return self.cluster
         except Exception as e:
-            print(f"⚠️ Warning: Error creating primary index: {str(e)}")
+            raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
-        return collection
-    except Exception as e:
-        raise RuntimeError(f"❌ Error setting up collection: {str(e)}")
+    def setup_collection(self, scope_name: str, collection_name: str):
+        """Setup bucket, scope and collection all in one function."""
+        try:
+            # Ensure cluster connection
+            if not self.cluster:
+                self.connect()
 
+            # Setup bucket
+            if not self.bucket:
+                try:
+                    self.bucket = self.cluster.bucket(self.bucket_name)
+                    logger.info(f"Bucket '{self.bucket_name}' exists")
+                except Exception:
+                    logger.info(f"Creating bucket '{self.bucket_name}'...")
+                    bucket_settings = CreateBucketSettings(
+                        name=self.bucket_name,
+                        bucket_type="couchbase",
+                        ram_quota_mb=1024,
+                        flush_enabled=True,
+                        num_replicas=0,
+                    )
+                    self.cluster.buckets().create_bucket(bucket_settings)
+                    time.sleep(5)
+                    self.bucket = self.cluster.bucket(self.bucket_name)
+                    logger.info(f"Bucket '{self.bucket_name}' created successfully")
 
-def setup_vector_search_index(cluster, index_definition):
-    """Setup vector search index."""
-    try:
-        scope_index_manager = cluster.bucket(os.environ['CB_BUCKET_NAME']).scope(os.environ['SCOPE_NAME']).search_indexes()
-        
-        existing_indexes = scope_index_manager.get_all_indexes()
-        index_name = index_definition["name"]
+            bucket_manager = self.bucket.collections()
 
-        if index_name not in [index.name for index in existing_indexes]:
-            print(f"🔍 Creating vector search index '{index_name}'...")
-            search_index = SearchIndex.from_json(index_definition)
-            scope_index_manager.upsert_index(search_index)
-            print(f"✅ Vector search index '{index_name}' created successfully")
-        else:
-            print(f"✅ Vector search index '{index_name}' already exists")
-    except Exception as e:
-        raise RuntimeError(f"❌ Error setting up vector search index: {str(e)}")
+            # Handle scope creation
+            scopes = bucket_manager.get_all_scopes()
+            scope_exists = any(scope.name == scope_name for scope in scopes)
 
+            if not scope_exists and scope_name != "_default":
+                logger.info(f"Creating scope '{scope_name}'...")
+                bucket_manager.create_scope(scope_name)
+                logger.info(f"Scope '{scope_name}' created successfully")
 
-def setup_ai_models(span):
-    """Setup embeddings and LLM using Capella AI Services or OpenAI."""
-    try:
-        if os.environ.get('CAPELLA_API_ENDPOINT') and os.environ.get('CAPELLA_API_KEY'):
-            # Use Capella AI Services
-            print("🔧 Setting up Capella AI Services...")
-            
-            embed_model = OpenAIEmbedding(
-                api_key=os.environ['CAPELLA_API_KEY'],
-                api_base=os.environ['CAPELLA_API_ENDPOINT'] + '/v1',
-                model_name=os.environ['CAPELLA_API_EMBEDDING_MODEL'],
-                embed_batch_size=30
+            # Handle collection creation
+            collections = bucket_manager.get_all_scopes()
+            collection_exists = any(
+                scope.name == scope_name
+                and collection_name in [col.name for col in scope.collections]
+                for scope in collections
             )
-            
-            llm = OpenAILike(
-                api_base=os.environ['CAPELLA_API_ENDPOINT'] + '/v1',
-                api_key=os.environ['CAPELLA_API_KEY'],
-                model=os.environ['CAPELLA_API_LLM_MODEL'],
-                temperature=0,
-                # Add AgentC callback for LlamaIndex
-                callbacks=[Callback(span=span)]
-            )
-            
-            print("✅ Using Capella AI Services for embeddings and LLM")
-        else:
-            # Fallback to OpenAI
-            print("🔧 Setting up OpenAI (Capella AI not configured)...")
-            _set_if_undefined("OPENAI_API_KEY")
-            
-            embed_model = OpenAIEmbedding(
-                api_key=os.environ["OPENAI_API_KEY"],
-                model="text-embedding-3-small"
-            )
-            
-            from llama_index.llms.openai import OpenAI
-            llm = OpenAI(
-                api_key=os.environ["OPENAI_API_KEY"],
-                model="gpt-4o",
-                temperature=0,
-                callbacks=[Callback(span=span)]
-            )
-            
-            print("✅ Using OpenAI for embeddings and LLM")
-        
-        # Configure LlamaIndex global settings
-        Settings.embed_model = embed_model
-        Settings.llm = llm
-        
-        return embed_model, llm
-        
-    except Exception as e:
-        raise RuntimeError(f"❌ Failed to setup AI models: {str(e)}")
 
+            if not collection_exists:
+                logger.info(f"Creating collection '{collection_name}'...")
+                bucket_manager.create_collection(scope_name, collection_name)
+                logger.info(f"Collection '{collection_name}' created successfully")
 
-def get_sample_route_data():
-    """Get sample route data for the demo."""
-    return [
-        "New York to Boston: A scenic coastal route through Connecticut and Rhode Island. Take I-95 for the fastest route (4.5 hours) or Route 1 for scenic coastal views. Must-see stops include Mystic Seaport and Newport mansions.",
-        "San Francisco to Los Angeles: The iconic Pacific Coast Highway (PCH) offers breathtaking ocean views. The 380-mile journey takes 6-8 hours of driving time. Don't miss Big Sur, Monterey Bay, and Santa Barbara.",
-        "Chicago to Milwaukee: A short 90-mile drive north through Wisconsin farmland. Takes about 1.5 hours via I-94. Alternative scenic route through Lake Geneva adds beautiful lake views.",
-        "Denver to Aspen: A mountain route through the Rockies covering 160 miles. Take I-70 west then Highway 82 south. Allow 3-4 hours for mountain driving. Spectacular views of the Continental Divide.",
-        "Seattle to Portland: The I-5 corridor through the Pacific Northwest. 173 miles taking about 3 hours. Consider stopping at Mount St. Helens or taking the scenic Route 14 along the Columbia River.",
-        "Miami to Key West: The famous Overseas Highway (US-1) crosses 42 bridges over the Florida Keys. 160 miles of tropical paradise taking 3.5 hours. Amazing views of the Atlantic and Gulf waters.",
-        "Las Vegas to Grand Canyon: Two main routes - the South Rim (4.5 hours) or North Rim (5 hours). South Rim is open year-round. Take Highway 64 for the most direct route to the main visitor areas.",
-        "Nashville to Memphis: The musical highway through Tennessee. 210 miles on I-40 west taking about 3 hours. Consider stopping in Jackson for BBQ and music history.",
-        "Phoenix to Sedona: A desert-to-red-rock transition covering 120 miles. Take I-17 north then Highway 179 for the most scenic approach. About 2 hours of driving with stunning desert landscapes.",
-        "Austin to San Antonio: A quick 80-mile drive through Texas Hill Country. Take I-35 south for the fastest route (1.5 hours) or Highway 46 for scenic hill country views and wine country."
-    ]
+            collection = self.bucket.scope(scope_name).collection(collection_name)
+            time.sleep(3)
 
+            # Create primary index
+            try:
+                self.cluster.query(
+                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+                ).execute()
+                logger.info("Primary index created successfully")
+            except Exception as e:
+                logger.warning(f"Error creating primary index: {e!s}")
 
-def ingest_route_data(vector_store, span):
-    """Ingest sample route data into the vector store."""
-    try:
-        with span.new("Route Data Loading"):
-            route_texts = get_sample_route_data()
-            
-            # Create LlamaIndex documents
-            documents = []
-            for i, text in enumerate(route_texts):
-                doc = Document(
-                    text=text,
-                    metadata={
-                        "source": "route_database",
-                        "route_id": i,
-                        "type": "route_description"
-                    }
+            # Cache the collection for reuse
+            collection_key = f"{scope_name}.{collection_name}"
+            self._collections[collection_key] = collection
+
+            logger.info(f"Collection setup complete for {scope_name}.{collection_name}")
+            return collection
+
+        except Exception as e:
+            raise RuntimeError(f"Error setting up collection: {e!s}")
+
+    def get_collection(self, scope_name: str, collection_name: str):
+        """Get a collection, creating it if it doesn't exist."""
+        collection_key = f"{scope_name}.{collection_name}"
+        if collection_key not in self._collections:
+            self.setup_collection(scope_name, collection_name)
+        return self._collections[collection_key]
+
+    def setup_vector_search_index(self, index_definition: dict):
+        """Setup vector search index."""
+        try:
+            if not self.bucket:
+                raise RuntimeError("Bucket not initialized. Call setup_collection first.")
+
+            scope_name = os.environ['CB_SCOPE']
+            scope_index_manager = self.bucket.scope(scope_name).search_indexes()
+            existing_indexes = scope_index_manager.get_all_indexes()
+            index_name = index_definition["name"]
+
+            if index_name not in [index.name for index in existing_indexes]:
+                logger.info(f"Creating vector search index '{index_name}'...")
+                search_index = SearchIndex.from_json(index_definition)
+                scope_index_manager.upsert_index(search_index)
+                logger.info(f"Vector search index '{index_name}' created successfully")
+            else:
+                logger.info(f"Vector search index '{index_name}' already exists")
+        except Exception as e:
+            raise RuntimeError(f"Error setting up vector search index: {e!s}")
+
+    def setup_ai_models(self, span):
+        """Setup AI models for embeddings and LLM."""
+        try:
+            # Setup embedding model
+            if os.environ.get('CAPELLA_API_ENDPOINT'):
+                embed_model = OpenAIEmbedding(
+                    api_key=os.environ['CAPELLA_API_KEY'],
+                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
+                    model_name=os.environ['CAPELLA_API_EMBEDDING_MODEL'],
+                    embed_batch_size=30
                 )
-                documents.append(doc)
+            else:
+                embed_model = OpenAIEmbedding()
+
+            # Setup LLM
+            if os.environ.get('CAPELLA_API_ENDPOINT'):
+                llm = OpenAILike(
+                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
+                    api_key=os.environ['CAPELLA_API_KEY'],
+                    model=os.environ['CAPELLA_API_LLM_MODEL'],
+                    temperature=0.1
+                )
+            else:
+                from llama_index.llms.openai import OpenAI
+                llm = OpenAI(temperature=0.1)
+
+            # Configure global settings
+            Settings.embed_model = embed_model
+            Settings.llm = llm
+
+            logger.info("AI models configured successfully")
+            return embed_model, llm
+
+        except Exception as e:
+            raise RuntimeError(f"Error setting up AI models: {e!s}")
+
+    def load_route_data(self, vector_store, span, embeddings):
+        """Load route data using dedicated data loading script."""
+        try:
+            from data.route_data import load_route_data_to_couchbase
             
-            # Create ingestion pipeline
-            pipeline = IngestionPipeline(
-                transformations=[
-                    SentenceSplitter(chunk_size=512, chunk_overlap=50),
-                    Settings.embed_model
-                ],
-                vector_store=vector_store
+            logger.info("Loading route data using data loading script...")
+            
+            # Load data using the dedicated script
+            load_route_data_to_couchbase(
+                cluster=self.cluster,
+                bucket_name=self.bucket_name,
+                scope_name=os.environ['CB_SCOPE'],
+                collection_name=os.environ['CB_COLLECTION'],
+                embeddings=embeddings,
+                index_name=os.environ['CB_INDEX']
             )
             
-            # Ingest documents
-            print(f"⚡ Ingesting {len(documents)} route documents...")
-            pipeline.run(documents=documents)
-            print("✅ Route data ingestion complete")
+            logger.info("Route data loaded successfully")
             
-    except Exception as e:
-        raise RuntimeError(f"❌ Error ingesting route data: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error loading route data: {e}")
+            raise ValueError(f"Error loading route data: {e!s}")
 
+    def setup_vector_store(self, span, embeddings):
+        """Setup LlamaIndex vector store with route data."""
+        try:
+            if not self.cluster:
+                raise RuntimeError("Cluster not connected. Call connect first.")
 
-def create_llamaindex_agent(catalog, span):
-    """Create LlamaIndex ReActAgent using tools and prompts from AgentC."""
-    try:
-        with span.new("Tool Discovery"):
-            # Find tools from Agent Catalog
-            tool_search = catalog.find("tool", name="search_routes")
-            tool_distance = catalog.find("tool", name="calculate_distance")
+            # Create vector store
+            vector_store = CouchbaseSearchVectorStore(
+                cluster=self.cluster,
+                bucket_name=self.bucket_name,
+                scope_name=os.environ['CB_SCOPE'],
+                collection_name=os.environ['CB_COLLECTION'],
+                index_name=os.environ['CB_INDEX']
+            )
+
+            # Load route data
+            try:
+                self.load_route_data(vector_store, span, embeddings)
+                logger.info("Route data loaded into vector store successfully")
+            except Exception as e:
+                logger.error(f"Failed to load route data: {e}")
+                logger.warning("Vector store created but data not loaded.")
+
+            return vector_store
+
+        except Exception as e:
+            raise ValueError(f"Error setting up vector store: {e!s}")
+
+    def create_llamaindex_agent(self, catalog, span):
+        """Create LlamaIndex ReAct agent with tools from Agent Catalog."""
+        try:
+            # Get tools from Agent Catalog
+            tools = []
             
-            if not tool_search:
-                raise ValueError("Could not find search_routes tool. Make sure it's indexed with 'agentc index tools/'")
-            if not tool_distance:
-                raise ValueError("Could not find calculate_distance tool. Make sure it's indexed with 'agentc index tools/'")
+            # Search routes tool
+            search_tool_result = catalog.find("tool", name="search_routes")
+            if search_tool_result:
+                tools.append(FunctionTool.from_defaults(
+                    fn=search_tool_result.func,
+                    name="search_routes",
+                    description=getattr(search_tool_result.meta, 'description', None) or "Search for route information using semantic vector search. Use for finding travel routes, scenic drives, and transportation information."
+                ))
+                logger.info("Loaded search_routes tool from AgentC")
             
-            # Create LlamaIndex FunctionTool objects
-            tools = [
-                FunctionTool.from_defaults(
-                    fn=tool_search.func,
-                    name=tool_search.meta.name,
-                    description=tool_search.meta.description
-                ),
-                FunctionTool.from_defaults(
-                    fn=tool_distance.func,
-                    name=tool_distance.meta.name,
-                    description=tool_distance.meta.description
-                )
-            ]
+            # Calculate distance tool
+            distance_tool_result = catalog.find("tool", name="calculate_distance")
+            if distance_tool_result:
+                tools.append(FunctionTool.from_defaults(
+                    fn=distance_tool_result.func,
+                    name="calculate_distance",
+                    description=getattr(distance_tool_result.meta, 'description', None) or "Calculate distance, travel time, and cost between two cities using different transportation modes (car, train, bus, flight)."
+                ))
+                logger.info("Loaded calculate_distance tool from AgentC")
             
-            print(f"✅ Found {len(tools)} tools: {[tool.metadata.name for tool in tools]}")
-        
-        with span.new("Prompt Discovery"):
-            # Get prompt from Agent Catalog
-            route_prompt = catalog.find("prompt", name="route_planner_assistant")
-            if not route_prompt:
-                raise ValueError("Could not find route_planner_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
+            if not tools:
+                logger.warning("No tools found in Agent Catalog")
+            else:
+                logger.info(f"Loaded {len(tools)} tools from Agent Catalog")
+
+            # Get prompt from Agent Catalog - REQUIRED, no fallbacks
+            prompt_result = catalog.find("prompt", name="route_planner_assistant")
+            if not prompt_result:
+                raise RuntimeError("Prompt 'route_planner_assistant' not found in Agent Catalog")
             
-            print(f"✅ Found prompt: {route_prompt.meta.name}")
+            # Try different possible attributes for the prompt content
+            system_prompt = getattr(prompt_result, 'content', None) or getattr(prompt_result, 'template', None) or getattr(prompt_result, 'text', None)
+            if not system_prompt:
+                raise RuntimeError("Could not access prompt content from AgentC - prompt content is None or empty")
             
-            # Use the prompt content as system message
-            system_prompt = route_prompt.content.strip()
-        
-        with span.new("Agent Creation"):
-            # Create ReAct agent with tools and system prompt
+            logger.info("Loaded system prompt from Agent Catalog")
+            # Enhance prompt to be more decisive
+            system_prompt += "\n\nIMPORTANT: Once you have gathered sufficient information to answer the user's question, provide a complete final answer immediately. Do not continue searching if you already have the key information requested."
+
+            # Create ReAct agent with limits to prevent excessive iterations
             agent = ReActAgent.from_tools(
                 tools=tools,
                 llm=Settings.llm,
-                system_prompt=system_prompt,
                 verbose=True,
-                max_iterations=15
+                system_prompt=system_prompt,
+                max_iterations=10,  # Keep reasonable max
             )
-            
-            print("✅ LlamaIndex ReActAgent created successfully")
+
+            logger.info("LlamaIndex ReAct agent created successfully")
             return agent
-        
-    except Exception as e:
-        raise RuntimeError(f"❌ Error creating LlamaIndex agent: {str(e)}")
+
+        except Exception as e:
+            raise RuntimeError(f"Error creating LlamaIndex agent: {e!s}")
 
 
-def run_agent_demo(agent, span):
-    """Run the agent demo with sample queries."""
+def setup_route_agent():
+    """Setup the complete route planning agent infrastructure and return the agent."""
+    setup_environment()
+    
+    # Initialize Agent Catalog
+    catalog = agentc.Catalog()
+    span = catalog.Span(name="Route Planner Agent Setup")
+    
+    # Initialize Couchbase client
+    client = CouchbaseClient(
+        conn_string=os.environ['CB_CONN_STRING'],
+        username=os.environ['CB_USERNAME'],
+        password=os.environ['CB_PASSWORD'],
+        bucket_name=os.environ['CB_BUCKET']
+    )
+    
+    # Setup infrastructure
+    client.connect()
+    client.setup_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+    
+    # Setup vector search index
     try:
-        # Demo queries
-        demo_queries = [
-            "Find routes from New York to Boston",
-            "Calculate distance between San Francisco and Los Angeles by car",
-            "What are some scenic routes in California?",
-            "Calculate the distance from Denver to Aspen by train"
-        ]
-        
-        print(f"\n🗺️ Route Planner Agent Demo")
-        print("=" * 60)
-        
-        for i, query in enumerate(demo_queries, 1):
-            with span.new(f"Query_{i}") as query_span:
-                print(f"\n🔍 Query {i}: {query}")
-                print("-" * 40)
-                
-                try:
-                    # Use LlamaIndex agent
-                    response = agent.chat(query)
-                    query_span["query"] = query
-                    query_span["response"] = str(response)
-                    print(f"📝 Response: {response}")
-                    print("-" * 40)
-                except Exception as e:
-                    query_span["query"] = query
-                    query_span["error"] = str(e)
-                    print(f"❌ Error: {e}")
-                    print("-" * 40)
-        
+        with open("agentcatalog_index.json", "r") as f:
+            index_definition = json.load(f)
+        client.setup_vector_search_index(index_definition)
     except Exception as e:
-        raise RuntimeError(f"❌ Error in agent demo: {str(e)}")
+        logger.warning(f"Could not setup vector search index: {e}")
+    
+    # Setup AI models
+    embed_model, llm = client.setup_ai_models(span)
+    
+    # Setup vector store
+    vector_store = client.setup_vector_store(span, embed_model)
+    
+    # Create agent
+    agent = client.create_llamaindex_agent(catalog, span)
+    
+    logger.info("Route Planner Agent initialized successfully")
+    return agent, catalog
+
+
+def run_interactive_demo():
+    """Run an interactive demo of the route planner agent."""
+    print("🚀 Starting Route Planner Agent Interactive Demo...")
+    agent, catalog = setup_route_agent()
+    
+    print("\n🗺️ Route Planner Agent Ready!")
+    print("Ask me about routes, distances, or travel planning. Type 'quit' to exit.")
+    print("\nExample queries:")
+    print("- 'Find scenic routes from San Francisco to Los Angeles'")
+    print("- 'Calculate distance from New York to Chicago by car'")
+    print("- 'What are good road trip routes in Colorado?'")
+    
+    while True:
+        user_input = input("\n💬 You: ").strip()
+        if user_input.lower() in ['quit', 'exit', 'bye', 'q']:
+            print("👋 Goodbye!")
+            break
+            
+        if not user_input:
+            continue
+            
+        try:
+            span = catalog.Span(name="Route Query")
+            with span:
+                logger.info(f"Processing query: {user_input}")
+                response = agent.chat(user_input)
+                print(f"\n🤖 Agent: {response}")
+        except Exception as e:
+            logger.error(f"Error processing query: {e}")
+            print(f"❌ Error: {e}")
+
+
+def run_test():
+    """Run predefined test queries to demonstrate route planner agent capabilities."""
+    print("🧪 Starting Route Planner Agent Test Suite...")
+    agent, catalog = setup_route_agent()
+    
+    # Test queries with specific, realistic scenarios
+    test_queries = [
+        "Find scenic driving routes from Denver to Aspen in Colorado",
+        "Calculate the distance from New York to San Francisco by different transportation modes like car, train, and flight",
+        "Plan a road trip from Salt Lake City to Zion National Park and Bryce Canyon"
+    ]
+    
+    print(f"\n🔍 Running {len(test_queries)} test queries...\n")
+    
+    for i, query in enumerate(test_queries, 1):
+        print(f"📋 Test {i}/{len(test_queries)}: {query}")
+        print("-" * 60)
+        
+        try:
+            span = catalog.Span(name=f"Test Query {i}")
+            with span:
+                start_time = time.time()
+                response = agent.chat(query)
+                end_time = time.time()
+                
+                print(f"✅ Response ({end_time - start_time:.1f}s):")
+                print(response)
+                print("\n" + "="*60 + "\n")
+                
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            print("\n" + "="*60 + "\n")
+    
+    print("🎉 Test suite completed!")
 
 
 def main():
-    """Main function to run the Route Planner Agent tutorial."""
-    try:
-        # Load environment variables
-        import dotenv
-        dotenv.load_dotenv(override=True)
-        
-        # Initialize Agent Catalog and main span
-        catalog = agentc.Catalog()
-        application_span = catalog.Span(name="Route Planner Agent Tutorial")
-        
-        print("🚀 Route Planner Agent Tutorial")
-        print("=" * 60)
-        print("This tutorial demonstrates:")
-        print("• AgentC for tool discovery, prompt management, and span logging")
-        print("• Couchbase Capella as vector store")
-        print("• Capella AI Services for embeddings and LLM")
-        print("• LlamaIndex ReActAgent for agent execution")
-        print("=" * 60)
-        
-        with application_span.new("Environment Setup"):
-            setup_environment()
-        
-        with application_span.new("Couchbase Connection"):
-            cluster = setup_couchbase_connection()
-        
-        with application_span.new("Collection Setup"):
-            setup_collection(
-                cluster,
-                os.environ['CB_BUCKET_NAME'],
-                os.environ['SCOPE_NAME'],
-                os.environ['COLLECTION_NAME']
-            )
-        
-        with application_span.new("Vector Index Setup"):
-            try:
-                with open('agentcatalog_index.json', 'r') as file:
-                    index_definition = json.load(file)
-                print("✅ Loaded vector search index definition from agentcatalog_index.json")
-            except Exception as e:
-                print(f"⚠️ Could not load index definition: {str(e)}")
-                # Continue without index for demo purposes
-                index_definition = None
-            
-            if index_definition:
-                setup_vector_search_index(cluster, index_definition)
-        
-        with application_span.new("AI Models Setup"):
-            embed_model, llm = setup_ai_models(application_span)
-        
-        with application_span.new("Vector Store Setup"):
-            vector_store = CouchbaseSearchVectorStore(
-                cluster=cluster,
-                bucket_name=os.environ['CB_BUCKET_NAME'],
-                scope_name=os.environ['SCOPE_NAME'],
-                collection_name=os.environ['COLLECTION_NAME'],
-                index_name=os.environ['INDEX_NAME']
-            )
-            
-            # Ingest route data
-            ingest_route_data(vector_store, application_span)
-        
-        with application_span.new("Agent Setup"):
-            agent = create_llamaindex_agent(catalog, application_span)
-        
-        with application_span.new("Demo Execution"):
-            run_agent_demo(agent, application_span)
-        
-        print("\n✅ Tutorial completed successfully!")
-        print("Next steps:")
-        print("• Check AgentC span logs for detailed execution traces")
-        print("• Try asking your own route questions")
-        print("• Modify the tools to add new capabilities")
-        print("• Explore different LlamaIndex agent configurations")
-        
-    except Exception as e:
-        logger.error(f"❌ Tutorial failed: {str(e)}")
-        sys.exit(1)
+    """Main function with command line argument support."""
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
+        if mode == "demo":
+            run_interactive_demo()
+        elif mode == "test":
+            run_test()
+        elif mode == "interactive":
+            run_interactive_demo()
+        else:
+            print("Usage: python main.py [demo|test|interactive]")
+            print("  demo/interactive: Run interactive demo")
+            print("  test: Run predefined test queries")
+            sys.exit(1)
+    else:
+        # Default behavior - interactive demo
+        run_interactive_demo()
 
 
 if __name__ == "__main__":

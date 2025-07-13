@@ -86,6 +86,45 @@ def get_detailed_hotel_data():
             "check_out": "11:00 AM",
             "cancellation": "Free cancellation up to 24 hours before check-in"
         },
+        "budget inn sf": {
+            "name": "Budget Inn SF",
+            "location": "San Francisco Airport Area, California",
+            "description": "Affordable hotel near San Francisco International Airport with shuttle service",
+            "price_range": "$80-$120 per night",
+            "amenities": ["Free Airport Shuttle", "24/7 Front Desk", "Free WiFi", "Continental Breakfast", "Self-parking", "Business Center", "Fitness Room", "Laundry Facilities"],
+            "rating": "4.0/5",
+            "contact": "Phone: +1-650-555-0987, Email: info@budgetinnsf.com",
+            "address": "456 Airport Blvd, San Francisco, CA 94128",
+            "check_in": "3:00 PM",
+            "check_out": "11:00 AM",
+            "cancellation": "Free cancellation up to 24 hours before check-in"
+        },
+        "los angeles downtown hotel": {
+            "name": "Los Angeles Downtown Hotel",
+            "location": "Downtown Los Angeles, California",
+            "description": "Modern urban hotel in the heart of LA with rooftop dining and city views",
+            "price_range": "$160-$240 per night",
+            "amenities": ["Free Continental Breakfast", "Self-parking Available", "Rooftop Restaurant", "24/7 Fitness Center", "Free WiFi", "Business Center", "Concierge Service", "Room Service"],
+            "rating": "4.4/5",
+            "contact": "Phone: +1-213-555-0432, Email: reservations@ladowntownhotel.com",
+            "address": "789 Spring Street, Los Angeles, CA 90014",
+            "check_in": "3:00 PM",
+            "check_out": "12:00 PM",
+            "cancellation": "Free cancellation up to 24 hours before check-in"
+        },
+        "la luxury resort": {
+            "name": "LA Luxury Resort",
+            "location": "Beverly Hills, Los Angeles, California",
+            "description": "Luxury resort in Beverly Hills with world-class amenities and spa services",
+            "price_range": "$400-$650 per night",
+            "amenities": ["Complimentary Breakfast", "Valet Parking", "Full-Service Spa", "Multiple Pools", "Fine Dining Restaurant", "Free WiFi", "Concierge Service", "Golf Course Access"],
+            "rating": "4.9/5",
+            "contact": "Phone: +1-310-555-0876, Email: reservations@laluxuryresort.com",
+            "address": "321 Rodeo Drive, Beverly Hills, CA 90210",
+            "check_in": "4:00 PM",
+            "check_out": "12:00 PM",
+            "cancellation": "Free cancellation up to 48 hours before check-in"
+        },
         "ocean breeze resort": {
             "name": "Ocean Breeze Resort",
             "location": "Malibu, California",
@@ -128,3 +167,95 @@ def get_detailed_hotel_data():
     }
     
     return detailed_hotels
+
+
+def load_hotel_data_to_couchbase(cluster, bucket_name, scope_name, collection_name, embeddings, index_name=None):
+    """Load hotel data into Couchbase vector store.
+    
+    Args:
+        cluster: Connected Couchbase cluster
+        bucket_name: Name of the bucket
+        scope_name: Name of the scope
+        collection_name: Name of the collection
+        embeddings: Configured embeddings model
+        index_name: Optional index name (defaults to collection_name + '_index')
+    """
+    from langchain_couchbase.vectorstores import CouchbaseVectorStore
+    
+    if not index_name:
+        index_name = f"{collection_name}_index"
+    
+    print(f"Loading hotel data to {bucket_name}.{scope_name}.{collection_name}")
+    
+    print(f"Cluster: {cluster}")
+    print(f"Bucket name: {bucket_name}")
+    print(f"Scope name: {scope_name}")
+    print(f"Collection name: {collection_name}")
+    print(f"Embeddings: {embeddings}")
+    print(f"Index name: {index_name}")
+    
+    try:
+        # Initialize vector store with provided parameters
+        vector_store = CouchbaseVectorStore(
+            cluster=cluster,
+            bucket_name=bucket_name,
+            scope_name=scope_name,
+            collection_name=collection_name,
+            embedding=embeddings,
+            index_name=index_name,
+        )
+        print("✓ Vector store initialized")
+        
+        # Get hotel data
+        hotel_texts = get_hotel_texts()
+        detailed_hotels = get_detailed_hotel_data()
+        
+        print(f"Retrieved {len(hotel_texts)} hotel descriptions")
+        
+        # Prepare documents for ingestion
+        texts = []
+        metadatas = []
+        
+        for i, text in enumerate(hotel_texts):
+            texts.append(text)
+            
+            # Extract hotel name from text (first part before " in ")
+            hotel_name = text.split(" in ")[0].lower()
+            
+            # Find corresponding detailed data
+            detailed_info = detailed_hotels.get(hotel_name, {})
+            
+            # Create metadata
+            metadata = {
+                "hotel_id": f"hotel_{i+1}",
+                "name": detailed_info.get("name", hotel_name),
+                "location": detailed_info.get("location", ""),
+                "rating": detailed_info.get("rating", ""),
+                "price_range": detailed_info.get("price_range", ""),
+                "type": "hotel",
+                "source": "hotel_data"
+            }
+            metadatas.append(metadata)
+        
+        print(f"Prepared {len(texts)} hotel documents for ingestion")
+        
+        # Add documents to vector store
+        print(f"Adding {len(texts)} documents to vector store...")
+        try:
+            vector_store.add_texts(texts=texts, metadatas=metadatas)
+            print(f"✓ Successfully added {len(texts)} documents")
+            successful_count = len(texts)
+        except Exception as e:
+            print(f"❌ Failed to add documents: {e}")
+            raise
+        
+        if successful_count == len(texts):
+            print(f"✅ Successfully loaded all {successful_count} hotels into vector store")
+        else:
+            print(f"⚠️ Loaded {successful_count}/{len(texts)} hotels (some failed due to timeouts)")
+        
+        return vector_store
+        
+    except Exception as e:
+        print(f"❌ Error loading hotel data: {e}")
+        raise

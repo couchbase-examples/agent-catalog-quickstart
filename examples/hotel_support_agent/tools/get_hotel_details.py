@@ -10,21 +10,42 @@ from data.hotel_data import get_detailed_hotel_data
 
 dotenv.load_dotenv()
 
-# Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-try:
-    cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_HOST", "couchbase://localhost"),
-        couchbase.options.ClusterOptions(
-            authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"), 
-                password=os.getenv("CB_PASSWORD", "password")
-            )
-        ),
-    )
-    cluster.wait_until_ready(timedelta(seconds=5))
-except couchbase.exceptions.CouchbaseException as e:
-    print(f"Could not connect to Couchbase cluster: {str(e)}")
-    cluster = None
+
+def get_cluster_connection():
+    """Get a fresh cluster connection for each request."""
+    try:
+        auth = couchbase.auth.PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"), 
+            password=os.getenv("CB_PASSWORD", "password")
+        )
+        options = couchbase.options.ClusterOptions(authenticator=auth)
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+        
+        # Additional timeout configurations for Capella cloud connections
+        from couchbase.options import ClusterTimeoutOptions
+        
+        # Configure extended timeouts for cloud connectivity
+        timeout_options = ClusterTimeoutOptions(
+            kv_timeout=timedelta(seconds=10),  # Key-value operations
+            kv_durable_timeout=timedelta(seconds=15),  # Durable writes
+            query_timeout=timedelta(seconds=30),  # N1QL queries
+            search_timeout=timedelta(seconds=30),  # Search operations
+            management_timeout=timedelta(seconds=30),  # Management operations
+            bootstrap_timeout=timedelta(seconds=20),  # Initial connection
+        )
+        options.timeout_options = timeout_options
+        
+        cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+            options
+        )
+        cluster.wait_until_ready(timedelta(seconds=15))
+        return cluster
+    except couchbase.exceptions.CouchbaseException as e:
+        print(f"Could not connect to Couchbase cluster: {str(e)}")
+        return None
+
 
 @agentc.catalog.tool
 def get_hotel_details(hotel_name: str) -> str:
@@ -63,12 +84,13 @@ def get_hotel_details(hotel_name: str) -> str:
 **Check-out Time:** {matched_hotel['check_out']}
 **Cancellation Policy:** {matched_hotel['cancellation']}"""
         
-        # If not found in data module and cluster is available, try database search
+        # If not found in data module, try database search
+        cluster = get_cluster_connection()
         if cluster:
             try:
-                bucket_name = os.environ.get('CB_BUCKET_NAME', 'vector-search-testing')
-                scope_name = os.environ.get('SCOPE_NAME', 'shared')
-                collection_name = os.environ.get('COLLECTION_NAME', 'agentcatalog')
+                bucket_name = os.environ.get('CB_BUCKET', 'vector-search-testing')
+                scope_name = os.environ.get('CB_SCOPE', 'agentc_data')
+                collection_name = os.environ.get('CB_COLLECTION', 'hotel_data')
                 
                 query = f"""
                 SELECT RAW content 

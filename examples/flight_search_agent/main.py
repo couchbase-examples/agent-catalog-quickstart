@@ -175,9 +175,9 @@ def setup_environment():
         if not os.environ.get(key):
             os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
 
-    os.environ["INDEX_NAME"] = os.getenv("INDEX_NAME", "vector_search_agentcatalog")
-    os.environ["SCOPE_NAME"] = os.getenv("SCOPE_NAME", "shared")
-    os.environ["COLLECTION_NAME"] = os.getenv("COLLECTION_NAME", "agentcatalog")
+    os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "flight_policies_index")
+    os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
+    os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "flight_policies")
 
     # Test Capella AI connectivity
     test_capella_connectivity()
@@ -201,10 +201,30 @@ class CouchbaseClient:
         try:
             auth = PasswordAuthenticator(self.username, self.password)
             options = ClusterOptions(auth)
+            
             # Use WAN profile for better timeout handling with remote clusters
             options.apply_profile("wan_development")
+            
+            # Additional timeout configurations for Capella cloud connections
+            from couchbase.options import (
+                ClusterTimeoutOptions,
+                ClusterTracingOptions,
+            )
+            
+            # Configure extended timeouts for cloud connectivity
+            timeout_options = ClusterTimeoutOptions(
+                kv_timeout=timedelta(seconds=10),  # Key-value operations
+                kv_durable_timeout=timedelta(seconds=15),  # Durable writes
+                query_timeout=timedelta(seconds=30),  # N1QL queries
+                search_timeout=timedelta(seconds=30),  # Search operations
+                management_timeout=timedelta(seconds=30),  # Management operations
+                bootstrap_timeout=timedelta(seconds=20),  # Initial connection
+            )
+            options.timeout_options = timeout_options
+            
             self.cluster = Cluster(self.conn_string, options)
-            self.cluster.wait_until_ready(timedelta(seconds=10))
+            # Increased wait time for cloud connections
+            self.cluster.wait_until_ready(timedelta(seconds=20))
             logger.info("Successfully connected to Couchbase")
             return self.cluster
         except Exception as e:
@@ -309,23 +329,28 @@ class CouchbaseClient:
         except Exception as e:
             raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
-    def load_flight_data(self):
-        """Load flight data from the enhanced flight_data.py file."""
+    def load_flight_data(self, scope_name, collection_name, index_name, embeddings):
+        """Load flight policies data using the dedicated data loading script."""
         try:
-            # Import flight data
-            sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
-            from flight_data import get_all_flight_data
-
-            flight_data = get_all_flight_data()
-
-            # Convert to text format for vector store
-            flight_texts = []
-            for item in flight_data:
-                text = f"{item['title']} - {item['content']}"
-                flight_texts.append(text)
-
-            return flight_texts
+            # Import and run the flight policies data loader
+            from data.flight_data import load_flight_policies_to_couchbase
+            
+            logger.info("Loading flight policies using data loading script...")
+            
+            # Load policies using the dedicated script
+            load_flight_policies_to_couchbase(
+                cluster=self.cluster,
+                bucket_name=self.bucket_name,
+                scope_name=scope_name,
+                collection_name=collection_name,
+                embeddings=embeddings,
+                index_name=index_name
+            )
+            
+            logger.info("Flight policies loaded successfully")
+            
         except Exception as e:
+            logger.error(f"Error loading flight data: {e}")
             raise ValueError(f"Error loading flight data: {e!s}")
 
     def setup_vector_store(
@@ -345,13 +370,16 @@ class CouchbaseClient:
                 index_name=index_name,
             )
 
-            # Load flight data - single attempt
+            # Clear existing data and load fresh flight data using the dedicated script
+            logger.info("Clearing existing flight data and loading fresh data...")
+            self.clear_scope(scope_name)
+            
+            # Load flight data using the data loading script
             try:
-                flight_data = self.load_flight_data()
-                vector_store.add_texts(texts=flight_data, batch_size=10)
-                logger.info("Flight data loaded into vector store successfully")
+                self.load_flight_data(scope_name, collection_name, index_name, embeddings)
+                logger.info("Flight data loaded into vector store successfully using data loading script")
             except Exception as e:
-                logger.error(f"Failed to load flight data: {e}")
+                logger.error(f"Failed to load flight data with script: {e}")
                 logger.warning("Vector store created but data not loaded.")
 
             return vector_store
@@ -682,7 +710,7 @@ def setup_flight_search_agent():
 
             # Setup everything in one call - bucket, scope, collection
             client.setup_collection(
-                scope_name=os.environ["SCOPE_NAME"], collection_name=os.environ["COLLECTION_NAME"]
+                scope_name=os.environ["CB_SCOPE"], collection_name=os.environ["CB_COLLECTION"]
             )
 
         with application_span.new("Vector Index Setup"):
@@ -690,7 +718,7 @@ def setup_flight_search_agent():
                 with open("agentcatalog_index.json") as file:
                     index_definition = json.load(file)
                 logger.info("Loaded vector search index definition from agentcatalog_index.json")
-                client.setup_vector_search_index(index_definition, os.environ["SCOPE_NAME"])
+                client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
             except Exception as e:
                 logger.warning(f"Error loading index definition: {e!s}")
                 logger.info("Continuing without vector search index...")
@@ -727,9 +755,9 @@ def setup_flight_search_agent():
                 raise RuntimeError("Capella AI embeddings required for this configuration")
 
             client.setup_vector_store(
-                scope_name=os.environ["SCOPE_NAME"],
-                collection_name=os.environ["COLLECTION_NAME"],
-                index_name=os.environ["INDEX_NAME"],
+                                        scope_name=os.environ["CB_SCOPE"],
+            collection_name=os.environ["CB_COLLECTION"],
+            index_name=os.environ["CB_INDEX"],
                 embeddings=embeddings,
             )
 

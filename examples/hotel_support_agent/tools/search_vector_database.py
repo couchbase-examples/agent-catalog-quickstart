@@ -18,28 +18,52 @@ if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CB_USERNAME') and os.getenv(
         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
     ).decode("utf-8")
 
-# Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-try:
-    auth = couchbase.auth.PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"), 
-        password=os.getenv("CB_PASSWORD", "password")
-    )
-    options = couchbase.options.ClusterOptions(authenticator=auth)
-    # Use WAN profile for better timeout handling with remote clusters
-    options.apply_profile("wan_development")
-    
-    cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_HOST", "couchbase://localhost"),
-        options
-    )
-    cluster.wait_until_ready(timedelta(seconds=15))
-except couchbase.exceptions.CouchbaseException as e:
-    print(f"Could not connect to Couchbase cluster: {str(e)}")
+
+def get_cluster_connection():
+    """Get a fresh cluster connection for each request."""
+    try:
+        auth = couchbase.auth.PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"), 
+            password=os.getenv("CB_PASSWORD", "password")
+        )
+        options = couchbase.options.ClusterOptions(authenticator=auth)
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+        
+        # Additional timeout configurations for Capella cloud connections
+        from couchbase.options import ClusterTimeoutOptions
+        
+        # Configure extended timeouts for cloud connectivity
+        timeout_options = ClusterTimeoutOptions(
+            kv_timeout=timedelta(seconds=10),  # Key-value operations
+            kv_durable_timeout=timedelta(seconds=15),  # Durable writes
+            query_timeout=timedelta(seconds=30),  # N1QL queries
+            search_timeout=timedelta(seconds=30),  # Search operations
+            management_timeout=timedelta(seconds=30),  # Management operations
+            bootstrap_timeout=timedelta(seconds=20),  # Initial connection
+        )
+        options.timeout_options = timeout_options
+        
+        cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+            options
+        )
+        cluster.wait_until_ready(timedelta(seconds=15))
+        return cluster
+    except couchbase.exceptions.CouchbaseException as e:
+        print(f"Could not connect to Couchbase cluster: {str(e)}")
+        return None
+
 
 @agentc.catalog.tool
 def search_vector_database(query: str) -> str:
     """Search for hotels using semantic vector similarity based on user query preferences."""
     try:
+        # Get fresh cluster connection
+        cluster = get_cluster_connection()
+        if not cluster:
+            return "Could not connect to database. Please try again later."
+        
         # Use Capella AI embeddings to match the data loading embeddings
         try:
             if os.environ.get('CAPELLA_API_KEY') and os.environ.get('CAPELLA_API_ENDPOINT'):
@@ -55,14 +79,23 @@ def search_vector_database(query: str) -> str:
         
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
-            bucket_name=os.environ.get('CB_BUCKET_NAME', 'vector-search-testing'),
-            scope_name=os.environ.get('SCOPE_NAME', 'shared'),
-            collection_name=os.environ.get('COLLECTION_NAME', 'agentcatalog'),
+            bucket_name=os.environ.get('CB_BUCKET', 'vector-search-testing'),
+            scope_name=os.environ.get('CB_SCOPE', 'agentc_data'),
+            collection_name=os.environ.get('CB_COLLECTION', 'hotel_data'),
             embedding=embeddings,
-            index_name=os.environ.get('INDEX_NAME', 'vector_search_agentcatalog'),
+            index_name=os.environ.get('CB_INDEX', 'hotel_data_index'),
         )
         
-        search_results = vector_store.similarity_search_with_score(query, k=10)  # Get more results for filtering
+        # Search with filter to ensure we only get hotel data
+        try:
+            search_results = vector_store.similarity_search_with_score(
+                query, 
+                k=10,
+                filter={"type": "hotel", "source": "hotel_data"}
+            )
+        except Exception as filter_error:
+            # Fallback to unfiltered search if filter fails
+            search_results = vector_store.similarity_search_with_score(query, k=10)
         
         if not search_results:
             return "No hotels found matching your criteria. Please try a different search query."

@@ -28,6 +28,9 @@ from dotenv import load_dotenv
 parent_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, parent_dir)
 
+# Import the refactored setup functions
+from main import setup_environment, CouchbaseClient
+
 # Environment setup
 load_dotenv(dotenv_path=os.path.join(parent_dir, "../../.env"))
 load_dotenv(dotenv_path=os.path.join(parent_dir, ".env"), override=True)
@@ -55,15 +58,6 @@ except ImportError as e:
 # Agent imports
 try:
     import agentc
-    from main import (
-        setup_environment,
-        setup_couchbase_connection,
-        setup_collection,
-        setup_vector_search_index,
-        setup_ai_models,
-        ingest_route_data,
-        create_llamaindex_agent,
-    )
     from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
     from llama_index.core import Settings
     AGENT_AVAILABLE = True
@@ -169,7 +163,7 @@ class RouteEvaluator:
                 self.phoenix_session = None
 
     def setup_agent(self):
-        """Setup the route planner agent."""
+        """Setup the route planner agent using CouchbaseClient from main.py."""
         try:
             logger.info("🔧 Setting up route planner agent...")
 
@@ -180,42 +174,34 @@ class RouteEvaluator:
             # Setup environment
             setup_environment()
 
-            # Setup Couchbase connection
-            cluster = setup_couchbase_connection()
-
-            # Setup collection
-            setup_collection(
-                cluster,
-                os.environ["CB_BUCKET_NAME"],
-                os.environ["SCOPE_NAME"],
-                os.environ["COLLECTION_NAME"],
+            # Initialize Couchbase client
+            client = CouchbaseClient(
+                conn_string=os.environ['CB_CONN_STRING'],
+                username=os.environ['CB_USERNAME'],
+                password=os.environ['CB_PASSWORD'],
+                bucket_name=os.environ['CB_BUCKET']
             )
+
+            # Setup infrastructure
+            client.connect()
+            client.setup_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
 
             # Setup vector search index
             try:
                 with open("agentcatalog_index.json", "r") as file:
                     index_definition = json.load(file)
-                setup_vector_search_index(cluster, index_definition)
+                client.setup_vector_search_index(index_definition)
             except Exception as e:
                 logger.warning(f"⚠️ Could not setup vector search index: {e}")
 
-            # Setup AI models
-            embed_model, llm = setup_ai_models(span)
+            # Setup AI models and embeddings
+            embed_model, llm = client.setup_ai_models(span)
 
-            # Setup vector store
-            vector_store = CouchbaseSearchVectorStore(
-                cluster=cluster,
-                bucket_name=os.environ["CB_BUCKET_NAME"],
-                scope_name=os.environ["SCOPE_NAME"],
-                collection_name=os.environ["COLLECTION_NAME"],
-                index_name=os.environ["INDEX_NAME"],
-            )
-
-            # Ingest route data
-            ingest_route_data(vector_store, span)
+            # Load route data and setup vector store
+            vector_store = client.setup_vector_store(span, embed_model)
 
             # Create agent
-            self.agent = create_llamaindex_agent(catalog, span)
+            self.agent = client.create_llamaindex_agent(catalog, span)
 
             logger.info("✅ Route planner agent setup complete")
             return True

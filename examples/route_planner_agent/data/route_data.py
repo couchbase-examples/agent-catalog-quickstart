@@ -367,3 +367,95 @@ def get_transportation_modes():
     ]
 
     return transport_data
+
+
+def load_route_data_to_couchbase(cluster, bucket_name, scope_name, collection_name, embeddings, index_name=None):
+    """Load route data into Couchbase vector store using LlamaIndex.
+    
+    Args:
+        cluster: Connected Couchbase cluster
+        bucket_name: Name of the bucket
+        scope_name: Name of the scope
+        collection_name: Name of the collection
+        embeddings: Configured embeddings model
+        index_name: Optional index name (defaults to collection_name + '_index')
+    """
+    from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
+    from llama_index.core import Document, VectorStoreIndex, StorageContext
+    from llama_index.core.ingestion import IngestionPipeline
+    from llama_index.core.node_parser import SentenceSplitter
+    
+    if not index_name:
+        index_name = f"{collection_name}_index"
+    
+    print(f"Loading route data to {bucket_name}.{scope_name}.{collection_name}")
+    
+    try:
+        # Initialize LlamaIndex vector store with provided parameters
+        vector_store = CouchbaseSearchVectorStore(
+            cluster=cluster,
+            bucket_name=bucket_name,
+            scope_name=scope_name,
+            collection_name=collection_name,
+            index_name=index_name,
+        )
+        print("✓ LlamaIndex vector store initialized")
+        
+        # Get route data
+        travel_knowledge = get_travel_knowledge_base()
+        
+        print(f"Retrieved {len(travel_knowledge)} route knowledge entries")
+        
+        # Create LlamaIndex Document objects
+        documents = []
+        
+        for i, entry in enumerate(travel_knowledge):
+            # Create searchable text combining title and content
+            text = f"{entry['title']}: {entry['content']}"
+            
+            # Create metadata
+            metadata = {
+                "route_id": f"route_{i+1}",
+                "title": entry["title"],
+                "type": "route",
+                "source": "route_data"
+            }
+            
+            # Add entry metadata if available
+            if "metadata" in entry:
+                # Convert list values to strings for Couchbase compatibility
+                for key, value in entry["metadata"].items():
+                    if isinstance(value, list):
+                        metadata[key] = ", ".join(str(v) for v in value)
+                    else:
+                        metadata[key] = value
+            
+            # Create LlamaIndex Document
+            doc = Document(
+                text=text,
+                metadata=metadata
+            )
+            documents.append(doc)
+        
+        print(f"Created {len(documents)} LlamaIndex documents")
+        
+        # Create ingestion pipeline with sentence splitter and embeddings
+        pipeline = IngestionPipeline(
+            transformations=[
+                SentenceSplitter(chunk_size=512, chunk_overlap=50),
+                embeddings
+            ],
+            vector_store=vector_store
+        )
+        
+        # Ingest documents using LlamaIndex pipeline
+        print("⚡ Ingesting documents using LlamaIndex pipeline...")
+        pipeline.run(documents=documents)
+        
+        print(f"✓ Successfully loaded {len(documents)} routes using LlamaIndex")
+        
+        return vector_store
+        
+    except Exception as e:
+        print(f"❌ Error loading route data: {e}")
+        raise

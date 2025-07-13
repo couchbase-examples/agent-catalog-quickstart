@@ -9,6 +9,8 @@ This tool demonstrates:
 
 import os
 import logging
+import dotenv
+from datetime import timedelta
 
 import agentc
 from llama_index.core import Settings, VectorStoreIndex
@@ -16,6 +18,46 @@ from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
+# Load environment variables
+dotenv.load_dotenv()
+
+
+def get_cluster_connection():
+    """Get a fresh cluster connection for each request."""
+    try:
+        from couchbase.auth import PasswordAuthenticator
+        from couchbase.cluster import Cluster
+        from couchbase.options import ClusterOptions, ClusterTimeoutOptions
+        
+        auth = PasswordAuthenticator(
+            username=os.environ.get('CB_USERNAME', 'kaustavcluster'),
+            password=os.environ.get('CB_PASSWORD', 'Password@123')
+        )
+        options = ClusterOptions(auth)
+        options.apply_profile("wan_development")
+        
+        # Set timeout configurations
+        timeout_options = ClusterTimeoutOptions(
+            kv_timeout=timedelta(seconds=10),
+            kv_durable_timeout=timedelta(seconds=15),
+            query_timeout=timedelta(seconds=30),
+            search_timeout=timedelta(seconds=30),
+            management_timeout=timedelta(seconds=30),
+            bootstrap_timeout=timedelta(seconds=20),
+        )
+        options.timeout_options = timeout_options
+        
+        cluster = Cluster(
+            os.environ.get('CB_CONN_STRING', 'couchbases://cb.hlcup4o4jmjr55yf.cloud.couchbase.com'),
+            options
+        )
+        cluster.wait_until_ready(timedelta(seconds=10))
+        return cluster
+    except Exception as e:
+        logger.error(f"Failed to connect to Couchbase: {e}")
+        raise
+
 
 @agentc.catalog.tool
 def search_routes(query: str) -> str:
@@ -32,29 +74,16 @@ def search_routes(query: str) -> str:
         Formatted string with relevant route information and travel recommendations
     """
     try:
-        # Import here to avoid circular imports
-        from couchbase.auth import PasswordAuthenticator
-        from couchbase.cluster import Cluster
-        from couchbase.options import ClusterOptions
-        from datetime import timedelta
-        
-        # Get configuration from environment (set by main.py)
+        # Get configuration from environment
         cluster_config = {
-            'host': os.environ.get('CB_HOST', 'couchbase://localhost'),
-            'username': os.environ.get('CB_USERNAME', 'Administrator'),
-            'password': os.environ.get('CB_PASSWORD', 'password'),
-            'bucket': os.environ.get('CB_BUCKET_NAME', 'route_planner'),
-            'scope': os.environ.get('SCOPE_NAME', 'shared'),
-            'collection': os.environ.get('COLLECTION_NAME', 'routes'),
-            'index': os.environ.get('INDEX_NAME', 'route_search_index')
+            'bucket': os.environ.get('CB_BUCKET', 'vector-search-testing'),
+            'scope': os.environ.get('CB_SCOPE', 'agentc_data'),
+            'collection': os.environ.get('CB_COLLECTION', 'route_data'),
+            'index': os.environ.get('CB_INDEX', 'route_data_index')
         }
         
-        # Connect to Couchbase (quick connection for tool usage)
-        auth = PasswordAuthenticator(cluster_config['username'], cluster_config['password'])
-        options = ClusterOptions(auth)
-        options.apply_profile("wan_development")
-        cluster = Cluster(cluster_config['host'], options)
-        cluster.wait_until_ready(timedelta(seconds=10))
+        # Get fresh cluster connection
+        cluster = get_cluster_connection()
         
         # Create vector store
         vector_store = CouchbaseSearchVectorStore(

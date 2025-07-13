@@ -18,16 +18,20 @@ logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
+    auth = couchbase.auth.PasswordAuthenticator(
+        username=os.getenv("CB_USERNAME", "Administrator"),
+        password=os.getenv("CB_PASSWORD", "password"),
+    )
+    options = couchbase.options.ClusterOptions(auth)
+    
+    # Use WAN profile for better timeout handling with remote clusters
+    options.apply_profile("wan_development")
+    
     cluster = couchbase.cluster.Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        couchbase.options.ClusterOptions(
-            authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"),
-                password=os.getenv("CB_PASSWORD", "password"),
-            )
-        ),
+        options
     )
-    cluster.wait_until_ready(timedelta(seconds=5))
+    cluster.wait_until_ready(timedelta(seconds=20))
 except couchbase.exceptions.CouchbaseException as e:
     error_msg = f"Could not connect to Couchbase cluster: {e!s}"
     print(error_msg)
@@ -59,13 +63,14 @@ def _get_vector_store():
                 api_key=os.getenv("OPENAI_API_KEY"), model="text-embedding-3-small"
             )
 
+        # Updated to use correct environment variable names and default values
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "vector-search-testing"),
-            scope_name=os.getenv("SCOPE_NAME", "shared"),
-            collection_name=os.getenv("COLLECTION_NAME", "agentcatalog"),
+            scope_name=os.getenv("CB_SCOPE", "agentc_data"),
+            collection_name=os.getenv("CB_COLLECTION", "flight_policies"),
             embedding=embeddings,
-            index_name=os.getenv("INDEX_NAME", "vector_search_agentcatalog"),
+            index_name=os.getenv("CB_INDEX", "flight_policies_index"),
         )
         return vector_store
     except Exception as e:
@@ -86,46 +91,39 @@ def search_flight_policies(query: str) -> str:
         # Get vector store
         vector_store = _get_vector_store()
 
-        # Perform vector similarity search with filter for policy documents
-        # Search for documents that are semantically similar to the query
-        # Filter to only include policy documents, not routes/airlines/airports
+        # Perform vector similarity search specifically for flight policies
+        # First try without filter to see if we can find any documents
         try:
+            logger.info(f"Searching for flight policies with query: '{query.strip()}'")
             results = vector_store.similarity_search(
                 query=query.strip(),
-                k=3,  # Return top 3 most similar results
-                filter={"type": {"$in": ["policy", "airline", "booking_class"]}},  # Only policy-related docs
+                k=5,  # Return top 5 most similar results for better coverage
             )
-        except Exception as filter_error:
-            logger.warning(f"Filter search failed: {filter_error}, trying without filter")
-            # Fallback to unfiltered search if filter fails
-            results = vector_store.similarity_search(
-                query=query.strip(),
-                k=6,  # Get more results to manually filter
-                filter=None,
-            )
-            # Manually filter results by content patterns
-            policy_results = []
-            for doc in results:
-                content = doc.page_content.lower()
-                # Look for policy-related keywords in content
-                if any(keyword in content for keyword in [
-                    "policy", "baggage", "cancellation", "check-in", "restriction", 
-                    "fee", "allowance", "prohibited", "carry-on", "checked"
-                ]):
-                    policy_results.append(doc)
-                    if len(policy_results) >= 3:
-                        break
-            results = policy_results
+            logger.info(f"Found {len(results)} results for query: '{query.strip()}'")
+        except Exception as search_error:
+            logger.error(f"Search failed: {search_error}")
+            return f"Search error: {search_error}. Please try again or contact customer service."
 
         if not results:
-            return "No relevant flight policies found for your query. Please try different search terms or contact customer service for specific policy questions."
+            return "No relevant flight policies found for your query. Please try different search terms (e.g., 'baggage', 'carry-on', 'checked bags', 'fees', 'weight limits') or contact customer service for specific policy questions."
 
         # Format results for display
         formatted_results = []
         for i, doc in enumerate(results, 1):
             # Extract policy information from document content
-            content = doc.page_content
-            formatted_results.append(f"Policy {i}:\n{content}")
+            content = doc.page_content[:500]  # Limit content length for readability
+            if len(doc.page_content) > 500:
+                content += "..."
+            
+            # Include metadata if available
+            metadata_info = ""
+            if hasattr(doc, 'metadata') and doc.metadata:
+                if 'title' in doc.metadata:
+                    metadata_info = f"Title: {doc.metadata['title']}\n"
+                elif 'source' in doc.metadata:
+                    metadata_info = f"Source: {doc.metadata['source']}\n"
+            
+            formatted_results.append(f"Policy {i}:\n{metadata_info}{content}")
 
         return "\n\n".join(formatted_results)
 
@@ -140,4 +138,4 @@ def search_flight_policies(query: str) -> str:
     except Exception as e:
         error_msg = f"Error searching flight policies: {e!s}"
         logger.exception("Unexpected error in search_flight_policies")
-        return "Error searching flight policies. Please try again or contact customer service."
+        return f"Error searching flight policies: {error_msg}. Please try again or contact customer service."

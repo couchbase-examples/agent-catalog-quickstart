@@ -1,6 +1,6 @@
 {
     "type": "fulltext-index",
-    "name": "vector_search_agentcatalog",
+    "name": "hotel_data_index",
     "uuid": "",
     "sourceType": "gocbcore",
     "sourceName": "vector-search-testing",
@@ -30,7 +30,7 @@
         "store_dynamic": false,
         "type_field": "_type",
         "types": {
-          "shared.agentcatalog": {
+          "agentc_data.hotel_data": {
             "dynamic": true,
             "enabled": true,
             "properties": {
