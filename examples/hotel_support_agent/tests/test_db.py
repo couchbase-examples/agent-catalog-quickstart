@@ -58,7 +58,7 @@ def check_database():
             test_doc = {
                 "name": "Test Hotel",
                 "description": "A test hotel for debugging",
-                "embedding": [0.1] * 1536  # 1536 dimensions
+                "embedding": [0.1] * 1536  # OpenAI embedding dimensions
             }
             
             collection.upsert("test_hotel", test_doc)
@@ -80,7 +80,7 @@ def check_database():
             "knn": [
                 {
                     "field": "embedding",
-                    "vector": [0.1] * 1536,
+                    "vector": [0.1] * 1536,  # Test vector
                     "k": 5
                 }
             ]

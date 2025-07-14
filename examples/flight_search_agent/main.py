@@ -23,6 +23,7 @@ import langchain_core.messages
 import langchain_core.runnables
 import langchain_openai.chat_models
 import langgraph.graph
+import openai
 import requests
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
@@ -34,7 +35,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-import openai
 
 from parameter_mapper import ParameterMapper
 
@@ -72,7 +72,6 @@ def setup_capella_ai_config():
         "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
         "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
         "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
-        "dimensions": 4096,
     }
 
 
@@ -100,9 +99,7 @@ def test_capella_connectivity():
 
             # Test embedding
             embedding_data = {
-                "model": os.getenv(
-                    "CAPELLA_API_EMBEDDING_MODEL", "intfloat/e5-mistral-7b-instruct"
-                ),
+                "model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
                 "input": "test connectivity",
             }
 
@@ -114,10 +111,6 @@ def test_capella_connectivity():
                 embed_result = embedding_response.json()
                 embed_dims = len(embed_result["data"][0]["embedding"])
                 logger.info(f"✅ Capella AI embedding test successful - dimensions: {embed_dims}")
-
-                if embed_dims != 4096:
-                    logger.warning(f"Expected 4096 dimensions, got {embed_dims}")
-                    return False
             else:
                 logger.warning(
                     f"Capella AI embedding test failed: {embedding_response.status_code}"
@@ -126,7 +119,7 @@ def test_capella_connectivity():
 
             # Test LLM
             llm_data = {
-                "model": os.getenv("CAPELLA_API_LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct"),
+                "model": os.getenv("CAPELLA_API_LLM_MODEL"),
                 "messages": [{"role": "user", "content": "Hello"}],
                 "max_tokens": 10,
             }
@@ -201,27 +194,9 @@ class CouchbaseClient:
         try:
             auth = PasswordAuthenticator(self.username, self.password)
             options = ClusterOptions(auth)
-            
+
             # Use WAN profile for better timeout handling with remote clusters
             options.apply_profile("wan_development")
-            
-            # Additional timeout configurations for Capella cloud connections
-            from couchbase.options import (
-                ClusterTimeoutOptions,
-                ClusterTracingOptions,
-            )
-            
-            # Configure extended timeouts for cloud connectivity
-            timeout_options = ClusterTimeoutOptions(
-                kv_timeout=timedelta(seconds=10),  # Key-value operations
-                kv_durable_timeout=timedelta(seconds=15),  # Durable writes
-                query_timeout=timedelta(seconds=30),  # N1QL queries
-                search_timeout=timedelta(seconds=30),  # Search operations
-                management_timeout=timedelta(seconds=30),  # Management operations
-                bootstrap_timeout=timedelta(seconds=20),  # Initial connection
-            )
-            options.timeout_options = timeout_options
-            
             self.cluster = Cluster(self.conn_string, options)
             # Increased wait time for cloud connections
             self.cluster.wait_until_ready(timedelta(seconds=20))
@@ -334,9 +309,9 @@ class CouchbaseClient:
         try:
             # Import and run the flight policies data loader
             from data.flight_data import load_flight_policies_to_couchbase
-            
+
             logger.info("Loading flight policies using data loading script...")
-            
+
             # Load policies using the dedicated script
             load_flight_policies_to_couchbase(
                 cluster=self.cluster,
@@ -344,11 +319,11 @@ class CouchbaseClient:
                 scope_name=scope_name,
                 collection_name=collection_name,
                 embeddings=embeddings,
-                index_name=index_name
+                index_name=index_name,
             )
-            
+
             logger.info("Flight policies loaded successfully")
-            
+
         except Exception as e:
             logger.error(f"Error loading flight data: {e}")
             raise ValueError(f"Error loading flight data: {e!s}")
@@ -373,11 +348,13 @@ class CouchbaseClient:
             # Clear existing data and load fresh flight data using the dedicated script
             logger.info("Clearing existing flight data and loading fresh data...")
             self.clear_scope(scope_name)
-            
+
             # Load flight data using the data loading script
             try:
                 self.load_flight_data(scope_name, collection_name, index_name, embeddings)
-                logger.info("Flight data loaded into vector store successfully using data loading script")
+                logger.info(
+                    "Flight data loaded into vector store successfully using data loading script"
+                )
             except Exception as e:
                 logger.error(f"Failed to load flight data with script: {e}")
                 logger.warning("Vector store created but data not loaded.")
@@ -512,19 +489,21 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                     """Wrapper to handle parameter mapping using ParameterMapper."""
                     try:
                         logger.debug(f"Tool wrapper called for {name} with input: '{tool_input}'")
-                        
+
                         # Use ParameterMapper to intelligently map string input to parameters
                         mapped_params = parameter_mapper.map_string_input(
                             name, tool_input, original_tool.func
                         )
-                        
+
                         logger.debug(f"Mapped parameters for {name}: {mapped_params}")
 
                         # Call the original tool with mapped parameters
                         result = original_tool.func(**mapped_params)
-                        
-                        logger.debug(f"Tool {name} result type: {type(result)}, length: {len(result) if hasattr(result, '__len__') else 'N/A'}")
-                        
+
+                        logger.debug(
+                            f"Tool {name} result type: {type(result)}, length: {len(result) if hasattr(result, '__len__') else 'N/A'}"
+                        )
+
                         return result
 
                     except openai.OpenAIError as e:
@@ -724,7 +703,7 @@ def setup_flight_search_agent():
                 logger.info("Continuing without vector search index...")
 
         with application_span.new("Vector Store Setup"):
-            # Use Capella AI embeddings (no fallback due to dimension mismatch)
+            # Use Capella AI embeddings (no fallback due to potential dimension mismatch)
             try:
                 if (
                     os.getenv("CB_USERNAME")
@@ -743,21 +722,21 @@ def setup_flight_search_agent():
                         api_key=api_key,
                         base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
                     )
-                    logger.info("✅ Using Capella AI for embeddings (4096 dimensions)")
+                    logger.info("✅ Using Capella AI for embeddings")
                 else:
                     raise ValueError("Capella AI credentials not available")
 
             except Exception as e:
                 logger.error(f"❌ Capella AI embeddings failed: {e}")
                 logger.error(
-                    "Cannot fallback to OpenAI embeddings due to dimension mismatch (1536 vs 4096)"
+                    "Cannot fallback to OpenAI embeddings due to potential dimension mismatch"
                 )
                 raise RuntimeError("Capella AI embeddings required for this configuration")
 
             client.setup_vector_store(
-                                        scope_name=os.environ["CB_SCOPE"],
-            collection_name=os.environ["CB_COLLECTION"],
-            index_name=os.environ["CB_INDEX"],
+                scope_name=os.environ["CB_SCOPE"],
+                collection_name=os.environ["CB_COLLECTION"],
+                index_name=os.environ["CB_INDEX"],
                 embeddings=embeddings,
             )
 

@@ -281,7 +281,7 @@ class ArizeFlightSearchEvaluator:
                         api_key=api_key,
                         base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
                     )
-                    logger.info("✅ Using Capella AI for embeddings (4096 dimensions)")
+                    logger.info("✅ Using Capella AI for embeddings")
                 else:
                     raise ValueError("Capella AI credentials not available")
             except Exception as e:

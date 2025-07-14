@@ -61,13 +61,14 @@ def setup_capella_ai_config():
     ]
     missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
     if missing_vars:
-        raise ValueError(f"Missing required Capella AI environment variables: {missing_vars}")
+        raise ValueError(
+            f"Missing required Capella AI environment variables: {missing_vars}"
+        )
 
     return {
         "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
         "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
         "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
-        "dimensions": 4096,
     }
 
 
@@ -85,7 +86,10 @@ def test_capella_connectivity():
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
 
-            headers = {"Authorization": f"Basic {api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Basic {api_key}",
+                "Content-Type": "application/json",
+            }
 
             # Test embedding
             logger.info("Testing Capella AI connectivity...")
@@ -97,17 +101,18 @@ def test_capella_connectivity():
             }
 
             embedding_response = requests.post(
-                f"{endpoint}/embeddings", headers=headers, json=embedding_data, timeout=30
+                f"{endpoint}/embeddings",
+                headers=headers,
+                json=embedding_data,
+                timeout=30,
             )
 
             if embedding_response.status_code == 200:
                 embed_result = embedding_response.json()
                 embed_dims = len(embed_result["data"][0]["embedding"])
-                logger.info(f"✅ Capella AI embedding test successful - dimensions: {embed_dims}")
-
-                if embed_dims != 4096:
-                    logger.warning(f"Expected 4096 dimensions, got {embed_dims}")
-                    return False
+                logger.info(
+                    f"✅ Capella AI embedding test successful - dimensions: {embed_dims}"
+                )
             else:
                 logger.warning(
                     f"Capella AI embedding test failed: {embedding_response.status_code}"
@@ -117,19 +122,26 @@ def test_capella_connectivity():
 
             # Test LLM
             llm_data = {
-                "model": os.getenv("CAPELLA_API_LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct"),
+                "model": os.getenv(
+                    "CAPELLA_API_LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct"
+                ),
                 "messages": [{"role": "user", "content": "Hello"}],
                 "max_tokens": 10,
             }
 
             llm_response = requests.post(
-                f"{endpoint}/chat/completions", headers=headers, json=llm_data, timeout=30
+                f"{endpoint}/chat/completions",
+                headers=headers,
+                json=llm_data,
+                timeout=30,
             )
 
             if llm_response.status_code == 200:
                 logger.info("✅ Capella AI LLM test successful")
             else:
-                logger.warning(f"Capella AI LLM test failed: {llm_response.status_code}")
+                logger.warning(
+                    f"Capella AI LLM test failed: {llm_response.status_code}"
+                )
                 logger.warning(f"Response: {llm_response.text[:200]}...")
                 return False
 
@@ -152,7 +164,13 @@ def setup_environment():
     setup_capella_ai_config()
 
     # Required variables
-    required_vars = ["OPENAI_API_KEY", "CB_CONN_STRING", "CB_USERNAME", "CB_PASSWORD", "CB_BUCKET"]
+    required_vars = [
+        "OPENAI_API_KEY",
+        "CB_CONN_STRING",
+        "CB_USERNAME",
+        "CB_PASSWORD",
+        "CB_BUCKET",
+    ]
     for var in required_vars:
         _set_if_undefined(var)
 
@@ -165,22 +183,28 @@ def setup_environment():
 
     for key, default_value in defaults.items():
         if not os.environ.get(key):
-            os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
+            os.environ[key] = (
+                input(f"Enter {key} (default: {default_value}): ") or default_value
+            )
 
     os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "hotel_data_index")
     os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
     os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "hotel_data")
 
     # Generate Capella AI API key from username and password if endpoint is provided
-    if os.getenv('CAPELLA_API_ENDPOINT'):
-        os.environ['CAPELLA_API_KEY'] = base64.b64encode(
+    if os.getenv("CAPELLA_API_ENDPOINT"):
+        os.environ["CAPELLA_API_KEY"] = base64.b64encode(
             f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
         ).decode("utf-8")
-        
+
         # Ensure endpoint has /v1 suffix for OpenAI compatibility
-        if not os.getenv('CAPELLA_API_ENDPOINT').endswith('/v1'):
-            os.environ['CAPELLA_API_ENDPOINT'] = os.getenv('CAPELLA_API_ENDPOINT').rstrip('/') + '/v1'
-            logger.info(f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}")
+        if not os.getenv("CAPELLA_API_ENDPOINT").endswith("/v1"):
+            os.environ["CAPELLA_API_ENDPOINT"] = (
+                os.getenv("CAPELLA_API_ENDPOINT").rstrip("/") + "/v1"
+            )
+            logger.info(
+                f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
+            )
 
     # Test Capella AI connectivity
     test_capella_connectivity()
@@ -189,7 +213,9 @@ def setup_environment():
 class CouchbaseClient:
     """Centralized Couchbase client for all database operations."""
 
-    def __init__(self, conn_string: str, username: str, password: str, bucket_name: str):
+    def __init__(
+        self, conn_string: str, username: str, password: str, bucket_name: str
+    ):
         """Initialize Couchbase client with connection details."""
         self.conn_string = conn_string
         self.username = username
@@ -204,16 +230,16 @@ class CouchbaseClient:
         try:
             auth = PasswordAuthenticator(self.username, self.password)
             options = ClusterOptions(auth)
-            
+
             # Use WAN profile for better timeout handling with remote clusters
             options.apply_profile("wan_development")
-            
+
             # Additional timeout configurations for Capella cloud connections
             from couchbase.options import (
                 ClusterTimeoutOptions,
                 ClusterTracingOptions,
             )
-            
+
             # Configure extended timeouts for cloud connectivity
             timeout_options = ClusterTimeoutOptions(
                 kv_timeout=timedelta(seconds=10),  # Key-value operations
@@ -224,7 +250,7 @@ class CouchbaseClient:
                 bootstrap_timeout=timedelta(seconds=20),  # Initial connection
             )
             options.timeout_options = timeout_options
-            
+
             self.cluster = Cluster(self.conn_string, options)
             # Increased wait time for cloud connections
             self.cluster.wait_until_ready(timedelta(seconds=20))
@@ -272,7 +298,8 @@ class CouchbaseClient:
             # Setup collection
             collections = bucket_manager.get_all_scopes()
             collection_exists = any(
-                scope.name == scope_name and collection_name in [col.name for col in scope.collections]
+                scope.name == scope_name
+                and collection_name in [col.name for col in scope.collections]
                 for scope in collections
             )
 
@@ -302,14 +329,16 @@ class CouchbaseClient:
         """Get a collection object."""
         key = f"{scope_name}.{collection_name}"
         if key not in self._collections:
-            self._collections[key] = self.bucket.scope(scope_name).collection(collection_name)
+            self._collections[key] = self.bucket.scope(scope_name).collection(
+                collection_name
+            )
         return self._collections[key]
 
     def setup_vector_search_index(self, index_definition: dict, scope_name: str):
         """Setup vector search index."""
         try:
             scope_index_manager = self.bucket.scope(scope_name).search_indexes()
-            
+
             existing_indexes = scope_index_manager.get_all_indexes()
             index_name = index_definition["name"]
 
@@ -328,7 +357,7 @@ class CouchbaseClient:
         try:
             # Clear existing data first
             self.clear_collection_data(scope_name, collection_name)
-            
+
             # Setup vector store
             vector_store = CouchbaseVectorStore(
                 cluster=self.cluster,
@@ -338,26 +367,33 @@ class CouchbaseClient:
                 embedding=embeddings,
                 index_name=index_name,
             )
-            
+
             # Load hotel data using the data loading script
             try:
                 from data.hotel_data import load_hotel_data_to_couchbase
+
                 load_hotel_data_to_couchbase(
                     cluster=self.cluster,
                     bucket_name=self.bucket_name,
                     scope_name=scope_name,
                     collection_name=collection_name,
                     embeddings=embeddings,
-                    index_name=index_name
+                    index_name=index_name,
                 )
-                logger.info("Hotel data loaded into vector store successfully using data loading script")
+                logger.info(
+                    "Hotel data loaded into vector store successfully using data loading script"
+                )
             except Exception as e:
-                logger.warning(f"Error loading hotel data with script: {e}. Falling back to direct method.")
+                logger.warning(
+                    f"Error loading hotel data with script: {e}. Falling back to direct method."
+                )
                 # Fallback to the original method
                 hotel_data = get_hotel_texts()
                 vector_store.add_texts(texts=hotel_data, batch_size=10)
-                logger.info("Hotel data loaded into vector store successfully using fallback method")
-                
+                logger.info(
+                    "Hotel data loaded into vector store successfully using fallback method"
+                )
+
         except Exception as e:
             raise RuntimeError(f"Error loading hotel data: {e!s}")
 
@@ -368,8 +404,10 @@ class CouchbaseClient:
         try:
             # Use the embeddings parameter passed in - no fallbacks
             if not embeddings:
-                raise RuntimeError("Embeddings parameter is required - no fallbacks available")
-            
+                raise RuntimeError(
+                    "Embeddings parameter is required - no fallbacks available"
+                )
+
             logger.info("✅ Using provided embeddings for vector store setup")
 
             # Load hotel data
@@ -395,27 +433,33 @@ class CouchbaseClient:
         """Clear all documents from the collection to start fresh."""
         try:
             # Delete all documents in the collection
-            delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            delete_query = (
+                f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            )
             result = self.cluster.query(delete_query)
-            
-            logger.info(f"Cleared existing data from collection {scope_name}.{collection_name}")
-            
+
+            logger.info(
+                f"Cleared existing data from collection {scope_name}.{collection_name}"
+            )
+
         except Exception as e:
-            logger.warning(f"Could not clear collection data: {e}. Continuing with existing data...")
+            logger.warning(
+                f"Could not clear collection data: {e}. Continuing with existing data..."
+            )
 
     def clear_scope(self, scope_name: str):
         """Clear all collections in scope."""
         try:
             bucket_manager = self.bucket.collections()
             scopes = bucket_manager.get_all_scopes()
-            
+
             for scope in scopes:
                 if scope.name == scope_name:
                     for collection in scope.collections:
                         self.clear_collection_data(scope_name, collection.name)
-            
+
             logger.info(f"Cleared all collections in scope: {scope_name}")
-            
+
         except Exception as e:
             logger.warning(f"Could not clear scope: {e}")
 
@@ -427,20 +471,21 @@ def clear_hotel_data():
             conn_string=os.getenv("CB_CONN_STRING"),
             username=os.getenv("CB_USERNAME"),
             password=os.getenv("CB_PASSWORD"),
-            bucket_name=os.getenv("CB_BUCKET")
+            bucket_name=os.getenv("CB_BUCKET"),
         )
-        
+
         couchbase_client.connect()
-        couchbase_client.bucket = couchbase_client.cluster.bucket(os.getenv("CB_BUCKET"))
-        
+        couchbase_client.bucket = couchbase_client.cluster.bucket(
+            os.getenv("CB_BUCKET")
+        )
+
         # Clear hotel data
         couchbase_client.clear_collection_data(
-            os.getenv("CB_SCOPE"), 
-            os.getenv("CB_COLLECTION")
+            os.getenv("CB_SCOPE"), os.getenv("CB_COLLECTION")
         )
-        
+
         logger.info("Hotel data cleared successfully")
-        
+
     except Exception as e:
         logger.warning(f"Could not clear hotel data: {e}")
 
@@ -456,9 +501,11 @@ def setup_hotel_support_agent():
             setup_environment()
 
         with application_span.new("Capella AI Test"):
-            if os.getenv('CAPELLA_API_ENDPOINT'):
+            if os.getenv("CAPELLA_API_ENDPOINT"):
                 if not test_capella_connectivity():
-                    logger.warning("❌ Capella AI connectivity test failed. Will use OpenAI fallback.")
+                    logger.warning(
+                        "❌ Capella AI connectivity test failed. Will use OpenAI fallback."
+                    )
             else:
                 logger.info("ℹ️ Capella API not configured - will use OpenAI models")
 
@@ -467,26 +514,29 @@ def setup_hotel_support_agent():
                 conn_string=os.getenv("CB_CONN_STRING"),
                 username=os.getenv("CB_USERNAME"),
                 password=os.getenv("CB_PASSWORD"),
-                bucket_name=os.getenv("CB_BUCKET")
+                bucket_name=os.getenv("CB_BUCKET"),
             )
-            
+
             couchbase_client.connect()
 
         with application_span.new("Couchbase Collection Setup"):
             couchbase_client.setup_collection(
-                os.getenv("CB_SCOPE"),
-                os.getenv("CB_COLLECTION")
+                os.getenv("CB_SCOPE"), os.getenv("CB_COLLECTION")
             )
 
         with application_span.new("Vector Index Setup"):
             try:
-                with open('agentcatalog_index.json', 'r') as file:
+                with open("agentcatalog_index.json", "r") as file:
                     index_definition = json.load(file)
-                logger.info("Loaded vector search index definition from agentcatalog_index.json")
+                logger.info(
+                    "Loaded vector search index definition from agentcatalog_index.json"
+                )
             except Exception as e:
                 raise ValueError(f"Error loading index definition: {e!s}")
-            
-            couchbase_client.setup_vector_search_index(index_definition, os.getenv("CB_SCOPE"))
+
+            couchbase_client.setup_vector_search_index(
+                index_definition, os.getenv("CB_SCOPE")
+            )
 
         with application_span.new("Vector Store Setup"):
             # Setup embeddings using CB_USERNAME/CB_PASSWORD like flight search agent
@@ -499,6 +549,7 @@ def setup_hotel_support_agent():
                 ):
                     # Create API key for Capella AI
                     import base64
+
                     api_key = base64.b64encode(
                         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
                     ).decode()
@@ -509,18 +560,20 @@ def setup_hotel_support_agent():
                         api_key=api_key,
                         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
                     )
-                    logger.info("✅ Using Capella AI for embeddings (4096 dimensions)")
+                    logger.info("✅ Using Capella AI for embeddings")
                 else:
                     raise ValueError("Capella AI credentials not available")
             except Exception as e:
                 logger.error(f"❌ Capella AI embeddings failed: {e}")
-                raise RuntimeError("Capella AI embeddings required for this configuration")
-            
+                raise RuntimeError(
+                    "Capella AI embeddings required for this configuration"
+                )
+
             couchbase_client.setup_vector_store(
                 os.getenv("CB_SCOPE"),
                 os.getenv("CB_COLLECTION"),
                 os.getenv("CB_INDEX"),
-                embeddings
+                embeddings,
             )
 
         with application_span.new("LLM Setup"):
@@ -530,13 +583,13 @@ def setup_hotel_support_agent():
                 api_key = base64.b64encode(
                     f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
                 ).decode()
-                
+
                 llm = ChatOpenAI(
                     api_key=api_key,
-                    base_url=os.getenv('CAPELLA_API_ENDPOINT'),
-                    model=os.getenv('CAPELLA_API_LLM_MODEL'),
+                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                    model=os.getenv("CAPELLA_API_LLM_MODEL"),
                     temperature=0,
-                    callbacks=[agentc_langchain.chat.Callback(span=application_span)]
+                    callbacks=[agentc_langchain.chat.Callback(span=application_span)],
                 )
                 # Test the LLM works
                 llm.invoke("Hello")
@@ -546,10 +599,10 @@ def setup_hotel_support_agent():
                 logger.info("🔄 Falling back to OpenAI LLM...")
                 _set_if_undefined("OPENAI_API_KEY")
                 llm = ChatOpenAI(
-                    api_key=os.getenv('OPENAI_API_KEY'),
+                    api_key=os.getenv("OPENAI_API_KEY"),
                     model="gpt-4o",
                     temperature=0,
-                    callbacks=[agentc_langchain.chat.Callback(span=application_span)]
+                    callbacks=[agentc_langchain.chat.Callback(span=application_span)],
                 )
                 logger.info("✅ Using OpenAI LLM as fallback")
 
@@ -557,48 +610,56 @@ def setup_hotel_support_agent():
             # Load tools from Agent Catalog - they are now properly decorated
             tool_search = catalog.find("tool", name="search_vector_database")
             tool_details = catalog.find("tool", name="get_hotel_details")
-            
+
             if not tool_search:
-                raise ValueError("Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'")
+                raise ValueError(
+                    "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
+                )
             if not tool_details:
-                raise ValueError("Could not find get_hotel_details tool. Make sure it's indexed with 'agentc index tools/'")
-            
+                raise ValueError(
+                    "Could not find get_hotel_details tool. Make sure it's indexed with 'agentc index tools/'"
+                )
+
             tools = [
                 Tool(
                     name=tool_search.meta.name,
                     description=tool_search.meta.description,
-                    func=tool_search.func
+                    func=tool_search.func,
                 ),
                 Tool(
-                    name=tool_details.meta.name, 
+                    name=tool_details.meta.name,
                     description=tool_details.meta.description,
-                    func=tool_details.func
-                )
+                    func=tool_details.func,
+                ),
             ]
 
         with application_span.new("Agent Creation"):
             # Get prompt from Agent Catalog
             hotel_prompt = catalog.find("prompt", name="hotel_search_assistant")
             if not hotel_prompt:
-                raise ValueError("Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'")
-            
+                raise ValueError(
+                    "Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
+                )
+
             # Create a custom prompt using the catalog prompt content
             prompt_content = hotel_prompt.content.strip()
-            
+
             custom_prompt = PromptTemplate(
                 template=prompt_content,
                 input_variables=["input", "agent_scratchpad"],
                 partial_variables={
-                    "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in tools]),
-                    "tool_names": ", ".join([tool.name for tool in tools])
-                }
+                    "tools": "\n".join(
+                        [f"{tool.name}: {tool.description}" for tool in tools]
+                    ),
+                    "tool_names": ", ".join([tool.name for tool in tools]),
+                },
             )
-            
+
             agent = create_react_agent(llm, tools, custom_prompt)
             agent_executor = AgentExecutor(
-                agent=agent, 
-                tools=tools, 
-                verbose=True, 
+                agent=agent,
+                tools=tools,
+                verbose=True,
                 handle_parsing_errors=True,
                 max_iterations=5,  # Reduced from 10 to 3 to prevent infinite loops
             )
@@ -621,7 +682,9 @@ def run_interactive_demo():
         # Interactive hotel search loop
         with application_span.new("Query Execution") as span:
             logger.info("Available commands:")
-            logger.info("- Enter hotel search queries (e.g., 'Find luxury hotels with spa')")
+            logger.info(
+                "- Enter hotel search queries (e.g., 'Find luxury hotels with spa')"
+            )
             logger.info("- 'quit' - Exit the demo")
             logger.info(
                 "Try asking: 'Find me a beach resort in Miami' or 'Get details about Ocean Breeze Resort'"
@@ -629,7 +692,9 @@ def run_interactive_demo():
             logger.info("─" * 40)
 
             while True:
-                query = input("🔍 Enter hotel search query (or 'quit' to exit): ").strip()
+                query = input(
+                    "🔍 Enter hotel search query (or 'quit' to exit): "
+                ).strip()
 
                 if query.lower() in ["quit", "exit", "q"]:
                     logger.info("Thanks for using Hotel Support Agent!")
@@ -645,7 +710,7 @@ def run_interactive_demo():
 
                         # Execute the query
                         response = agent_executor.invoke({"input": query})
-                        query_span["response"] = response['output']
+                        query_span["response"] = response["output"]
 
                         # Display results
                         logger.info(f"✅ Response: {response['output']}")
@@ -675,7 +740,7 @@ def run_test():
         test_queries = [
             "Find me a luxury hotel with a pool and spa",
             "I need a beach resort in Miami for my vacation",
-            "Get me details about Ocean Breeze Resort"
+            "Get me details about Ocean Breeze Resort",
         ]
 
         with application_span.new("Test Queries") as span:
@@ -685,7 +750,7 @@ def run_test():
                     try:
                         query_span["query"] = query
                         response = agent_executor.invoke({"input": query})
-                        query_span["response"] = response['output']
+                        query_span["response"] = response["output"]
 
                         # Display the response
                         logger.info(f"🤖 AI Response: {response['output']}")
