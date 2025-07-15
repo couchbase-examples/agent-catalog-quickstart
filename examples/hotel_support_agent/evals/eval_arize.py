@@ -132,20 +132,23 @@ class ArizeHotelSupportEvaluator:
             logger.info("🔧 Setting up environment...")
             setup_environment()
             
-            # Initialize Couchbase client
+            # Initialize Couchbase client with travel-sample bucket
             logger.info("🔧 Creating Couchbase client...")
             client = CouchbaseClient(
                 conn_string=os.environ['CB_CONN_STRING'],
                 username=os.environ['CB_USERNAME'],
                 password=os.environ['CB_PASSWORD'],
-                bucket_name=os.environ['CB_BUCKET']
+                bucket_name=os.environ.get('CB_BUCKET', 'travel-sample')
             )
             
             logger.info("🔧 Connecting to Couchbase...")
             client.connect()
             
             logger.info("🔧 Setting up collection...")
-            client.setup_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+            client.setup_collection(
+                os.environ.get('CB_SCOPE', 'agentc_data'), 
+                os.environ.get('CB_COLLECTION', 'hotel_data')
+            )
             
             # Load index definition for vector search setup
             index_file = "agentcatalog_index.json"
@@ -157,7 +160,7 @@ class ArizeHotelSupportEvaluator:
                 logger.info("🔧 Setting up vector search index...")
                 with open(index_file, "r") as f:
                     index_definition = json.load(f)
-                client.setup_vector_search_index(index_definition, os.getenv("CB_SCOPE"))
+                client.setup_vector_search_index(index_definition, os.environ.get('CB_SCOPE', 'agentc_data'))
             else:
                 logger.warning(f"Index definition file {index_file} not found")
 
@@ -177,9 +180,9 @@ class ArizeHotelSupportEvaluator:
             )
             
             vector_store = client.setup_vector_store(
-                scope_name=os.environ['CB_SCOPE'],
-                collection_name=os.environ['CB_COLLECTION'],
-                index_name=os.environ['CB_INDEX'],
+                scope_name=os.environ.get('CB_SCOPE', 'agentc_data'),
+                collection_name=os.environ.get('CB_COLLECTION', 'hotel_data'),
+                index_name=os.environ.get('CB_INDEX', 'hotel_data_index'),
                 embeddings=embeddings
             )
 
@@ -209,29 +212,20 @@ class ArizeHotelSupportEvaluator:
                 callbacks=[agentc_langchain.chat.Callback(span=span)],
             )
 
-            # Load tools from Agent Catalog - they are now properly decorated
+            # Load only the search tool from Agent Catalog
             tool_search = catalog.find("tool", name="search_vector_database")
-            tool_details = catalog.find("tool", name="get_hotel_details")
 
             if not tool_search:
                 raise ValueError(
                     "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
                 )
-            if not tool_details:
-                raise ValueError(
-                    "Could not find get_hotel_details tool. Make sure it's indexed with 'agentc index tools/'"
-                )
 
+            # Create single tool list
             tools = [
                 Tool(
                     name=tool_search.meta.name,
                     description=tool_search.meta.description,
                     func=tool_search.func,
-                ),
-                Tool(
-                    name=tool_details.meta.name,
-                    description=tool_details.meta.description,
-                    func=tool_details.func,
                 ),
             ]
 
@@ -608,46 +602,95 @@ class ArizeHotelSupportEvaluator:
             try:
                 # Run all evaluations using run_evals for comprehensive analysis
                 # Note: run_evals API changed, using correct parameter name
+                print(f"   🔍 Running evaluations with {len(evaluators)} evaluators on {len(eval_df)} samples")
+                print(f"   📋 Evaluators: {list(evaluators.keys())}")
+                print(f"   📊 Evaluation DataFrame columns: {list(eval_df.columns)}")
+                
                 evaluation_results = run_evals(
                     dataframe=eval_df,  # Changed back to dataframe parameter
                     evaluators=list(evaluators.values()),
                     provide_explanation=True,
                 )
+                
+                print(f"   ✅ run_evals completed successfully")
 
                 # Add evaluation results to our DataFrame
                 if evaluation_results is not None:
-                    # Handle both DataFrame and list results from run_evals
+                    print(f"   📊 Evaluation results type: {type(evaluation_results)}")
+                    
+                    # Handle DataFrame results from run_evals
                     if isinstance(evaluation_results, pd.DataFrame) and not evaluation_results.empty:
-                        # It's a DataFrame - use existing logic
-                        for evaluator_name in evaluators.keys():
-                            eval_col = f"{evaluator_name}_eval"
-                            explanation_col = f"{evaluator_name}_explanation"
-                            score_col = f"{evaluator_name}_score"
-
-                            if eval_col in evaluation_results.columns:
-                                results_df[f"arize_{evaluator_name}"] = evaluation_results[eval_col]
-                            if explanation_col in evaluation_results.columns:
-                                results_df[f"arize_{evaluator_name}_explanation"] = evaluation_results[explanation_col]
-                            if score_col in evaluation_results.columns:
-                                results_df[f"arize_{evaluator_name}_score"] = evaluation_results[score_col]
-
+                        print(f"   📋 DataFrame columns: {list(evaluation_results.columns)}")
+                        print(f"   📋 DataFrame shape: {evaluation_results.shape}")
+                        
+                        # Phoenix evaluators return results with specific column patterns
+                        for col in evaluation_results.columns:
+                            if col.endswith('_eval'):
+                                # Extract evaluator name from column (e.g., 'relevance_eval' -> 'relevance')
+                                eval_name = col.replace('_eval', '')
+                                results_df[f"arize_{eval_name}"] = evaluation_results[col].tolist()
+                                print(f"      ✅ Extracted {eval_name} evaluations")
+                            elif col.endswith('_explanation'):
+                                # Extract evaluator name from column (e.g., 'relevance_explanation' -> 'relevance')
+                                eval_name = col.replace('_explanation', '')
+                                results_df[f"arize_{eval_name}_explanation"] = evaluation_results[col].tolist()
+                                print(f"      ✅ Extracted {eval_name} explanations")
+                            elif col.endswith('_score'):
+                                # Extract evaluator name from column (e.g., 'relevance_score' -> 'relevance')
+                                eval_name = col.replace('_score', '')
+                                results_df[f"arize_{eval_name}_score"] = evaluation_results[col].tolist()
+                                print(f"      ✅ Extracted {eval_name} scores")
+                        
                         print(f"   ✅ Comprehensive evaluations completed successfully")
                     elif isinstance(evaluation_results, list) and len(evaluation_results) > 0:
                         # It's a list - convert to DataFrame format that we can use
                         print(f"   🔄 Converting list results to DataFrame format...")
+                        print(f"   📋 List length: {len(evaluation_results)}")
                         
-                        # Convert list of evaluation results to DataFrame format
+                        # Debug: Check what's in the list
                         for i, eval_result in enumerate(evaluation_results):
-                            if hasattr(eval_result, 'eval_name') and i < len(results_df):
-                                eval_name = eval_result.eval_name.lower()
-                                if hasattr(eval_result, 'score'):
-                                    results_df.loc[i, f"arize_{eval_name}"] = eval_result.score
-                                if hasattr(eval_result, 'explanation'):
-                                    results_df.loc[i, f"arize_{eval_name}_explanation"] = eval_result.explanation
+                            print(f"   📋 Result {i}: type={type(eval_result)}")
+                            if hasattr(eval_result, '__dict__'):
+                                print(f"        attributes: {list(eval_result.__dict__.keys())}")
+                            elif isinstance(eval_result, dict):
+                                print(f"        keys: {list(eval_result.keys())}")
+                        
+                        # Try to convert results - check if they're DataFrames
+                        combined_results = {}
+                        evaluator_names = list(evaluators.keys())
+                        
+                        for i, eval_result in enumerate(evaluation_results):
+                            if isinstance(eval_result, pd.DataFrame):
+                                print(f"   📊 Processing DataFrame result with columns: {list(eval_result.columns)}")
+                                
+                                # Get the evaluator name from the order (Phoenix returns results in same order as evaluators)
+                                eval_name = evaluator_names[i] if i < len(evaluator_names) else f"eval_{i}"
+                                
+                                # Extract the standard columns from Phoenix evaluators
+                                if 'label' in eval_result.columns:
+                                    combined_results[f"arize_{eval_name}"] = eval_result['label'].tolist()
+                                    print(f"      ✅ Extracted {eval_name} labels")
+                                
+                                if 'score' in eval_result.columns:
+                                    combined_results[f"arize_{eval_name}_score"] = eval_result['score'].tolist()
+                                    print(f"      ✅ Extracted {eval_name} scores")
+                                
+                                if 'explanation' in eval_result.columns:
+                                    combined_results[f"arize_{eval_name}_explanation"] = eval_result['explanation'].tolist()
+                                    print(f"      ✅ Extracted {eval_name} explanations")
+                        
+                        # Apply the combined results to our DataFrame
+                        for key, values in combined_results.items():
+                            if len(values) == len(results_df):
+                                results_df[key] = values
+                                print(f"      ✅ Added {key} to results")
+                            else:
+                                print(f"      ⚠️ Length mismatch for {key}: {len(values)} vs {len(results_df)}")
                         
                         print(f"   ✅ List results converted successfully")
                     else:
                         print(f"   ⚠️ Phoenix evaluators returned unexpected format: {type(evaluation_results)}")
+                        print(f"   🔍 Result details: {evaluation_results}")
                         # Fall back to individual evaluations
                         self._run_individual_evaluations(eval_df, results_df, evaluators)
                 else:
@@ -878,6 +921,23 @@ def eval_hotel_search_basic():
                 print(f"   📋 {eval_type.title()}: {scores}")
         else:
             print(f"\n⚠️ No Arize evaluation results available (evaluations may have failed)")
+            
+        # Debug: Print all available columns to understand what we have
+        print(f"\n🔍 Available result columns:")
+        for col in results_df.columns:
+            if col.startswith('arize_'):
+                print(f"   📋 {col}")
+        
+        # Show detailed results for debugging
+        print(f"\n📊 Sample detailed results:")
+        for i in range(min(2, len(results_df))):
+            row = results_df.iloc[i]
+            print(f"   Query {i+1}: {row['query']}")
+            for col in results_df.columns:
+                if col.startswith('arize_') and not col.endswith('_explanation'):
+                    value = row.get(col, 'N/A')
+                    print(f"      {col}: {value}")
+            print("")
 
     print(f"\n💡 Note: Some errors are expected without full Couchbase setup")
     

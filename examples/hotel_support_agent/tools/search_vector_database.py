@@ -57,38 +57,52 @@ def get_cluster_connection():
 
 @agentc.catalog.tool
 def search_vector_database(query: str) -> str:
-    """Search for hotels using semantic vector similarity based on user query preferences."""
+    """
+    Search for hotels in the vector database using semantic similarity.
+    
+    Args:
+        query: The search query describing the desired hotel characteristics
+        
+    Returns:
+        A formatted string containing the search results
+    """
     try:
-        # Get fresh cluster connection
+        # Get cluster connection
         cluster = get_cluster_connection()
         if not cluster:
-            return "Database connection failed. Please try again or contact support for assistance."
+            return "Error: Could not connect to Couchbase cluster"
         
-        # Use Capella AI embeddings to match the data loading embeddings
+        # Setup embeddings
         try:
-            if os.environ.get('CAPELLA_API_KEY') and os.environ.get('CAPELLA_API_ENDPOINT'):
+            if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CAPELLA_API_KEY'):
                 embeddings = OpenAIEmbeddings(
-                    api_key=os.environ['CAPELLA_API_KEY'],
-                    base_url=os.environ['CAPELLA_API_ENDPOINT'],
-                    model=os.environ['CAPELLA_API_EMBEDDING_MODEL']
+                    model=os.getenv('CAPELLA_API_EMBEDDING_MODEL', 'intfloat/e5-mistral-7b-instruct'),
+                    api_key=os.getenv('CAPELLA_API_KEY'),
+                    base_url=os.getenv('CAPELLA_API_ENDPOINT')
                 )
             else:
-                raise Exception("Capella credentials not available")
+                embeddings = OpenAIEmbeddings(
+                    model="text-embedding-3-large",
+                    api_key=os.getenv('OPENAI_API_KEY')
+                )
         except Exception as e:
-            return f"Search service unavailable: {str(e)}. Please try again later."
+            return f"Error setting up embeddings: {str(e)}"
         
+        # Setup vector store with updated configuration
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
-            bucket_name=os.environ.get('CB_BUCKET', 'vector-search-testing'),
-            scope_name=os.environ.get('CB_SCOPE', 'agentc_data'),
-            collection_name=os.environ.get('CB_COLLECTION', 'hotel_data'),
+            bucket_name="travel-sample",  # Changed to travel-sample
+            scope_name="agentc_data",     # Changed to agentc_data
+            collection_name="hotel_data", # Changed to hotel_data
             embedding=embeddings,
-            index_name=os.environ.get('CB_INDEX', 'hotel_data_index'),
+            index_name="hotel_data_index",
         )
         
         # Search without filter to avoid issues, get more results initially
         try:
             search_results = vector_store.similarity_search_with_score(query, k=10)
+            print("search_results")
+            print(search_results)
         except Exception as search_error:
             return f"Search failed: {str(search_error)}. Please try again with different terms."
         
@@ -108,8 +122,8 @@ def search_vector_database(query: str) -> str:
                 unique_results.append((doc, score))
                 seen_hotels.add(hotel_identifier)
                 
-            # Stop at 3 unique results for simplicity
-            if len(unique_results) >= 3:
+            # Stop at 5 unique results for better coverage
+            if len(unique_results) >= 5:
                 break
         
         # Simple, clean format - no confusing guidance text

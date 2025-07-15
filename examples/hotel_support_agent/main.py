@@ -4,6 +4,7 @@ Hotel Support Agent - Agent Catalog + LangChain Implementation
 
 A streamlined hotel support agent demonstrating Agent Catalog integration
 with LangChain and Couchbase vector search for hotel booking assistance.
+Uses real hotel data from travel-sample.inventory.hotel collection.
 """
 
 import base64
@@ -31,7 +32,7 @@ from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Import hotel data from the data module
-from data.hotel_data import get_hotel_texts
+from data.hotel_data import get_hotel_texts, load_hotel_data_to_couchbase
 
 # Setup logging with essential level only
 logging.basicConfig(
@@ -47,6 +48,12 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 
 # Load environment variables
 dotenv.load_dotenv(override=True)
+
+# Set default values for travel-sample bucket configuration
+DEFAULT_BUCKET = "travel-sample"
+DEFAULT_SCOPE = "agentc_data"
+DEFAULT_COLLECTION = "hotel_data"
+DEFAULT_INDEX = "hotel_data_index"
 
 
 def setup_capella_ai_config():
@@ -100,103 +107,50 @@ def test_capella_connectivity():
                 "input": "test connectivity",
             }
 
-            embedding_response = requests.post(
-                f"{endpoint}/embeddings",
-                headers=headers,
-                json=embedding_data,
-                timeout=30,
+            response = requests.post(
+                f"{endpoint}/embeddings", json=embedding_data, headers=headers
             )
-
-            if embedding_response.status_code == 200:
-                embed_result = embedding_response.json()
-                embed_dims = len(embed_result["data"][0]["embedding"])
-                logger.info(
-                    f"✅ Capella AI embedding test successful - dimensions: {embed_dims}"
-                )
+            if response.status_code == 200:
+                logger.info("✅ Capella AI embedding test successful")
+                return True
             else:
-                logger.warning(
-                    f"Capella AI embedding test failed: {embedding_response.status_code}"
-                )
-                logger.warning(f"Response: {embedding_response.text[:200]}...")
+                logger.warning(f"❌ Capella AI embedding test failed: {response.text}")
                 return False
-
-            # Test LLM
-            llm_data = {
-                "model": os.getenv(
-                    "CAPELLA_API_LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct"
-                ),
-                "messages": [{"role": "user", "content": "Hello"}],
-                "max_tokens": 10,
-            }
-
-            llm_response = requests.post(
-                f"{endpoint}/chat/completions",
-                headers=headers,
-                json=llm_data,
-                timeout=30,
-            )
-
-            if llm_response.status_code == 200:
-                logger.info("✅ Capella AI LLM test successful")
-            else:
-                logger.warning(
-                    f"Capella AI LLM test failed: {llm_response.status_code}"
-                )
-                logger.warning(f"Response: {llm_response.text[:200]}...")
-                return False
-
-        logger.info("✅ Capella AI connectivity tests completed successfully")
-        return True
-
+        else:
+            logger.warning("Capella AI credentials not available")
+            return False
     except Exception as e:
-        logger.warning(f"Capella AI connectivity test failed: {e}")
+        logger.warning(f"❌ Capella AI connectivity test failed: {e}")
         return False
 
 
-def _set_if_undefined(var: str):
-    if os.environ.get(var) is None:
-        os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
+def _set_if_undefined(env_var: str, default_value: str = None):
+    """Set environment variable if not already defined."""
+    if not os.getenv(env_var):
+        if default_value is None:
+            value = getpass.getpass(f"Enter {env_var}: ")
+        else:
+            value = default_value
+        os.environ[env_var] = value
 
 
 def setup_environment():
-    """Setup required environment variables with defaults."""
-    # Setup Capella AI configuration first
-    setup_capella_ai_config()
+    """Setup required environment variables with defaults for travel-sample configuration."""
+    logger.info("Setting up environment variables...")
 
-    # Required variables
-    required_vars = [
-        "OPENAI_API_KEY",
-        "CB_CONN_STRING",
-        "CB_USERNAME",
-        "CB_PASSWORD",
-        "CB_BUCKET",
-    ]
-    for var in required_vars:
-        _set_if_undefined(var)
+    # Set default bucket configuration
+    _set_if_undefined("CB_BUCKET", DEFAULT_BUCKET)
+    _set_if_undefined("CB_SCOPE", DEFAULT_SCOPE)
+    _set_if_undefined("CB_COLLECTION", DEFAULT_COLLECTION)
+    _set_if_undefined("CB_INDEX", DEFAULT_INDEX)
 
-    defaults = {
-        "CB_CONN_STRING": "couchbase://localhost",
-        "CB_USERNAME": "Administrator",
-        "CB_PASSWORD": "password",
-        "CB_BUCKET": "vector-search-testing",
-    }
+    # Required Couchbase connection variables
+    _set_if_undefined("CB_CONN_STRING")
+    _set_if_undefined("CB_USERNAME")
+    _set_if_undefined("CB_PASSWORD")
 
-    for key, default_value in defaults.items():
-        if not os.environ.get(key):
-            os.environ[key] = (
-                input(f"Enter {key} (default: {default_value}): ") or default_value
-            )
-
-    os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "hotel_data_index")
-    os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
-    os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "hotel_data")
-
-    # Generate Capella AI API key from username and password if endpoint is provided
+    # Optional Capella AI configuration
     if os.getenv("CAPELLA_API_ENDPOINT"):
-        os.environ["CAPELLA_API_KEY"] = base64.b64encode(
-            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
-        ).decode("utf-8")
-
         # Ensure endpoint has /v1 suffix for OpenAI compatibility
         if not os.getenv("CAPELLA_API_ENDPOINT").endswith("/v1"):
             os.environ["CAPELLA_API_ENDPOINT"] = (
@@ -260,30 +214,16 @@ class CouchbaseClient:
             raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
     def setup_collection(self, scope_name: str, collection_name: str):
-        """Setup bucket, scope and collection all in one function."""
+        """Setup collection - create scope and collection if they don't exist, but don't clear scope."""
         try:
             # Ensure cluster connection
             if not self.cluster:
                 self.connect()
 
-            # Setup bucket
+            # For travel-sample bucket, assume it exists
             if not self.bucket:
-                try:
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' exists")
-                except Exception:
-                    logger.info(f"Creating bucket '{self.bucket_name}'...")
-                    bucket_settings = CreateBucketSettings(
-                        name=self.bucket_name,
-                        bucket_type="couchbase",
-                        ram_quota_mb=1024,
-                        flush_enabled=True,
-                        num_replicas=0,
-                    )
-                    self.cluster.buckets().create_bucket(bucket_settings)
-                    time.sleep(5)
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' created successfully")
+                self.bucket = self.cluster.bucket(self.bucket_name)
+                logger.info(f"Connected to bucket '{self.bucket_name}'")
 
             # Setup scope
             bucket_manager = self.bucket.collections()
@@ -295,7 +235,7 @@ class CouchbaseClient:
                 bucket_manager.create_scope(scope_name)
                 logger.info(f"Scope '{scope_name}' created successfully")
 
-            # Setup collection
+            # Setup collection - clear if exists, create if doesn't
             collections = bucket_manager.get_all_scopes()
             collection_exists = any(
                 scope.name == scope_name
@@ -303,7 +243,11 @@ class CouchbaseClient:
                 for scope in collections
             )
 
-            if not collection_exists:
+            if collection_exists:
+                logger.info(f"Collection '{collection_name}' exists, clearing data...")
+                # Clear existing data
+                self.clear_collection_data(scope_name, collection_name)
+            else:
                 logger.info(f"Creating collection '{collection_name}'...")
                 bucket_manager.create_collection(scope_name, collection_name)
                 logger.info(f"Collection '{collection_name}' created successfully")
@@ -324,6 +268,38 @@ class CouchbaseClient:
 
         except Exception as e:
             raise RuntimeError(f"Error setting up collection: {e!s}")
+
+    def clear_collection_data(self, scope_name: str, collection_name: str):
+        """Clear all data from a collection."""
+        try:
+            logger.info(f"Clearing data from {self.bucket_name}.{scope_name}.{collection_name}...")
+            
+            # Use N1QL to delete all documents with explicit execution
+            delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            result = self.cluster.query(delete_query)
+            
+            # Execute the query and get the results
+            rows = list(result)
+            
+            # Wait a moment for the deletion to propagate
+            import time
+            time.sleep(2)
+            
+            # Verify collection is empty
+            count_query = f"SELECT COUNT(*) as count FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            count_result = self.cluster.query(count_query)
+            count_row = list(count_result)[0]
+            remaining_count = count_row['count']
+            
+            if remaining_count == 0:
+                logger.info(f"Collection cleared successfully, {remaining_count} documents remaining")
+            else:
+                logger.warning(f"Collection clear incomplete, {remaining_count} documents remaining")
+            
+        except Exception as e:
+            logger.warning(f"Error clearing collection data: {e}")
+            # If N1QL fails, try to continue anyway
+            pass
 
     def get_collection(self, scope_name: str, collection_name: str):
         """Get a collection object."""
@@ -355,44 +331,16 @@ class CouchbaseClient:
     def load_hotel_data(self, scope_name, collection_name, index_name, embeddings):
         """Load hotel data into Couchbase."""
         try:
-            # Clear existing data first
-            self.clear_collection_data(scope_name, collection_name)
-
-            # Setup vector store
-            vector_store = CouchbaseVectorStore(
+            # Load hotel data using the data loading script
+            load_hotel_data_to_couchbase(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
                 scope_name=scope_name,
                 collection_name=collection_name,
-                embedding=embeddings,
+                embeddings=embeddings,
                 index_name=index_name,
             )
-
-            # Load hotel data using the data loading script
-            try:
-                from data.hotel_data import load_hotel_data_to_couchbase
-
-                load_hotel_data_to_couchbase(
-                    cluster=self.cluster,
-                    bucket_name=self.bucket_name,
-                    scope_name=scope_name,
-                    collection_name=collection_name,
-                    embeddings=embeddings,
-                    index_name=index_name,
-                )
-                logger.info(
-                    "Hotel data loaded into vector store successfully using data loading script"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Error loading hotel data with script: {e}. Falling back to direct method."
-                )
-                # Fallback to the original method
-                hotel_data = get_hotel_texts()
-                vector_store.add_texts(texts=hotel_data, batch_size=10)
-                logger.info(
-                    "Hotel data loaded into vector store successfully using fallback method"
-                )
+            logger.info("Hotel data loaded into vector store successfully")
 
         except Exception as e:
             raise RuntimeError(f"Error loading hotel data: {e!s}")
@@ -402,18 +350,10 @@ class CouchbaseClient:
     ):
         """Setup vector store with hotel data."""
         try:
-            # Use the embeddings parameter passed in - no fallbacks
-            if not embeddings:
-                raise RuntimeError(
-                    "Embeddings parameter is required - no fallbacks available"
-                )
-
-            logger.info("✅ Using provided embeddings for vector store setup")
-
             # Load hotel data
             self.load_hotel_data(scope_name, collection_name, index_name, embeddings)
 
-            # Create vector store
+            # Create vector store instance
             vector_store = CouchbaseVectorStore(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
@@ -429,72 +369,12 @@ class CouchbaseClient:
         except Exception as e:
             raise RuntimeError(f"Error setting up vector store: {e!s}")
 
-    def clear_collection_data(self, scope_name: str, collection_name: str):
-        """Clear all documents from the collection to start fresh."""
-        try:
-            # Delete all documents in the collection
-            delete_query = (
-                f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-            )
-            result = self.cluster.query(delete_query)
-
-            logger.info(
-                f"Cleared existing data from collection {scope_name}.{collection_name}"
-            )
-
-        except Exception as e:
-            logger.warning(
-                f"Could not clear collection data: {e}. Continuing with existing data..."
-            )
-
-    def clear_scope(self, scope_name: str):
-        """Clear all collections in scope."""
-        try:
-            bucket_manager = self.bucket.collections()
-            scopes = bucket_manager.get_all_scopes()
-
-            for scope in scopes:
-                if scope.name == scope_name:
-                    for collection in scope.collections:
-                        self.clear_collection_data(scope_name, collection.name)
-
-            logger.info(f"Cleared all collections in scope: {scope_name}")
-
-        except Exception as e:
-            logger.warning(f"Could not clear scope: {e}")
-
-
-def clear_hotel_data():
-    """Clear existing hotel data from the database."""
-    try:
-        couchbase_client = CouchbaseClient(
-            conn_string=os.getenv("CB_CONN_STRING"),
-            username=os.getenv("CB_USERNAME"),
-            password=os.getenv("CB_PASSWORD"),
-            bucket_name=os.getenv("CB_BUCKET"),
-        )
-
-        couchbase_client.connect()
-        couchbase_client.bucket = couchbase_client.cluster.bucket(
-            os.getenv("CB_BUCKET")
-        )
-
-        # Clear hotel data
-        couchbase_client.clear_collection_data(
-            os.getenv("CB_SCOPE"), os.getenv("CB_COLLECTION")
-        )
-
-        logger.info("Hotel data cleared successfully")
-
-    except Exception as e:
-        logger.warning(f"Could not clear hotel data: {e}")
-
 
 def setup_hotel_support_agent():
-    """Setup the hotel support agent with all required components."""
+    """Setup the hotel support agent with Agent Catalog integration."""
     try:
         # Initialize Agent Catalog
-        catalog = agentc.Catalog()
+        catalog = agentc.catalog.Catalog()
         application_span = catalog.Span(name="Hotel Support Agent")
 
         with application_span.new("Environment Setup"):
@@ -514,14 +394,15 @@ def setup_hotel_support_agent():
                 conn_string=os.getenv("CB_CONN_STRING"),
                 username=os.getenv("CB_USERNAME"),
                 password=os.getenv("CB_PASSWORD"),
-                bucket_name=os.getenv("CB_BUCKET"),
+                bucket_name=os.getenv("CB_BUCKET", DEFAULT_BUCKET),
             )
 
             couchbase_client.connect()
 
         with application_span.new("Couchbase Collection Setup"):
             couchbase_client.setup_collection(
-                os.getenv("CB_SCOPE"), os.getenv("CB_COLLECTION")
+                os.getenv("CB_SCOPE", DEFAULT_SCOPE),
+                os.getenv("CB_COLLECTION", DEFAULT_COLLECTION)
             )
 
         with application_span.new("Vector Index Setup"):
@@ -535,7 +416,7 @@ def setup_hotel_support_agent():
                 raise ValueError(f"Error loading index definition: {e!s}")
 
             couchbase_client.setup_vector_search_index(
-                index_definition, os.getenv("CB_SCOPE")
+                index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
             )
 
         with application_span.new("Vector Store Setup"):
@@ -570,9 +451,9 @@ def setup_hotel_support_agent():
                 )
 
             couchbase_client.setup_vector_store(
-                os.getenv("CB_SCOPE"),
-                os.getenv("CB_COLLECTION"),
-                os.getenv("CB_INDEX"),
+                os.getenv("CB_SCOPE", DEFAULT_SCOPE),
+                os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
+                os.getenv("CB_INDEX", DEFAULT_INDEX),
                 embeddings,
             )
 
@@ -607,29 +488,20 @@ def setup_hotel_support_agent():
                 logger.info("✅ Using OpenAI LLM as fallback")
 
         with application_span.new("Tool Loading"):
-            # Load tools from Agent Catalog - they are now properly decorated
+            # Load only the search tool from Agent Catalog
             tool_search = catalog.find("tool", name="search_vector_database")
-            tool_details = catalog.find("tool", name="get_hotel_details")
 
             if not tool_search:
                 raise ValueError(
                     "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
                 )
-            if not tool_details:
-                raise ValueError(
-                    "Could not find get_hotel_details tool. Make sure it's indexed with 'agentc index tools/'"
-                )
 
+            # Create single tool list
             tools = [
                 Tool(
                     name=tool_search.meta.name,
                     description=tool_search.meta.description,
                     func=tool_search.func,
-                ),
-                Tool(
-                    name=tool_details.meta.name,
-                    description=tool_details.meta.description,
-                    func=tool_details.func,
                 ),
             ]
 
@@ -661,7 +533,7 @@ def setup_hotel_support_agent():
                 tools=tools,
                 verbose=True,
                 handle_parsing_errors=True,
-                max_iterations=5,  # Reduced from 10 to 3 to prevent infinite loops
+                max_iterations=5,  # Reduced from 10 to 5 to prevent infinite loops
             )
 
         return agent_executor, application_span
@@ -680,49 +552,47 @@ def run_interactive_demo():
         agent_executor, application_span = setup_hotel_support_agent()
 
         # Interactive hotel search loop
-        with application_span.new("Query Execution") as span:
-            logger.info("Available commands:")
-            logger.info(
-                "- Enter hotel search queries (e.g., 'Find luxury hotels with spa')"
-            )
-            logger.info("- 'quit' - Exit the demo")
-            logger.info(
-                "Try asking: 'Find me a beach resort in Miami' or 'Get details about Ocean Breeze Resort'"
-            )
-            logger.info("─" * 40)
+        logger.info("Available commands:")
+        logger.info(
+            "- Enter hotel search queries (e.g., 'Find luxury hotels with spa')"
+        )
+        logger.info("- 'quit' - Exit the demo")
+        logger.info(
+            "Try asking: 'Find me a hotel in San Francisco' or 'Show me hotels in New York'"
+        )
+        logger.info("─" * 40)
 
-            while True:
-                query = input(
-                    "🔍 Enter hotel search query (or 'quit' to exit): "
-                ).strip()
+        while True:
+            query = input(
+                "🔍 Enter hotel search query (or 'quit' to exit): "
+            ).strip()
 
-                if query.lower() in ["quit", "exit", "q"]:
-                    logger.info("Thanks for using Hotel Support Agent!")
-                    break
+            if query.lower() in ["quit", "exit", "q"]:
+                logger.info("Thanks for using Hotel Support Agent!")
+                break
 
-                if not query:
-                    continue
+            if not query:
+                logger.warning("Please enter a search query")
+                continue
 
-                with span.new(f"Query: {query}") as query_span:
-                    try:
-                        logger.info(f"Hotel Query: {query}")
-                        query_span["query"] = query
+            try:
+                response = agent_executor.invoke({"input": query})
+                result = response.get("output", "No response generated")
 
-                        # Execute the query
-                        response = agent_executor.invoke({"input": query})
-                        query_span["response"] = response["output"]
+                print(f"\n🏨 Agent Response:\n{result}\n")
+                print("─" * 40)
 
-                        # Display results
-                        logger.info(f"✅ Response: {response['output']}")
+            except Exception as e:
+                logger.error(f"Error processing query: {e}")
+                print(f"❌ Error: {e}")
+                print("─" * 40)
 
-                    except Exception as e:
-                        logger.exception(f"Search error: {e}")
-                        query_span["error"] = str(e)
-
-                    logger.info("-" * 50)
-
+    except KeyboardInterrupt:
+        logger.info("Demo interrupted by user")
     except Exception as e:
-        logger.exception(f"Demo initialization error: {e}")
+        logger.exception(f"Demo error: {e}")
+    finally:
+        logger.info("Demo completed")
 
 
 def run_test():
@@ -731,36 +601,32 @@ def run_test():
     logger.info("=" * 55)
 
     try:
-        # Clear existing data first for a clean test run
-        clear_hotel_data()
-
         agent_executor, application_span = setup_hotel_support_agent()
 
         # Test scenarios covering different types of hotel searches
         test_queries = [
+            # TODO: Add test queries here
             "Find me a luxury hotel with a pool and spa",
-            "I need a beach resort in Miami for my vacation",
-            "Get me details about Ocean Breeze Resort",
+            # "I need a beach resort in Miami for my vacation", 
+            # "Get me details about Ocean Breeze Resort",
         ]
 
-        with application_span.new("Test Queries") as span:
-            for i, query in enumerate(test_queries, 1):
-                with span.new(f"Test {i}: {query}") as query_span:
-                    logger.info(f"\n🔍 Test {i}: {query}")
-                    try:
-                        query_span["query"] = query
-                        response = agent_executor.invoke({"input": query})
-                        query_span["response"] = response["output"]
+        logger.info(f"Running {len(test_queries)} test queries...")
+        
+        for i, query in enumerate(test_queries, 1):
+            logger.info(f"\n🔍 Test {i}: {query}")
+            try:
+                response = agent_executor.invoke({"input": query})
+                result = response.get("output", "No response generated")
 
-                        # Display the response
-                        logger.info(f"🤖 AI Response: {response['output']}")
-                        logger.info(f"✅ Test {i} completed successfully")
+                # Display the response
+                logger.info(f"🤖 AI Response: {result}")
+                logger.info(f"✅ Test {i} completed successfully")
 
-                    except Exception as e:
-                        logger.exception(f"❌ Test {i} failed: {e}")
-                        query_span["error"] = str(e)
+            except Exception as e:
+                logger.exception(f"❌ Test {i} failed: {e}")
 
-                    logger.info("-" * 50)
+            logger.info("-" * 50)
 
         logger.info("All tests completed!")
 
@@ -768,21 +634,43 @@ def run_test():
         logger.exception(f"Test error: {e}")
 
 
-def run_hotel_support_demo():
-    """Legacy function - redirects to interactive demo for compatibility."""
-    run_interactive_demo()
+def test_data_loading():
+    """Test data loading from travel-sample independently."""
+    logger.info("Testing Hotel Data Loading from travel-sample")
+    logger.info("=" * 50)
+    
+    try:
+        from data.hotel_data import get_hotel_count, get_hotel_texts
+        
+        # Test hotel count
+        count = get_hotel_count()
+        logger.info(f"✅ Hotel count in travel-sample.inventory.hotel: {count}")
+        
+        # Test hotel text generation
+        texts = get_hotel_texts()
+        logger.info(f"✅ Generated {len(texts)} hotel texts for embeddings")
+        
+        if texts:
+            logger.info(f"✅ First hotel text sample: {texts[0][:200]}...")
+        
+        logger.info("✅ Data loading test completed successfully")
+        
+    except Exception as e:
+        logger.exception(f"❌ Data loading test failed: {e}")
 
 
 def main():
     """Main entry point - runs interactive demo by default."""
-    run_interactive_demo()
-
-
-if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "test":
             run_test()
+        elif sys.argv[1] == "test-data":
+            test_data_loading()
         else:
             run_interactive_demo()
     else:
         run_interactive_demo()
+
+
+if __name__ == "__main__":
+    main()
