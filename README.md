@@ -73,9 +73,9 @@ pip install llama-index llama-index-vector-stores-couchbase
 poetry install
 
 # Install dependencies for each example agent
-cd examples/route_planner_agent && poetry install && cd ../..
-cd examples/flight_search_agent && poetry install && cd ../..
-cd examples/hotel_support_agent && poetry install && cd ../..
+cd notebooks/route_planner_agent && poetry install && cd ../..
+cd notebooks/flight_search_agent && poetry install && cd ../..
+cd notebooks/hotel_support_agent && poetry install && cd ../..
 ```
 
 ### 3. Verify Installation
@@ -144,9 +144,9 @@ TOKENIZERS_PARALLELISM=false
 ```
 
 **Important:** Each example directory needs its own `.env` file:
-- `examples/route_planner_agent/.env`
-- `examples/flight_search_agent/.env`
-- `examples/hotel_support_agent/.env`
+- `notebooks/route_planner_agent/.env`
+- `notebooks/flight_search_agent/.env`
+- `notebooks/hotel_support_agent/.env`
 
 ## Usage
 
@@ -155,7 +155,7 @@ TOKENIZERS_PARALLELISM=false
 Navigate to any example directory and initialize:
 
 ```bash
-cd examples/route_planner_agent
+cd notebooks/route_planner_agent
 agentc init
 ```
 
@@ -192,10 +192,10 @@ python main.py "Find a route from San Francisco to Los Angeles"
 
 This quickstart includes several example agents:
 
-- **Route Planner Agent** (`examples/route_planner_agent/`) - Plans routes between locations
-- **Flight Search Agent** (`examples/flight_search_agent/`) - Searches and books flights
-- **Hotel Support Agent** (`examples/hotel_support_agent/`) - Hotel search and support
-- **Customer Support Agent** (`examples/customer_support_agent/`) - General customer support
+- **Route Planner Agent** (`notebooks/route_planner_agent/`) - Plans routes between locations
+- **Flight Search Agent** (`notebooks/flight_search_agent/`) - Searches and books flights
+- **Hotel Support Agent** (`notebooks/hotel_support_agent/`) - Hotel search and support
+- **Customer Support Agent** (`notebooks/customer_support_agent/`) - General customer support
 
 Each example includes:
 - Complete source code
@@ -266,7 +266,7 @@ Each example includes:
 ### Getting Help
 
 - Check the `docs/` directory for detailed guides
-- Look at example implementations in `examples/`
+- Look at example implementations in `notebooks/`
 - Review error messages for specific configuration issues
 - Ensure you've run `poetry install` in all required directories
 
@@ -274,7 +274,7 @@ Each example includes:
 
 ### Adding New Agents
 
-1. Create a new directory under `examples/`
+1. Create a new directory under `notebooks/`
 2. Add your agent code, prompts, and tools
 3. Create appropriate configuration files (`pyproject.toml`, `.env`)
 4. Run `poetry install` in the new directory
@@ -283,7 +283,7 @@ Each example includes:
 ### Running Tests
 
 ```bash
-cd examples/route_planner_agent
+cd notebooks/route_planner_agent
 python -m pytest tests/
 ```
 
@@ -299,7 +299,7 @@ python run_evaluations.py
 
 Each example agent follows this structure:
 ```
-examples/agent_name/
+notebooks/agent_name/
 ├── main.py              # Main agent implementation
 ├── pyproject.toml       # Poetry dependencies (requires poetry install)
 ├── .env                 # Environment configuration
