@@ -862,15 +862,11 @@ def eval_hotel_search_basic():
     print("   • Quality of responses using vector search + LLM")
     print("   • LLM-based relevance and correctness scoring")
 
-    # Test queries for hotel search
-    test_inputs = [
-        "Find me a hotel in New York City with a pool",
-        "I need a budget hotel in San Francisco near the airport",
-        "Show me luxury hotels in Miami Beach with ocean views",
-        "Find hotels in Los Angeles with free breakfast and parking",
-        "What are the best hotels in Chicago for business travelers?",
-        "I need a pet-friendly hotel in Seattle with a gym",
-    ]
+    # Import shared queries
+    from data.queries import get_evaluation_queries
+    
+    # Use shared evaluation queries
+    test_inputs = get_evaluation_queries()
 
     # Initialize evaluation components
     catalog = agentc.Catalog()
@@ -884,6 +880,8 @@ def eval_hotel_search_basic():
     # Run Arize evaluations if available
     if ARIZE_AVAILABLE:
         results_df = evaluator.run_arize_evaluations(results_df)
+
+ 
 
     # Calculate metrics
     total_queries = len(results_df)
@@ -928,9 +926,9 @@ def eval_hotel_search_basic():
             if col.startswith('arize_'):
                 print(f"   📋 {col}")
         
-        # Show detailed results for debugging
+    # Show detailed results for debugging
         print(f"\n📊 Sample detailed results:")
-        for i in range(min(2, len(results_df))):
+        for i in range(len(results_df)):
             row = results_df.iloc[i]
             print(f"   Query {i+1}: {row['query']}")
             for col in results_df.columns:

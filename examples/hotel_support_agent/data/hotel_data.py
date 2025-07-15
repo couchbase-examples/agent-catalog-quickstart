@@ -97,24 +97,75 @@ def get_hotel_texts():
     hotel_texts = []
     
     for hotel in hotels:
-        # Handle cases where some fields might be missing
+        # Start with basic info
         name = hotel.get('name', 'Unknown Hotel')
         city = hotel.get('city', 'Unknown City')
         country = hotel.get('country', 'Unknown Country')
-        description = hotel.get('description', 'No description available')
-        address = hotel.get('address', 'No address available')
         
-        # Create a comprehensive text representation for embedding
-        text = f"{name} in {city}, {country}. {description} Address: {address}"
+        # Build comprehensive text with all available fields
+        text_parts = [f"{name} in {city}, {country}"]
         
-        # Add additional fields if available
-        if hotel.get('phone'):
-            text += f" Phone: {hotel['phone']}"
-        if hotel.get('email'):
-            text += f" Email: {hotel['email']}"
-        if hotel.get('url'):
-            text += f" Website: {hotel['url']}"
+        # Add all fields dynamically instead of manual selection
+        field_mappings = {
+            'title': 'Title',
+            'description': 'Description',
+            'address': 'Address',
+            'directions': 'Directions',
+            'phone': 'Phone',
+            'tollfree': 'Toll-free',
+            'email': 'Email',
+            'fax': 'Fax',
+            'url': 'Website',
+            'checkin': 'Check-in',
+            'checkout': 'Check-out',
+            'price': 'Price',
+            'state': 'State',
+            'type': 'Type',
+            'vacancy': 'Vacancy',
+            'alias': 'Also known as',
+            'pets_ok': 'Pets allowed',
+            'free_breakfast': 'Free breakfast',
+            'free_internet': 'Free internet',
+            'free_parking': 'Free parking'
+        }
         
+        # Add all available fields
+        for field, label in field_mappings.items():
+            value = hotel.get(field)
+            if value is not None and value != '' and value != 'None':
+                if isinstance(value, bool):
+                    text_parts.append(f"{label}: {'Yes' if value else 'No'}")
+                else:
+                    text_parts.append(f"{label}: {value}")
+        
+        # Add geographic coordinates if available
+        if hotel.get('geo'):
+            geo = hotel['geo']
+            if geo.get('lat') and geo.get('lon'):
+                text_parts.append(f"Coordinates: {geo['lat']}, {geo['lon']}")
+        
+        # Add review summary if available
+        if hotel.get('reviews') and isinstance(hotel['reviews'], list):
+            review_count = len(hotel['reviews'])
+            if review_count > 0:
+                text_parts.append(f"Reviews: {review_count} customer reviews available")
+                
+                # Include a sample of review content for better search matching
+                sample_reviews = hotel['reviews'][:2]  # First 2 reviews
+                for i, review in enumerate(sample_reviews):
+                    if review.get('content'):
+                        # Truncate long reviews for embedding efficiency
+                        content = review['content'][:200] + "..." if len(review['content']) > 200 else review['content']
+                        text_parts.append(f"Review {i+1}: {content}")
+        
+        # Add public likes if available
+        if hotel.get('public_likes') and isinstance(hotel['public_likes'], list):
+            likes_count = len(hotel['public_likes'])
+            if likes_count > 0:
+                text_parts.append(f"Public likes: {likes_count} likes")
+        
+        # Join all parts with ". "
+        text = ". ".join(text_parts)
         hotel_texts.append(text)
     
     logger.info(f"Generated {len(hotel_texts)} hotel text embeddings")

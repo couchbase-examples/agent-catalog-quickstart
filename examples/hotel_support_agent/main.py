@@ -603,13 +603,11 @@ def run_test():
     try:
         agent_executor, application_span = setup_hotel_support_agent()
 
+        # Import shared queries
+        from data.queries import get_simple_queries
+        
         # Test scenarios covering different types of hotel searches
-        test_queries = [
-            # TODO: Add test queries here
-            "Find me a luxury hotel with a pool and spa",
-            # "I need a beach resort in Miami for my vacation", 
-            # "Get me details about Ocean Breeze Resort",
-        ]
+        test_queries = get_simple_queries()
 
         logger.info(f"Running {len(test_queries)} test queries...")
         

@@ -101,8 +101,6 @@ def search_vector_database(query: str) -> str:
         # Search without filter to avoid issues, get more results initially
         try:
             search_results = vector_store.similarity_search_with_score(query, k=10)
-            print("search_results")
-            print(search_results)
         except Exception as search_error:
             return f"Search failed: {str(search_error)}. Please try again with different terms."
         
