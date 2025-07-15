@@ -124,15 +124,19 @@ def search_vector_database(query: str) -> str:
             if len(unique_results) >= 5:
                 break
         
-        # Simple, clean format - no confusing guidance text
+        # Clear, actionable format that encourages Final Answer
         if len(unique_results) == 1:
-            return f"Found 1 hotel:\n\n{unique_results[0][0].page_content}"
+            result = f"Found 1 hotel:\n\n{unique_results[0][0].page_content}"
         else:
             formatted_results = []
             for i, (doc, score) in enumerate(unique_results, 1):
                 formatted_results.append(f"Hotel {i}: {doc.page_content}")
             
-            return f"Found {len(unique_results)} hotels:\n\n" + "\n\n".join(formatted_results)
+            result = f"Found {len(unique_results)} hotels:\n\n" + "\n\n".join(formatted_results)
+        
+        # Add explicit instruction to prevent loops
+        result += "\n\n(Note: These are the search results. Please provide your final answer to the user now.)"
+        return result
         
     except Exception as e:
         return f"Search error: {str(e)}. Please try again with different search terms."

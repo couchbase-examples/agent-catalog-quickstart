@@ -23,6 +23,12 @@ content: >
   - STOP and provide Final Answer after successful search
   - Format responses in user-friendly language, not raw data arrays
 
+  STOPPING CONDITIONS (IMPORTANT):
+  - If you get hotel results from search_vector_database, IMMEDIATELY provide Final Answer
+  - If search fails twice with different queries, provide Final Answer with alternatives
+  - If no hotels found after 2 attempts, provide Final Answer with suggestions
+  - Do NOT keep searching after getting results - summarize and answer
+
   TOOL INPUT FORMAT:
   - search_vector_database: "search query with location, amenities, hotel type"
 
@@ -31,6 +37,7 @@ content: >
   - If no location specified, search broadly for hotels with requested amenities
   - Use descriptive terms like "luxury", "pool", "spa", "beach", "downtown", etc.
   - Present real hotel results from the search, not made-up information
+  - If first search doesn't work, try a broader or different search query ONCE
 
   ERROR HANDLING:
   - If tool fails 2+ times, provide helpful Final Answer instead of retrying

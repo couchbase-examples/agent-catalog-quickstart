@@ -533,7 +533,9 @@ def setup_hotel_support_agent():
                 tools=tools,
                 verbose=True,
                 handle_parsing_errors=True,
-                max_iterations=5,  # Reduced from 10 to 5 to prevent infinite loops
+                max_iterations=15,  # Increased from 5 to 15 for better performance
+                max_execution_time=60,  # Add 60 second timeout to prevent hanging
+                early_stopping_method="generate",  # Stop early if agent generates final answer
             )
 
         return agent_executor, application_span
