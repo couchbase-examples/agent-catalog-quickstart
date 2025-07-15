@@ -22,13 +22,13 @@ echo "  Installing agentc_core..."
 pip install ./agent-catalog/libs/agentc_core/
 
 echo "  Installing langchain integration..."
-pip install ./agent-catalog/libs/integrations/langchain/
+pip install ./agent-catalog/libs/agentc_integrations/langchain/
 
 echo "  Installing langgraph integration..."
-pip install ./agent-catalog/libs/integrations/langgraph/
+pip install ./agent-catalog/libs/agentc_integrations/langgraph/
 
 echo "  Installing llamaindex integration..."
-pip install ./agent-catalog/libs/integrations/llamaindex/
+pip install ./agent-catalog/libs/agentc_integrations/llamaindex/
 
 echo "  Installing agentc_cli..."
 pip install ./agent-catalog/libs/agentc_cli/
