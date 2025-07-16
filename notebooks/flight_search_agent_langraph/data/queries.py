@@ -2,16 +2,17 @@
 Airline Review Queries for Flight Search Agent
 
 This module contains the test queries for the flight search agent,
-replacing the original flight policy queries with airline review queries.
+updated to use Indian Airlines dataset context.
 """
 
 # Test queries for flight search agent evaluation
+# Updated to match the Indian Airlines dataset context
 TEST_QUERIES = [
     "Find flights from JFK to LAX",
-    "What do passengers say about JAL's service quality?",
-    "Book a flight from SFO to ORD tomorrow for 2 passengers in business class",
+    "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class",
+    "Book an economy flight from JFK to MIA for next week, 1 passenger",
     "Show me my current flight bookings",
-    "What do airline reviews say about JAL's baggage handling?",
+    "What do passengers say about IndiGo's service quality?",
 ]
 
 def get_test_queries():

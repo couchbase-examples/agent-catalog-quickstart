@@ -33,6 +33,7 @@ from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 from pydantic import SecretStr
+from tqdm import tqdm
 
 # Setup logging with essential level only
 # Note: Agent Catalog does not integrate with Python logging
@@ -222,34 +223,32 @@ class CouchbaseClient:
         except Exception as e:
             raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
-    def load_flight_data(self):
-        """Load flight data from the enhanced flight_data.py file."""
-        try:
-            # COMMENTED OUT: Complex data loading - focusing on core functionality first
-            # sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
-            # from flight_data import get_all_flight_data
-            # flight_data = get_all_flight_data()
-            # flight_texts = []
-            # for item in flight_data:
-            #     text = f"{item['title']} - {item['content']}"
-            #     flight_texts.append(text)
-            # return flight_texts
-            
-            logger.info("⏭️  Skipping complex flight data loading - using basic functionality")
-            return []
-        except Exception as e:
-            logger.warning(f"Error loading flight data: {e!s}")
-            # Return empty list if flight data loading fails
-            return []
-
     def setup_vector_store(
         self, scope_name: str, collection_name: str, index_name: str, embeddings
     ):
-        """Setup vector store with flight data."""
+        """Setup vector store with airline reviews data using unified data manager."""
         try:
             if not self.cluster:
                 raise RuntimeError("Cluster not connected. Call connect first.")
 
+            # Import the unified data manager
+            import sys
+            sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
+            from airline_reviews_data import load_airline_reviews_to_couchbase
+            
+            logger.info("🔄 Setting up vector store with airline reviews data...")
+            
+            # Use the unified data loading approach
+            load_airline_reviews_to_couchbase(
+                cluster=self.cluster,
+                bucket_name=self.bucket_name,
+                scope_name=scope_name,
+                collection_name=collection_name,
+                embeddings=embeddings,
+                index_name=index_name
+            )
+            
+            # Create and return the vector store instance
             vector_store = CouchbaseVectorStore(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
@@ -258,23 +257,13 @@ class CouchbaseClient:
                 embedding=embeddings,
                 index_name=index_name,
             )
-
-            flight_data = self.load_flight_data()
-
-            if flight_data:
-                try:
-                    vector_store.add_texts(texts=flight_data, batch_size=10)
-                    logger.info("Flight data loaded into vector store successfully")
-                except Exception as e:
-                    logger.warning(
-                        f"Error loading flight data: {e!s}. Vector store created but data not loaded."
-                    )
-            else:
-                logger.info("No flight data to load into vector store")
-
+            
+            logger.info(f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}")
             return vector_store
+            
         except Exception as e:
-            raise ValueError(f"Error setting up vector store: {e!s}")
+            logger.exception(f"Error setting up vector store: {e!s}")
+            raise
 
     def clear_scope(self, scope_name: str):
         """Clear all collections in the specified scope."""
@@ -322,6 +311,35 @@ class CouchbaseClient:
         except Exception as e:
             logger.warning(f"❌ Could not clear scope {self.bucket_name}.{scope_name}: {e}")
 
+    def clear_collection(self, scope_name: str, collection_name: str):
+        """Clear a specific collection in the specified scope."""
+        try:
+            if not self.bucket:
+                # Ensure connection and bucket are ready
+                if not self.cluster:
+                    self.connect()
+                if self.cluster:
+                    self.bucket = self.cluster.bucket(self.bucket_name)
+
+            if not self.bucket:
+                logger.warning(f"Cannot clear collection - bucket not available")
+                return
+
+            logger.info(f"🗑️  Clearing collection: {self.bucket_name}.{scope_name}.{collection_name}")
+            
+            # Clear the specific collection
+            try:
+                delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+                if self.cluster:
+                    result = self.cluster.query(delete_query).execute()
+                    logger.info(f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection_name}")
+            except Exception as e:
+                logger.info(f"Collection {self.bucket_name}.{scope_name}.{collection_name} does not exist or is already empty: {e}")
+
+        except Exception as e:
+            logger.exception(f"❌ Error clearing collection {scope_name}.{collection_name}: {e}")
+            raise
+
 
 class FlightSearchState(agentc_langgraph.agent.State):
     """State for flight search conversations - single user system."""
@@ -360,7 +378,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Get prompt resource first - we'll need it for the ReAct agent
         prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
-        
+
         # Get tools from Agent Catalog - primary method: find by name, fallback: find through prompt
         tools = []
         tool_names = [
@@ -543,10 +561,15 @@ def clear_flight_bookings():
         )
         client.connect()
 
-        # Clear bookings scope: travel-sample.agentc_bookings
+        # Clear bookings scope using environment variables
         bookings_scope = "agentc_bookings"
         client.clear_scope(bookings_scope)
-        logger.info("✅ Cleared existing flight bookings for fresh test run")
+        logger.info(f"✅ Cleared existing flight bookings for fresh test run: {os.environ['CB_BUCKET']}.{bookings_scope}")
+        
+        # Clear airline reviews collection for fresh data load
+        logger.info(f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+        client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+        logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
 
     except Exception as e:
         logger.warning(f"❌ Could not clear bookings: {e}")
@@ -741,7 +764,7 @@ def run_test():
             "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class",
             "Book an economy flight from JFK to MIA for next week, 1 passenger",
             "Show me my current flight bookings",
-            "What is the baggage policy for international flights?",
+            "What do passengers say about IndiGo's service quality?",
         ]
 
         with application_span.new("Test Queries") as span:
