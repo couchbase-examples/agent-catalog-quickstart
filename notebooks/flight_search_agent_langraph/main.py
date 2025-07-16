@@ -358,13 +358,16 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             state["messages"].append(initial_msg)
             logger.info(f"Flight Query: {state['query']}")
 
+        # Get prompt resource first - we'll need it for the ReAct agent
+        prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
+        
         # Get tools from Agent Catalog - primary method: find by name, fallback: find through prompt
         tools = []
         tool_names = [
             "lookup_flight_info",
             "save_flight_booking", 
             "retrieve_flight_bookings",
-            "search_flight_policies",
+            "search_airline_reviews",
         ]
         
         for tool_name in tool_names:
@@ -384,8 +387,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             if not catalog_tool:
                 try:
                     logger.info(f"🔄 Trying prompt fallback for tool: {tool_name}")
-                    # Get prompt and extract tools from it
-                    prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
+                    # Use the prompt resource we already found and extract tools from it
                     if prompt_resource:
                         prompt_tools = getattr(prompt_resource, 'tools', [])
                         for prompt_tool in prompt_tools:
@@ -413,7 +415,8 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                         # Parse input based on tool requirements
                         if name == "lookup_flight_info":
-                            # Expected format: "JFK,LAX" or "JFK to LAX" or "from JFK to LAX"
+                            
+                            # Expected format: "JFK,LAX" - parse and pass as separate parameters
                             parts = tool_input.replace(" to ", ",").replace("from ", "").split(",")
                             if len(parts) >= 2:
                                 source_airport = parts[0].strip()
@@ -423,40 +426,15 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                 return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX')"
                                 
                         elif name == "save_flight_booking":
-                            # Expected format: "JFK,LAX,2024-01-15,2,business" or similar
-                            parts = tool_input.split(",")
-                            if len(parts) >= 3:
-                                source_airport = parts[0].strip()
-                                destination_airport = parts[1].strip()
-                                date = parts[2].strip()
-                                passengers = int(parts[3].strip()) if len(parts) > 3 else 1
-                                class_type = parts[4].strip() if len(parts) > 4 else "economy"
-                                result = original_tool.func(
-                                    source_airport=source_airport,
-                                    destination_airport=destination_airport,
-                                    date=date,
-                                    passengers=passengers,
-                                    class_type=class_type
-                                )
-                            else:
-                                return f"Error: save_flight_booking requires format 'SOURCE,DEST,DATE,PASSENGERS,CLASS'"
+                            # Pass the full string directly - tool expects "source,dest,date" format
+                            result = original_tool.func(booking_input=tool_input)
                                 
                         elif name == "retrieve_flight_bookings":
-                            # Can take optional parameters: source, destination, date
-                            if tool_input.strip():
-                                parts = tool_input.split(",")
-                                if len(parts) >= 3:
-                                    source_airport = parts[0].strip()
-                                    destination_airport = parts[1].strip()
-                                    date = parts[2].strip()
-                                    result = original_tool.func(source_airport=source_airport, destination_airport=destination_airport, date=date)
-                                else:
-                                    result = original_tool.func()
-                            else:
-                                result = original_tool.func()
+                            # Pass the full string directly - tool expects string input
+                            result = original_tool.func(booking_query=tool_input)
                                 
-                        elif name == "search_flight_policies":
-                            # Takes a query string
+                        elif name == "search_airline_reviews":
+                            # Pass the full string directly - tool expects query string
                             result = original_tool.func(query=tool_input)
                             
                         else:
