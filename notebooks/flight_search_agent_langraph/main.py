@@ -236,17 +236,20 @@ class CouchbaseClient:
             sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
             from airline_reviews_data import load_airline_reviews_to_couchbase
             
-            logger.info("🔄 Setting up vector store with airline reviews data...")
+            # NOTE: Commented out as data is already loaded in Couchbase
+            # logger.info("🔄 Setting up vector store with airline reviews data...")
+            # 
+            # # Use the unified data loading approach
+            # load_airline_reviews_to_couchbase(
+            #     cluster=self.cluster,
+            #     bucket_name=self.bucket_name,
+            #     scope_name=scope_name,
+            #     collection_name=collection_name,
+            #     embeddings=embeddings,
+            #     index_name=index_name
+            # )
             
-            # Use the unified data loading approach
-            load_airline_reviews_to_couchbase(
-                cluster=self.cluster,
-                bucket_name=self.bucket_name,
-                scope_name=scope_name,
-                collection_name=collection_name,
-                embeddings=embeddings,
-                index_name=index_name
-            )
+            logger.info(f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}")
             
             # Create and return the vector store instance
             vector_store = CouchbaseVectorStore(
@@ -550,7 +553,7 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         return workflow.compile()
 
 
-def clear_flight_bookings():
+def clear_bookings_and_reviews():
     """Clear existing flight bookings to start fresh for demo."""
     try:
         client = CouchbaseClient(
@@ -566,10 +569,43 @@ def clear_flight_bookings():
         client.clear_scope(bookings_scope)
         logger.info(f"✅ Cleared existing flight bookings for fresh test run: {os.environ['CB_BUCKET']}.{bookings_scope}")
         
-        # Clear airline reviews collection for fresh data load
-        logger.info(f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
-        client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
-        logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+        # Check if airline reviews collection needs clearing by comparing expected vs actual document count
+        try:
+            # Import to get expected document count without loading all data
+            import sys
+            sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
+            from airline_reviews_data import _data_manager
+            
+            # Get expected document count (this uses cached data if available)
+            expected_docs = _data_manager.process_to_texts()
+            expected_count = len(expected_docs)
+            
+            # Check current document count in collection
+            try:
+                count_query = f"SELECT COUNT(*) as count FROM `{os.environ['CB_BUCKET']}`.`{os.environ['CB_SCOPE']}`.`{os.environ['CB_COLLECTION']}`"
+                count_result = client.cluster.query(count_query)
+                count_row = next(iter(count_result))
+                existing_count = count_row["count"]
+                
+                logger.info(f"📊 Airline reviews collection: {existing_count} existing, {expected_count} expected")
+                
+                if existing_count == expected_count:
+                    logger.info(f"✅ Collection already has correct document count ({existing_count}), skipping clear")
+                else:
+                    logger.info(f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+                    client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+                    logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+                    
+            except Exception as count_error:
+                # Collection doesn't exist or query failed - clear anyway to ensure fresh start
+                logger.info(f"📊 Collection doesn't exist or query failed, will clear and reload: {count_error}")
+                client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+                logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+                
+        except Exception as e:
+            logger.warning(f"⚠️  Could not check collection count, clearing anyway: {e}")
+            client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
+            logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
 
     except Exception as e:
         logger.warning(f"❌ Could not clear bookings: {e}")
@@ -754,7 +790,7 @@ def run_test():
 
     try:
         # Clear existing bookings first for a clean test run
-        clear_flight_bookings()
+        clear_bookings_and_reviews()
 
         compiled_graph, application_span = setup_flight_search_agent()
 

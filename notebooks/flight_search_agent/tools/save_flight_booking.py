@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
     cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+        os.environ["CB_CONN_STRING"],
         couchbase.options.ClusterOptions(
             authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"),
-                password=os.getenv("CB_PASSWORD", "password"),
+                username=os.environ["CB_USERNAME"],
+                password=os.environ["CB_PASSWORD"],
             )
         ),
     )
@@ -141,7 +141,7 @@ def save_flight_booking(
             return "Error: Invalid date format. Please use YYYY-MM-DD format or 'tomorrow'."
 
         # Setup collection info
-        bucket_name = os.getenv("CB_BUCKET", "vector-search-testing")
+        bucket_name = os.environ["CB_BUCKET"]
         scope_name = "agentc_bookings"
         collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
 

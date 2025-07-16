@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
     auth = couchbase.auth.PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"),
-        password=os.getenv("CB_PASSWORD", "password"),
+        username=os.environ["CB_USERNAME"],
+        password=os.environ["CB_PASSWORD"],
     )
     options = couchbase.options.ClusterOptions(auth)
     
@@ -28,7 +28,7 @@ try:
     options.apply_profile("wan_development")
     
     cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+        os.environ["CB_CONN_STRING"],
         options
     )
     cluster.wait_until_ready(timedelta(seconds=20))
@@ -40,37 +40,36 @@ except couchbase.exceptions.CouchbaseException as e:
 def _get_vector_store():
     """Get vector store instance for searching flight data - optimized for Capella AI."""
     try:
-        # Use Capella AI embeddings if available, fallback to OpenAI
-        if (
-            os.getenv("CB_USERNAME")
-            and os.getenv("CB_PASSWORD")
-            and os.getenv("CAPELLA_API_ENDPOINT")
-            and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
-        ):
-            import base64
+        # Use only Capella AI embeddings - no fallback
+        # Use only Capella AI embeddings - no fallback
+        if not all([
+            os.getenv("CB_USERNAME"),
+            os.getenv("CB_PASSWORD"),
+            os.getenv("CAPELLA_API_ENDPOINT"),
+            os.getenv("CAPELLA_API_EMBEDDING_MODEL")
+        ]):
+            raise ValueError("Missing required Capella AI environment variables")
 
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
+        import base64
 
-            embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                api_key=api_key,
-                base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-            )
-        else:
-            embeddings = OpenAIEmbeddings(
-                api_key=os.getenv("OPENAI_API_KEY"), model="text-embedding-3-small"
-            )
+        api_key = base64.b64encode(
+            f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode()
+        ).decode()
 
-        # Updated to use correct environment variable names and default values
+        embeddings = OpenAIEmbeddings(
+            model=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
+            api_key=api_key,
+            base_url=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
+        )
+
+        # Updated to use correct environment variable names without defaults
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
-            bucket_name=os.getenv("CB_BUCKET", "vector-search-testing"),
-            scope_name=os.getenv("CB_SCOPE", "agentc_data"),
-            collection_name=os.getenv("CB_COLLECTION", "flight_policies"),
+            bucket_name=os.environ["CB_BUCKET"],
+            scope_name=os.environ["CB_SCOPE"],
+            collection_name=os.environ["CB_COLLECTION"],
             embedding=embeddings,
-            index_name=os.getenv("CB_INDEX", "flight_policies_index"),
+            index_name=os.environ["CB_INDEX"],
         )
         return vector_store
     except Exception as e:

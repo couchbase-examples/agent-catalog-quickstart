@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 try:
     cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+        os.environ["CB_CONN_STRING"],
         couchbase.options.ClusterOptions(
             authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"),
-                password=os.getenv("CB_PASSWORD", "password")
+                username=os.environ["CB_USERNAME"],
+                password=os.environ["CB_PASSWORD"]
             )
         ),
     )
