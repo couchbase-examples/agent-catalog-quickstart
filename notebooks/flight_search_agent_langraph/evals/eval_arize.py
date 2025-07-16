@@ -15,16 +15,15 @@ The implementation integrates with the existing Agent Catalog infrastructure
 while extending it with Arize AI capabilities for production monitoring.
 """
 
+import json
 import logging
 import os
 import sys
 import time
 from datetime import datetime
-from typing import Dict, List
 
 import agentc
 import pandas as pd
-import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -43,7 +42,7 @@ PROJECT_NAME = "flight-search-agent-evaluation"
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import the refactored setup functions
-from main import setup_environment, CouchbaseClient, FlightSearchGraph
+from main import CouchbaseClient, FlightSearchGraph, setup_environment
 
 # Try to import Arize dependencies with fallback
 try:
@@ -53,19 +52,19 @@ try:
     from openinference.instrumentation.langchain import LangChainInstrumentor
     from openinference.instrumentation.openai import OpenAIInstrumentor
     from phoenix.evals import (
+        HALLUCINATION_PROMPT_RAILS_MAP,
+        HALLUCINATION_PROMPT_TEMPLATE,
         QA_PROMPT_RAILS_MAP,
         QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
-        HALLUCINATION_PROMPT_RAILS_MAP,
-        HALLUCINATION_PROMPT_TEMPLATE,
         TOXICITY_PROMPT_RAILS_MAP,
         TOXICITY_PROMPT_TEMPLATE,
         HallucinationEvaluator,
-        ToxicityEvaluator,
-        RelevanceEvaluator,
-        QAEvaluator,
         OpenAIModel,
+        QAEvaluator,
+        RelevanceEvaluator,
+        ToxicityEvaluator,
         llm_classify,
         run_evals,
     )
@@ -79,12 +78,12 @@ except ImportError as e:
 
 # Import flight search components
 try:
-    from main import FlightSearchGraph, setup_environment
     from data.queries import get_evaluation_queries, get_test_queries
+    from main import FlightSearchGraph, setup_environment
 
     FLIGHT_AGENT_AVAILABLE = True
 except ImportError as e:
-    logger.error(f"Flight search components not available: {e}")
+    logger.exception(f"Flight search components not available: {e}")
     FLIGHT_AGENT_AVAILABLE = False
 
 
@@ -131,16 +130,16 @@ class ArizeFlightSearchEvaluator:
             logger.info("🔧 Setting up Arize observability...")
 
             # Check if Phoenix is already running and kill existing processes
-            import subprocess
             import socket
-            
+            import subprocess
+
             def is_port_in_use(port):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    return s.connect_ex(('localhost', port)) == 0
-            
+                    return s.connect_ex(("localhost", port)) == 0
+
             # Kill any existing Phoenix processes
             try:
-                subprocess.run(['pkill', '-f', 'phoenix'], capture_output=True)
+                subprocess.run(["pkill", "-f", "phoenix"], check=False, capture_output=True)
                 time.sleep(2)  # Wait for processes to terminate
             except:
                 pass
@@ -149,7 +148,7 @@ class ArizeFlightSearchEvaluator:
             phoenix_port = 6006
             grpc_port = 4317
             max_attempts = 5
-            
+
             for attempt in range(max_attempts):
                 try:
                     if is_port_in_use(phoenix_port):
@@ -157,11 +156,11 @@ class ArizeFlightSearchEvaluator:
                         grpc_port += 1
                         logger.info(f"🔄 Port {phoenix_port-1} in use, trying {phoenix_port}")
                         continue
-                    
+
                     # Set environment variables for Phoenix ports
-                    os.environ['PHOENIX_PORT'] = str(phoenix_port)
-                    os.environ['PHOENIX_GRPC_PORT'] = str(grpc_port)
-                    
+                    os.environ["PHOENIX_PORT"] = str(phoenix_port)
+                    os.environ["PHOENIX_GRPC_PORT"] = str(grpc_port)
+
                     # Start Phoenix session (using environment variables, removing deprecated port parameter)
                     self.phoenix_session = px.launch_app()
                     logger.info(f"🌐 Phoenix UI: {self.phoenix_session.url}")
@@ -169,7 +168,7 @@ class ArizeFlightSearchEvaluator:
                 except Exception as e:
                     logger.warning(f"🔄 Phoenix startup attempt {attempt+1} failed: {e}")
                     if attempt == max_attempts - 1:
-                        logger.error(f"💥 Phoenix failed to start after {max_attempts} attempts")
+                        logger.exception(f"💥 Phoenix failed to start after {max_attempts} attempts")
                         self.phoenix_session = None
                         return
                     phoenix_port += 1
@@ -225,7 +224,7 @@ class ArizeFlightSearchEvaluator:
             logger.info("✅ Arize observability configured successfully")
 
         except Exception as e:
-            logger.error(f"⚠️ Error setting up Arize observability: {e}")
+            logger.exception(f"⚠️ Error setting up Arize observability: {e}")
             self.phoenix_session = None
 
     def setup_agent(self):
@@ -243,20 +242,20 @@ class ArizeFlightSearchEvaluator:
             # Setup Couchbase infrastructure
             logger.info("🔧 Setting up Couchbase infrastructure...")
             client = CouchbaseClient(
-                conn_string=os.environ['CB_CONN_STRING'],
-                username=os.environ['CB_USERNAME'],
-                password=os.environ['CB_PASSWORD'],
-                bucket_name=os.environ['CB_BUCKET']
+                conn_string=os.environ["CB_CONN_STRING"],
+                username=os.environ["CB_USERNAME"],
+                password=os.environ["CB_PASSWORD"],
+                bucket_name=os.environ["CB_BUCKET"]
             )
-            
+
             client.connect()
-            client.setup_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
-            
+            client.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+
             # Setup vector search index
             try:
-                with open("agentcatalog_index.json", "r") as file:
+                with open("agentcatalog_index.json") as file:
                     index_definition = json.load(file)
-                client.setup_vector_search_index(index_definition, os.environ['CB_SCOPE'])
+                client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
             except Exception as e:
                 logger.warning(f"⚠️ Could not setup vector search index: {e}")
 
@@ -270,8 +269,9 @@ class ArizeFlightSearchEvaluator:
                 ):
                     # Create API key for Capella AI
                     import base64
+
                     from langchain_openai import OpenAIEmbeddings
-                    
+
                     api_key = base64.b64encode(
                         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
                     ).decode()
@@ -284,18 +284,19 @@ class ArizeFlightSearchEvaluator:
                     )
                     logger.info("✅ Using Capella AI for embeddings")
                 else:
-                    raise ValueError("Capella AI credentials not available")
+                    msg = "Capella AI credentials not available"
+                    raise ValueError(msg)
             except Exception as e:
                 logger.warning(f"⚠️ Capella AI embeddings failed: {e}")
                 # Fall back to OpenAI for evaluation purposes
                 from langchain_openai import OpenAIEmbeddings
                 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
                 logger.info("⚠️ Using OpenAI embeddings as fallback for evaluation")
-            
+
             client.setup_vector_store(
-                scope_name=os.environ['CB_SCOPE'],
-                collection_name=os.environ['CB_COLLECTION'],
-                index_name=os.environ['CB_INDEX'],
+                scope_name=os.environ["CB_SCOPE"],
+                collection_name=os.environ["CB_COLLECTION"],
+                index_name=os.environ["CB_INDEX"],
                 embeddings=embeddings
             )
             logger.info("✅ Couchbase infrastructure setup completed")
@@ -328,10 +329,10 @@ class ArizeFlightSearchEvaluator:
             return True
 
         except Exception as e:
-            logger.error(f"❌ Error setting up agent: {e}")
+            logger.exception(f"❌ Error setting up agent: {e}")
             return False
 
-    def run_agent_query(self, query: str) -> Dict:
+    def run_agent_query(self, query: str) -> dict:
         """Run a single query through the agent."""
         try:
             logger.info(f"🔄 Processing query: {query}")
@@ -358,10 +359,10 @@ class ArizeFlightSearchEvaluator:
             }
 
         except Exception as e:
-            logger.error(f"❌ Error processing query '{query}': {e}")
+            logger.exception(f"❌ Error processing query '{query}': {e}")
             return {
                 "query": query,
-                "response": f"Error: {str(e)}",
+                "response": f"Error: {e!s}",
                 "success": False,
                 "error": str(e),
                 "elapsed_time": 0,
@@ -376,7 +377,7 @@ class ArizeFlightSearchEvaluator:
                 last_message = messages[-1]
                 if hasattr(last_message, "content"):
                     return last_message.content
-                elif isinstance(last_message, dict):
+                if isinstance(last_message, dict):
                     return last_message.get("content", str(last_message))
 
             # Try search results
@@ -390,7 +391,7 @@ class ArizeFlightSearchEvaluator:
         except Exception as e:
             return f"Error extracting response: {e}"
 
-    def analyze_response(self, query: str, response: str) -> Dict:
+    def analyze_response(self, query: str, response: str) -> dict:
         """Analyze response quality with basic metrics."""
         analysis = {
             "query_type": self._classify_query_type(query),
@@ -422,14 +423,13 @@ class ArizeFlightSearchEvaluator:
         query_lower = query.lower()
         if any(word in query_lower for word in ["book", "reserve", "purchase"]):
             return "booking_request"
-        elif any(word in query_lower for word in ["review", "reviews", "passenger", "service", "food", "comfort"]):
+        if any(word in query_lower for word in ["review", "reviews", "passenger", "service", "food", "comfort"]):
             return "review_inquiry"
-        elif any(word in query_lower for word in ["find", "search", "show", "options"]):
+        if any(word in query_lower for word in ["find", "search", "show", "options"]):
             return "flight_search"
-        elif any(word in query_lower for word in ["my", "current", "existing"]):
+        if any(word in query_lower for word in ["my", "current", "existing"]):
             return "booking_retrieval"
-        else:
-            return "general_inquiry"
+        return "general_inquiry"
 
     def _has_flight_info(self, response: str) -> bool:
         """Check if response contains flight information."""
@@ -475,7 +475,7 @@ class ArizeFlightSearchEvaluator:
         # Sample evaluation data preview
         if len(results_df) > 0:
             sample_row = results_df.iloc[0]
-            logger.info(f"\n   🔍 Sample evaluation data:")
+            logger.info("\n   🔍 Sample evaluation data:")
             logger.info(f"      Query: {sample_row['query']}")
             logger.info(f"      Response: {sample_row['response'][:100]}...")
 
@@ -484,8 +484,8 @@ class ArizeFlightSearchEvaluator:
             evaluation_data = []
             for _, row in results_df.iterrows():
                 query = row["query"]
-                query_type = row['query_type']
-                
+                query_type = row["query_type"]
+
                 # Create more specific reference text based on query content
                 if "jfk" in query.lower() and "lax" in query.lower():
                     reference = "A relevant response listing specific flights from JFK to LAX with airline codes like AS, B6, DL, QF, AA, UA, US, VX and aircraft details"
@@ -499,14 +499,14 @@ class ArizeFlightSearchEvaluator:
                     reference = f"A relevant response about {query.lower()} with specific flight information including airline codes and aircraft details"
                 else:
                     reference = f"A helpful and accurate response about {query_type.replace('_', ' ')} with specific information and no fabricated details"
-                
+
                 evaluation_data.append(
                     {
                         # Standard columns for all evaluations
                         "input": query,
                         "output": row["response"],
                         "reference": reference,
-                        
+
                         # Specific columns for different evaluations
                         "query": query,  # For hallucination evaluation
                         "response": row["response"],  # For hallucination evaluation
@@ -518,50 +518,50 @@ class ArizeFlightSearchEvaluator:
 
             # Initialize evaluators with the model
             evaluators = {
-                'relevance': RelevanceEvaluator(self.evaluator_llm),
-                'qa': QAEvaluator(self.evaluator_llm),
-                'hallucination': HallucinationEvaluator(self.evaluator_llm), 
-                'toxicity': ToxicityEvaluator(self.evaluator_llm),
+                "relevance": RelevanceEvaluator(self.evaluator_llm),
+                "qa": QAEvaluator(self.evaluator_llm),
+                "hallucination": HallucinationEvaluator(self.evaluator_llm),
+                "toxicity": ToxicityEvaluator(self.evaluator_llm),
             }
 
             # Run comprehensive evaluations using Phoenix evaluators
-            logger.info(f"\n   🧠 Running advanced Phoenix evaluations...")
+            logger.info("\n   🧠 Running advanced Phoenix evaluations...")
 
             try:
                 # Run individual evaluations with proper column mapping
-                logger.info(f"   🔄 Running evaluations individually for better reliability...")
+                logger.info("   🔄 Running evaluations individually for better reliability...")
                 self._run_individual_evaluations(eval_df, results_df, evaluators)
 
             except Exception as e:
                 logger.warning(f"   ⚠️ Individual evaluations failed: {e}")
                 # Set default values if all evaluations fail
-                for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+                for eval_type in ["relevance", "qa", "hallucination", "toxicity"]:
                     results_df[f"arize_{eval_type}"] = "not_evaluated"
                     results_df[f"arize_{eval_type}_explanation"] = f"Evaluation failed: {e}"
 
             # Display sample evaluation results
             if len(results_df) > 0:
-                logger.info(f"\n   📝 Sample evaluation results:")
+                logger.info("\n   📝 Sample evaluation results:")
                 for i in range(min(2, len(results_df))):
                     row = results_df.iloc[i]
                     logger.info(f"      Query: {row['query']}")
-                    
-                    for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+
+                    for eval_type in ["relevance", "qa", "hallucination", "toxicity"]:
                         eval_col = f"arize_{eval_type}"
                         explanation_col = f"arize_{eval_type}_explanation"
-                        
+
                         if eval_col in row:
                             evaluation = row[eval_col]
                             explanation = str(row.get(explanation_col, "No explanation"))[:80] + "..."
                             logger.info(f"      {eval_type.title()}: {evaluation} - {explanation}")
                     logger.info("")
 
-            logger.info(f"   ✅ All Phoenix evaluations completed")
+            logger.info("   ✅ All Phoenix evaluations completed")
 
         except Exception as e:
-            logger.error(f"   ❌ Error running Phoenix evaluations: {e}")
+            logger.exception(f"   ❌ Error running Phoenix evaluations: {e}")
             # Add default values if evaluation fails
-            for eval_type in ['relevance', 'qa', 'hallucination', 'toxicity']:
+            for eval_type in ["relevance", "qa", "hallucination", "toxicity"]:
                 results_df[f"arize_{eval_type}"] = "unknown"
                 results_df[f"arize_{eval_type}_explanation"] = f"Error: {e}"
 
@@ -569,14 +569,14 @@ class ArizeFlightSearchEvaluator:
 
     def _run_individual_evaluations(self, eval_df: pd.DataFrame, results_df: pd.DataFrame, evaluators: dict):
         """Run individual evaluations with proper column mapping and error handling."""
-        logger.info(f"   🔄 Running individual evaluations...")
+        logger.info("   🔄 Running individual evaluations...")
 
-        for eval_name, evaluator in evaluators.items():
+        for eval_name, _evaluator in evaluators.items():
             try:
                 logger.info(f"      📊 Running {eval_name} evaluation...")
-                
+
                 # Prepare data with proper column names for each evaluator
-                if eval_name == 'relevance':
+                if eval_name == "relevance":
                     # Relevance evaluator expects 'input' and 'reference' columns
                     relevance_data = eval_df[["input", "reference"]].copy()
                     eval_results = llm_classify(
@@ -586,7 +586,7 @@ class ArizeFlightSearchEvaluator:
                         rails=self.relevance_rails,
                         provide_explanation=True,
                     )
-                elif eval_name == 'qa':
+                elif eval_name == "qa":
                     # QA evaluator expects 'input', 'output', and 'reference' columns
                     qa_data = eval_df[["input", "output", "reference"]].copy()
                     eval_results = llm_classify(
@@ -596,7 +596,7 @@ class ArizeFlightSearchEvaluator:
                         rails=self.qa_rails,
                         provide_explanation=True,
                     )
-                elif eval_name == 'hallucination':
+                elif eval_name == "hallucination":
                     # Hallucination evaluator expects 'input', 'reference', and 'output' columns
                     hallucination_data = eval_df[["input", "reference", "output"]].copy()
                     eval_results = llm_classify(
@@ -606,7 +606,7 @@ class ArizeFlightSearchEvaluator:
                         rails=self.hallucination_rails,
                         provide_explanation=True,
                     )
-                elif eval_name == 'toxicity':
+                elif eval_name == "toxicity":
                     # Toxicity evaluator expects 'input' column (renamed from 'text')
                     toxicity_data = eval_df[["input"]].copy()
                     eval_results = llm_classify(
@@ -626,53 +626,53 @@ class ArizeFlightSearchEvaluator:
                 # Add results to our DataFrame with proper error handling
                 if eval_results is not None:
                     # Handle both DataFrame and list return types
-                    if hasattr(eval_results, 'columns'):
+                    if hasattr(eval_results, "columns"):
                         # DataFrame case
-                        if 'label' in eval_results.columns:
-                            results_df[f"arize_{eval_name}"] = eval_results['label'].tolist()
-                        elif 'classification' in eval_results.columns:
-                            results_df[f"arize_{eval_name}"] = eval_results['classification'].tolist()
+                        if "label" in eval_results.columns:
+                            results_df[f"arize_{eval_name}"] = eval_results["label"].tolist()
+                        elif "classification" in eval_results.columns:
+                            results_df[f"arize_{eval_name}"] = eval_results["classification"].tolist()
                         else:
                             results_df[f"arize_{eval_name}"] = ["not_evaluated"] * len(results_df)
-                        
-                        if 'score' in eval_results.columns:
-                            results_df[f"arize_{eval_name}_score"] = eval_results['score'].tolist()
-                        
-                        if 'explanation' in eval_results.columns:
-                            results_df[f"arize_{eval_name}_explanation"] = eval_results['explanation'].tolist()
-                        elif 'reason' in eval_results.columns:
-                            results_df[f"arize_{eval_name}_explanation"] = eval_results['reason'].tolist()
+
+                        if "score" in eval_results.columns:
+                            results_df[f"arize_{eval_name}_score"] = eval_results["score"].tolist()
+
+                        if "explanation" in eval_results.columns:
+                            results_df[f"arize_{eval_name}_explanation"] = eval_results["explanation"].tolist()
+                        elif "reason" in eval_results.columns:
+                            results_df[f"arize_{eval_name}_explanation"] = eval_results["reason"].tolist()
                         else:
                             results_df[f"arize_{eval_name}_explanation"] = ["No explanation provided"] * len(results_df)
-                        
+
                         logger.info(f"      ✅ {eval_name} evaluation completed with {len(eval_results)} results")
                     elif isinstance(eval_results, list):
-                        # List case - extract values from list of dictionaries  
+                        # List case - extract values from list of dictionaries
                         if len(eval_results) > 0 and isinstance(eval_results[0], dict):
                             # Extract labels/classifications
-                            if 'label' in eval_results[0]:
-                                results_df[f"arize_{eval_name}"] = [item.get('label', 'not_evaluated') for item in eval_results]
-                            elif 'classification' in eval_results[0]:
-                                results_df[f"arize_{eval_name}"] = [item.get('classification', 'not_evaluated') for item in eval_results]
+                            if "label" in eval_results[0]:
+                                results_df[f"arize_{eval_name}"] = [item.get("label", "not_evaluated") for item in eval_results]
+                            elif "classification" in eval_results[0]:
+                                results_df[f"arize_{eval_name}"] = [item.get("classification", "not_evaluated") for item in eval_results]
                             else:
                                 results_df[f"arize_{eval_name}"] = ["not_evaluated"] * len(results_df)
-                            
+
                             # Extract scores if available
-                            if 'score' in eval_results[0]:
-                                results_df[f"arize_{eval_name}_score"] = [item.get('score', 0) for item in eval_results]
-                            
+                            if "score" in eval_results[0]:
+                                results_df[f"arize_{eval_name}_score"] = [item.get("score", 0) for item in eval_results]
+
                             # Extract explanations
-                            if 'explanation' in eval_results[0]:
-                                results_df[f"arize_{eval_name}_explanation"] = [item.get('explanation', 'No explanation') for item in eval_results]
-                            elif 'reason' in eval_results[0]:
-                                results_df[f"arize_{eval_name}_explanation"] = [item.get('reason', 'No explanation') for item in eval_results]
+                            if "explanation" in eval_results[0]:
+                                results_df[f"arize_{eval_name}_explanation"] = [item.get("explanation", "No explanation") for item in eval_results]
+                            elif "reason" in eval_results[0]:
+                                results_df[f"arize_{eval_name}_explanation"] = [item.get("reason", "No explanation") for item in eval_results]
                             else:
                                 results_df[f"arize_{eval_name}_explanation"] = ["No explanation provided"] * len(results_df)
                         else:
                             # List of simple values
                             results_df[f"arize_{eval_name}"] = eval_results if len(eval_results) == len(results_df) else ["not_evaluated"] * len(results_df)
                             results_df[f"arize_{eval_name}_explanation"] = ["List evaluation result"] * len(results_df)
-                        
+
                         logger.info(f"      ✅ {eval_name} evaluation completed with {len(eval_results)} results (list format)")
                     else:
                         # Single value or unexpected format
@@ -688,7 +688,7 @@ class ArizeFlightSearchEvaluator:
             except Exception as e:
                 logger.warning(f"      ⚠️ {eval_name} evaluation failed: {e}")
                 results_df[f"arize_{eval_name}"] = ["error"] * len(results_df)
-                results_df[f"arize_{eval_name}_explanation"] = [f"Error: {str(e)}"] * len(results_df)
+                results_df[f"arize_{eval_name}_explanation"] = [f"Error: {e!s}"] * len(results_df)
 
     def create_arize_dataset(self, results_df: pd.DataFrame) -> str:
         """Create an Arize dataset from evaluation results."""
@@ -728,10 +728,10 @@ class ArizeFlightSearchEvaluator:
             return dataset.id
 
         except Exception as e:
-            logger.error(f"❌ Error creating Arize dataset: {e}")
+            logger.exception(f"❌ Error creating Arize dataset: {e}")
             return None
 
-    def run_evaluation(self, test_queries: List[str]) -> pd.DataFrame:
+    def run_evaluation(self, test_queries: list[str]) -> pd.DataFrame:
         """Run complete evaluation pipeline with Arize AI integration."""
         logger.info("🚀 Starting Arize Flight Search Agent Evaluation...")
         logger.info("=" * 70)
@@ -806,20 +806,20 @@ class ArizeFlightSearchEvaluator:
         # Arize results if available
         if "arize_relevance" in results_df.columns:
             relevance_counts = results_df["arize_relevance"].value_counts()
-            logger.info(f"\n🔍 Arize LLM Evaluation Results:")
+            logger.info("\n🔍 Arize LLM Evaluation Results:")
             logger.info(f"   📋 Relevance: {dict(relevance_counts)}")
-            
+
             # Check for QA (correctness) results
             if "arize_qa" in results_df.columns:
                 qa_counts = results_df["arize_qa"].value_counts()
                 logger.info(f"   ✅ QA/Correctness: {dict(qa_counts)}")
-            
+
             # Check for hallucination results
             if "arize_hallucination" in results_df.columns:
                 hallucination_counts = results_df["arize_hallucination"].value_counts()
                 logger.info(f"   🚨 Hallucination: {dict(hallucination_counts)}")
-            
-            # Check for toxicity results  
+
+            # Check for toxicity results
             if "arize_toxicity" in results_df.columns:
                 toxicity_counts = results_df["arize_toxicity"].value_counts()
                 logger.info(f"   ☠️  Toxicity: {dict(toxicity_counts)}")
@@ -830,7 +830,7 @@ class ArizeFlightSearchEvaluator:
 
         # Query type breakdown
         query_types = results_df["query_type"].value_counts()
-        logger.info(f"\n📋 Query Type Breakdown:")
+        logger.info("\n📋 Query Type Breakdown:")
         for query_type, count in query_types.items():
             avg_score = results_df[results_df["query_type"] == query_type]["quality_score"].mean()
             logger.info(f"  {query_type}: {count} queries (avg: {avg_score:.1f}/10.0)")
@@ -840,10 +840,10 @@ class ArizeFlightSearchEvaluator:
         try:
             # Clean up environment variables
             import os
-            for var in ['PHOENIX_PORT', 'PHOENIX_GRPC_PORT']:
+            for var in ["PHOENIX_PORT", "PHOENIX_GRPC_PORT"]:
                 if var in os.environ:
                     del os.environ[var]
-                    
+
             logger.info("🔒 Phoenix cleanup completed")
         except Exception as e:
             logger.warning(f"⚠️ Error during Phoenix cleanup: {e}")
@@ -852,13 +852,13 @@ class ArizeFlightSearchEvaluator:
 def run_phoenix_demo():
     """Run a simple Phoenix evaluation demo for flight search agent (matches notebook functionality)."""
     logger.info("🔧 Running Phoenix evaluation demo for flight search agent...")
-    
+
     # Demo queries - simple search only (no bookings or complex operations)
     demo_queries = [
         "Find flights from JFK to LAX",
         "What do passengers say about JAL's service quality?"
     ]
-    
+
     evaluator = ArizeFlightSearchEvaluator()
     try:
         results = evaluator.run_evaluation(demo_queries)
@@ -899,6 +899,6 @@ if __name__ == "__main__":
     # Run demo mode for quick testing (matches notebook demo)
     # Uncomment the next line to run demo mode instead of full evaluation
     # run_phoenix_demo()
-    
+
     # Run full evaluation
     main()

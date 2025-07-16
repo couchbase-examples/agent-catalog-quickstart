@@ -1,5 +1,6 @@
 # The repo itself
 agent-catalog/
+couchbase/
 
 # The quickstart folder
 .agent-catalog/

@@ -3,7 +3,7 @@
     "name": "airline_reviews_index",
     "uuid": "",
     "sourceType": "gocbcore",
-    "sourceName": "vector-search-testing",
+    "sourceName": "travel-sample",
     "planParams": {
       "maxPartitionsPerPIndex": 64,
       "indexPartitions": 16

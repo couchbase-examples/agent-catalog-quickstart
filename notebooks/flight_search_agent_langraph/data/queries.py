@@ -9,7 +9,7 @@ replacing the original flight policy queries with airline review queries.
 TEST_QUERIES = [
     "Find flights from JFK to LAX",
     "What do passengers say about JAL's service quality?",
-    "Book a flight from SFO to ORD tomorrow for 2 passengers in business class", 
+    "Book a flight from SFO to ORD tomorrow for 2 passengers in business class",
     "Show me my current flight bookings",
     "What do airline reviews say about JAL's baggage handling?",
 ]
@@ -24,4 +24,4 @@ def get_evaluation_queries():
 
 def get_flight_policy_queries():
     """Return flight policy queries (for backward compatibility)."""
-    return TEST_QUERIES 
+    return TEST_QUERIES

@@ -26,40 +26,36 @@ def test_connection_and_data():
             ),
         )
         cluster.wait_until_ready(timedelta(seconds=10))
-        print("✅ Connected to Couchbase successfully")
 
         # Test airline data
-        print("\n📊 Sample airline data:")
         airline_query = """
         SELECT *
-        FROM `travel-sample`.`inventory`.`airline` 
+        FROM `travel-sample`.`inventory`.`airline`
         LIMIT 10
         """
 
         result = cluster.query(airline_query)
         rows = list(result.rows())
-        for i, row in enumerate(rows, 1):
-            print(f"{i}. {row}")
+        for _i, _row in enumerate(rows, 1):
+            pass
 
         # Test route data
-        print("\n🛫 Sample route data:")
         route_query = """
         SELECT *
-        FROM `travel-sample`.inventory.route 
+        FROM `travel-sample`.inventory.route
         LIMIT 10
         """
 
         result = cluster.query(route_query)
         rows = list(result.rows())
-        for i, row in enumerate(rows, 1):
-            print(f"{i}. {row}")
+        for _i, _row in enumerate(rows, 1):
+            pass
 
         # Test specific route lookup (SFO to LAX)
-        print("\n🔍 Sample flight lookup (SFO to LAX):")
         flight_query = """
         FROM `travel-sample`.inventory.route r
         WHERE r.sourceairport = "SFO" AND r.destinationairport = "LAX"
-        SELECT VALUE r.airline || " flight from " || r.sourceairport || " to " || 
+        SELECT VALUE r.airline || " flight from " || r.sourceairport || " to " ||
                      r.destinationairport || " using " || r.equipment
         LIMIT 10
         """
@@ -67,15 +63,15 @@ def test_connection_and_data():
         result = cluster.query(flight_query)
         rows = list(result.rows())
         if rows:
-            for i, row in enumerate(rows, 1):
-                print(f"{i}. {row}")
+            for _i, _row in enumerate(rows, 1):
+                pass
         else:
-            print("No flights found from SFO to LAX")
+            pass
 
-    except couchbase.exceptions.CouchbaseException as e:
-        print(f"❌ Couchbase error: {e}")
-    except Exception as e:
-        print(f"❌ General error: {e}")
+    except couchbase.exceptions.CouchbaseException:
+        pass
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

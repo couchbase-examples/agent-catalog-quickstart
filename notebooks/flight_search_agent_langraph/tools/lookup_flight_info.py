@@ -27,24 +27,23 @@ try:
     cluster.wait_until_ready(timedelta(seconds=5))
 except couchbase.exceptions.CouchbaseException as e:
     error_msg = f"Could not connect to Couchbase cluster: {e!s}"
-    print(error_msg)
 
 
 @agentc.catalog.tool
 def lookup_flight_info(source_airport: str, destination_airport: str) -> list[str]:
     """Find flight routes between two airports with airline and aircraft information."""
-    
+
     # Validate input parameters
     if not source_airport or not destination_airport:
         return ["Error: Both source and destination airports are required."]
-    
+
     # Ensure airport codes are uppercase and 3 characters
     source_airport = source_airport.upper().strip()
     destination_airport = destination_airport.upper().strip()
-    
+
     if len(source_airport) != 3 or len(destination_airport) != 3:
         return [f"Error: Airport codes must be 3 letters (e.g., JFK, LAX). Got: {source_airport}, {destination_airport}"]
-    
+
     # Updated query with null handling
     query = """
     FROM
@@ -68,8 +67,8 @@ def lookup_flight_info(source_airport: str, destination_airport: str) -> list[st
         rows = list(result.rows())
     except couchbase.exceptions.CouchbaseException as e:
         error_msg = f"Failed to lookup flight information: {e!s}"
-        logger.error(error_msg)
-        return [f"Database error: Unable to search flights. Please try again later."]
+        logger.exception(error_msg)
+        return ["Database error: Unable to search flights. Please try again later."]
 
     if not rows:
         return [f"No flights found from {source_airport} to {destination_airport}. Please check airport codes or try different dates."]
