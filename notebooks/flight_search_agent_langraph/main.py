@@ -800,7 +800,7 @@ def run_test():
             "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class",
             "Book an economy flight from JFK to MIA for next week, 1 passenger",
             "Show me my current flight bookings",
-            "What do passengers say about IndiGo's service quality?",
+            "What do passengers say about SpiceJet's service quality?",
         ]
 
         with application_span.new("Test Queries") as span:

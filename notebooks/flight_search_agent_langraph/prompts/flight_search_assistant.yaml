@@ -22,10 +22,12 @@ content: >
 
   CRITICAL FORMAT RULES:
   1. NEVER include both Action and Final Answer in the same response
-  2. If using a tool: provide ONLY Thought/Action/Action Input, then STOP
+  2. If using a tool: provide ONLY Thought/Action/Action Input, then STOP and wait
   3. If ready to answer: provide ONLY Thought/Final Answer
   4. Wait for Observation before deciding next step
   5. Present actual tool results without embellishment
+  6. NEVER add extra text after "Final Answer:" - stop immediately
+  7. Each response must end with either "Action Input:" or "Final Answer:" - nothing else
 
   You have access to the following tools:
   {tools}
