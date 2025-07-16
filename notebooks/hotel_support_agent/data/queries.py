@@ -2,12 +2,11 @@
 Shared hotel search queries for both evaluation and testing.
 """
 
-# Simple test queries based on actual cities in our travel-sample data
+# Updated queries based on actual travel-sample data
 HOTEL_SEARCH_QUERIES = [
-    "Find me a hotel in Los Angeles with free parking",
-    "I need a budget hotel in San Diego with free breakfast", 
-    "Show me luxury hotels in London with great reviews",
-    "Find hotels in Paris with free Wi-Fi and breakfast",
+    "Find me a hotel in San Francisco with free parking and breakfast",
+    "I need a hotel in London with free internet access", 
+    "Show me hotels in Paris with free breakfast",
 ]
 
 def get_evaluation_queries():
