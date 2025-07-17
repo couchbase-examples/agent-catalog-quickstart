@@ -513,6 +513,11 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         if not prompt_content:
             prompt_content = "You are a helpful flight search assistant. Use the available tools to help users with their flight queries."
 
+        # Inject current date into the prompt content
+        import datetime
+        current_date = datetime.date.today().strftime("%Y-%m-%d")
+        prompt_content = prompt_content.replace("{current_date}", current_date)
+
         # Use the Agent Catalog prompt content directly - it already has ReAct format
         react_prompt = PromptTemplate.from_template(str(prompt_content))
 

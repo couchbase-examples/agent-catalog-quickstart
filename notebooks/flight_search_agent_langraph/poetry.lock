@@ -198,6 +198,38 @@ files = [
 test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
 
 [[package]]
+name = "arize"
+version = "7.48.1"
+description = "A helper library to interact with Arize AI APIs"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "arize-7.48.1-py3-none-any.whl", hash = "sha256:3324178ea7f76b97a8572b24eafe7feeb364b812b450c1173a312499050cb6cf"},
+    {file = "arize-7.48.1.tar.gz", hash = "sha256:edd8a6982c179e3bbfa8b44b00fdcb208754815c0b93ecb9e6f523a841f968d8"},
+]
+
+[package.dependencies]
+googleapis-common-protos = ">=1.51.0,<2"
+pandas = ">=0.25.3,<3"
+protobuf = ">=4.21.0,<6"
+pyarrow = ">=0.15.0"
+pydantic = ">=2.0.0,<3"
+requests-futures = "1.0.0"
+tqdm = ">=4.60.0,<5"
+
+[package.extras]
+autoembeddings = ["datasets (>=2.8,!=2.14.*,<3)", "pillow (>=8.4.0,<11)", "tokenizers (>=0.13,<1)", "torch (>=1.13,<3)", "transformers (>=4.25,<5)"]
+datasets = ["deprecated", "openinference-semantic-conventions (>=0.1.6,<1)", "opentelemetry-exporter-otlp (>=1.25.0,<2)", "opentelemetry-sdk (>=1.25.0,<2)", "opentelemetry-semantic-conventions (>=0.43b0,<1)", "typing-extensions (>=4,<5)", "wrapt (>=1.12.1,<2)"]
+dev = ["pytest (==8.3.3)", "ruff (==0.6.9)"]
+llm-evaluation = ["datasets (!=2.14.*)", "evaluate (>=0.3,<1)", "nltk (>=3.0.0,<4)", "rouge-score (>=0.1.2,<1)", "sacrebleu (>=2.3.1,<3)"]
+mimicexplainer = ["interpret-community[mimic] (>=0.22.0,<1)"]
+nlp-metrics = ["datasets (!=2.14.*)", "evaluate (>=0.3,<1)", "nltk (>=3.0.0,<4)", "rouge-score (>=0.1.2,<1)", "sacrebleu (>=2.3.1,<3)"]
+prompthub = ["gql (>=3.0.0)", "requests-toolbelt (>=1.0.0)"]
+prompthub-vertexai = ["google-cloud-aiplatform (>=1.0.0)"]
+tracing = ["deprecated", "openinference-semantic-conventions (>=0.1.12,<1)", "opentelemetry-semantic-conventions (>=0.43b0,<1)"]
+
+[[package]]
 name = "arize-otel"
 version = "0.8.2"
 description = "Helper package for OTEL setup to send traces to Arize & Phoenix"
@@ -3555,6 +3587,21 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
+name = "requests-futures"
+version = "1.0.0"
+description = "Asynchronous Python HTTP for Humans."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "requests-futures-1.0.0.tar.gz", hash = "sha256:35547502bf1958044716a03a2f47092a89efe8f9789ab0c4c528d9c9c30bc148"},
+    {file = "requests_futures-1.0.0-py2.py3-none-any.whl", hash = "sha256:633804c773b960cef009efe2a5585483443c6eac3c39cc64beba2884013bcdd9"},
+]
+
+[package.dependencies]
+requests = ">=1.2.0"
+
+[[package]]
 name = "requests-toolbelt"
 version = "1.0.0"
 description = "A utility belt for advanced users of python-requests"
@@ -5067,4 +5114,4 @@ dev = ["black", "pytest", "ruff"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "b5054f38c95e800f16bf707468e95bb21f222d77d4ae7ba826f6ae1ad27069dc"
+content-hash = "c6c7c7ca67420d902d7bc4fcbc7bb8b0e9e57a4265acaa92fea9e70512513ca0"

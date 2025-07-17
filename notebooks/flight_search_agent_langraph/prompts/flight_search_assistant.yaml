@@ -20,6 +20,14 @@ content: >
   - retrieve_flight_bookings: View bookings (no input needed)
   - search_airline_reviews: Search reviews (format: "service quality")
 
+  IMPORTANT DATE GUIDELINES:
+  - Today's date is {current_date}
+  - ALWAYS use dates in the future
+  - For "tomorrow": use the day after today's date
+  - For "next week": use 7 days from today's date
+  - NEVER use dates from 2023 or 2024 - they are in the past
+  - When booking flights, use relative terms like "tomorrow" or "next week" or specific future dates
+
   CRITICAL FORMAT RULES:
   1. NEVER include both Action and Final Answer in the same response
   2. If using a tool: provide ONLY Thought/Action/Action Input, then STOP and wait

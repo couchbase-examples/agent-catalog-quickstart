@@ -14,6 +14,7 @@ dependencies = [
     "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
     "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
     # Observability and monitoring
+    "arize (>=7.48.1,<8.0.0)",
     "arize-otel>=0.7.0,<1.0.0",
     "arize-phoenix[evals]>=7.0.0,<8.0.0",
     "openinference-instrumentation-langchain>=0.1.29,<0.2.0",

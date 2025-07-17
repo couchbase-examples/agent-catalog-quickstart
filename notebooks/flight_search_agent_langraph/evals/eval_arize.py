@@ -241,56 +241,45 @@ class ArizeDatasetManager:
             and self.config.arize_space_id != "your-space-id"
         ):
             try:
+                # Initialize with correct parameters - no space_id needed for datasets client
                 self.client = ArizeDatasetsClient(
-                    developer_key=self.config.arize_api_key,
-                    api_key=self.config.arize_api_key,
-                    space_id=self.config.arize_space_id,
+                    api_key=self.config.arize_api_key
                 )
-                logger.info("✅ Arize datasets client initialized")
+                logger.info("✅ Arize datasets client initialized successfully")
             except Exception as e:
                 logger.warning(f"⚠️ Could not initialize Arize datasets client: {e}")
+                self.client = None
         else:
-            logger.info("ℹ️ Arize credentials not configured - using local evaluation only")
+            logger.warning("⚠️ Arize API credentials not configured")
+            self.client = None
 
     def create_dataset(self, results_df: pd.DataFrame) -> Optional[str]:
-        """Create an Arize dataset from evaluation results."""
+        """Create Arize dataset from evaluation results."""
         if not self.client:
             logger.warning("⚠️ Arize client not available - skipping dataset creation")
             return None
 
         try:
-            logger.info("📊 Creating Arize dataset...")
-
-            # Prepare dataset
             dataset_name = f"flight-search-evaluation-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-            # Convert results to Arize format
-            dataset_data = []
-            for _, row in results_df.iterrows():
-                dataset_data.append(
-                    {
-                        "input": row["query"],
-                        "output": row["response"],
-                        "success": row["success"],
-                        "execution_time": row["execution_time"],
-                        # Add Phoenix evaluation results
-                        "relevance": row.get("relevance", "unknown"),
-                        "qa_correctness": row.get("qa_correctness", "unknown"),
-                        "hallucination": row.get("hallucination", "unknown"),
-                        "toxicity": row.get("toxicity", "unknown"),
-                    }
-                )
-
-            # Create dataset
-            dataset = self.client.create_dataset(
-                dataset_name=dataset_name, dataset_type=GENERATIVE, data=pd.DataFrame(dataset_data)
+            
+            logger.info("📊 Creating Arize dataset...")
+            dataset_id = self.client.create_dataset(
+                space_id=self.config.arize_space_id,
+                dataset_name=dataset_name,
+                dataset_type=GENERATIVE,
+                data=results_df,
+                convert_dict_to_json=True
             )
-
-            logger.info(f"✅ Arize dataset created: {dataset_name}")
-            return dataset.id
-
+            
+            if dataset_id:
+                logger.info(f"✅ Arize dataset created successfully: {dataset_id}")
+                return dataset_id
+            else:
+                logger.warning("⚠️ Dataset creation returned None")
+                return None
+                
         except Exception as e:
-            logger.exception(f"❌ Error creating Arize dataset: {e}")
+            logger.error(f"❌ Error creating Arize dataset: {e}")
             return None
 
 
@@ -333,7 +322,11 @@ class ArizeFlightSearchEvaluator:
                 logging.getLogger(module).setLevel(logging.WARNING)
 
     def _setup_phoenix_evaluators(self) -> None:
-        """Setup Phoenix evaluators."""
+        """Setup Phoenix evaluators with robust error handling."""
+        if not ARIZE_AVAILABLE:
+            logger.warning("⚠️ Phoenix dependencies not available - evaluations will be limited")
+            return
+            
         try:
             self.evaluator_llm = OpenAIModel(model=self.config.evaluator_model)
 
@@ -345,7 +338,9 @@ class ArizeFlightSearchEvaluator:
                 "toxicity": ToxicityEvaluator(self.evaluator_llm),
             }
 
-            logger.info("✅ Phoenix evaluators initialized")
+            logger.info("✅ Phoenix evaluators initialized successfully")
+            logger.info(f"   🤖 Using evaluator model: {self.config.evaluator_model}")
+            logger.info(f"   📊 Available evaluators: {list(self.evaluators.keys())}")
 
             # Setup Phoenix if available
             if self.phoenix_manager.start_phoenix():
@@ -353,6 +348,7 @@ class ArizeFlightSearchEvaluator:
 
         except Exception as e:
             logger.warning(f"⚠️ Phoenix evaluators setup failed: {e}")
+            logger.info("Continuing with basic evaluation metrics only...")
             self.evaluators = {}
 
     def setup_agent(self) -> bool:
@@ -480,20 +476,18 @@ class ArizeFlightSearchEvaluator:
 
     def _create_reference_text(self, query: str) -> str:
         """Create reference text for evaluation based on query."""
-        query_lower = query.lower()
+        from data.queries import get_reference_answer
 
-        if "jfk" in query_lower and "lax" in query_lower:
-            return "A relevant response listing specific flights from JFK to LAX with airline information"
-        elif "lax" in query_lower and "jfk" in query_lower:
-            return "A relevant response listing specific flights from LAX to JFK with airline information"
-        elif any(word in query_lower for word in ["review", "service", "indigo", "passenger"]):
-            return "A relevant response providing specific airline review information about service quality or passenger experiences"
-        elif any(word in query_lower for word in ["booking", "current", "my"]):
-            return "A relevant response showing current flight bookings with booking details"
-        elif "book" in query_lower:
-            return "A relevant response confirming flight booking with booking details"
-        else:
-            return f"A helpful and accurate response about {query} with specific flight information"
+        # Get the actual reference answer for this query
+        reference_answer = get_reference_answer(query)
+
+        if reference_answer.startswith("No reference answer available"):
+            raise ValueError(
+                f"No reference answer available for query: '{query}'. "
+                f"Please add this query to QUERY_REFERENCE_ANSWERS in data/queries.py"
+            )
+
+        return reference_answer
 
     def _run_individual_phoenix_evaluations(
         self, eval_df: pd.DataFrame, results_df: pd.DataFrame
@@ -609,7 +603,17 @@ class ArizeFlightSearchEvaluator:
         if not self.setup_agent():
             raise RuntimeError("Failed to setup agent")
 
-        logger.info(f"🚀 Starting Phoenix-only evaluation with {len(queries)} queries")
+        logger.info(f"🚀 Starting evaluation with {len(queries)} queries")
+        
+        # Log available features
+        logger.info("📋 Evaluation Configuration:")
+        logger.info(f"   🤖 Agent: Flight Search Agent (LangGraph)")
+        logger.info(f"   🔧 Phoenix Available: {'✅' if ARIZE_AVAILABLE else '❌'}")
+        logger.info(f"   📊 Arize Datasets: {'✅' if ARIZE_AVAILABLE and (self.dataset_manager.client is not None) else '❌'}")
+        if self.evaluators:
+            logger.info(f"   🧠 Phoenix Evaluators: {list(self.evaluators.keys())}")
+        else:
+            logger.info("   🧠 Phoenix Evaluators: ❌ (basic metrics only)")
 
         # Run queries (no manual validation)
         results = []
@@ -631,6 +635,8 @@ class ArizeFlightSearchEvaluator:
         dataset_id = self.dataset_manager.create_dataset(results_df)
         if dataset_id:
             logger.info(f"📊 Arize dataset created: {dataset_id}")
+        else:
+            logger.warning("⚠️ Dataset creation failed")
 
         return results_df
 
@@ -650,19 +656,62 @@ class ArizeFlightSearchEvaluator:
                     counts = results_df[eval_type].value_counts()
                     logger.info(f"   {eval_type}: {dict(counts)}")
 
+        # Quick scores summary
+        if len(results_df) > 0:
+            logger.info("\n📊 Quick Scores Summary:")
+            for i in range(len(results_df)):
+                row = results_df.iloc[i]
+                scores = []
+                for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
+                    if eval_type in row:
+                        result = row[eval_type]
+                        emoji = "✅" if result in ["relevant", "correct", "factual", "non-toxic"] else "❌"
+                        scores.append(f"{emoji} {eval_type}: {result}")
+                
+                logger.info(f"   Query {i+1}: {' | '.join(scores)}")
+
         # Sample results
         if len(results_df) > 0:
-            logger.info("\n📝 Sample evaluation results:")
-            for i in range(min(2, len(results_df))):
+            logger.info("\n📝 Detailed evaluation results:")
+            # Show all results, not just 2
+            for i in range(len(results_df)):
                 row = results_df.iloc[i]
-                logger.info(f"   Query: {row['query']}")
+                logger.info(f"\n   📋 Query {i+1}: {row['query']}")
 
                 for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
                     if eval_type in row:
                         result = row[eval_type]
-                        explanation = str(row.get(f"{eval_type}_explanation", ""))[:80] + "..."
-                        logger.info(f"   {eval_type}: {result} - {explanation}")
-                logger.info("")
+                        explanation = str(row.get(f"{eval_type}_explanation", ""))
+                        
+                        # Clean up explanations - remove reference text mentions and make more concise
+                        if explanation and explanation != "":
+                            # Clean up the explanation text
+                            explanation = explanation.replace("The reference text", "The expected answer")
+                            explanation = explanation.replace("reference text", "expected answer")
+                            explanation = explanation.replace("The question asks", "This query asks")
+                            explanation = explanation.replace("To determine if the answer", "The answer")
+                            explanation = explanation.replace("To determine whether the text", "This text")
+                            explanation = explanation.replace("Therefore, the reference text contains relevant information", "This is relevant")
+                            explanation = explanation.replace("Therefore, the answer", "The response")
+                            
+                            # Extract key reasoning points and make more concise
+                            if len(explanation) > 300:
+                                # Find the core reasoning
+                                sentences = explanation.split('. ')
+                                core_sentences = []
+                                for sentence in sentences:
+                                    if any(keyword in sentence.lower() for keyword in ['correct', 'factual', 'relevant', 'toxic', 'because', 'therefore', 'accurate', 'match']):
+                                        core_sentences.append(sentence)
+                                if core_sentences:
+                                    explanation = '. '.join(core_sentences[:3]) + '.'
+                                else:
+                                    explanation = '. '.join(sentences[:2]) + '.'
+                            
+                            logger.info(f"   ✅ {eval_type.title().replace('_', ' ')}: {result}")
+                            logger.info(f"      💭 {explanation}")
+                        else:
+                            logger.info(f"   ✅ {eval_type.title().replace('_', ' ')}: {result}")
+                logger.info("   " + "="*50)
 
     def cleanup(self) -> None:
         """Clean up all resources."""
@@ -671,13 +720,9 @@ class ArizeFlightSearchEvaluator:
 
 def get_default_queries() -> List[str]:
     """Get default test queries for evaluation."""
-    return [
-        "Find flights from JFK to LAX",
-        "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class",
-        "Book an economy flight from JFK to MIA for next week, 1 passenger",
-        "Show me my current flight bookings",
-        "What do passengers say about IndiGo's service quality?",
-    ]
+    from data.queries import get_evaluation_queries
+
+    return get_evaluation_queries()
 
 
 def run_phoenix_demo() -> pd.DataFrame:
@@ -686,7 +731,7 @@ def run_phoenix_demo() -> pd.DataFrame:
 
     demo_queries = [
         "Find flights from JFK to LAX",
-        "What do passengers say about IndiGo's service quality?",
+        "What do passengers say about SpiceJet's service quality?",
     ]
 
     evaluator = ArizeFlightSearchEvaluator()
