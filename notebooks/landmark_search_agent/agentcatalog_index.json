@@ -1,9 +1,9 @@
 {
     "type": "fulltext-index",
-    "name": "route_data_index",
+    "name": "landmark_data_index",
     "uuid": "",
     "sourceType": "gocbcore",
-    "sourceName": "vector-search-testing",
+    "sourceName": "travel-sample",
     "planParams": {
       "maxPartitionsPerPIndex": 64,
       "indexPartitions": 16
@@ -30,7 +30,7 @@
         "store_dynamic": false,
         "type_field": "_type",
         "types": {
-          "agentc_data.route_data": {
+          "agentc_data.landmark_data": {
             "dynamic": true,
             "enabled": true,
             "properties": {
@@ -70,4 +70,4 @@
       }
     },
     "sourceParams": {}
-}
+} 

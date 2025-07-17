@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Route Planner Agent - Agent Catalog + LlamaIndex Implementation
+Landmark Search Agent - Agent Catalog + LlamaIndex Implementation
 
-A streamlined route planner agent demonstrating Agent Catalog integration
-with LlamaIndex and Couchbase vector search for route planning assistance.
+A streamlined landmark search agent demonstrating Agent Catalog integration
+with LlamaIndex and Couchbase vector search for landmark discovery assistance.
 """
 
 import base64
@@ -33,6 +33,12 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
+# Import landmark data from the data module
+from data.landmark_data import get_landmark_texts, load_landmark_data_to_couchbase
+
+# Import queries for testing
+from data.queries import LANDMARK_SEARCH_QUERIES, get_queries_for_evaluation, get_reference_answer
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -61,15 +67,12 @@ def setup_environment():
         if not os.environ.get(var):
             print(f"ℹ️ {var} not provided - will use OpenAI fallback")
 
-    # Set defaults
+    # Set defaults for landmark search (non-sensitive only)
     defaults = {
-        "CB_CONN_STRING": "couchbases://cb.hlcup4o4jmjr55yf.cloud.couchbase.com",
-        "CB_USERNAME": "kaustavcluster",
-        "CB_PASSWORD": "Password@123",
-        "CB_BUCKET": "vector-search-testing",
-        "CB_INDEX": "route_data_index",
-        "CB_SCOPE": "agentc_data",
-        "CB_COLLECTION": "route_data",
+        "CB_BUCKET": "travel-sample",
+        "CB_INDEX": "landmark_vector_index",
+        "CB_SCOPE": "inventory",
+        "CB_COLLECTION": "landmark",
         "CAPELLA_API_EMBEDDING_MODEL": "intfloat/e5-mistral-7b-instruct",
         "CAPELLA_API_LLM_MODEL": "meta-llama/Llama-3.1-8B-Instruct",
     }
@@ -131,34 +134,19 @@ class CouchbaseClient:
             raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
 
     def setup_collection(self, scope_name: str, collection_name: str):
-        """Setup bucket, scope and collection all in one function."""
+        """Setup collection - create scope and collection if they don't exist, but don't clear scope."""
         try:
             # Ensure cluster connection
             if not self.cluster:
                 self.connect()
 
-            # Setup bucket
+            # For travel-sample bucket, assume it exists
             if not self.bucket:
-                try:
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' exists")
-                except Exception:
-                    logger.info(f"Creating bucket '{self.bucket_name}'...")
-                    bucket_settings = CreateBucketSettings(
-                        name=self.bucket_name,
-                        bucket_type="couchbase",
-                        ram_quota_mb=1024,
-                        flush_enabled=True,
-                        num_replicas=0,
-                    )
-                    self.cluster.buckets().create_bucket(bucket_settings)
-                    time.sleep(5)
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' created successfully")
+                self.bucket = self.cluster.bucket(self.bucket_name)
+                logger.info(f"Connected to bucket '{self.bucket_name}'")
 
+            # Setup scope
             bucket_manager = self.bucket.collections()
-
-            # Handle scope creation
             scopes = bucket_manager.get_all_scopes()
             scope_exists = any(scope.name == scope_name for scope in scopes)
 
@@ -167,7 +155,7 @@ class CouchbaseClient:
                 bucket_manager.create_scope(scope_name)
                 logger.info(f"Scope '{scope_name}' created successfully")
 
-            # Handle collection creation
+            # Setup collection - clear if exists, create if doesn't
             collections = bucket_manager.get_all_scopes()
             collection_exists = any(
                 scope.name == scope_name
@@ -175,12 +163,15 @@ class CouchbaseClient:
                 for scope in collections
             )
 
-            if not collection_exists:
+            if collection_exists:
+                logger.info(f"Collection '{collection_name}' exists, clearing data...")
+                # Clear existing data
+                self.clear_collection_data(scope_name, collection_name)
+            else:
                 logger.info(f"Creating collection '{collection_name}'...")
                 bucket_manager.create_collection(scope_name, collection_name)
                 logger.info(f"Collection '{collection_name}' created successfully")
 
-            collection = self.bucket.scope(scope_name).collection(collection_name)
             time.sleep(3)
 
             # Create primary index
@@ -190,33 +181,59 @@ class CouchbaseClient:
                 ).execute()
                 logger.info("Primary index created successfully")
             except Exception as e:
-                logger.warning(f"Error creating primary index: {e!s}")
+                logger.warning(f"Error creating primary index: {e}")
 
-            # Cache the collection for reuse
-            collection_key = f"{scope_name}.{collection_name}"
-            self._collections[collection_key] = collection
-
-            logger.info(f"Collection setup complete for {scope_name}.{collection_name}")
-            return collection
+            logger.info("Collection setup complete")
+            return self.bucket.scope(scope_name).collection(collection_name)
 
         except Exception as e:
             raise RuntimeError(f"Error setting up collection: {e!s}")
 
-    def get_collection(self, scope_name: str, collection_name: str):
-        """Get a collection, creating it if it doesn't exist."""
-        collection_key = f"{scope_name}.{collection_name}"
-        if collection_key not in self._collections:
-            self.setup_collection(scope_name, collection_name)
-        return self._collections[collection_key]
+    def clear_collection_data(self, scope_name: str, collection_name: str):
+        """Clear all data from a collection."""
+        try:
+            logger.info(f"Clearing data from {self.bucket_name}.{scope_name}.{collection_name}...")
+            
+            # Use N1QL to delete all documents with explicit execution
+            delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            result = self.cluster.query(delete_query)
+            
+            # Execute the query and get the results
+            rows = list(result)
+            
+            # Wait a moment for the deletion to propagate
+            time.sleep(2)
+            
+            # Verify collection is empty
+            count_query = f"SELECT COUNT(*) as count FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            count_result = self.cluster.query(count_query)
+            count_row = list(count_result)[0]
+            remaining_count = count_row['count']
+            
+            if remaining_count == 0:
+                logger.info(f"Collection cleared successfully, {remaining_count} documents remaining")
+            else:
+                logger.warning(f"Collection clear incomplete, {remaining_count} documents remaining")
+            
+        except Exception as e:
+            logger.warning(f"Error clearing collection data: {e}")
+            # If N1QL fails, try to continue anyway
+            pass
 
-    def setup_vector_search_index(self, index_definition: dict):
+    def get_collection(self, scope_name: str, collection_name: str):
+        """Get a collection object."""
+        key = f"{scope_name}.{collection_name}"
+        if key not in self._collections:
+            self._collections[key] = self.bucket.scope(scope_name).collection(
+                collection_name
+            )
+        return self._collections[key]
+
+    def setup_vector_search_index(self, index_definition: dict, scope_name: str):
         """Setup vector search index."""
         try:
-            if not self.bucket:
-                raise RuntimeError("Bucket not initialized. Call setup_collection first.")
-
-            scope_name = os.environ["CB_SCOPE"]
             scope_index_manager = self.bucket.scope(scope_name).search_indexes()
+
             existing_indexes = scope_index_manager.get_all_indexes()
             index_name = index_definition["name"]
 
@@ -230,71 +247,67 @@ class CouchbaseClient:
         except Exception as e:
             raise RuntimeError(f"Error setting up vector search index: {e!s}")
 
-    def setup_ai_models(self, span):
-        """Setup AI models for embeddings and LLM."""
+    def load_landmark_data(self, scope_name, collection_name, index_name, embeddings):
+        """Load landmark data into Couchbase."""
         try:
-            # Setup embedding model
-            if os.environ.get("CAPELLA_API_ENDPOINT"):
-                embed_model = OpenAIEmbedding(
-                    api_key=os.environ["CAPELLA_API_KEY"],
-                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-                    model_name=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
-                    embed_batch_size=30,
-                )
-            else:
-                embed_model = OpenAIEmbedding()
-
-            # Setup LLM
-            if os.environ.get("CAPELLA_API_ENDPOINT"):
-                llm = OpenAILike(
-                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-                    api_key=os.environ["CAPELLA_API_KEY"],
-                    model=os.environ["CAPELLA_API_LLM_MODEL"],
-                    temperature=0.1,
-                )
-            else:
-                from llama_index.llms.openai import OpenAI
-
-                llm = OpenAI(temperature=0.1)
-
-            # Configure global settings
-            Settings.embed_model = embed_model
-            Settings.llm = llm
-
-            logger.info("AI models configured successfully")
-            return embed_model, llm
-
-        except Exception as e:
-            raise RuntimeError(f"Error setting up AI models: {e!s}")
-
-    def load_route_data(self, vector_store, span, embeddings):
-        """Load route data using dedicated data loading script."""
-        try:
-            from data.route_data import load_route_data_to_couchbase
-
-            logger.info("Loading route data using data loading script...")
-
-            # Load data using the dedicated script
-            load_route_data_to_couchbase(
+            # Load landmark data using the data loading script
+            load_landmark_data_to_couchbase(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
-                scope_name=os.environ["CB_SCOPE"],
-                collection_name=os.environ["CB_COLLECTION"],
+                scope_name=scope_name,
+                collection_name=collection_name,
                 embeddings=embeddings,
-                index_name=os.environ["CB_INDEX"],
+                index_name=index_name,
             )
-
-            logger.info("Route data loaded successfully")
+            logger.info("Landmark data loaded into vector store successfully")
 
         except Exception as e:
-            logger.error(f"Error loading route data: {e}")
-            raise ValueError(f"Error loading route data: {e!s}")
+            raise RuntimeError(f"Error loading landmark data: {e!s}")
 
-    def setup_vector_store(self, span, embeddings):
-        """Setup LlamaIndex vector store with route data."""
+    def setup_vector_store(self, catalog, span):
+        """Setup vector store with landmark data."""
         try:
-            if not self.cluster:
-                raise RuntimeError("Cluster not connected. Call connect first.")
+            # Setup LLM and embeddings
+            if os.environ.get("CAPELLA_API_ENDPOINT"):
+                llm = OpenAILike(
+                    model=os.environ["CAPELLA_API_LLM_MODEL"],
+                    api_base=os.environ["CAPELLA_API_ENDPOINT"],
+                    api_key=os.environ["CAPELLA_API_KEY"],
+                    is_chat_model=True,
+                    temperature=0.1,
+                )
+                embeddings = OpenAIEmbedding(
+                    model=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
+                    api_base=os.environ["CAPELLA_API_ENDPOINT"],
+                    api_key=os.environ["CAPELLA_API_KEY"],
+                    dimensions=1024,
+                )
+            else:
+                llm = OpenAILike(
+                    model="gpt-4o",
+                    api_key=os.environ.get("OPENAI_API_KEY"),
+                    is_chat_model=True,
+                    temperature=0.1,
+                )
+                embeddings = OpenAIEmbedding(
+                    model="text-embedding-3-small",
+                    api_key=os.environ.get("OPENAI_API_KEY"),
+                )
+
+            # Set global settings
+            Settings.llm = llm
+            Settings.embed_model = embeddings
+
+            # Setup collection
+            self.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+
+            # Load landmark data
+            self.load_landmark_data(
+                os.environ["CB_SCOPE"],
+                os.environ["CB_COLLECTION"],
+                os.environ["CB_INDEX"],
+                embeddings,
+            )
 
             # Create vector store
             vector_store = CouchbaseSearchVectorStore(
@@ -305,50 +318,29 @@ class CouchbaseClient:
                 index_name=os.environ["CB_INDEX"],
             )
 
-            # Load route data
-            try:
-                self.load_route_data(vector_store, span, embeddings)
-                logger.info("Route data loaded into vector store successfully")
-            except Exception as e:
-                logger.error(f"Failed to load route data: {e}")
-                logger.warning("Vector store created but data not loaded.")
-
             return vector_store
 
         except Exception as e:
             raise ValueError(f"Error setting up vector store: {e!s}")
 
     def create_llamaindex_agent(self, catalog, span):
-        """Create LlamaIndex ReAct agent with tools from Agent Catalog."""
+        """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
         try:
             # Get tools from Agent Catalog
             tools = []
 
-            # Search routes tool
-            search_tool_result = catalog.find("tool", name="search_routes")
+            # Search landmarks tool
+            search_tool_result = catalog.find("tool", name="search_landmarks")
             if search_tool_result:
                 tools.append(
                     FunctionTool.from_defaults(
                         fn=search_tool_result.func,
-                        name="search_routes",
+                        name="search_landmarks",
                         description=getattr(search_tool_result.meta, "description", None)
-                        or "Search for route information using semantic vector search. Use for finding travel routes, scenic drives, and transportation information.",
+                        or "Search for landmark information using semantic vector search. Use for finding attractions, monuments, museums, parks, and other points of interest.",
                     )
                 )
-                logger.info("Loaded search_routes tool from AgentC")
-
-            # Calculate distance tool
-            distance_tool_result = catalog.find("tool", name="calculate_distance")
-            if distance_tool_result:
-                tools.append(
-                    FunctionTool.from_defaults(
-                        fn=distance_tool_result.func,
-                        name="calculate_distance",
-                        description=getattr(distance_tool_result.meta, "description", None)
-                        or "Calculate distance, travel time, and cost between two cities using different transportation modes (car, train, bus, flight).",
-                    )
-                )
-                logger.info("Loaded calculate_distance tool from AgentC")
+                logger.info("Loaded search_landmarks tool from AgentC")
 
             if not tools:
                 logger.warning("No tools found in Agent Catalog")
@@ -356,9 +348,9 @@ class CouchbaseClient:
                 logger.info(f"Loaded {len(tools)} tools from Agent Catalog")
 
             # Get prompt from Agent Catalog - REQUIRED, no fallbacks
-            prompt_result = catalog.find("prompt", name="route_planner_assistant")
+            prompt_result = catalog.find("prompt", name="landmark_search_assistant")
             if not prompt_result:
-                raise RuntimeError("Prompt 'route_planner_assistant' not found in Agent Catalog")
+                raise RuntimeError("Prompt 'landmark_search_assistant' not found in Agent Catalog")
 
             # Try different possible attributes for the prompt content
             system_prompt = (
@@ -391,15 +383,15 @@ class CouchbaseClient:
             raise RuntimeError(f"Error creating LlamaIndex agent: {e!s}")
 
 
-def setup_route_agent():
-    """Setup the complete route planning agent infrastructure and return the agent."""
+def setup_landmark_agent():
+    """Setup the complete landmark search agent infrastructure and return the agent."""
     setup_environment()
 
     # Initialize Agent Catalog
     catalog = agentc.Catalog()
-    span = catalog.Span(name="Route Planner Agent Setup")
+    span = catalog.Span(name="Landmark Search Agent Setup")
 
-    # Initialize Couchbase client
+    # Setup database client
     client = CouchbaseClient(
         conn_string=os.environ["CB_CONN_STRING"],
         username=os.environ["CB_USERNAME"],
@@ -407,116 +399,140 @@ def setup_route_agent():
         bucket_name=os.environ["CB_BUCKET"],
     )
 
-    # Setup infrastructure
-    client.connect()
-    client.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
-
-    # Setup vector search index
-    try:
-        with open("agentcatalog_index.json", "r") as f:
-            index_definition = json.load(f)
-        client.setup_vector_search_index(index_definition)
-    except Exception as e:
-        logger.warning(f"Could not setup vector search index: {e}")
-
-    # Setup AI models
-    embed_model, llm = client.setup_ai_models(span)
-
     # Setup vector store
-    vector_store = client.setup_vector_store(span, embed_model)
+    vector_store = client.setup_vector_store(catalog, span)
 
     # Create agent
     agent = client.create_llamaindex_agent(catalog, span)
 
-    logger.info("Route Planner Agent initialized successfully")
-    return agent, catalog
+    span.end()
+    return agent, client
+
+
+def demo_queries(agent):
+    """Run a few demo queries to show the agent's capabilities."""
+    print("\n🚀 DEMO: Running sample landmark search queries...")
+    print("=" * 50)
+
+    # Get a few sample queries
+    sample_queries = get_queries_for_evaluation(limit=3)
+
+    for i, query in enumerate(sample_queries, 1):
+        print(f"\n🏛️ Query {i}: {query}")
+        print("-" * 30)
+
+        try:
+            response = agent.chat(query, chat_history=[])
+            print(f"Response: {response.response}")
+
+            # Show reference answer for comparison
+            reference = get_reference_answer(query)
+            if reference != "No reference answer available for this query.":
+                print(f"\n📚 Reference: {reference[:200]}...")
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+        print()
 
 
 def run_interactive_demo():
-    """Run an interactive demo of the route planner agent."""
-    print("🚀 Starting Route Planner Agent Interactive Demo...")
-    agent, catalog = setup_route_agent()
+    """Run an interactive landmark search demo."""
+    logger.info("Landmark Search Agent - Interactive Demo")
+    logger.info("=" * 50)
 
-    print("\n🗺️ Route Planner Agent Ready!")
-    print("Ask me about routes, distances, or travel planning. Type 'quit' to exit.")
-    print("\nExample queries:")
-    print("- 'Find scenic routes from San Francisco to Los Angeles'")
-    print("- 'Calculate distance from New York to Chicago by car'")
-    print("- 'What are good road trip routes in Colorado?'")
+    try:
+        agent, client = setup_landmark_agent()
 
-    while True:
-        user_input = input("\n💬 You: ").strip()
-        if user_input.lower() in ["quit", "exit", "bye", "q"]:
-            print("👋 Goodbye!")
-            break
+        # Interactive landmark search loop
+        logger.info("Available commands:")
+        logger.info(
+            "- Enter landmark search queries (e.g., 'Find landmarks in Paris')"
+        )
+        logger.info("- 'quit' - Exit the demo")
+        logger.info(
+            "Try asking: 'Find me landmarks in Tokyo' or 'Show me museums in London'"
+        )
+        logger.info("─" * 40)
 
-        if not user_input:
-            continue
+        while True:
+            query = input(
+                "🔍 Enter landmark search query (or 'quit' to exit): "
+            ).strip()
 
-        try:
-            span = catalog.Span(name="Route Query")
-            with span:
-                logger.info(f"Processing query: {user_input}")
-                response = agent.chat(user_input)
-                print(f"\n🤖 Agent: {response}")
-        except Exception as e:
-            logger.error(f"Error processing query: {e}")
-            print(f"❌ Error: {e}")
+            if query.lower() in ["quit", "exit", "q"]:
+                logger.info("Thanks for using Landmark Search Agent!")
+                break
+
+            if not query:
+                logger.warning("Please enter a search query")
+                continue
+
+            try:
+                response = agent.chat(query, chat_history=[])
+                result = response.response
+
+                print(f"\n🏛️ Agent Response:\n{result}\n")
+                print("─" * 40)
+
+            except Exception as e:
+                logger.error(f"Error processing query: {e}")
+                print(f"❌ Error: {e}")
+                print("─" * 40)
+
+    except KeyboardInterrupt:
+        logger.info("Demo interrupted by user")
+    except Exception as e:
+        logger.exception(f"Demo error: {e}")
+    finally:
+        logger.info("Demo completed")
 
 
 def run_test():
-    """Run predefined test queries to demonstrate route planner agent capabilities."""
-    print("🧪 Starting Route Planner Agent Test Suite...")
-    agent, catalog = setup_route_agent()
+    """Run comprehensive test of landmark search agent with queries from queries.py."""
+    logger.info("Landmark Search Agent - Comprehensive Test Suite")
+    logger.info("=" * 55)
 
-    # Test queries with specific, realistic scenarios
-    test_queries = [
-        "Find scenic driving routes from Denver to Aspen in Colorado",
-        "Calculate the distance from New York to San Francisco by different transportation modes like car, train, and flight",
-        "Plan a road trip from Salt Lake City to Zion National Park and Bryce Canyon",
-    ]
+    try:
+        agent, client = setup_landmark_agent()
 
-    print(f"\n🔍 Running {len(test_queries)} test queries...\n")
+        # Import shared queries
+        from data.queries import get_queries_for_evaluation
+        
+        # Test scenarios covering different types of landmark searches
+        test_queries = get_queries_for_evaluation()
 
-    for i, query in enumerate(test_queries, 1):
-        print(f"📋 Test {i}/{len(test_queries)}: {query}")
-        print("-" * 60)
+        logger.info(f"Running {len(test_queries)} test queries...")
+        
+        for i, query in enumerate(test_queries, 1):
+            logger.info(f"\n🔍 Test {i}: {query}")
+            try:
+                response = agent.chat(query, chat_history=[])
+                result = response.response
 
-        try:
-            span = catalog.Span(name=f"Test Query {i}")
-            with span:
-                start_time = time.time()
-                response = agent.chat(query)
-                end_time = time.time()
+                # Display the response
+                logger.info(f"🤖 AI Response: {result}")
+                logger.info(f"✅ Test {i} completed successfully")
 
-                print(f"✅ Response ({end_time - start_time:.1f}s):")
-                print(response)
-                print("\n" + "=" * 60 + "\n")
+            except Exception as e:
+                logger.exception(f"❌ Test {i} failed: {e}")
 
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            print("\n" + "=" * 60 + "\n")
+            logger.info("-" * 50)
 
-    print("🎉 Test suite completed!")
+        logger.info("All tests completed!")
+
+    except Exception as e:
+        logger.exception(f"Test error: {e}")
 
 
 def main():
-    """Main function with command line argument support."""
+    """Main entry point - runs interactive demo by default."""
     if len(sys.argv) > 1:
-        mode = sys.argv[1].lower()
-        if mode == "demo":
-            run_interactive_demo()
-        elif mode == "test":
+        if sys.argv[1] == "test":
             run_test()
-        elif mode == "interactive":
-            run_interactive_demo()
         else:
-            print("Usage: python main.py [demo|test|interactive]")
-            print("  demo/interactive: Run interactive demo")
-            print("  test: Run predefined test queries")
-            sys.exit(1)
+            run_interactive_demo()
     else:
-        # Default behavior - interactive demo
         run_interactive_demo()
 
 
