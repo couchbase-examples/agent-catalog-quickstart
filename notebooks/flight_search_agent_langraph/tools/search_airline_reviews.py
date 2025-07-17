@@ -28,8 +28,7 @@ try:
     options.apply_profile("wan_development")
 
     cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        options
+        os.getenv("CB_CONN_STRING", "couchbase://localhost"), options
     )
     cluster.wait_until_ready(timedelta(seconds=20))
 except couchbase.exceptions.CouchbaseException as e:
@@ -46,6 +45,7 @@ def _get_vector_store():
             and os.getenv("CAPELLA_API_ENDPOINT")
             and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
         ):
+            logger.info("🔄 Using Capella AI embeddings for vector search")
             import base64
 
             api_key = base64.b64encode(
@@ -58,6 +58,7 @@ def _get_vector_store():
                 base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
             )
         else:
+            logger.info("🔄 Using OpenAI embeddings for vector search (Capella AI not configured)")
             embeddings = OpenAIEmbeddings(
                 api_key=os.getenv("OPENAI_API_KEY"), model="text-embedding-3-small"
             )

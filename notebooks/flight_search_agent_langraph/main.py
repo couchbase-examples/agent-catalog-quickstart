@@ -24,7 +24,7 @@ import langchain_openai.chat_models
 import langgraph.graph
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.management.buckets import CreateBucketSettings, BucketType
+from couchbase.management.buckets import BucketType, CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain.agents import AgentExecutor, create_react_agent
@@ -33,11 +33,10 @@ from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 from pydantic import SecretStr
-from tqdm import tqdm
 
 # Setup logging with essential level only
 # Note: Agent Catalog does not integrate with Python logging
-# Only spans created with application_span.new() will generate meaningful logs
+# The main application span will generate meaningful logs
 # These logs can be queried from the Agent Catalog bucket (see query_agent_catalog_logs)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -62,31 +61,29 @@ def _set_if_undefined(var: str):
 def setup_environment():
     """Setup required environment variables with defaults."""
     required_vars = [
-        "OPENAI_API_KEY", 
-        "CB_CONN_STRING", 
-        "CB_USERNAME", 
-        "CB_PASSWORD", 
+        "OPENAI_API_KEY",
+        "CB_CONN_STRING",
+        "CB_USERNAME",
+        "CB_PASSWORD",
         "CB_BUCKET",
         "AGENT_CATALOG_CONN_STRING",
-        "AGENT_CATALOG_USERNAME", 
-        "AGENT_CATALOG_PASSWORD", 
-        "AGENT_CATALOG_BUCKET"
+        "AGENT_CATALOG_USERNAME",
+        "AGENT_CATALOG_PASSWORD",
+        "AGENT_CATALOG_BUCKET",
     ]
     for var in required_vars:
         _set_if_undefined(var)
 
-    defaults = {
-        "CB_CONN_STRING": "couchbases://cb.hlcup4o4jmjr55yf.cloud.couchbase.com",
-        "CB_USERNAME": "kaustavcluster",
-        "CB_PASSWORD": "Password@123",
+    # Set non-sensitive defaults for bucket names and Agent Catalog local development
+    non_sensitive_defaults = {
         "CB_BUCKET": "travel-sample",
         "AGENT_CATALOG_CONN_STRING": "couchbase://127.0.0.1",
-        "AGENT_CATALOG_USERNAME": "kaustav",
+        "AGENT_CATALOG_USERNAME": "Administrator",
         "AGENT_CATALOG_PASSWORD": "password",
         "AGENT_CATALOG_BUCKET": "travel-sample",
     }
 
-    for key, default_value in defaults.items():
+    for key, default_value in non_sensitive_defaults.items():
         if not os.environ.get(key):
             os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
 
@@ -233,24 +230,27 @@ class CouchbaseClient:
 
             # Import the unified data manager
             import sys
+
             sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
             from airline_reviews_data import load_airline_reviews_to_couchbase
-            
+
             # NOTE: Commented out as data is already loaded in Couchbase
-            # logger.info("🔄 Setting up vector store with airline reviews data...")
-            # 
-            # # Use the unified data loading approach
-            # load_airline_reviews_to_couchbase(
-            #     cluster=self.cluster,
-            #     bucket_name=self.bucket_name,
-            #     scope_name=scope_name,
-            #     collection_name=collection_name,
-            #     embeddings=embeddings,
-            #     index_name=index_name
-            # )
-            
-            logger.info(f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}")
-            
+            logger.info("🔄 Setting up vector store with airline reviews data...")
+
+            # Use the unified data loading approach
+            load_airline_reviews_to_couchbase(
+                cluster=self.cluster,
+                bucket_name=self.bucket_name,
+                scope_name=scope_name,
+                collection_name=collection_name,
+                embeddings=embeddings,
+                index_name=index_name,
+            )
+
+            logger.info(
+                f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}"
+            )
+
             # Create and return the vector store instance
             vector_store = CouchbaseVectorStore(
                 cluster=self.cluster,
@@ -260,10 +260,12 @@ class CouchbaseClient:
                 embedding=embeddings,
                 index_name=index_name,
             )
-            
-            logger.info(f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}")
+
+            logger.info(
+                f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}"
+            )
             return vector_store
-            
+
         except Exception as e:
             logger.exception(f"Error setting up vector store: {e!s}")
             raise
@@ -294,7 +296,9 @@ class CouchbaseClient:
                     break
 
             if not target_scope:
-                logger.info(f"Scope '{self.bucket_name}.{scope_name}' does not exist, nothing to clear")
+                logger.info(
+                    f"Scope '{self.bucket_name}.{scope_name}' does not exist, nothing to clear"
+                )
                 return
 
             # Clear all collections in the scope
@@ -305,9 +309,13 @@ class CouchbaseClient:
                     )
                     if self.cluster:
                         self.cluster.query(delete_query).execute()
-                        logger.info(f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection.name}")
+                        logger.info(
+                            f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection.name}"
+                        )
                 except Exception as e:
-                    logger.warning(f"❌ Could not clear collection {self.bucket_name}.{scope_name}.{collection.name}: {e}")
+                    logger.warning(
+                        f"❌ Could not clear collection {self.bucket_name}.{scope_name}.{collection.name}: {e}"
+                    )
 
             logger.info(f"✅ Completed clearing scope: {self.bucket_name}.{scope_name}")
 
@@ -328,16 +336,24 @@ class CouchbaseClient:
                 logger.warning(f"Cannot clear collection - bucket not available")
                 return
 
-            logger.info(f"🗑️  Clearing collection: {self.bucket_name}.{scope_name}.{collection_name}")
-            
+            logger.info(
+                f"🗑️  Clearing collection: {self.bucket_name}.{scope_name}.{collection_name}"
+            )
+
             # Clear the specific collection
             try:
-                delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+                delete_query = (
+                    f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+                )
                 if self.cluster:
                     result = self.cluster.query(delete_query).execute()
-                    logger.info(f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection_name}")
+                    logger.info(
+                        f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection_name}"
+                    )
             except Exception as e:
-                logger.info(f"Collection {self.bucket_name}.{scope_name}.{collection_name} does not exist or is already empty: {e}")
+                logger.info(
+                    f"Collection {self.bucket_name}.{scope_name}.{collection_name} does not exist or is already empty: {e}"
+                )
 
         except Exception as e:
             logger.exception(f"❌ Error clearing collection {scope_name}.{collection_name}: {e}")
@@ -386,11 +402,11 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         tools = []
         tool_names = [
             "lookup_flight_info",
-            "save_flight_booking", 
+            "save_flight_booking",
             "retrieve_flight_bookings",
             "search_airline_reviews",
         ]
-        
+
         for tool_name in tool_names:
             catalog_tool = None
             try:
@@ -399,30 +415,36 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 if catalog_tool:
                     logger.info(f"✅ Found tool by name: {tool_name}")
                 else:
-                    logger.warning(f"⚠️  Tool not found by name: {tool_name}, trying prompt fallback")
-                    
+                    logger.warning(
+                        f"⚠️  Tool not found by name: {tool_name}, trying prompt fallback"
+                    )
+
             except Exception as e:
                 logger.warning(f"❌ Failed to find tool by name {tool_name}: {e}")
-                
+
             # If tool not found by name, try fallback through prompt
             if not catalog_tool:
                 try:
                     logger.info(f"🔄 Trying prompt fallback for tool: {tool_name}")
                     # Use the prompt resource we already found and extract tools from it
                     if prompt_resource:
-                        prompt_tools = getattr(prompt_resource, 'tools', [])
+                        prompt_tools = getattr(prompt_resource, "tools", [])
                         for prompt_tool in prompt_tools:
                             # Check if this is the tool we're looking for
-                            tool_meta_name = getattr(prompt_tool.meta, 'name', '') if hasattr(prompt_tool, 'meta') else ''
+                            tool_meta_name = (
+                                getattr(prompt_tool.meta, "name", "")
+                                if hasattr(prompt_tool, "meta")
+                                else ""
+                            )
                             if tool_meta_name == tool_name:
                                 catalog_tool = prompt_tool
                                 logger.info(f"✅ Found tool through prompt: {tool_name}")
                                 break
-                    
+
                     if not catalog_tool:
                         logger.error(f"❌ Tool {tool_name} not found by name or through prompt")
                         continue
-                        
+
                 except Exception as e:
                     logger.error(f"❌ Prompt fallback failed for tool {tool_name}: {e}")
                     continue
@@ -436,28 +458,30 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                         # Parse input based on tool requirements
                         if name == "lookup_flight_info":
-                            
                             # Expected format: "JFK,LAX" - parse and pass as separate parameters
                             parts = tool_input.replace(" to ", ",").replace("from ", "").split(",")
                             if len(parts) >= 2:
                                 source_airport = parts[0].strip()
                                 destination_airport = parts[1].strip()
-                                result = original_tool.func(source_airport=source_airport, destination_airport=destination_airport)
+                                result = original_tool.func(
+                                    source_airport=source_airport,
+                                    destination_airport=destination_airport,
+                                )
                             else:
                                 return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX')"
-                                
+
                         elif name == "save_flight_booking":
                             # Pass the full string directly - tool expects "source,dest,date" format
                             result = original_tool.func(booking_input=tool_input)
-                                
+
                         elif name == "retrieve_flight_bookings":
                             # Pass the full string directly - tool expects string input
                             result = original_tool.func(booking_query=tool_input)
-                                
+
                         elif name == "search_airline_reviews":
                             # Pass the full string directly - tool expects query string
                             result = original_tool.func(query=tool_input)
-                            
+
                         else:
                             # Generic fallback
                             result = original_tool.func(tool_input)
@@ -483,12 +507,12 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Use the Agent Catalog prompt content directly - get first result if it's a list
         if isinstance(prompt_resource, list):
             prompt_resource = prompt_resource[0]
-        
+
         # Safely get the content from the prompt resource
-        prompt_content = getattr(prompt_resource, 'content', '')
+        prompt_content = getattr(prompt_resource, "content", "")
         if not prompt_content:
             prompt_content = "You are a helpful flight search assistant. Use the available tools to help users with their flight queries."
-        
+
         # Use the Agent Catalog prompt content directly - it already has ReAct format
         react_prompt = PromptTemplate.from_template(str(prompt_content))
 
@@ -533,12 +557,11 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         # Create a wrapper function for the ReActAgent
         def flight_search_node(state: FlightSearchState) -> FlightSearchState:
             """Wrapper function for the flight search ReActAgent."""
-            with self.span.new("Flight Search Node") as node_span:
-                return search_agent._invoke(
-                    span=node_span,
-                    state=state,
-                    config={},  # Empty config for now
-                )
+            return search_agent._invoke(
+                span=self.span,
+                state=state,
+                config={},  # Empty config for now
+            )
 
         # Create a simple workflow graph for flight search
         workflow = langgraph.graph.StateGraph(FlightSearchState)
@@ -567,45 +590,62 @@ def clear_bookings_and_reviews():
         # Clear bookings scope using environment variables
         bookings_scope = "agentc_bookings"
         client.clear_scope(bookings_scope)
-        logger.info(f"✅ Cleared existing flight bookings for fresh test run: {os.environ['CB_BUCKET']}.{bookings_scope}")
-        
+        logger.info(
+            f"✅ Cleared existing flight bookings for fresh test run: {os.environ['CB_BUCKET']}.{bookings_scope}"
+        )
+
         # Check if airline reviews collection needs clearing by comparing expected vs actual document count
         try:
             # Import to get expected document count without loading all data
             import sys
+
             sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
             from airline_reviews_data import _data_manager
-            
+
             # Get expected document count (this uses cached data if available)
             expected_docs = _data_manager.process_to_texts()
             expected_count = len(expected_docs)
-            
+
             # Check current document count in collection
             try:
                 count_query = f"SELECT COUNT(*) as count FROM `{os.environ['CB_BUCKET']}`.`{os.environ['CB_SCOPE']}`.`{os.environ['CB_COLLECTION']}`"
                 count_result = client.cluster.query(count_query)
                 count_row = next(iter(count_result))
                 existing_count = count_row["count"]
-                
-                logger.info(f"📊 Airline reviews collection: {existing_count} existing, {expected_count} expected")
-                
+
+                logger.info(
+                    f"📊 Airline reviews collection: {existing_count} existing, {expected_count} expected"
+                )
+
                 if existing_count == expected_count:
-                    logger.info(f"✅ Collection already has correct document count ({existing_count}), skipping clear")
+                    logger.info(
+                        f"✅ Collection already has correct document count ({existing_count}), skipping clear"
+                    )
                 else:
-                    logger.info(f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
-                    client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
-                    logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
-                    
+                    logger.info(
+                        f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
+                    )
+                    client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+                    logger.info(
+                        f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
+                    )
+
             except Exception as count_error:
                 # Collection doesn't exist or query failed - clear anyway to ensure fresh start
-                logger.info(f"📊 Collection doesn't exist or query failed, will clear and reload: {count_error}")
-                client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
-                logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
-                
+                logger.info(
+                    f"📊 Collection doesn't exist or query failed, will clear and reload: {count_error}"
+                )
+                client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+                logger.info(
+                    f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
+                )
+
         except Exception as e:
             logger.warning(f"⚠️  Could not check collection count, clearing anyway: {e}")
-            client.clear_collection(os.environ['CB_SCOPE'], os.environ['CB_COLLECTION'])
-            logger.info(f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}")
+            client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+            logger.info(
+                f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
+            )
 
     except Exception as e:
         logger.warning(f"❌ Could not clear bookings: {e}")
@@ -616,18 +656,17 @@ def query_agent_catalog_logs():
     try:
         # Connect to Agent Catalog cluster
         auth = PasswordAuthenticator(
-            os.environ["AGENT_CATALOG_USERNAME"], 
-            os.environ["AGENT_CATALOG_PASSWORD"]
+            os.environ["AGENT_CATALOG_USERNAME"], os.environ["AGENT_CATALOG_PASSWORD"]
         )
         options = ClusterOptions(auth)
         cluster = Cluster(os.environ["AGENT_CATALOG_CONN_STRING"], options)
         cluster.wait_until_ready(timedelta(seconds=10))
-        
+
         bucket = os.environ["AGENT_CATALOG_BUCKET"]
-        
+
         logger.info("Querying Agent Catalog activity logs...")
         logger.info("=" * 50)
-        
+
         query = cluster.query(f"""
             FROM
                 `{bucket}`.agent_activity.Sessions() s
@@ -641,7 +680,7 @@ def query_agent_catalog_logs():
             ORDER BY s.start_t DESC
             LIMIT 10;
         """)
-        
+
         for result in query:
             print(f"Session ID: {result.get('sid', 'N/A')}")
             print(f"Content ID: {result.get('cid', 'N/A')}")
@@ -650,7 +689,7 @@ def query_agent_catalog_logs():
             print(f"Content: {result.get('content', 'N/A')}")
             print(f"Annotations: {result.get('ann', 'N/A')}")
             print("-" * 30)
-            
+
     except Exception as e:
         logger.warning(f"Could not query Agent Catalog logs: {e}")
 
@@ -670,46 +709,67 @@ def setup_flight_search_agent():
         )
         application_span = catalog.Span(name="Flight Search Agent")
 
-        with application_span.new("Couchbase Setup"):
-            # Create CouchbaseClient for all operations
-            client = CouchbaseClient(
-                conn_string=os.environ["CB_CONN_STRING"],
-                username=os.environ["CB_USERNAME"],
-                password=os.environ["CB_PASSWORD"],
-                bucket_name=os.environ["CB_BUCKET"],
+        # Create CouchbaseClient for all operations
+        client = CouchbaseClient(
+            conn_string=os.environ["CB_CONN_STRING"],
+            username=os.environ["CB_USERNAME"],
+            password=os.environ["CB_PASSWORD"],
+            bucket_name=os.environ["CB_BUCKET"],
+        )
+
+        # Setup everything in one call - bucket, scope, collection
+        client.setup_collection(
+            scope_name=os.environ["CB_SCOPE"], collection_name=os.environ["CB_COLLECTION"]
+        )
+
+        # Setup vector search index
+        try:
+            with open("agentcatalog_index.json") as file:
+                index_definition = json.load(file)
+            logger.info("Loaded vector search index definition from agentcatalog_index.json")
+            client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
+        except Exception as e:
+            logger.warning(f"Error loading index definition: {e!s}")
+            logger.info("Continuing without vector search index...")
+
+        # Setup embeddings and vector store
+        # Use Capella AI embeddings if available, fallback to OpenAI
+        if (
+            os.environ.get("CB_USERNAME")
+            and os.environ.get("CB_PASSWORD")
+            and os.environ.get("CAPELLA_API_ENDPOINT")
+            and os.environ.get("CAPELLA_API_EMBEDDING_MODEL")
+        ):
+            logger.info("🔄 Using Capella AI embeddings for main application")
+            import base64
+
+            api_key = base64.b64encode(
+                f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode()
+            ).decode()
+
+            embeddings = OpenAIEmbeddings(
+                model=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
+                api_key=api_key,
+                base_url=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
             )
-
-            # Setup everything in one call - bucket, scope, collection
-            client.setup_collection(
-                scope_name=os.environ["CB_SCOPE"], collection_name=os.environ["CB_COLLECTION"]
+        else:
+            logger.info(
+                "🔄 Using OpenAI embeddings for main application (Capella AI not configured)"
             )
-
-        with application_span.new("Vector Index Setup"):
-            try:
-                with open("agentcatalog_index.json") as file:
-                    index_definition = json.load(file)
-                logger.info("Loaded vector search index definition from agentcatalog_index.json")
-                client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
-            except Exception as e:
-                logger.warning(f"Error loading index definition: {e!s}")
-                logger.info("Continuing without vector search index...")
-
-        with application_span.new("Vector Store Setup"):
             embeddings = OpenAIEmbeddings(
                 api_key=SecretStr(os.environ["OPENAI_API_KEY"]), model="text-embedding-3-small"
             )
-            client.setup_vector_store(
-                scope_name=os.environ["CB_SCOPE"],
-                collection_name=os.environ["CB_COLLECTION"],
-                index_name=os.environ["CB_INDEX"],
-                embeddings=embeddings,
-            )
+        client.setup_vector_store(
+            scope_name=os.environ["CB_SCOPE"],
+            collection_name=os.environ["CB_COLLECTION"],
+            index_name=os.environ["CB_INDEX"],
+            embeddings=embeddings,
+        )
 
-        with application_span.new("Agent Graph Creation"):
-            # Create the flight search graph
-            flight_graph = FlightSearchGraph(catalog=catalog, span=application_span)
-            # Compile the graph
-            compiled_graph = flight_graph.compile()
+        # Create the flight search graph
+        flight_graph = FlightSearchGraph(catalog=catalog, span=application_span)
+        # Compile the graph
+        compiled_graph = flight_graph.compile()
 
         logger.info("Agent Catalog integration successful")
 
@@ -730,54 +790,49 @@ def run_interactive_demo():
         compiled_graph, application_span = setup_flight_search_agent()
 
         # Interactive flight search loop
-        with application_span.new("Query Execution") as span:
-            logger.info("Available commands:")
-            logger.info("- Enter flight search queries (e.g., 'Find flights from NYC to LAX')")
-            logger.info("- 'logs' - View Agent Catalog activity logs")
-            logger.info("- 'quit' - Exit the demo")
-            logger.info(
-                "Try asking: 'Find cheap flights to Miami' or 'Book a business class flight to Boston'"
-            )
-            logger.info("─" * 40)
+        logger.info("Available commands:")
+        logger.info("- Enter flight search queries (e.g., 'Find flights from NYC to LAX')")
+        logger.info("- 'logs' - View Agent Catalog activity logs")
+        logger.info("- 'quit' - Exit the demo")
+        logger.info(
+            "Try asking: 'Find cheap flights to Miami' or 'Book a business class flight to Boston'"
+        )
+        logger.info("─" * 40)
 
-            while True:
-                query = input("🔍 Enter flight search query (or 'quit'/'logs'): ").strip()
+        while True:
+            query = input("🔍 Enter flight search query (or 'quit'/'logs'): ").strip()
 
-                if query.lower() in ["quit", "exit", "q"]:
-                    logger.info("Thanks for using Flight Search Agent!")
-                    break
+            if query.lower() in ["quit", "exit", "q"]:
+                logger.info("Thanks for using Flight Search Agent!")
+                break
 
-                if query.lower() == "logs":
-                    logger.info("\n" + "=" * 50)
-                    logger.info("AGENT CATALOG ACTIVITY LOGS")
-                    logger.info("=" * 50)
-                    query_agent_catalog_logs()
-                    continue
+            if query.lower() == "logs":
+                logger.info("\n" + "=" * 50)
+                logger.info("AGENT CATALOG ACTIVITY LOGS")
+                logger.info("=" * 50)
+                query_agent_catalog_logs()
+                continue
 
-                if not query:
-                    continue
+            if not query:
+                continue
 
-                with span.new(f"Query: {query}") as query_span:
-                    try:
-                        logger.info(f"Flight Query: {query}")
-                        query_span["query"] = query
+            try:
+                logger.info(f"Flight Query: {query}")
 
-                        # Build starting state - single user system
-                        state = FlightSearchGraph.build_starting_state(query=query)
+                # Build starting state - single user system
+                state = FlightSearchGraph.build_starting_state(query=query)
 
-                        # Run the flight search
-                        result = compiled_graph.invoke(state)
-                        query_span["result"] = result
+                # Run the flight search
+                result = compiled_graph.invoke(state)
 
-                        # Display results summary
-                        if result.get("search_results"):
-                            logger.info(f"Found {len(result['search_results'])} flight options")
+                # Display results summary
+                if result.get("search_results"):
+                    logger.info(f"Found {len(result['search_results'])} flight options")
 
-                        logger.info(f"Search completed: {result.get('resolved', False)}")
+                logger.info(f"Search completed: {result.get('resolved', False)}")
 
-                    except Exception as e:
-                        logger.exception(f"Search error: {e}")
-                        query_span["error"] = str(e)
+            except Exception as e:
+                logger.exception(f"Search error: {e}")
 
     except Exception as e:
         logger.exception(f"Demo initialization error: {e}")
@@ -803,25 +858,20 @@ def run_test():
             "What do passengers say about SpiceJet's service quality?",
         ]
 
-        with application_span.new("Test Queries") as span:
-            for i, query in enumerate(test_queries, 1):
-                with span.new(f"Test {i}: {query}") as query_span:
-                    logger.info(f"\n🔍 Test {i}: {query}")
-                    try:
-                        query_span["query"] = query
-                        state = FlightSearchGraph.build_starting_state(query=query)
-                        result = compiled_graph.invoke(state)
-                        query_span["result"] = result
+        for i, query in enumerate(test_queries, 1):
+            logger.info(f"\n🔍 Test {i}: {query}")
+            try:
+                state = FlightSearchGraph.build_starting_state(query=query)
+                result = compiled_graph.invoke(state)
 
-                        if result.get("search_results"):
-                            logger.info(f"✅ Found {len(result['search_results'])} flight options")
-                        logger.info(f"✅ Test {i} completed: {result.get('resolved', False)}")
+                if result.get("search_results"):
+                    logger.info(f"✅ Found {len(result['search_results'])} flight options")
+                logger.info(f"✅ Test {i} completed: {result.get('resolved', False)}")
 
-                    except Exception as e:
-                        logger.exception(f"❌ Test {i} failed: {e}")
-                        query_span["error"] = str(e)
+            except Exception as e:
+                logger.exception(f"❌ Test {i} failed: {e}")
 
-                    logger.info("-" * 50)
+            logger.info("-" * 50)
 
         logger.info("All tests completed!")
         logger.info("💡 Run 'python main.py logs' to view Agent Catalog activity logs")
@@ -854,4 +904,3 @@ if __name__ == "__main__":
     # Uncomment the following lines to visualize the LangGraph workflow:
     # compiled_graph.get_graph().draw_mermaid_png(output_file_path="flight_search_graph.png")
     # compiled_graph.get_graph().draw_ascii()
-
