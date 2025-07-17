@@ -22,12 +22,17 @@ import socket
 import subprocess
 import sys
 import time
+import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
 import agentc
 import pandas as pd
+
+# Suppress SQLAlchemy warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sqlalchemy")
+warnings.filterwarnings("ignore", message=".*expression-based index.*")
 
 # Add parent directory to path to import main.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -43,7 +48,6 @@ logger = logging.getLogger(__name__)
 try:
     import phoenix as px
     from arize.experimental.datasets import ArizeDatasetsClient
-    from arize.experimental.datasets.utils.constants import GENERATIVE
     from openinference.instrumentation.langchain import LangChainInstrumentor
     from openinference.instrumentation.openai import OpenAIInstrumentor
     from phoenix.evals import (
@@ -232,36 +236,43 @@ class ArizeDatasetManager:
         self._setup_client()
 
     def _setup_client(self) -> None:
-        """Setup Arize datasets client."""
-        if not ARIZE_AVAILABLE:
-            return
-
-        if (
-            self.config.arize_api_key != "your-api-key"
-            and self.config.arize_space_id != "your-space-id"
-        ):
-            try:
-                self.client = ArizeDatasetsClient(
-                    developer_key=self.config.arize_api_key,
-                    api_key=self.config.arize_api_key,
-                    space_id=self.config.arize_space_id,
-                )
-                logger.info("✅ Arize datasets client initialized")
-            except Exception as e:
-                logger.warning(f"⚠️ Could not initialize Arize datasets client: {e}")
-        else:
-            logger.info("ℹ️ Arize credentials not configured - using local evaluation only")
+        """Setup Arize datasets client if available."""
+        try:
+            from arize.experimental.datasets import ArizeDatasetsClient
+            
+            # Check if required environment variables are set
+            api_key = os.getenv("ARIZE_API_KEY")
+            
+            if not api_key:
+                logger.warning("⚠️ ARIZE_API_KEY not found - skipping Arize client setup")
+                self.client = None
+                return
+            
+            # Initialize client with only api_key (space_id is passed to methods)
+            self.client = ArizeDatasetsClient(api_key=api_key)
+            logger.info("✅ Arize datasets client initialized")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize Arize datasets client: {e}")
+            self.client = None
 
     def create_dataset(self, results_df: pd.DataFrame) -> Optional[str]:
         """Create an Arize dataset from evaluation results."""
         if not self.client:
-            logger.warning("⚠️ Arize client not available - skipping dataset creation")
+            # Arize client is not available, skip silently
             return None
 
         try:
-            logger.info("📊 Creating Arize dataset...")
+            # Import required modules
+            from arize.experimental.datasets.utils.constants import GENERATIVE
+            
+            # Get space_id from environment
+            space_id = os.getenv("ARIZE_SPACE_ID")
+            if not space_id:
+                logger.warning("⚠️ ARIZE_SPACE_ID not found - skipping dataset creation")
+                return None
 
-            # Prepare dataset
+            # Create dataset name with timestamp
             dataset_name = f"hotel-search-evaluation-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
             # Convert results to Arize format
@@ -281,13 +292,16 @@ class ArizeDatasetManager:
                     }
                 )
 
-            # Create dataset
-            dataset = self.client.create_dataset(
-                dataset_name=dataset_name, dataset_type=GENERATIVE, data=pd.DataFrame(dataset_data)
+            # Create dataset with space_id parameter
+            dataset_id = self.client.create_dataset(
+                space_id=space_id,
+                dataset_name=dataset_name,
+                dataset_type=GENERATIVE,
+                data=pd.DataFrame(dataset_data)
             )
 
-            logger.info(f"✅ Arize dataset created: {dataset_name}")
-            return dataset.id
+            logger.info(f"✅ Arize dataset created: {dataset_name} (ID: {dataset_id})")
+            return dataset_id
 
         except Exception as e:
             logger.exception(f"❌ Error creating Arize dataset: {e}")
@@ -637,11 +651,16 @@ class ArizeHotelSupportEvaluator:
 
         # Phoenix evaluation results
         if ARIZE_AVAILABLE and self.evaluators:
-            logger.info("\n🧠 Phoenix Evaluation Results:")
+            # Create evaluation results dictionary for user-friendly formatting
+            evaluation_results = {}
             for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
                 if eval_type in results_df.columns:
                     counts = results_df[eval_type].value_counts()
-                    logger.info(f"   {eval_type}: {dict(counts)}")
+                    evaluation_results[eval_type] = dict(counts)
+            
+            # Display results in user-friendly format
+            if evaluation_results:
+                self._format_evaluation_results(evaluation_results, len(results_df))
 
         # Sample results
         if len(results_df) > 0:
@@ -660,6 +679,83 @@ class ArizeHotelSupportEvaluator:
     def cleanup(self) -> None:
         """Clean up all resources."""
         self.phoenix_manager.cleanup()
+
+    def _format_evaluation_results(self, results: Dict[str, Any], total_queries: int) -> None:
+        """Format evaluation results in a user-friendly way."""
+        print("\n" + "="*50)
+        print("📊 EVALUATION RESULTS SUMMARY")
+        print("="*50)
+        
+        # Create a mapping of metric names to user-friendly descriptions
+        metric_descriptions = {
+            'relevance': {
+                'name': '🔍 Relevance',
+                'description': 'Does the response address the user query?',
+                'good_values': ['relevant']
+            },
+            'qa_correctness': {
+                'name': '🎯 QA Correctness', 
+                'description': 'Is the response factually correct?',
+                'good_values': ['correct']
+            },
+            'hallucination': {
+                'name': '🚨 Hallucination',
+                'description': 'Does the response contain fabricated info?',
+                'good_values': ['factual']
+            },
+            'toxicity': {
+                'name': '☠️ Toxicity',
+                'description': 'Is the response harmful or inappropriate?',
+                'good_values': ['non-toxic']
+            }
+        }
+        
+        for metric_name, metric_data in results.items():
+            if metric_name in metric_descriptions:
+                desc = metric_descriptions[metric_name]
+                print(f"\n{desc['name']}: {desc['description']}")
+                print("-" * 40)
+                
+                # Calculate percentages for each category
+                for category, count in metric_data.items():
+                    percentage = (int(count) / total_queries) * 100
+                    
+                    # Add status indicator
+                    if category in desc['good_values']:
+                        status = "✅"
+                    else:
+                        status = "❌"
+                    
+                    print(f"  {status} {category.title()}: {count}/{total_queries} ({percentage:.1f}%)")
+        
+        print("\n" + "="*50)
+        print("💡 RECOMMENDATIONS")
+        print("="*50)
+        
+        # Add specific recommendations based on results
+        if 'hallucination' in results:
+            hallucinated_count = results['hallucination'].get('hallucinated', 0)
+            if hallucinated_count > 0:
+                print(f"⚠️ {hallucinated_count} responses contained hallucinations")
+                print("   → Review reference data completeness")
+                print("   → Check if search results are being properly used")
+        
+        if 'qa_correctness' in results:
+            incorrect_count = results['qa_correctness'].get('incorrect', 0)
+            if incorrect_count > 0:
+                print(f"⚠️ {incorrect_count} responses were incorrect")
+                print("   → Verify search tool accuracy")
+                print("   → Check agent reasoning chain")
+        
+        if 'relevance' in results:
+            irrelevant_count = results['relevance'].get('irrelevant', 0)
+            if irrelevant_count > 0:
+                print(f"⚠️ {irrelevant_count} responses were irrelevant")
+                print("   → Review prompt instructions")
+                print("   → Check query understanding")
+        
+        print("\n✅ All responses were non-toxic - great job!")
+        print("="*50)
 
 
 def get_default_queries() -> List[str]:
