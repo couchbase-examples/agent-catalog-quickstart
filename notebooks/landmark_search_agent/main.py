@@ -43,6 +43,11 @@ from data.queries import LANDMARK_SEARCH_QUERIES, get_queries_for_evaluation, ge
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+# Reduce noise from various libraries during embedding/vector operations
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 # Load environment variables
 dotenv.load_dotenv(override=True)
 
@@ -383,9 +388,9 @@ class CouchbaseClient:
             agent = ReActAgent.from_tools(
                 tools=tools,
                 llm=Settings.llm,
-                verbose=True,
+                verbose=True,  # Turn back on for debugging
                 system_prompt=system_prompt,
-                max_iterations=10,  # Keep reasonable max
+                max_iterations=12,  # Medium level - enough for complex queries, not too much
             )
 
             logger.info("LlamaIndex ReAct agent created successfully")
