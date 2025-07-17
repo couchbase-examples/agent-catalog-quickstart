@@ -4,120 +4,97 @@ Landmark Search Queries for Evaluation
 
 This module contains test queries and reference answers for evaluating
 the landmark search agent using travel-sample.inventory.landmark data.
+
+These queries are designed to be diverse in vector space to test different
+types of landmark searches across various categories and locations.
 """
 
 from typing import Dict, List
 
-# Test queries for landmark search evaluation
+# 5 diverse test queries for landmark search evaluation
+# These are designed to be far apart in vector space
 LANDMARK_SEARCH_QUERIES = [
-    "Show me museums in Paris",
-    "Find art galleries in New York",
-    "What are the best landmarks in London?",
-    "Show me parks and gardens in Tokyo",
-    "Find historic sites in Rome",
-    "What attractions are in Barcelona?",
-    "Show me monuments in Washington DC",
-    "Find outdoor activities in San Francisco",
-    "What are the top sights in Amsterdam?",
-    "Show me cultural sites in Berlin",
-    "Find restaurants in San Francisco",
-    "What are the best viewpoints in Edinburgh?",
-    "Show me shopping areas in Tokyo",
-    "Find beaches near Los Angeles",
-    "What entertainment venues are in Las Vegas?",
-    "Show me architectural landmarks in Chicago",
-    "Find nature spots in Vancouver",
-    "What are the must-see attractions in Sydney?",
-    "Show me religious sites in Jerusalem",
-    "Find family-friendly activities in Orlando",
+    "Find museums with art collections in London",           # Art & Culture, Europe
+    "Show me outdoor hiking trails in national parks",       # Nature & Adventure, Outdoor
+    "What are the best restaurants serving Asian cuisine",    # Food & Dining, Cuisine-specific  
+    "Find historic churches and religious sites in Rome",    # Religious & Historic, Europe
+    "Show me beaches and water activities in tropical locations"  # Beach & Water, Tropical
 ]
 
 # Reference answers based on actual travel-sample.inventory.landmark data
 # These should match what the agent would find in the database
 QUERY_REFERENCE_ANSWERS = {
-    "Show me museums in Paris": """Paris offers world-class museums including the Louvre Museum with its extensive art collection, Musée d'Orsay featuring impressionist masterpieces, and Centre Pompidou for contemporary art. These museums provide comprehensive cultural experiences in the heart of Paris.""",
-    "Find art galleries in New York": """New York City features premier art destinations such as the Metropolitan Museum of Art with its vast collections, Museum of Modern Art (MoMA) showcasing contemporary works, Guggenheim Museum with its distinctive architecture, and Whitney Museum focusing on American art.""",
-    "What are the best landmarks in London?": """London's iconic landmarks include Big Ben and the Houses of Parliament, Tower Bridge spanning the Thames, the London Eye offering panoramic views, Buckingham Palace as the royal residence, Westminster Abbey with its historical significance, and the Tower of London housing the Crown Jewels.""",
-    "Show me parks and gardens in Tokyo": """Tokyo provides beautiful green spaces including Ueno Park known for cherry blossoms, Shinjuku Gyoen with its diverse gardens, Imperial Palace East Gardens in the city center, and Yoyogi Park offering recreational activities near Shibuya.""",
-    "Find historic sites in Rome": """Rome contains ancient landmarks such as the Colosseum showcasing gladiatorial history, Roman Forum as the center of ancient Rome, Pantheon with its impressive dome, Trevi Fountain for making wishes, and Vatican City with St. Peter's Basilica and the Sistine Chapel.""",
-    "What attractions are in Barcelona?": """Barcelona features unique attractions including Sagrada Familia with Gaudí's distinctive architecture, Park Güell offering colorful mosaics and city views, Casa Batlló showcasing modernist design, Gothic Quarter with medieval streets, and Las Ramblas for vibrant street life.""",
-    "Show me monuments in Washington DC": """Washington DC's monuments include the Lincoln Memorial honoring the 16th president, Washington Monument as the city's centerpiece, Jefferson Memorial beside the Tidal Basin, Vietnam Veterans Memorial with its moving wall, and the Capitol Building housing Congress.""",
-    "Find outdoor activities in San Francisco": """San Francisco offers outdoor experiences at Golden Gate Park with its museums and gardens, Alcatraz Island for historical tours, Fisherman's Wharf with sea lions and dining, Golden Gate Bridge for walking and cycling, and nearby Muir Woods for hiking among redwoods.""",
-    "What are the top sights in Amsterdam?": """Amsterdam's top attractions include the Anne Frank House preserving wartime history, Van Gogh Museum with the artist's masterpieces, Rijksmuseum showcasing Dutch art and history, Vondelpark for outdoor relaxation, and the historic canal ring offering scenic boat tours.""",
-    "Show me cultural sites in Berlin": """Berlin's cultural landmarks include Brandenburg Gate symbolizing German reunification, Museum Island with world-class museums, East Side Gallery featuring Berlin Wall art, Pergamon Museum with ancient artifacts, and the Holocaust Memorial for historical remembrance.""",
-    "Find restaurants in San Francisco": """San Francisco offers diverse dining experiences from Michelin-starred restaurants to local favorites, featuring fresh seafood at Fisherman's Wharf, innovative cuisine in the Mission District, authentic dim sum in Chinatown, and farm-to-table dining throughout the city.""",
-    "What are the best viewpoints in Edinburgh?": """Edinburgh provides spectacular views from Edinburgh Castle overlooking the city, Arthur's Seat offering panoramic vistas, Calton Hill with its monuments, Scott Monument on Princes Street, and the Royal Mile connecting the castle to Holyrood Palace.""",
-    "Show me shopping areas in Tokyo": """Tokyo features premier shopping districts including Shibuya for fashion and electronics, Ginza for luxury brands, Harajuku for youth culture and unique styles, Akihabara for electronics and anime merchandise, and Omotesando for high-end designer stores.""",
-    "Find beaches near Los Angeles": """Los Angeles area beaches include Santa Monica Beach with its iconic pier, Venice Beach known for its boardwalk and street performers, Manhattan Beach offering upscale coastal living, Redondo Beach for family activities, and Malibu for celebrity spotting and scenic beauty.""",
-    "What entertainment venues are in Las Vegas?": """Las Vegas entertainment includes world-class casinos along the Strip, spectacular shows featuring magic and music, themed hotels like Bellagio and Venetian, the High Roller observation wheel, and the Fremont Street Experience in downtown Las Vegas.""",
-    "Show me architectural landmarks in Chicago": """Chicago's architectural highlights include Willis Tower (formerly Sears Tower) for city views, Frank Lloyd Wright's architecture in Oak Park, Millennium Park with Cloud Gate sculpture, Navy Pier for entertainment, and the Art Institute of Chicago housing impressive collections.""",
-    "Find nature spots in Vancouver": """Vancouver offers natural attractions including Stanley Park with its seawall and forests, Queen Elizabeth Park featuring gardens and city views, VanDusen Botanical Garden with diverse plant collections, and nearby mountains for hiking and skiing activities.""",
-    "What are the must-see attractions in Sydney?": """Sydney's iconic attractions include the Sydney Opera House with its distinctive architecture, Sydney Harbour Bridge for climbing and views, Bondi Beach for surfing and sunbathing, Royal Botanic Gardens for peaceful walks, and The Rocks area for historical exploration.""",
-    "Show me religious sites in Jerusalem": """Jerusalem contains sacred sites including the Western Wall for Jewish prayer, Church of the Holy Sepulchre marking Jesus's crucifixion site, Al-Aqsa Mosque for Islamic worship, Via Dolorosa retracing Jesus's path, and the Garden of Gethsemane with ancient olive trees.""",
-    "Find family-friendly activities in Orlando": """Orlando offers family attractions including Walt Disney World with its themed parks, Universal Studios for movie-based rides, SeaWorld for marine shows, ICON Park for dining and entertainment, and Gatorland for wildlife encounters and educational experiences.""",
+    "Find museums with art collections in London": """London offers several excellent museums with art collections including the British Museum with its extensive historical artifacts and sculptures, Tate Modern featuring contemporary art in a former power station, National Gallery housing masterpieces from European artists, and the Victoria and Albert Museum showcasing decorative arts and design. These museums provide comprehensive cultural experiences spanning different artistic periods and styles.""",
+    
+    "Show me outdoor hiking trails in national parks": """Popular hiking destinations include Yellowstone National Park with its geothermal features and wildlife viewing trails, Grand Canyon National Park offering rim and canyon hiking experiences, Yosemite National Park featuring waterfalls and granite cliff trails, and various state parks with marked hiking paths through forests, mountains, and scenic landscapes. These locations provide opportunities for different skill levels from easy walks to challenging multi-day treks.""",
+    
+    "What are the best restaurants serving Asian cuisine": """Top Asian dining experiences include authentic Chinese restaurants serving dim sum and regional specialties, Japanese sushi bars and ramen shops, Thai restaurants offering traditional curries and stir-fries, Korean BBQ establishments, Vietnamese pho restaurants, and Indian restaurants featuring diverse regional cuisines. Many cities also offer Asian fusion restaurants that blend traditional flavors with modern cooking techniques.""",
+    
+    "Find historic churches and religious sites in Rome": """Rome contains numerous significant religious landmarks including St. Peter's Basilica in Vatican City with its magnificent dome and art collections, the Pantheon as an ancient Roman temple converted to a church, Santa Maria Maggiore featuring beautiful mosaics, San Giovanni in Laterano as the Pope's cathedral church, and the Catacombs offering underground Christian burial sites with historical significance.""",
+    
+    "Show me beaches and water activities in tropical locations": """Tropical beach destinations offer activities such as snorkeling and diving in coral reefs, surfing on ocean waves, kayaking in clear lagoons, deep-sea fishing excursions, sailing and catamaran trips, parasailing for aerial views, jet skiing, and relaxing on white sand beaches. Popular locations include Caribbean islands, Hawaii, Southeast Asian coastal areas, and tropical Pacific islands with warm waters year-round."""
 }
 
-# Activity-based queries for testing specific search capabilities
-ACTIVITY_QUERIES = {
-    "see": [
-        "What can I see in London?",
-        "Show me sights to see in Paris",
-        "What viewing spots are available in Tokyo?",
+# Category-based queries for testing specific search capabilities
+CATEGORY_QUERIES = {
+    "cultural": [
+        "Find museums with art collections in London",
+        "Show me theaters and performance venues",
+        "What cultural festivals happen annually?"
     ],
-    "do": [
-        "What activities can I do in Barcelona?",
-        "Show me things to do in New York",
-        "What experiences are available in Rome?",
+    "adventure": [
+        "Show me outdoor hiking trails in national parks", 
+        "Find mountain climbing and rock climbing spots",
+        "What extreme sports activities are available?"
     ],
-    "eat": [
-        "Where can I eat in San Francisco?",
-        "Show me dining options in Tokyo",
-        "What restaurants are in Paris?",
+    "culinary": [
+        "What are the best restaurants serving Asian cuisine",
+        "Find local food markets and street food",
+        "Show me wineries and vineyard tours"
     ],
-    "buy": [
-        "Where can I shop in New York?",
-        "Show me shopping areas in Tokyo",
-        "What markets are in Barcelona?",
+    "religious": [
+        "Find historic churches and religious sites in Rome",
+        "Show me temples and spiritual retreat centers",
+        "What pilgrimage routes are available?"
     ],
+    "beach": [
+        "Show me beaches and water activities in tropical locations",
+        "Find coastal walks and seaside attractions",
+        "What marine wildlife viewing opportunities exist?"
+    ]
 }
 
-# City-based queries for location-specific testing
-CITY_QUERIES = {
-    "Paris": [
-        "Show me landmarks in Paris",
-        "What attractions are in Paris?",
-        "Find museums in Paris",
+# Location-based queries for geographic diversity testing
+LOCATION_QUERIES = {
+    "Europe": [
+        "Find museums with art collections in London",
+        "Find historic churches and religious sites in Rome",
+        "Show me castles and palaces in France"
     ],
-    "London": [
-        "What can I visit in London?",
-        "Show me London attractions",
-        "Find historic sites in London",
+    "Americas": [
+        "Show me outdoor hiking trails in national parks",
+        "Find historic sites in New York City",
+        "What attractions are in San Francisco?"
     ],
-    "Tokyo": [
-        "What sights are in Tokyo?",
-        "Show me Tokyo landmarks",
-        "Find cultural sites in Tokyo",
+    "Asia": [
+        "What are the best restaurants serving Asian cuisine",
+        "Find temples and gardens in Japan",
+        "Show me markets and shopping in Bangkok"
     ],
-    "New York": [
-        "What attractions are in New York?",
-        "Show me NYC landmarks",
-        "Find art galleries in New York",
-    ],
-    "Rome": ["What can I see in Rome?", "Show me Roman landmarks", "Find ancient sites in Rome"],
+    "Tropical": [
+        "Show me beaches and water activities in tropical locations",
+        "Find coral reefs for snorkeling and diving",
+        "What island resort activities are available?"
+    ]
 }
 
-# Complex queries for testing advanced search capabilities
+# Complex multi-criteria queries for advanced testing
 COMPLEX_QUERIES = [
-    "Find outdoor museums with historical significance",
-    "Show me family-friendly attractions with educational value",
-    "What are the best free attractions in major cities?",
-    "Find landmarks that are accessible by public transportation",
-    "Show me attractions that are open in the evening",
-    "What are the most photographed landmarks in Europe?",
-    "Find attractions suitable for rainy weather",
-    "Show me landmarks with guided tour options",
-    "What are the best attractions for art lovers?",
-    "Find historic sites with interactive exhibits",
+    "Find family-friendly outdoor museums with educational programs",
+    "Show me wheelchair accessible historic sites with guided tours", 
+    "What are the best budget-friendly cultural attractions for students?",
+    "Find romantic dining venues with scenic waterfront views",
+    "Show me eco-friendly adventure activities in protected areas"
 ]
 
 
@@ -125,13 +102,13 @@ def get_all_queries() -> List[str]:
     """Get all queries for comprehensive testing."""
     all_queries = LANDMARK_SEARCH_QUERIES.copy()
 
-    # Add activity queries
-    for activity_list in ACTIVITY_QUERIES.values():
-        all_queries.extend(activity_list)
+    # Add category queries
+    for category_list in CATEGORY_QUERIES.values():
+        all_queries.extend(category_list)
 
-    # Add city queries
-    for city_list in CITY_QUERIES.values():
-        all_queries.extend(city_list)
+    # Add location queries
+    for location_list in LOCATION_QUERIES.values():
+        all_queries.extend(location_list)
 
     # Add complex queries
     all_queries.extend(COMPLEX_QUERIES)
@@ -148,17 +125,17 @@ def get_queries_by_category(category: str) -> List[str]:
     """Get queries filtered by category."""
     if category == "basic":
         return LANDMARK_SEARCH_QUERIES
-    elif category == "activity":
-        return [q for queries in ACTIVITY_QUERIES.values() for q in queries]
-    elif category == "city":
-        return [q for queries in CITY_QUERIES.values() for q in queries]
+    elif category == "category":
+        return [q for queries in CATEGORY_QUERIES.values() for q in queries]
+    elif category == "location":
+        return [q for queries in LOCATION_QUERIES.values() for q in queries]
     elif category == "complex":
         return COMPLEX_QUERIES
     else:
         return get_all_queries()
 
 
-def get_queries_for_evaluation(limit: int = 10) -> List[str]:
+def get_queries_for_evaluation(limit: int = 5) -> List[str]:
     """Get a subset of queries for evaluation purposes."""
     return LANDMARK_SEARCH_QUERIES[:limit]
 
@@ -166,9 +143,9 @@ def get_queries_for_evaluation(limit: int = 10) -> List[str]:
 # Export commonly used items
 __all__ = [
     "LANDMARK_SEARCH_QUERIES",
-    "QUERY_REFERENCE_ANSWERS",
-    "ACTIVITY_QUERIES",
-    "CITY_QUERIES",
+    "QUERY_REFERENCE_ANSWERS", 
+    "CATEGORY_QUERIES",
+    "LOCATION_QUERIES",
     "COMPLEX_QUERIES",
     "get_all_queries",
     "get_reference_answer",

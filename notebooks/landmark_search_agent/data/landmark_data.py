@@ -210,6 +210,13 @@ def load_landmark_data_to_couchbase(
                     "country": landmark.get("country", "Unknown"),
                     "activity": landmark.get("activity", ""),
                     "type": landmark.get("type", ""),
+                    # Add the missing fields that search tool expects
+                    "address": landmark.get("address", ""),
+                    "phone": landmark.get("phone", ""),
+                    "url": landmark.get("url", ""),
+                    "hours": landmark.get("hours", ""),
+                    "price": landmark.get("price", ""),
+                    "state": landmark.get("state", ""),
                 }
             )
             documents.append(document)

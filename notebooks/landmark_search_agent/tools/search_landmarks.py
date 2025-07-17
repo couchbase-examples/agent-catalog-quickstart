@@ -84,9 +84,9 @@ def search_landmarks(query: str, limit: int = 5) -> str:
         vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.environ.get("CB_BUCKET", "travel-sample"),
-            scope_name=os.environ.get("CB_SCOPE", "inventory"),
-            collection_name=os.environ.get("CB_COLLECTION", "landmark"),
-            index_name=os.environ.get("CB_INDEX", "landmark_vector_index"),
+            scope_name=os.environ.get("CB_SCOPE", "agentc_data"),
+            collection_name=os.environ.get("CB_COLLECTION", "landmark_data"),
+            index_name=os.environ.get("CB_INDEX", "landmark_data_index"),
         )
 
         # Create index from vector store
@@ -108,75 +108,119 @@ def search_landmarks(query: str, limit: int = 5) -> str:
 
         results = []
         for i, node in enumerate(response.source_nodes, 1):
-            # Extract metadata - it's nested in the node structure
-            node_metadata = node.metadata
+            # Extract metadata - with fallback to text parsing
+            metadata = node.metadata or {}
+            content = node.text or ""
             
-            # Try to get metadata from different possible locations
-            if 'landmark_id' in node_metadata:
-                # Direct access case
-                landmark_data = node_metadata
-            else:
-                # This shouldn't happen but let's be safe
-                landmark_data = node_metadata
+            # Try to extract information from metadata first, then from text content
+            name = metadata.get('name', '')
+            city = metadata.get('city', '')
+            country = metadata.get('country', '')
+            address = metadata.get('address', '')
+            phone = metadata.get('phone', '')
+            url = metadata.get('url', metadata.get('website', ''))
+            activity = metadata.get('activity', '')
+            state = metadata.get('state', '')
+            hours = metadata.get('hours', '')
+            price = metadata.get('price', '')
             
-            content = node.text
-
-            # Extract key information with proper fallbacks
-            name = landmark_data.get("name", "Unknown")
-            city = landmark_data.get("city", "Unknown")
-            country = landmark_data.get("country", "Unknown")
-            activity = landmark_data.get("activity", "General")
-            
-            # Create location string
-            location = f"{city}, {country}"
-            
-            # Format the result with better structure
-            result = f"{i}. **{name}**\n"
-            result += f"   📍 Location: {location}\n"
-            result += f"   🎯 Activity: {activity.title()}\n"
-
-            # Extract additional details from the text content itself
-            # The text contains formatted information we can parse
-            if content:
-                # Try to extract address from content
-                if "Address:" in content:
-                    try:
-                        address_part = content.split("Address:")[1].split(".")[0].strip()
-                        result += f"   🏠 Address: {address_part}\n"
-                    except:
-                        pass
-                
-                # Try to extract phone from content  
-                if "Phone:" in content:
-                    try:
-                        phone_part = content.split("Phone:")[1].split(".")[0].strip()
-                        result += f"   📞 Phone: {phone_part}\n"
-                    except:
-                        pass
+            # If metadata is missing key info, try to parse from text content
+            if not name or name == 'Unknown':
+                # Extract name from text patterns like "Name (Alternative) in City, Country"
+                import re
+                name_match = re.search(r'^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)\.', content)
+                if name_match:
+                    name = name_match.group(1).strip()
+                    if not city or city == 'Unknown':
+                        city = name_match.group(2).strip()
+                    if not country or country == 'Unknown':
+                        country = name_match.group(3).strip()
                         
-                # Try to extract website from content
-                if "Website:" in content:
-                    try:
-                        website_part = content.split("Website:")[1].split(".")[0].strip()
-                        result += f"   🌐 Website: {website_part}\n"
-                    except:
-                        pass
+            # Extract additional info from text if missing
+            if not address and 'Address:' in content:
+                addr_match = re.search(r'Address:\s*([^.]+)', content)
+                if addr_match:
+                    address = addr_match.group(1).strip()
+                    
+            if not phone and 'Phone:' in content:
+                phone_match = re.search(r'Phone:\s*([^.]+)', content)
+                if phone_match:
+                    phone = phone_match.group(1).strip()
+                    
+            if not url and ('Website:' in content or 'http' in content):
+                url_match = re.search(r'(?:Website:\s*)?(?:http[s]?://[^\s<>"]+)', content)
+                if url_match:
+                    url = url_match.group(0).replace('Website:', '').strip()
+                    
+            if not hours and 'Hours:' in content:
+                hours_match = re.search(r'Hours:\s*([^.]+)', content)
+                if hours_match:
+                    hours = hours_match.group(1).strip()
+                    
+            if not price and ('Price:' in content or '€' in content or '$' in content):
+                price_match = re.search(r'(?:Price:\s*)?([€$£][^.]+)', content)
+                if price_match:
+                    price = price_match.group(1).strip()
+                    
+            if not activity or activity == 'General':
+                if 'Activity type:' in content:
+                    activity_match = re.search(r'Activity type:\s*([^.]+)', content)
+                    if activity_match:
+                        activity = activity_match.group(1).strip()
+                else:
+                    # Infer activity from content
+                    if any(word in content.lower() for word in ['museum', 'gallery', 'art']):
+                        activity = 'see'
+                    elif any(word in content.lower() for word in ['restaurant', 'dining', 'food']):
+                        activity = 'eat'
+                    elif any(word in content.lower() for word in ['trail', 'hiking', 'park']):
+                        activity = 'do'
+                        
+            # Use fallbacks for essential fields
+            name = name or 'Landmark'
+            city = city or 'Unknown City'
+            country = country or 'Unknown Country'
+            activity = activity or 'see'
 
-                # Add description (first part before "Address:")
-                if "Description:" in content:
-                    try:
-                        desc_part = content.split("Description:")[1].split("Address:")[0].strip()
-                        # Limit description length
-                        if len(desc_part) > 200:
-                            desc_part = desc_part[:200] + "..."
-                        result += f"   📝 Description: {desc_part}\n"
-                    except:
-                        # Fallback to truncated content
-                        result += f"   📝 Description: {content[:200]}{'...' if len(content) > 200 else ''}\n"
+            # Build result with robust formatting
+            result_lines = [f"{i}. **{name}**"]
+            result_lines.append(f"   📍 Location: {city}, {country}")
+            
+            # Add state if available
+            if state and state.strip() and state != 'Unknown':
+                result_lines.append(f"   🗺️ State: {state}")
+                
+            result_lines.append(f"   🎯 Activity: {activity.title()}")
+            
+            # Only show fields that have actual meaningful data
+            if address and address.strip() and address.lower() not in ['unknown', 'none']:
+                result_lines.append(f"   🏠 Address: {address}")
+            if phone and phone.strip() and phone.lower() not in ['unknown', 'none', 'null']:
+                result_lines.append(f"   📞 Phone: {phone}")
+            if url and url.strip() and url.lower() not in ['unknown', 'none', 'null']:
+                result_lines.append(f"   🌐 Website: {url}")
+            if hours and hours.strip() and hours.lower() not in ['unknown', 'none', 'null']:
+                result_lines.append(f"   🕒 Hours: {hours}")
+            if price and price.strip() and price.lower() not in ['unknown', 'none', 'null']:
+                result_lines.append(f"   💰 Price: {price}")
+                
+            if content:
+                # Clean up content and extract meaningful description
+                clean_content = content.replace('\n', ' ').replace('\r', '').strip()
+                
+                # Try to extract the main description after "Description:"
+                desc_match = re.search(r'Description:\s*([^.]+(?:\.[^.]*){0,2})', clean_content)
+                if desc_match:
+                    clean_content = desc_match.group(1).strip()
+                elif len(clean_content) > 300:
+                    # If no clear description marker, take a reasonable portion
+                    clean_content = clean_content[:300] + "..."
+                    
+                result_lines.append(f"   📝 Description: {clean_content}")
 
-            results.append(result)
+            results.append('\n'.join(result_lines))
 
-        return f"Found {len(results)} landmarks matching '{query}':\n\n" + "\n".join(results)
+        return f"Found {len(results)} landmarks matching '{query}':\n\n" + '\n\n'.join(results)
 
     except Exception as e:
         logger.error(f"Error searching landmarks: {e}")
