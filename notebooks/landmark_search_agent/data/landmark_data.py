@@ -15,7 +15,10 @@ import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from llama_index.core import Document
+from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 from tqdm import tqdm
 
 # Load environment variables
@@ -185,37 +188,57 @@ def load_landmark_data_to_couchbase(
         landmark_texts = get_landmark_texts()
 
         # Setup vector store for the target collection
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=bucket_name,
             scope_name=scope_name,
             collection_name=collection_name,
-            embedding=embeddings,
             index_name=index_name,
         )
 
-        # Add landmark texts to vector store with batch processing
-        logger.info(
-            f"Loading {len(landmark_texts)} landmark embeddings to {bucket_name}.{scope_name}.{collection_name}"
+        # Create LlamaIndex Documents
+        logger.info(f"Creating {len(landmark_texts)} LlamaIndex Documents...")
+        documents = []
+        
+        for i, (landmark, text) in enumerate(zip(landmarks, landmark_texts)):
+            document = Document(
+                text=text,
+                metadata={
+                    "landmark_id": landmark.get("id", f"landmark_{i}"),
+                    "name": landmark.get("name", "Unknown"),
+                    "city": landmark.get("city", "Unknown"),
+                    "country": landmark.get("country", "Unknown"),
+                    "activity": landmark.get("activity", ""),
+                    "type": landmark.get("type", ""),
+                }
+            )
+            documents.append(document)
+
+        # Use IngestionPipeline to process documents with embeddings
+        logger.info(f"Processing documents with ingestion pipeline...")
+        pipeline = IngestionPipeline(
+            transformations=[SentenceSplitter(), embeddings],
+            vector_store=vector_store,
         )
 
-        # Process in batches to avoid memory issues and respect Capella AI batch limit
-        batch_size = 25  # Well below Capella AI embedding model limit of 32
-        total_batches = (len(landmark_texts) + batch_size - 1) // batch_size
+        # Process documents in batches to avoid memory issues
+        batch_size = 25  # Well below Capella AI embedding model limit
+        total_batches = (len(documents) + batch_size - 1) // batch_size
 
-        # Use tqdm for batch processing progress
+        logger.info(f"Processing {len(documents)} documents in {total_batches} batches...")
+        
+        # Process in batches
         for i in tqdm(
-            range(0, len(landmark_texts), batch_size),
+            range(0, len(documents), batch_size),
             desc="Loading batches",
             unit="batch",
             total=total_batches,
         ):
-            batch = landmark_texts[i : i + batch_size]
-
-            vector_store.add_texts(texts=batch, batch_size=batch_size)
+            batch = documents[i : i + batch_size]
+            pipeline.run(documents=batch)
 
         logger.info(
-            f"Successfully loaded {len(landmark_texts)} landmark embeddings to vector store"
+            f"Successfully loaded {len(documents)} landmark documents to vector store"
         )
 
     except Exception as e:

@@ -230,10 +230,12 @@ class CouchbaseClient:
         return self._collections[key]
 
     def setup_vector_search_index(self, index_definition: dict, scope_name: str):
-        """Setup vector search index."""
+        """Setup vector search index for the specified scope."""
         try:
-            scope_index_manager = self.bucket.scope(scope_name).search_indexes()
+            if not self.bucket:
+                raise RuntimeError("Bucket not initialized. Call setup_collection first.")
 
+            scope_index_manager = self.bucket.scope(scope_name).search_indexes()
             existing_indexes = scope_index_manager.get_all_indexes()
             index_name = index_definition["name"]
 
@@ -271,16 +273,16 @@ class CouchbaseClient:
             if os.environ.get("CAPELLA_API_ENDPOINT"):
                 llm = OpenAILike(
                     model=os.environ["CAPELLA_API_LLM_MODEL"],
-                    api_base=os.environ["CAPELLA_API_ENDPOINT"],
+                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
                     api_key=os.environ["CAPELLA_API_KEY"],
                     is_chat_model=True,
                     temperature=0.1,
                 )
                 embeddings = OpenAIEmbedding(
-                    model=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
-                    api_base=os.environ["CAPELLA_API_ENDPOINT"],
                     api_key=os.environ["CAPELLA_API_KEY"],
-                    dimensions=1024,
+                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
+                    model_name=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
+                    embed_batch_size=30
                 )
             else:
                 llm = OpenAILike(
@@ -300,6 +302,16 @@ class CouchbaseClient:
 
             # Setup collection
             self.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+
+            # Setup vector search index
+            try:
+                with open("agentcatalog_index.json") as file:
+                    index_definition = json.load(file)
+                logger.info("Loaded vector search index definition from agentcatalog_index.json")
+                self.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
+            except Exception as e:
+                logger.warning(f"Error loading index definition: {e!s}")
+                logger.info("Continuing without vector search index...")
 
             # Load landmark data
             self.load_landmark_data(
@@ -405,7 +417,6 @@ def setup_landmark_agent():
     # Create agent
     agent = client.create_llamaindex_agent(catalog, span)
 
-    span.end()
     return agent, client
 
 

@@ -108,38 +108,71 @@ def search_landmarks(query: str, limit: int = 5) -> str:
 
         results = []
         for i, node in enumerate(response.source_nodes, 1):
-            landmark_data = node.metadata
+            # Extract metadata - it's nested in the node structure
+            node_metadata = node.metadata
+            
+            # Try to get metadata from different possible locations
+            if 'landmark_id' in node_metadata:
+                # Direct access case
+                landmark_data = node_metadata
+            else:
+                # This shouldn't happen but let's be safe
+                landmark_data = node_metadata
+            
             content = node.text
 
-            # Extract key information from the landmark data
+            # Extract key information with proper fallbacks
             name = landmark_data.get("name", "Unknown")
-            title = landmark_data.get("title", name)
             city = landmark_data.get("city", "Unknown")
             country = landmark_data.get("country", "Unknown")
-            address = landmark_data.get("address", "Address not available")
             activity = landmark_data.get("activity", "General")
-
-            # Format the result
-            result = f"{i}. **{title}** ({name})\n"
-            result += f"   📍 Location: {city}, {country}\n"
-            result += f"   🏠 Address: {address}\n"
+            
+            # Create location string
+            location = f"{city}, {country}"
+            
+            # Format the result with better structure
+            result = f"{i}. **{name}**\n"
+            result += f"   📍 Location: {location}\n"
             result += f"   🎯 Activity: {activity.title()}\n"
 
-            # Add additional details if available
-            if landmark_data.get("phone"):
-                result += f"   📞 Phone: {landmark_data['phone']}\n"
-            if landmark_data.get("url"):
-                result += f"   🌐 Website: {landmark_data['url']}\n"
-            if landmark_data.get("hours"):
-                result += f"   🕐 Hours: {landmark_data['hours']}\n"
-            if landmark_data.get("price"):
-                result += f"   💰 Price: {landmark_data['price']}\n"
-
-            # Add description/content
+            # Extract additional details from the text content itself
+            # The text contains formatted information we can parse
             if content:
-                result += (
-                    f"   📝 Description: {content[:200]}{'...' if len(content) > 200 else ''}\n"
-                )
+                # Try to extract address from content
+                if "Address:" in content:
+                    try:
+                        address_part = content.split("Address:")[1].split(".")[0].strip()
+                        result += f"   🏠 Address: {address_part}\n"
+                    except:
+                        pass
+                
+                # Try to extract phone from content  
+                if "Phone:" in content:
+                    try:
+                        phone_part = content.split("Phone:")[1].split(".")[0].strip()
+                        result += f"   📞 Phone: {phone_part}\n"
+                    except:
+                        pass
+                        
+                # Try to extract website from content
+                if "Website:" in content:
+                    try:
+                        website_part = content.split("Website:")[1].split(".")[0].strip()
+                        result += f"   🌐 Website: {website_part}\n"
+                    except:
+                        pass
+
+                # Add description (first part before "Address:")
+                if "Description:" in content:
+                    try:
+                        desc_part = content.split("Description:")[1].split("Address:")[0].strip()
+                        # Limit description length
+                        if len(desc_part) > 200:
+                            desc_part = desc_part[:200] + "..."
+                        result += f"   📝 Description: {desc_part}\n"
+                    except:
+                        # Fallback to truncated content
+                        result += f"   📝 Description: {content[:200]}{'...' if len(content) > 200 else ''}\n"
 
             results.append(result)
 
