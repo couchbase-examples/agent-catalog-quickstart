@@ -7,17 +7,17 @@ This tool demonstrates:
 - Integration with Couchbase travel-sample database
 """
 
-import os
 import logging
-import dotenv
+import os
 from datetime import timedelta
 
 import agentc
-from llama_index.core import Settings, VectorStoreIndex
-from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
+import dotenv
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions, ClusterTimeoutOptions
+from couchbase.options import ClusterOptions
+from llama_index.core import Settings, VectorStoreIndex
+from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -30,33 +30,20 @@ def get_cluster_connection():
     """Get a fresh cluster connection for each request."""
     try:
         auth = PasswordAuthenticator(
-            username=os.environ.get("CB_USERNAME", "kaustavcluster"),
-            password=os.environ.get("CB_PASSWORD", "Password@123"),
+            username=os.environ["CB_USERNAME"],
+            password=os.environ["CB_PASSWORD"],
         )
         options = ClusterOptions(auth)
         options.apply_profile("wan_development")
 
-        # Set timeout configurations
-        timeout_options = ClusterTimeoutOptions(
-            kv_timeout=timedelta(seconds=10),
-            kv_durable_timeout=timedelta(seconds=15),
-            query_timeout=timedelta(seconds=30),
-            search_timeout=timedelta(seconds=30),
-            management_timeout=timedelta(seconds=30),
-            bootstrap_timeout=timedelta(seconds=20),
-        )
-        options.timeout_options = timeout_options
-
-        conn_string = os.environ.get(
-            "CB_CONN_STRING", "couchbases://cb.hlcup4o4jmjr55yf.cloud.couchbase.com"
-        )
+        conn_string = os.environ["CB_CONN_STRING"]
         cluster = Cluster(conn_string, options)
         cluster.wait_until_ready(timedelta(seconds=20))
 
         return cluster
 
     except Exception as e:
-        logger.error(f"Failed to connect to Couchbase: {e}")
+        logger.exception(f"Failed to connect to Couchbase: {e}")
         raise
 
 
@@ -111,116 +98,119 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             # Extract metadata - with fallback to text parsing
             metadata = node.metadata or {}
             content = node.text or ""
-            
+
             # Try to extract information from metadata first, then from text content
-            name = metadata.get('name', '')
-            city = metadata.get('city', '')
-            country = metadata.get('country', '')
-            address = metadata.get('address', '')
-            phone = metadata.get('phone', '')
-            url = metadata.get('url', metadata.get('website', ''))
-            activity = metadata.get('activity', '')
-            state = metadata.get('state', '')
-            hours = metadata.get('hours', '')
-            price = metadata.get('price', '')
-            
+            name = metadata.get("name", "")
+            city = metadata.get("city", "")
+            country = metadata.get("country", "")
+            address = metadata.get("address", "")
+            phone = metadata.get("phone", "")
+            url = metadata.get("url", metadata.get("website", ""))
+            activity = metadata.get("activity", "")
+            state = metadata.get("state", "")
+            hours = metadata.get("hours", "")
+            price = metadata.get("price", "")
+
             # If metadata is missing key info, try to parse from text content
-            if not name or name == 'Unknown':
+            if not name or name == "Unknown":
                 # Extract name from text patterns like "Name (Alternative) in City, Country"
                 import re
-                name_match = re.search(r'^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)\.', content)
+
+                name_match = re.search(
+                    r"^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)\.", content
+                )
                 if name_match:
                     name = name_match.group(1).strip()
-                    if not city or city == 'Unknown':
+                    if not city or city == "Unknown":
                         city = name_match.group(2).strip()
-                    if not country or country == 'Unknown':
+                    if not country or country == "Unknown":
                         country = name_match.group(3).strip()
-                        
+
             # Extract additional info from text if missing
-            if not address and 'Address:' in content:
-                addr_match = re.search(r'Address:\s*([^.]+)', content)
+            if not address and "Address:" in content:
+                addr_match = re.search(r"Address:\s*([^.]+)", content)
                 if addr_match:
                     address = addr_match.group(1).strip()
-                    
-            if not phone and 'Phone:' in content:
-                phone_match = re.search(r'Phone:\s*([^.]+)', content)
+
+            if not phone and "Phone:" in content:
+                phone_match = re.search(r"Phone:\s*([^.]+)", content)
                 if phone_match:
                     phone = phone_match.group(1).strip()
-                    
-            if not url and ('Website:' in content or 'http' in content):
+
+            if not url and ("Website:" in content or "http" in content):
                 url_match = re.search(r'(?:Website:\s*)?(?:http[s]?://[^\s<>"]+)', content)
                 if url_match:
-                    url = url_match.group(0).replace('Website:', '').strip()
-                    
-            if not hours and 'Hours:' in content:
-                hours_match = re.search(r'Hours:\s*([^.]+)', content)
+                    url = url_match.group(0).replace("Website:", "").strip()
+
+            if not hours and "Hours:" in content:
+                hours_match = re.search(r"Hours:\s*([^.]+)", content)
                 if hours_match:
                     hours = hours_match.group(1).strip()
-                    
-            if not price and ('Price:' in content or '€' in content or '$' in content):
-                price_match = re.search(r'(?:Price:\s*)?([€$£][^.]+)', content)
+
+            if not price and ("Price:" in content or "€" in content or "$" in content):
+                price_match = re.search(r"(?:Price:\s*)?([€$£][^.]+)", content)
                 if price_match:
                     price = price_match.group(1).strip()
-                    
-            if not activity or activity == 'General':
-                if 'Activity type:' in content:
-                    activity_match = re.search(r'Activity type:\s*([^.]+)', content)
+
+            if not activity or activity == "General":
+                if "Activity type:" in content:
+                    activity_match = re.search(r"Activity type:\s*([^.]+)", content)
                     if activity_match:
                         activity = activity_match.group(1).strip()
                 else:
                     # Infer activity from content
-                    if any(word in content.lower() for word in ['museum', 'gallery', 'art']):
-                        activity = 'see'
-                    elif any(word in content.lower() for word in ['restaurant', 'dining', 'food']):
-                        activity = 'eat'
-                    elif any(word in content.lower() for word in ['trail', 'hiking', 'park']):
-                        activity = 'do'
-                        
+                    if any(word in content.lower() for word in ["museum", "gallery", "art"]):
+                        activity = "see"
+                    elif any(word in content.lower() for word in ["restaurant", "dining", "food"]):
+                        activity = "eat"
+                    elif any(word in content.lower() for word in ["trail", "hiking", "park"]):
+                        activity = "do"
+
             # Use fallbacks for essential fields
-            name = name or 'Landmark'
-            city = city or 'Unknown City'
-            country = country or 'Unknown Country'
-            activity = activity or 'see'
+            name = name or "Landmark"
+            city = city or "Unknown City"
+            country = country or "Unknown Country"
+            activity = activity or "see"
 
             # Build result with robust formatting
             result_lines = [f"{i}. **{name}**"]
             result_lines.append(f"   📍 Location: {city}, {country}")
-            
+
             # Add state if available
-            if state and state.strip() and state != 'Unknown':
+            if state and state.strip() and state != "Unknown":
                 result_lines.append(f"   🗺️ State: {state}")
-                
+
             result_lines.append(f"   🎯 Activity: {activity.title()}")
-            
+
             # Only show fields that have actual meaningful data
-            if address and address.strip() and address.lower() not in ['unknown', 'none']:
+            if address and address.strip() and address.lower() not in ["unknown", "none"]:
                 result_lines.append(f"   🏠 Address: {address}")
-            if phone and phone.strip() and phone.lower() not in ['unknown', 'none', 'null']:
+            if phone and phone.strip() and phone.lower() not in ["unknown", "none", "null"]:
                 result_lines.append(f"   📞 Phone: {phone}")
-            if url and url.strip() and url.lower() not in ['unknown', 'none', 'null']:
+            if url and url.strip() and url.lower() not in ["unknown", "none", "null"]:
                 result_lines.append(f"   🌐 Website: {url}")
-            if hours and hours.strip() and hours.lower() not in ['unknown', 'none', 'null']:
+            if hours and hours.strip() and hours.lower() not in ["unknown", "none", "null"]:
                 result_lines.append(f"   🕒 Hours: {hours}")
-            if price and price.strip() and price.lower() not in ['unknown', 'none', 'null']:
+            if price and price.strip() and price.lower() not in ["unknown", "none", "null"]:
                 result_lines.append(f"   💰 Price: {price}")
-                
+
             if content:
                 # Clean up content and extract meaningful description
-                clean_content = content.replace('\n', ' ').replace('\r', '').strip()
-                
+                clean_content = content.replace("\n", " ").replace("\r", "").strip()
+
                 # Try to extract the main description after "Description:"
-                desc_match = re.search(r'Description:\s*([^.]+(?:\.[^.]*){0,2})', clean_content)
+                desc_match = re.search(r"Description:\s*([^.]+(?:\.[^.]*){0,2})", clean_content)
                 if desc_match:
                     clean_content = desc_match.group(1).strip()
                 elif len(clean_content) > 300:
                     # If no clear description marker, take a reasonable portion
                     clean_content = clean_content[:300] + "..."
-                    
+
                 result_lines.append(f"   📝 Description: {clean_content}")
 
-            results.append('\n'.join(result_lines))
+            results.append("\n".join(result_lines))
 
-        return f"Found {len(results)} landmarks matching '{query}':\n\n" + '\n\n'.join(results)
+        return f"Found {len(results)} landmarks matching '{query}':\n\n" + "\n\n".join(results)
 
     except Exception as e:
         logger.error(f"Error searching landmarks: {e}")

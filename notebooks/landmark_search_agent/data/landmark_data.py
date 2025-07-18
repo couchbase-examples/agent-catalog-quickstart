@@ -4,11 +4,11 @@ Landmark data module for the landmark search agent demo.
 Loads real landmark data from travel-sample.inventory.landmark collection.
 """
 
-import os
 import json
 import logging
+import os
 from datetime import timedelta
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import couchbase.auth
 import couchbase.cluster
@@ -33,29 +33,15 @@ def get_cluster_connection():
     """Get a fresh cluster connection for each request."""
     try:
         auth = couchbase.auth.PasswordAuthenticator(
-            username=os.getenv("CB_USERNAME", "Administrator"),
-            password=os.getenv("CB_PASSWORD", "password"),
+            username=os.environ["CB_USERNAME"],
+            password=os.environ["CB_PASSWORD"],
         )
         options = couchbase.options.ClusterOptions(authenticator=auth)
         # Use WAN profile for better timeout handling with remote clusters
         options.apply_profile("wan_development")
 
-        # Additional timeout configurations for Capella cloud connections
-        from couchbase.options import ClusterTimeoutOptions
-
-        # Configure extended timeouts for cloud connectivity
-        timeout_options = ClusterTimeoutOptions(
-            kv_timeout=timedelta(seconds=10),  # Key-value operations
-            kv_durable_timeout=timedelta(seconds=15),  # Durable writes
-            query_timeout=timedelta(seconds=30),  # N1QL queries
-            search_timeout=timedelta(seconds=30),  # Search operations
-            management_timeout=timedelta(seconds=30),  # Management operations
-            bootstrap_timeout=timedelta(seconds=20),  # Initial connection
-        )
-        options.timeout_options = timeout_options
-
         cluster = couchbase.cluster.Cluster(
-            os.getenv("CB_CONN_STRING", "couchbase://localhost"), options
+            os.environ["CB_CONN_STRING"], options
         )
         cluster.wait_until_ready(timedelta(seconds=15))
         return cluster
