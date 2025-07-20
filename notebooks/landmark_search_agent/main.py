@@ -25,14 +25,12 @@ from llama_index.core import Settings
 from llama_index.core.agent import ReActAgent
 from llama_index.core.tools import FunctionTool
 from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.nvidia import NVIDIA
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
 # Import landmark data from the data module
 from data.landmark_data import load_landmark_data_to_couchbase
-
-# Import queries for testing
-from data.queries import get_queries_for_evaluation, get_reference_answer
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -53,6 +51,7 @@ DEFAULT_COLLECTION = "landmark_data"
 DEFAULT_INDEX = "landmark_data_index"
 DEFAULT_CAPELLA_API_EMBEDDING_MODEL = "Snowflake/snowflake-arctic-embed-l-v2.0"
 DEFAULT_CAPELLA_API_LLM_MODEL = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+DEFAULT_NVIDIA_API_LLM_MODEL = "meta/llama-3.1-70b-instruct"
 
 
 def _set_if_undefined(env_var: str, default_value: str = None):
@@ -79,6 +78,9 @@ def setup_environment():
     _set_if_undefined("CB_CONN_STRING")
     _set_if_undefined("CB_USERNAME")
     _set_if_undefined("CB_PASSWORD")
+    
+    # NVIDIA NIMs API key (for LLM)
+    _set_if_undefined("NVIDIA_API_KEY")
 
     # Optional Capella AI variables
     optional_vars = ["CAPELLA_API_ENDPOINT", "CAPELLA_API_EMBEDDING_MODEL", "CAPELLA_API_LLM_MODEL"]
@@ -96,7 +98,15 @@ def setup_environment():
             f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode("utf-8")
         ).decode("utf-8")
 
-        print(f"Using Capella AI endpoint: {os.environ['CAPELLA_API_ENDPOINT']}")
+        print(f"Using Capella AI endpoint for embeddings: {os.environ['CAPELLA_API_ENDPOINT']}")
+        print(f"Using NVIDIA NIMs for LLM with API key: {os.environ['NVIDIA_API_KEY'][:10]}...")
+
+    # Validate configuration consistency
+    print(f"✅ Configuration loaded:")
+    print(f"   Bucket: {os.environ['CB_BUCKET']}")
+    print(f"   Scope: {os.environ['CB_SCOPE']}")
+    print(f"   Collection: {os.environ['CB_COLLECTION']}")
+    print(f"   Index: {os.environ['CB_INDEX']}")
 
     # Validate configuration consistency
     print(f"✅ Configuration loaded:")
@@ -271,14 +281,16 @@ class CouchbaseClient:
 
     def setup_vector_store(self, catalog, span):
         """Setup vector store with landmark data."""
+        # Setup LLM and embeddings
+        llm = None
+        embeddings = None
+        
         try:
-            # Setup LLM and embeddings
             if os.environ.get("CAPELLA_API_ENDPOINT"):
-                llm = OpenAILike(
-                    model=os.environ["CAPELLA_API_LLM_MODEL"],
-                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-                    api_key=os.environ["CAPELLA_API_KEY"],
-                    is_chat_model=True,
+                # Use NVIDIA NIMs for LLM, Capella for embeddings
+                llm = NVIDIA(
+                    model=DEFAULT_NVIDIA_API_LLM_MODEL,
+                    api_key=os.environ["NVIDIA_API_KEY"],
                     temperature=0.1,
                 )
                 embeddings = OpenAIEmbedding(
@@ -287,44 +299,67 @@ class CouchbaseClient:
                     model_name=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
                     embed_batch_size=30,
                 )
+                # Comment out old Capella LLM configuration
+                # llm = OpenAILike(
+                #     model=os.environ["CAPELLA_API_LLM_MODEL"],
+                #     api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
+                #     api_key=os.environ["CAPELLA_API_KEY"],
+                #     is_chat_model=True,
+                #     temperature=0.1,
+                # )
             else:
+                # Fallback to OpenAI if Capella not available
                 llm = OpenAILike(
                     model="gpt-4o",
                     api_key=os.environ.get("OPENAI_API_KEY"),
                     is_chat_model=True,
                     temperature=0.1,
                 )
-                embeddings = OpenAIEmbedding(
-                    model="text-embedding-3-small",
-                    api_key=os.environ.get("OPENAI_API_KEY"),
-                )
+                logger.exception("Capella API not available, cannot use fallback embeddings")
+        except Exception as e:
+            raise ValueError(f"Error setting up LLM and embeddings: {e!s}")
 
-            # Set global settings
+        # Set global settings
+        try:
             Settings.llm = llm
             Settings.embed_model = embeddings
+        except Exception as e:
+            raise ValueError(f"Error setting global settings: {e!s}")
 
-            # Setup collection
+        # Setup collection
+        try:
             self.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+        except Exception as e:
+            raise ValueError(f"Error setting up collection: {e!s}")
 
-            # Setup vector search index
-            try:
-                with open("agentcatalog_index.json") as file:
-                    index_definition = json.load(file)
-                logger.info("Loaded vector search index definition from agentcatalog_index.json")
-                self.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
-            except Exception as e:
-                logger.warning(f"Error loading index definition: {e!s}")
-                logger.info("Continuing without vector search index...")
+        # Setup vector search index
+        try:
+            with open("agentcatalog_index.json") as file:
+                index_definition = json.load(file)
+            logger.info("Loaded vector search index definition from agentcatalog_index.json")
+            self.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
+        except FileNotFoundError:
+            logger.warning("agentcatalog_index.json not found, continuing without vector search index...")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Error parsing index definition JSON: {e!s}")
+            logger.info("Continuing without vector search index...")
+        except Exception as e:
+            logger.warning(f"Error setting up vector search index: {e!s}")
+            logger.info("Continuing without vector search index...")
 
-            # Load landmark data
+        # Load landmark data
+        try:
             self.load_landmark_data(
                 os.environ["CB_SCOPE"],
                 os.environ["CB_COLLECTION"],
                 os.environ["CB_INDEX"],
                 embeddings,
             )
+        except Exception as e:
+            raise ValueError(f"Error loading landmark data: {e!s}")
 
-            # Create vector store
+        # Create vector store
+        try:
             vector_store = CouchbaseSearchVectorStore(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
@@ -332,11 +367,9 @@ class CouchbaseClient:
                 collection_name=os.environ["CB_COLLECTION"],
                 index_name=os.environ["CB_INDEX"],
             )
-
             return vector_store
-
         except Exception as e:
-            raise ValueError(f"Error setting up vector store: {e!s}")
+            raise ValueError(f"Error creating vector store: {e!s}")
 
     def create_llamaindex_agent(self, catalog, span):
         """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""

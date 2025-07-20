@@ -14,6 +14,7 @@ dependencies = [
     "llama-index-vector-stores-couchbase>=0.4.0,<0.5.0",
     "llama-index-embeddings-openai>=0.3.1,<0.4.0",
     "llama-index-llms-openai-like>=0.3.5,<0.4.0",
+    "llama-index-llms-nvidia>=0.3.0,<0.4.0",
     
     # Couchbase and database
     "couchbase>=4.0.0,<5.0.0",

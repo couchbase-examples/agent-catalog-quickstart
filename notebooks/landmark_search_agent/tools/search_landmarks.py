@@ -64,6 +64,9 @@ def search_landmarks(query: str, limit: int = 5) -> str:
              description, activities, and practical information
     """
     try:
+        # Ensure limit is an integer (in case agent passes it as string)
+        limit = int(limit) if isinstance(limit, str) else limit
+        limit = max(1, min(limit, 20))  # Clamp between 1 and 20
         # Get cluster connection
         cluster = get_cluster_connection()
 
@@ -81,20 +84,16 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             vector_store=vector_store, embed_model=Settings.embed_model
         )
 
-        # Perform semantic search
-        query_engine = index.as_query_engine(
-            similarity_top_k=limit,
-            response_mode="no_text",  # We just want the source documents
-        )
-
-        response = query_engine.query(query)
+        # Perform semantic search using retriever (more reliable than query engine)
+        retriever = index.as_retriever(similarity_top_k=limit)
+        nodes = retriever.retrieve(query)
 
         # Format results
-        if not response.source_nodes:
+        if not nodes:
             return f"No landmarks found matching your query: '{query}'"
 
         results = []
-        for i, node in enumerate(response.source_nodes, 1):
+        for i, node in enumerate(nodes, 1):
             # Extract metadata - with fallback to text parsing
             metadata = node.metadata or {}
             content = node.text or ""
@@ -113,11 +112,12 @@ def search_landmarks(query: str, limit: int = 5) -> str:
 
             # If metadata is missing key info, try to parse from text content
             if not name or name == "Unknown":
-                # Extract name from text patterns like "Name (Alternative) in City, Country"
+                # Extract name from text patterns - more flexible
                 import re
 
+                # Pattern 1: "Name (Alternative) in City, Country"
                 name_match = re.search(
-                    r"^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)\.", content
+                    r"^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)(?:\.|$)", content
                 )
                 if name_match:
                     name = name_match.group(1).strip()
@@ -125,46 +125,53 @@ def search_landmarks(query: str, limit: int = 5) -> str:
                         city = name_match.group(2).strip()
                     if not country or country == "Unknown":
                         country = name_match.group(3).strip()
+                
+                # Pattern 2: Extract from first line if no "in" pattern
+                elif not name_match and content:
+                    first_line = content.split('\n')[0].strip()
+                    if first_line and len(first_line) < 100:  # Reasonable name length
+                        name = first_line
 
-            # Extract additional info from text if missing
+            # Extract additional info from text - simplified and robust
             if not address and "Address:" in content:
-                addr_match = re.search(r"Address:\s*([^.]+)", content)
+                addr_match = re.search(r"Address:\s*([^.\n]+(?:\.[^.\n]*)*?)(?:\s+Phone:|\s+Website:|\s+Hours:|$)", content, re.IGNORECASE)
                 if addr_match:
                     address = addr_match.group(1).strip()
 
             if not phone and "Phone:" in content:
-                phone_match = re.search(r"Phone:\s*([^.]+)", content)
+                phone_match = re.search(r"Phone:\s*([+\d\s\-()]+)", content, re.IGNORECASE)
                 if phone_match:
                     phone = phone_match.group(1).strip()
 
             if not url and ("Website:" in content or "http" in content):
-                url_match = re.search(r'(?:Website:\s*)?(?:http[s]?://[^\s<>"]+)', content)
+                url_match = re.search(r'(?:Website:\s*)?(https?://[^\s<>"]+)', content, re.IGNORECASE)
                 if url_match:
-                    url = url_match.group(0).replace("Website:", "").strip()
+                    url = url_match.group(1).strip()
 
             if not hours and "Hours:" in content:
-                hours_match = re.search(r"Hours:\s*([^.]+)", content)
+                hours_match = re.search(r"Hours:\s*([^.\n]+(?:\.[^.\n]*)*?)(?:\s+Price:|\s+Phone:|\s+Website:|$)", content, re.IGNORECASE)
                 if hours_match:
                     hours = hours_match.group(1).strip()
 
-            if not price and ("Price:" in content or "€" in content or "$" in content):
-                price_match = re.search(r"(?:Price:\s*)?([€$£][^.]+)", content)
+            if not price and ("Price:" in content or "€" in content or "$" in content or "£" in content):
+                price_match = re.search(r"(?:Price:\s*)?([€$£]\d+[^.\n]*)", content, re.IGNORECASE)
                 if price_match:
                     price = price_match.group(1).strip()
 
             if not activity or activity == "General":
                 if "Activity type:" in content:
-                    activity_match = re.search(r"Activity type:\s*([^.]+)", content)
+                    activity_match = re.search(r"Activity type:\s*([^\n.]+)", content, re.IGNORECASE)
                     if activity_match:
                         activity = activity_match.group(1).strip()
                 else:
                     # Infer activity from content
-                    if any(word in content.lower() for word in ["museum", "gallery", "art"]):
-                        activity = "see"
-                    elif any(word in content.lower() for word in ["restaurant", "dining", "food"]):
-                        activity = "eat"
-                    elif any(word in content.lower() for word in ["trail", "hiking", "park"]):
-                        activity = "do"
+                    content_lower = content.lower()
+                    if any(word in content_lower for word in ["museum", "gallery", "art", "cathedral", "monument", "attraction"]):
+                        activity = "See"
+                    elif any(word in content_lower for word in ["restaurant", "dining", "food", "cuisine", "eat", "cafe"]):
+                        activity = "Eat"
+                    elif any(word in content_lower for word in ["trail", "hiking", "park", "sport", "recreation", "activity"]):
+                        activity = "Do"
 
             # Use fallbacks for essential fields
             name = name or "Landmark"
@@ -195,18 +202,15 @@ def search_landmarks(query: str, limit: int = 5) -> str:
                 result_lines.append(f"   💰 Price: {price}")
 
             if content:
-                # Clean up content and extract meaningful description
-                clean_content = content.replace("\n", " ").replace("\r", "").strip()
-
-                # Try to extract the main description after "Description:"
-                desc_match = re.search(r"Description:\s*([^.]+(?:\.[^.]*){0,2})", clean_content)
-                if desc_match:
-                    clean_content = desc_match.group(1).strip()
-                elif len(clean_content) > 300:
-                    # If no clear description marker, take a reasonable portion
-                    clean_content = clean_content[:300] + "..."
-
-                result_lines.append(f"   📝 Description: {clean_content}")
+                # Use full content as description - no fragile regex parsing
+                description = content.strip()
+                
+                # Basic cleanup only - preserve all content
+                description = re.sub(r'\s+', ' ', description)  # Normalize whitespace
+                description = re.sub(r'^\s*Landmark\s*[:.]?\s*', '', description, flags=re.IGNORECASE)  # Remove "Landmark:" prefix
+                
+                if description:
+                    result_lines.append(f"   📝 Description: {description}")
 
             results.append("\n".join(result_lines))
 
