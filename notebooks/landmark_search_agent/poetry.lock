@@ -7081,10 +7081,9 @@ test = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more_it
 type = ["pytest-mypy"]
 
 [extras]
-analysis = ["pandas"]
 dev = ["black", "ipykernel", "jupyter", "pytest", "ruff"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "9948441ea998518618a0340314d0571da9560bd402d765d52facc7a3c71f7962"
+content-hash = "476f5c3e142496dda6bc7470df06b68f65983ccc96aee67f2a2cfec6149d6361"

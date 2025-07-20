@@ -28,6 +28,7 @@ dependencies = [
     "requests>=2.28.0,<3.0.0",
     "httpx>=0.24.0,<1.0.0",
     "tqdm>=4.64.0,<5.0.0",
+    "pandas>=2.0.0,<3.0.0",
     
     # Agent Catalog dependencies
     "agentc-core @ ../../agent-catalog/libs/agentc_core",
@@ -51,9 +52,6 @@ dev = [
     "ruff>=0.12.1,<0.13.0",
     "ipykernel>=6.29.5,<7.0.0",
     "jupyter>=1.0.0,<2.0.0",
-]
-analysis = [
-    "pandas>=2.0.0,<3.0.0",
 ]
 
 [tool.poetry]
