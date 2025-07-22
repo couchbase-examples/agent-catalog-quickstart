@@ -515,6 +515,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Inject current date into the prompt content
         import datetime
+
         current_date = datetime.date.today().strftime("%Y-%m-%d")
         prompt_content = prompt_content.replace("{current_date}", current_date)
 
