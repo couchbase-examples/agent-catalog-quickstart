@@ -59,6 +59,7 @@ def get_cluster_connection():
 def search_vector_database(query: str) -> str:
     """
     Search for hotels in the vector database using semantic similarity.
+    Returns raw search results for the agent to intelligently process.
     
     Args:
         query: The search query describing the desired hotel characteristics
@@ -88,17 +89,17 @@ def search_vector_database(query: str) -> str:
         except Exception as e:
             return f"Error setting up embeddings: {str(e)}"
         
-        # Setup vector store with updated configuration
+        # Setup vector store
         vector_store = CouchbaseVectorStore(
             cluster=cluster,
-            bucket_name="travel-sample",  # Changed to travel-sample
-            scope_name="agentc_data",     # Changed to agentc_data
-            collection_name="hotel_data", # Changed to hotel_data
+            bucket_name="travel-sample",
+            scope_name="agentc_data",
+            collection_name="hotel_data",
             embedding=embeddings,
             index_name="hotel_data_index",
         )
         
-        # Search without filter to avoid issues, get more results initially
+        # Search for hotels - return raw results for agent to process
         try:
             search_results = vector_store.similarity_search_with_score(query, k=10)
         except Exception as search_error:
@@ -107,24 +108,23 @@ def search_vector_database(query: str) -> str:
         if not search_results:
             return f"No hotels found matching '{query}'. Please try broader search terms or different locations."
         
-        # Remove duplicates and get unique hotels
+        # Remove duplicates but don't filter by location - let agent handle that
         unique_results = []
         seen_hotels = set()
         
         for doc, score in search_results:
             hotel_content = doc.page_content
-            # Use first part of content as identifier to avoid duplicates
             hotel_identifier = hotel_content.split('.')[0]
             
             if hotel_identifier not in seen_hotels:
                 unique_results.append((doc, score))
                 seen_hotels.add(hotel_identifier)
                 
-            # Stop at 5 unique results for better coverage
-            if len(unique_results) >= 5:
+            # Stop at 8 unique results to give agent good variety
+            if len(unique_results) >= 8:
                 break
         
-        # Clear, actionable format that encourages Final Answer
+        # Format results for agent to intelligently process
         if len(unique_results) == 1:
             result = f"Found 1 hotel:\n\n{unique_results[0][0].page_content}"
         else:
@@ -134,8 +134,6 @@ def search_vector_database(query: str) -> str:
             
             result = f"Found {len(unique_results)} hotels:\n\n" + "\n\n".join(formatted_results)
         
-        # Add explicit instruction to prevent loops
-        result += "\n\n(Note: These are the search results. Please provide your final answer to the user now.)"
         return result
         
     except Exception as e:
