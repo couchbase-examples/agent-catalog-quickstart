@@ -187,27 +187,8 @@ class CouchbaseClient:
 
             # Use WAN profile for better timeout handling with remote clusters
             options.apply_profile("wan_development")
-
-            # Additional timeout configurations for Capella cloud connections
-            from couchbase.options import (
-                ClusterTimeoutOptions,
-                ClusterTracingOptions,
-            )
-
-            # Configure extended timeouts for cloud connectivity
-            timeout_options = ClusterTimeoutOptions(
-                kv_timeout=timedelta(seconds=10),  # Key-value operations
-                kv_durable_timeout=timedelta(seconds=15),  # Durable writes
-                query_timeout=timedelta(seconds=30),  # N1QL queries
-                search_timeout=timedelta(seconds=30),  # Search operations
-                management_timeout=timedelta(seconds=30),  # Management operations
-                bootstrap_timeout=timedelta(seconds=20),  # Initial connection
-            )
-            options.timeout_options = timeout_options
-
             self.cluster = Cluster(self.conn_string, options)
-            # Increased wait time for cloud connections
-            self.cluster.wait_until_ready(timedelta(seconds=20))
+            self.cluster.wait_until_ready(timedelta(seconds=10))
             logger.info("Successfully connected to Couchbase")
             return self.cluster
         except Exception as e:
