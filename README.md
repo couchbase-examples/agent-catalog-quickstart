@@ -73,9 +73,9 @@ pip install llama-index llama-index-vector-stores-couchbase
 poetry install
 
 # Install dependencies for each example agent
-cd notebooks/route_planner_agent && poetry install && cd ../..
-cd notebooks/flight_search_agent && poetry install && cd ../..
-cd notebooks/hotel_support_agent && poetry install && cd ../..
+cd notebooks/flight_search_agent_langraph && poetry install && cd ../..
+cd notebooks/hotel_search_agent_langchain && poetry install && cd ../..
+cd notebooks/landmark_search_agent_llamaindex && poetry install && cd ../..
 ```
 
 ### 3. Verify Installation
@@ -99,8 +99,8 @@ CB_USERNAME="your-username"
 CB_PASSWORD="your-password"
 CB_BUCKET="vector-search-testing"
 CB_SCOPE="agentc_data"
-CB_COLLECTION="route_data"
-CB_INDEX="route_data_index"
+CB_COLLECTION="hotel_data"
+CB_INDEX="hotel_data_index"
 
 # Capella API Configuration
 CAPELLA_API_ENDPOINT="https://your-endpoint.ai.cloud.couchbase.com"
@@ -144,9 +144,9 @@ TOKENIZERS_PARALLELISM=false
 ```
 
 **Important:** Each example directory needs its own `.env` file:
-- `notebooks/route_planner_agent/.env`
-- `notebooks/flight_search_agent/.env`
-- `notebooks/hotel_support_agent/.env`
+- `notebooks/flight_search_agent_langraph/.env`
+- `notebooks/hotel_search_agent_langchain/.env`
+- `notebooks/landmark_search_agent_llamaindex/.env`
 
 ## Usage
 
@@ -155,7 +155,7 @@ TOKENIZERS_PARALLELISM=false
 Navigate to any example directory and initialize:
 
 ```bash
-cd notebooks/route_planner_agent
+cd notebooks/hotel_search_agent_langchain
 agentc init
 ```
 
@@ -181,21 +181,20 @@ agentc publish
 ### Run Example Agents
 
 ```bash
-# Run the route planner agent
+# Run the hotel search agent
 python main.py
 
 # Run with specific queries
-python main.py "Find a route from San Francisco to Los Angeles"
+python main.py "Find hotels in Paris with free breakfast"
 ```
 
 ## Available Examples
 
-This quickstart includes several example agents:
+This quickstart includes three example agents:
 
-- **Route Planner Agent** (`notebooks/route_planner_agent/`) - Plans routes between locations
-- **Flight Search Agent** (`notebooks/flight_search_agent/`) - Searches and books flights
-- **Hotel Support Agent** (`notebooks/hotel_support_agent/`) - Hotel search and support
-- **Customer Support Agent** (`notebooks/customer_support_agent/`) - General customer support
+- **Flight Search Agent** (`notebooks/flight_search_agent_langraph/`) - Searches and books flights using LangGraph
+- **Hotel Search Agent** (`notebooks/hotel_search_agent_langchain/`) - Hotel search and support using LangChain
+- **Landmark Search Agent** (`notebooks/landmark_search_agent_llamaindex/`) - Searches landmarks and attractions using LlamaIndex
 
 Each example includes:
 - Complete source code
@@ -283,7 +282,7 @@ Each example includes:
 ### Running Tests
 
 ```bash
-cd notebooks/route_planner_agent
+cd notebooks/hotel_search_agent_langchain
 python -m pytest tests/
 ```
 
