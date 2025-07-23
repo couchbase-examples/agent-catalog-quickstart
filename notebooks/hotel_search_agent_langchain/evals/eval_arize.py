@@ -409,13 +409,14 @@ class ArizeHotelSupportEvaluator:
 
         start_time = time.time()
 
+
         try:
             # Run the agent
             result = self.agent.invoke({"input": query})
-
+            
             # Extract response content
             response = self._extract_response_content(result)
-
+            
             # Create evaluation result - no manual scoring
             evaluation_result = {
                 "query": query,
@@ -426,7 +427,21 @@ class ArizeHotelSupportEvaluator:
 
             logger.info(f"✅ Query completed in {evaluation_result['execution_time']:.2f}s")
             return evaluation_result
-
+            
+        except RuntimeError as e:
+            if "Event loop is closed" in str(e):
+                logger.error(f"Event loop error caught and logged: {e}")
+                # Return a basic result to continue evaluation
+                return {
+                    "query": query,
+                    "response": f"Error: {str(e)}",
+                    "execution_time": time.time() - start_time,
+                    "success": False,
+                    "error": str(e),
+                }
+            else:
+                # Re-raise if it's not an event loop error
+                raise e
         except Exception as e:
             logger.exception(f"❌ Query failed: {e}")
             return {
@@ -807,3 +822,4 @@ if __name__ == "__main__":
 
     # Run full evaluation with Phoenix evaluators only
     main()
+

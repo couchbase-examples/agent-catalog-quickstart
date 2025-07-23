@@ -51,8 +51,12 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 dotenv.load_dotenv(override=True)
 
 # Generate Capella AI API key if endpoint is provided
-if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CB_USERNAME') and os.getenv('CB_PASSWORD'):
-    os.environ['CAPELLA_API_KEY'] = base64.b64encode(
+if (
+    os.getenv("CAPELLA_API_ENDPOINT")
+    and os.getenv("CB_USERNAME")
+    and os.getenv("CB_PASSWORD")
+):
+    os.environ["CAPELLA_API_KEY"] = base64.b64encode(
         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
     ).decode("utf-8")
 
@@ -167,8 +171,6 @@ def setup_environment():
             logger.info(
                 f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
             )
-
-    
 
     # Test Capella AI connectivity
     test_capella_connectivity()
@@ -418,28 +420,29 @@ def setup_hotel_support_agent():
 
         # Setup embeddings
         try:
-            # COMMENTED OUT - Capella AI embeddings (testing NVIDIA embeddings instead)
-            # if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CAPELLA_API_KEY'):
-            #     embeddings = OpenAIEmbeddings(
-            #         model=os.getenv('CAPELLA_API_EMBEDDING_MODEL', 'intfloat/e5-mistral-7b-instruct'),
-            #         api_key=os.getenv('CAPELLA_API_KEY'),
-            #         base_url=os.getenv('CAPELLA_API_ENDPOINT')
-            #     )
+            # Capella AI embeddings
+            if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
+                embeddings = OpenAIEmbeddings(
+                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                    api_key=os.getenv("CAPELLA_API_KEY"),
+                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                )
 
-            # COMMENTED OUT - OpenAI embeddings (testing NVIDIA embeddings instead)
-            embeddings = OpenAIEmbeddings(
-                model="text-embedding-3-small",
-                api_key=os.getenv('OPENAI_API_KEY'),
-                base_url=os.getenv('OPENAI_API_ENDPOINT'),
-            )
-
+            # NVIDIA embeddings
             # _set_if_undefined("NVIDIA_API_KEY")
             # embeddings = NVIDIAEmbeddings(
-            #     model="nvidia/nv-embedqa-e5-v5", 
+            #     model="nvidia/nv-embedqa-e5-v5",
             #     api_key=os.getenv('NVIDIA_API_KEY')
             # )
             # logger.info("✅ Using nvidia/nv-embedqa-e5-v5 for embeddings")
-            
+
+            # OpenAI embeddings
+            # embeddings = OpenAIEmbeddings(
+            #     model="text-embedding-3-small",
+            #     api_key=os.getenv('OPENAI_API_KEY'),
+            #     base_url=os.getenv('OPENAI_API_ENDPOINT'),
+            # )
+
         except Exception as e:
             logger.error(f"❌ Embeddings setup failed: {e}")
             raise RuntimeError("Embeddings configuration required")
@@ -454,21 +457,21 @@ def setup_hotel_support_agent():
         llm = None
 
         # Try Capella AI LLM first
-        # try:
-        #     api_key = base64.b64encode(
-        #         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-        #     ).decode()
-        #     llm = ChatOpenAI(
-        #         api_key=api_key,
-        #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-        #         model=os.getenv("CAPELLA_API_LLM_MODEL"),
-        #         temperature=0,
-        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-        #     )
-        #     llm.invoke("Hello")  # Test the LLM works
-        #     logger.info("✅ Using Capella AI LLM")
-        # except Exception as e:
-        #     logger.warning(f"⚠️ Capella AI LLM failed: {e}")
+        try:
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            llm = ChatOpenAI(
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                temperature=0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using Capella AI LLM")
+        except Exception as e:
+            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
 
         # COMMENTED OUT - NIM LLM (only for prototype)
         # try:
@@ -533,9 +536,11 @@ def setup_hotel_support_agent():
             agent=agent,
             tools=tools,
             verbose=True,
-            handle_parsing_errors=True,
-            max_iterations=5,
-            max_execution_time=60,
+            handle_parsing_errors=handle_parsing_error,  # Use custom error handler
+            max_iterations=8,  # Increased from 5
+            max_execution_time=120,  # Increased from 60
+            early_stopping_method="force",  # Changed from "generate" to "force"
+            return_intermediate_steps=True,  # For better debugging
         )
 
         return agent_executor, application_span
@@ -543,6 +548,23 @@ def setup_hotel_support_agent():
     except Exception as e:
         logger.exception(f"Error setting up hotel support agent: {e}")
         raise
+
+
+def handle_parsing_error(error) -> str:
+    """Custom error handler for parsing errors."""
+    logger.warning(f"Parsing error occurred: {error}")
+    return "I encountered an issue processing that request. Let me try a different approach. Please provide your hotel search request again."
+
+def handle_event_loop_error(func, *args, **kwargs):
+    """Handle event loop errors by catching and logging them."""
+    try:
+        return func(*args, **kwargs)
+    except RuntimeError as e:
+        if "Event loop is closed" in str(e):
+            logger.error(f"Event loop error caught and logged: {e}")
+            return None
+        else:
+            raise e
 
 
 def run_interactive_demo():
