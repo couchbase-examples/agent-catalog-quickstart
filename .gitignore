@@ -51,6 +51,7 @@ MANIFEST
 *.spec
 
 # Installer logs
+poetry.lock
 pip-log.txt
 pip-delete-this-directory.txt
 
@@ -210,3 +211,4 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+.cursor/

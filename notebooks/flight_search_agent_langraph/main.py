@@ -6,6 +6,7 @@ A streamlined flight search agent demonstrating Agent Catalog integration
 with LangGraph and Couchbase vector search for flight booking assistance.
 """
 
+import base64
 import getpass
 import json
 import logging
@@ -22,6 +23,7 @@ import langchain_core.messages
 import langchain_core.runnables
 import langchain_openai.chat_models
 import langgraph.graph
+import requests
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.management.buckets import BucketType, CreateBucketSettings
@@ -31,7 +33,7 @@ from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
 
 # Setup logging with essential level only
@@ -53,17 +55,91 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 dotenv.load_dotenv(override=True)
 
 
-def _set_if_undefined(var: str):
-    if os.environ.get(var) is None:
-        os.environ[var] = getpass.getpass(f"Please provide your {var}: ")
+def setup_capella_ai_config():
+    """Setup Capella AI configuration - requires environment variables to be set."""
+    # Verify required environment variables are set (no defaults)
+    required_capella_vars = [
+        "CB_USERNAME",
+        "CB_PASSWORD", 
+        "CAPELLA_API_ENDPOINT",
+        "CAPELLA_API_EMBEDDING_MODEL",
+        "CAPELLA_API_LLM_MODEL",
+    ]
+    missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
+    if missing_vars:
+        raise ValueError(
+            f"Missing required Capella AI environment variables: {missing_vars}"
+        )
+
+    return {
+        "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
+        "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+        "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
+    }
+
+
+def test_capella_connectivity():
+    """Test connectivity to Capella AI services."""
+    try:
+        endpoint = os.getenv("CAPELLA_API_ENDPOINT")
+        if not endpoint:
+            logger.warning("CAPELLA_API_ENDPOINT not configured")
+            return False
+
+        # Test embedding model (requires API key)
+        if os.getenv("CB_USERNAME") and os.getenv("CB_PASSWORD"):
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+
+            headers = {
+                "Authorization": f"Basic {api_key}",
+                "Content-Type": "application/json",
+            }
+
+            # Test embedding
+            logger.info("Testing Capella AI connectivity...")
+            embedding_data = {
+                "model": os.getenv(
+                    "CAPELLA_API_EMBEDDING_MODEL", "intfloat/e5-mistral-7b-instruct"
+                ),
+                "input": "test connectivity",
+            }
+
+            response = requests.post(
+                f"{endpoint}/embeddings", json=embedding_data, headers=headers
+            )
+            if response.status_code == 200:
+                logger.info("✅ Capella AI embedding test successful")
+                return True
+            else:
+                logger.warning(f"❌ Capella AI embedding test failed: {response.text}")
+                return False
+        else:
+            logger.warning("Capella AI credentials not available")
+            return False
+    except Exception as e:
+        logger.warning(f"❌ Capella AI connectivity test failed: {e}")
+        return False
+
+
+def _set_if_undefined(env_var: str, default_value: str = None):
+    """Set environment variable if not already defined."""
+    if not os.getenv(env_var):
+        if default_value is None:
+            value = getpass.getpass(f"Enter {env_var}: ")
+        else:
+            value = default_value
+        os.environ[env_var] = value
 
 
 def setup_environment():
     """Setup required environment variables with defaults."""
+    logger.info("Setting up environment variables...")
+    
     required_vars = [
-        "OPENAI_API_KEY",
         "CB_CONN_STRING",
-        "CB_USERNAME",
+        "CB_USERNAME", 
         "CB_PASSWORD",
         "CB_BUCKET",
         "AGENT_CATALOG_CONN_STRING",
@@ -90,6 +166,20 @@ def setup_environment():
     os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "airline_reviews_index")
     os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
     os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "airline_reviews")
+    
+    # Optional Capella AI configuration
+    if os.getenv("CAPELLA_API_ENDPOINT"):
+        # Ensure endpoint has /v1 suffix for OpenAI compatibility
+        if not os.getenv("CAPELLA_API_ENDPOINT").endswith("/v1"):
+            os.environ["CAPELLA_API_ENDPOINT"] = (
+                os.getenv("CAPELLA_API_ENDPOINT").rstrip("/") + "/v1"
+            )
+            logger.info(
+                f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
+            )
+
+    # Test Capella AI connectivity
+    test_capella_connectivity()
 
 
 class CouchbaseClient:
@@ -371,11 +461,13 @@ class FlightSearchState(agentc_langgraph.agent.State):
 class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
     """Flight search agent using Agent Catalog tools and ReActAgent framework."""
 
-    def __init__(self, catalog: agentc.Catalog, span: agentc.Span):
+    def __init__(self, catalog: agentc.Catalog, span: agentc.Span, chat_model=None):
         """Initialize the flight search agent."""
 
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
+        if chat_model is None:
+            # Fallback to OpenAI if no chat model provided
+            model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
 
         super().__init__(
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
@@ -544,6 +636,11 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
     """Flight search conversation graph using Agent Catalog."""
 
+    def __init__(self, catalog, span, chat_model=None):
+        """Initialize the flight search graph with optional chat model."""
+        super().__init__(catalog=catalog, span=span)
+        self.chat_model = chat_model
+
     @staticmethod
     def build_starting_state(query: str) -> FlightSearchState:
         """Build the initial state for the flight search - single user system."""
@@ -558,7 +655,7 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         """Compile the LangGraph workflow."""
 
         # Build the flight search agent with catalog integration
-        search_agent = FlightSearchAgent(catalog=self.catalog, span=self.span)
+        search_agent = FlightSearchAgent(catalog=self.catalog, span=self.span, chat_model=self.chat_model)
 
         # Create a wrapper function for the ReActAgent
         def flight_search_node(state: FlightSearchState) -> FlightSearchState:
@@ -715,6 +812,15 @@ def setup_flight_search_agent():
         )
         application_span = catalog.Span(name="Flight Search Agent")
 
+        # Test Capella AI connectivity
+        if os.getenv("CAPELLA_API_ENDPOINT"):
+            if not test_capella_connectivity():
+                logger.warning(
+                    "❌ Capella AI connectivity test failed. Will use OpenAI fallback."
+                )
+        else:
+            logger.info("ℹ️ Capella API not configured - will use OpenAI models")
+
         # Create CouchbaseClient for all operations
         client = CouchbaseClient(
             conn_string=os.environ["CB_CONN_STRING"],
@@ -740,31 +846,36 @@ def setup_flight_search_agent():
 
         # Setup embeddings and vector store
         # Use Capella AI embeddings if available, fallback to OpenAI
-        if (
-            os.environ.get("CB_USERNAME")
-            and os.environ.get("CB_PASSWORD")
-            and os.environ.get("CAPELLA_API_ENDPOINT")
-            and os.environ.get("CAPELLA_API_EMBEDDING_MODEL")
-        ):
-            logger.info("🔄 Using Capella AI embeddings for main application")
-            import base64
+        try:
+            if (
+                os.getenv("CB_USERNAME")
+                and os.getenv("CB_PASSWORD")
+                and os.getenv("CAPELLA_API_ENDPOINT")
+                and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
+            ):
+                # Create API key for Capella AI
+                api_key = base64.b64encode(
+                    f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+                ).decode()
 
-            api_key = base64.b64encode(
-                f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode()
-            ).decode()
-
-            embeddings = OpenAIEmbeddings(
-                model=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
-                api_key=api_key,
-                base_url=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-            )
-        else:
-            logger.info(
-                "🔄 Using OpenAI embeddings for main application (Capella AI not configured)"
-            )
+                # Use OpenAI embeddings client with Capella endpoint
+                embeddings = OpenAIEmbeddings(
+                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                    api_key=api_key,
+                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                )
+                logger.info("✅ Using Capella AI for embeddings")
+            else:
+                raise ValueError("Capella AI credentials not available")
+        except Exception as e:
+            logger.warning(f"⚠️ Capella AI embeddings failed: {e}")
+            logger.info("🔄 Falling back to OpenAI embeddings...")
+            _set_if_undefined("OPENAI_API_KEY")
             embeddings = OpenAIEmbeddings(
                 api_key=SecretStr(os.environ["OPENAI_API_KEY"]), model="text-embedding-3-small"
             )
+            logger.info("✅ Using OpenAI embeddings as fallback")
+
         client.setup_vector_store(
             scope_name=os.environ["CB_SCOPE"],
             collection_name=os.environ["CB_COLLECTION"],
@@ -772,8 +883,35 @@ def setup_flight_search_agent():
             embeddings=embeddings,
         )
 
-        # Create the flight search graph
-        flight_graph = FlightSearchGraph(catalog=catalog, span=application_span)
+        # Setup LLM - try Capella AI first, fallback to OpenAI
+        try:
+            # Create API key for Capella AI using same pattern as embeddings
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+
+            chat_model = ChatOpenAI(
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                temperature=0.1,
+            )
+            # Test the LLM works
+            chat_model.invoke("Hello")
+            logger.info("✅ Using Capella AI LLM")
+        except Exception as e:
+            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
+            logger.info("🔄 Falling back to OpenAI LLM...")
+            _set_if_undefined("OPENAI_API_KEY")
+            chat_model = ChatOpenAI(
+                api_key=os.getenv("OPENAI_API_KEY"),
+                model="gpt-4o",
+                temperature=0.1,
+            )
+            logger.info("✅ Using OpenAI LLM as fallback")
+
+        # Create the flight search graph with the chat model
+        flight_graph = FlightSearchGraph(catalog=catalog, span=application_span, chat_model=chat_model)
         # Compile the graph
         compiled_graph = flight_graph.compile()
 
