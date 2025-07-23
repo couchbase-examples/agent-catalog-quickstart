@@ -1,0 +1,16 @@
+this is the repo for agent catalog and for the quickstart just create a new folder called quickstart. Start by doing ls -R to know the heirarchy of the app
+
+the root directory is the quickstart itself. while agent-catalog is downloaded at the root directory as well
+
+lets not start with notebook creation. lets create, run and finetune regular scripts and then i'll create the notebook manually later. some basic files are already created. although i am not sure if they will be 
+
+There are 3 apps in the notebooks folder
+
+The Flight search agent is built with Langraph
+The Hotel support agent is built with langchain
+The Landmark search agent is built with llamaindex
+
+All the tutorials use agentc for finding tools and prompts in their respective folders
+
+We use Couchbase Vector store for storing the embeddings and the data.
+We use Arize for the evaluation of the agents.

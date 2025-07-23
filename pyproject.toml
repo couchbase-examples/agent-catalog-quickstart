@@ -1,0 +1,37 @@
+[project]
+name = "quickstart"
+version = "0.1.0"
+description = "A quickstart for Agent Catalog."
+authors = [
+    {name = "Agent Catalog Team"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    "python-dotenv>=1.0.1,<2.0.0",
+    "langchain-openai>=0.3.0,<0.4.0",
+    "langchain>=0.3.0,<0.4.0",
+    "agentc @ agent-catalog/libs/agentc",
+    "agentc-core @ agent-catalog/libs/agentc_core", 
+    "agentc-cli @ agent-catalog/libs/agentc_cli",
+    "agentc-langchain @ agent-catalog/libs/agentc_integrations/langchain",
+    "agentc-langgraph @ agent-catalog/libs/agentc_integrations/langgraph",
+    "agentc-llamaindex @ agent-catalog/libs/agentc_integrations/llamaindex",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel>=6.29.5,<7.0.0",
+    "ruff>=0.12.1,<0.13.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

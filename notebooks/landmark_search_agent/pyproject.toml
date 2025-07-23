@@ -1,0 +1,79 @@
+[project]
+name = "landmark-search-agent"
+version = "0.1.0"
+description = "Landmark search agent with LlamaIndex, Couchbase vector store, and Capella AI model services"
+authors = [
+    {name = "Agent Catalog Team"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # LlamaIndex core and integrations
+    "llama-index>=0.12.0,<0.13.0",
+    "llama-index-vector-stores-couchbase>=0.4.0,<0.5.0",
+    "llama-index-embeddings-openai>=0.3.1,<0.4.0",
+    "llama-index-llms-openai-like>=0.3.5,<0.5.0",
+    "llama-index-llms-nvidia>=0.3.0,<0.4.0",
+    
+    # Couchbase and database
+    "couchbase>=4.0.0,<5.0.0",
+    
+    # Core dependencies
+    "pydantic>=2.0.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    
+    # Data processing and utilities
+    "datasets>=2.0.0,<3.0.0",
+    "requests>=2.28.0,<3.0.0",
+    "httpx>=0.24.0,<1.0.0",
+    "tqdm>=4.64.0,<5.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    
+    # Agent Catalog dependencies
+    "agentc-core @ ../../agent-catalog/libs/agentc_core",
+    "agentc-llamaindex @ ../../agent-catalog/libs/agentc_integrations/llamaindex",
+    
+    # Arize and evaluation dependencies
+    "arize-phoenix>=11.0.0,<12.0.0",
+    "arize>=7.0.0,<8.0.0",
+    "arize-phoenix-evals>=0.20.0,<1.0.0",
+    "openinference-instrumentation>=0.1.32,<0.2.0",
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
+    "openinference-instrumentation-llama-index>=4.0.0,<5.0.0",
+    "pysocks (>=1.7.1,<2.0.0)",
+    "click-extra (>=5.0.2,<6.0.0)",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0,<8.0.0",
+    "black>=23.0.0,<24.0.0",
+    "ruff>=0.12.1,<0.13.0",
+    "ipykernel>=6.29.5,<7.0.0",
+    "jupyter>=1.0.0,<2.0.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+arize-phoenix = "^11.6.2"
+pydantic = "^2.11.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "DTZ", "EM", "ISC", "ICN", "G", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+ignore = ["S101", "COM812", "ISC001"]
+
+[tool.black]
+line-length = 100
+target-version = ['py312'] 

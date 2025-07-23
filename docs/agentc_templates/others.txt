@@ -1,0 +1,5 @@
+ agentc add --kind raw_prompt             
+Usage: agentc add [OPTIONS]
+Try 'agentc add --help' for help.
+
+Error: Invalid value for '--kind': 'raw_prompt' is not one of <RecordKind.PythonFunction: 'python_function'>, <RecordKind.SQLPPQuery: 'sqlpp_query'>, <RecordKind.SemanticSearch: 'semantic_search'>, <RecordKind.HTTPRequest: 'http_request'>, <RecordKind.Prompt: 'prompt'>.
