@@ -11,8 +11,7 @@ types of landmark searches across various categories and locations.
 
 from typing import Dict, List
 
-# 5 diverse test queries for landmark search evaluation based on REAL travel-sample data
-# These queries are verified to return actual results from the database
+# Landmark search queries (based on travel-sample data)
 LANDMARK_SEARCH_QUERIES = [
     "Find museums and galleries in Glasgow",  # Art & Culture, Scotland
     "Show me restaurants serving Asian cuisine",  # Food & Dining, Real Asian restaurants
@@ -21,14 +20,27 @@ LANDMARK_SEARCH_QUERIES = [
     "Find places to eat in Gillingham",  # Food, Real UK town
 ]
 
-# Reference answers based on ACTUAL agent responses from travel-sample.inventory.landmark data
-# These match what the agent ACTUALLY finds and returns from the real database
+# Comprehensive reference answers based on ACTUAL agent responses from travel-sample.inventory.landmark data
+LANDMARK_REFERENCE_ANSWERS = [
+    # Query 1: Glasgow museums and galleries
+    """Glasgow has several museums and galleries including the Gallery of Modern Art (Glasgow) located at Royal Exchange Square with a terrific collection of recent paintings and sculptures, the Kelvingrove Art Gallery and Museum on Argyle Street with one of the finest civic collections in Europe including works by Van Gogh, Monet and Rembrandt, the Hunterian Museum and Art Gallery at University of Glasgow with a world famous Whistler collection, and the Riverside Museum at 100 Pointhouse Place with an excellent collection of vehicles and transport history. All offer free admission except for special exhibitions.""",
+
+    # Query 2: Asian cuisine restaurants
+    """There are several Asian restaurants available including Shangri-la Chinese Restaurant in Birmingham at 51 Station Street offering good quality Chinese food with spring rolls and sizzling steak, Taiwan Restaurant in San Francisco famous for their dumplings, Hong Kong Seafood Restaurant in San Francisco for sit-down dim sum, Cheung Hing Chinese Restaurant in San Francisco for Cantonese BBQ and roast duck, Vietnam Restaurant in San Francisco for Vietnamese dishes including crab soup and pork sandwich, and various other Chinese and Asian establishments across different locations.""",
+
+    # Query 3: Glasgow attractions
+    """Glasgow attractions include Glasgow Green (founded by Royal grant in 1450) with Nelson's Memorial and the Doulton Fountain, Glasgow University (founded 1451) with neo-Gothic architecture and commanding views, Glasgow Cathedral with fine Gothic architecture from medieval times, the City Chambers in George Square built in 1888 in Italian Renaissance style with guided tours available, Glasgow Central Station with its grand interior, and Kelvingrove Park which is popular with students and contains the Art Gallery and Museum.""",
+
+    # Query 4: Monet's House
+    """Monet's House is located in Giverny, France at 84 rue Claude Monet. The house is quietly eccentric and highly interesting in an Orient-influenced style, featuring Monet's collection of Japanese prints. The main attraction is the gardens around the house, including the water garden with the Japanese bridge, weeping willows and waterlilies which are now iconic. It's open April-October, Monday-Sunday 9:30-18:00, with admission €9 for adults, €5 for students, €4 for disabled visitors, and free for under-7s. E-tickets can be purchased online and wheelchair access is available.""",
+
+    # Query 5: Gillingham restaurants
+    """Gillingham has various dining options including Beijing Inn (Chinese restaurant at 3 King Street), Spice Court (Indian restaurant at 56-58 Balmoral Road opposite the railway station, award-winning with Sunday Buffet for £8.50), Hollywood Bowl (American-style restaurant at 4 High Street with burgers and ribs in a Hollywood-themed setting), Ossie's Fish and Chips (at 75 Richmond Road, known for the best fish and chips in the area), and Thai Won Mien (oriental restaurant at 59-61 High Street with noodles, duck and other oriental dishes).""",
+]
+
+# Create dictionary for backward compatibility
 QUERY_REFERENCE_ANSWERS = {
-    "Find museums and galleries in Glasgow": """Glasgow has several museums and galleries including the Gallery of Modern Art (Glasgow) located at Royal Exchange Square with a terrific collection of recent paintings and sculptures, the Kelvingrove Art Gallery and Museum on Argyle Street with one of the finest civic collections in Europe including works by Van Gogh, Monet and Rembrandt, the Hunterian Museum and Art Gallery at University of Glasgow with a world famous Whistler collection, and the Riverside Museum at 100 Pointhouse Place with an excellent collection of vehicles and transport history. All offer free admission except for special exhibitions.""",
-    "Show me restaurants serving Asian cuisine": """There are several Asian restaurants available including Shangri-la Chinese Restaurant in Birmingham at 51 Station Street offering good quality Chinese food with spring rolls and sizzling steak, Taiwan Restaurant in San Francisco famous for their dumplings, Hong Kong Seafood Restaurant in San Francisco for sit-down dim sum, Cheung Hing Chinese Restaurant in San Francisco for Cantonese BBQ and roast duck, Vietnam Restaurant in San Francisco for Vietnamese dishes including crab soup and pork sandwich, and various other Chinese and Asian establishments across different locations.""",
-    "What attractions can I see in Glasgow?": """Glasgow attractions include Glasgow Green (founded by Royal grant in 1450) with Nelson's Memorial and the Doulton Fountain, Glasgow University (founded 1451) with neo-Gothic architecture and commanding views, Glasgow Cathedral with fine Gothic architecture from medieval times, the City Chambers in George Square built in 1888 in Italian Renaissance style with guided tours available, Glasgow Central Station with its grand interior, and Kelvingrove Park which is popular with students and contains the Art Gallery and Museum.""",
-    "Tell me about Monet's House": """Monet's House is located in Giverny, France at 84 rue Claude Monet. The house is quietly eccentric and highly interesting in an Orient-influenced style, featuring Monet's collection of Japanese prints. The main attraction is the gardens around the house, including the water garden with the Japanese bridge, weeping willows and waterlilies which are now iconic. It's open April-October, Monday-Sunday 9:30-18:00, with admission €9 for adults, €5 for students, €4 for disabled visitors, and free for under-7s. E-tickets can be purchased online and wheelchair access is available.""",
-    "Find places to eat in Gillingham": """Gillingham has various dining options including Beijing Inn (Chinese restaurant at 3 King Street), Spice Court (Indian restaurant at 56-58 Balmoral Road opposite the railway station, award-winning with Sunday Buffet for £8.50), Hollywood Bowl (American-style restaurant at 4 High Street with burgers and ribs in a Hollywood-themed setting), Ossie's Fish and Chips (at 75 Richmond Road, known for the best fish and chips in the area), and Thai Won Mien (oriental restaurant at 59-61 High Street with noodles, duck and other oriental dishes).""",
+    query: answer for query, answer in zip(LANDMARK_SEARCH_QUERIES, LANDMARK_REFERENCE_ANSWERS)
 }
 
 # Category-based queries for testing specific search capabilities (based on real data)

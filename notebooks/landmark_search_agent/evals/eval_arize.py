@@ -485,21 +485,27 @@ class LandmarkSearchEvaluator:
         if PHOENIX_AVAILABLE and self.evaluator_llm:
             self._format_evaluation_results(results_df)
 
-        # Sample results
+        # Sample results with FULL detailed explanations for debugging
         if len(results_df) > 0:
-            logger.info("\n📝 Sample evaluation results:")
-            for i in range(min(3, len(results_df))):
+            logger.info("\n📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):")
+            logger.info("="*80)
+            for i in range(min(len(results_df), len(results_df))):  # Show all results, not just 3
                 row = results_df.iloc[i]
-                logger.info(f"   📋 Query {i + 1}: {row['query']}")
-                logger.info(f"   📄 Response: {str(row['response'])[:100]}...")
+                logger.info(f"\n🔍 QUERY {i+1}: {row['query']}")
+                logger.info("-"*60)
+                logger.info(f"📄 RESPONSE: {str(row['response'])[:200]}...")
 
-                # Show evaluation scores
                 for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
                     if eval_type in row and row[eval_type] != "error":
                         result = row[eval_type]
+                        # Show FULL explanation instead of truncated version
+                        full_explanation = str(row.get(f"{eval_type}_explanation", "No explanation provided"))
                         emoji = self._get_result_emoji(eval_type, result)
-                        logger.info(f"   {emoji} {eval_type.title().replace('_', ' ')}: {result}")
-                logger.info("")
+                        logger.info(f"\n📊 {eval_type.upper()}: {result}")
+                        logger.info(f"💭 FULL REASONING:")
+                        logger.info(f"{full_explanation}")
+                        logger.info("-"*40)
+                logger.info("="*80)
 
     def _get_result_emoji(self, eval_type: str, result: str) -> str:
         """Get appropriate emoji for evaluation result."""

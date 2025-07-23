@@ -670,48 +670,25 @@ class ArizeFlightSearchEvaluator:
                 
                 logger.info(f"   Query {i+1}: {' | '.join(scores)}")
 
-        # Sample results
+        # Sample results with FULL detailed explanations for debugging
         if len(results_df) > 0:
-            logger.info("\n📝 Detailed evaluation results:")
-            # Show all results, not just 2
-            for i in range(len(results_df)):
+            logger.info("\n📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):")
+            logger.info("="*80)
+            for i in range(min(len(results_df), len(results_df))):  # Show all results
                 row = results_df.iloc[i]
-                logger.info(f"\n   📋 Query {i+1}: {row['query']}")
+                logger.info(f"\n🔍 QUERY {i+1}: {row['query']}")
+                logger.info("-"*60)
 
                 for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
                     if eval_type in row:
                         result = row[eval_type]
-                        explanation = str(row.get(f"{eval_type}_explanation", ""))
-                        
-                        # Clean up explanations - remove reference text mentions and make more concise
-                        if explanation and explanation != "":
-                            # Clean up the explanation text
-                            explanation = explanation.replace("The reference text", "The expected answer")
-                            explanation = explanation.replace("reference text", "expected answer")
-                            explanation = explanation.replace("The question asks", "This query asks")
-                            explanation = explanation.replace("To determine if the answer", "The answer")
-                            explanation = explanation.replace("To determine whether the text", "This text")
-                            explanation = explanation.replace("Therefore, the reference text contains relevant information", "This is relevant")
-                            explanation = explanation.replace("Therefore, the answer", "The response")
-                            
-                            # Extract key reasoning points and make more concise
-                            if len(explanation) > 300:
-                                # Find the core reasoning
-                                sentences = explanation.split('. ')
-                                core_sentences = []
-                                for sentence in sentences:
-                                    if any(keyword in sentence.lower() for keyword in ['correct', 'factual', 'relevant', 'toxic', 'because', 'therefore', 'accurate', 'match']):
-                                        core_sentences.append(sentence)
-                                if core_sentences:
-                                    explanation = '. '.join(core_sentences[:3]) + '.'
-                                else:
-                                    explanation = '. '.join(sentences[:2]) + '.'
-                            
-                            logger.info(f"   ✅ {eval_type.title().replace('_', ' ')}: {result}")
-                            logger.info(f"      💭 {explanation}")
-                        else:
-                            logger.info(f"   ✅ {eval_type.title().replace('_', ' ')}: {result}")
-                logger.info("   " + "="*50)
+                        # Show FULL explanation instead of processed/truncated version
+                        full_explanation = str(row.get(f"{eval_type}_explanation", "No explanation provided"))
+                        logger.info(f"\n📊 {eval_type.upper()}: {result}")
+                        logger.info(f"💭 FULL REASONING:")
+                        logger.info(f"{full_explanation}")
+                        logger.info("-"*40)
+                logger.info("="*80)
 
     def cleanup(self) -> None:
         """Clean up all resources."""
