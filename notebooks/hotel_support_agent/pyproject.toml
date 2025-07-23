@@ -9,15 +9,28 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-    "langgraph>=0.4.1,<0.5.0",
+    # Core dependencies
     "pydantic>=2.0.0,<3.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "tqdm>=4.64.0,<5.0.0",
+
+    # Langchain and related integrations
     "langchain-couchbase>=0.2.4,<0.3.0",
     "langchain-openai>=0.3.13,<0.4.0",
+    "langgraph>=0.4.1,<0.5.0",
+
+    # Agent Catalog
     "agentc @ ../../agent-catalog/libs/agentc",
     "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
     "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
-    "arize-phoenix[evals] (>=8.0.0)",
+
+    # Arize and related instrumentation
+    "arize-phoenix[evals]>=11.0.0",
+    "arize>=5.0.0",
+    "arize-otel>=0.7.0,<1.0.0",
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
 ]
 
 [project.optional-dependencies]
@@ -25,14 +38,6 @@ dev = [
     "pytest>=7.0.0,<8.0.0",
     "black>=23.0.0,<24.0.0",
     "ruff>=0.1.0,<0.2.0",
-]
-analysis = [
-    "arize-phoenix[evals]>=11.0.0",
-    "arize>=5.0.0",
-    "arize-otel>=0.7.0,<1.0.0",
-    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
-    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
-    "pandas>=2.0.0,<3.0.0",
 ]
 
 [tool.poetry]

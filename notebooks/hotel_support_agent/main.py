@@ -54,6 +54,7 @@ DEFAULT_BUCKET = "travel-sample"
 DEFAULT_SCOPE = "agentc_data"
 DEFAULT_COLLECTION = "hotel_data"
 DEFAULT_INDEX = "hotel_data_index"
+DEFAULT_NVIDIA_API_LLM_MODEL = "meta/llama-4-maverick-17b-128e-instruct"
 
 
 def setup_capella_ai_config():
@@ -253,30 +254,39 @@ class CouchbaseClient:
     def clear_collection_data(self, scope_name: str, collection_name: str):
         """Clear all data from a collection."""
         try:
-            logger.info(f"Clearing data from {self.bucket_name}.{scope_name}.{collection_name}...")
-            
+            logger.info(
+                f"Clearing data from {self.bucket_name}.{scope_name}.{collection_name}..."
+            )
+
             # Use N1QL to delete all documents with explicit execution
-            delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            delete_query = (
+                f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
+            )
             result = self.cluster.query(delete_query)
-            
+
             # Execute the query and get the results
             rows = list(result)
-            
+
             # Wait a moment for the deletion to propagate
             import time
+
             time.sleep(2)
-            
+
             # Verify collection is empty
             count_query = f"SELECT COUNT(*) as count FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
             count_result = self.cluster.query(count_query)
             count_row = list(count_result)[0]
-            remaining_count = count_row['count']
-            
+            remaining_count = count_row["count"]
+
             if remaining_count == 0:
-                logger.info(f"Collection cleared successfully, {remaining_count} documents remaining")
+                logger.info(
+                    f"Collection cleared successfully, {remaining_count} documents remaining"
+                )
             else:
-                logger.warning(f"Collection clear incomplete, {remaining_count} documents remaining")
-            
+                logger.warning(
+                    f"Collection clear incomplete, {remaining_count} documents remaining"
+                )
+
         except Exception as e:
             logger.warning(f"Error clearing collection data: {e}")
             # If N1QL fails, try to continue anyway
@@ -354,169 +364,165 @@ class CouchbaseClient:
 def setup_hotel_support_agent():
     """Setup the hotel support agent with Agent Catalog integration."""
     try:
-        # Initialize Agent Catalog
+        # Initialize Agent Catalog with single application span
         catalog = agentc.catalog.Catalog()
         application_span = catalog.Span(name="Hotel Support Agent")
 
-        with application_span.new("Environment Setup"):
-            setup_environment()
+        # Setup environment
+        setup_environment()
 
-        with application_span.new("Capella AI Test"):
-            if os.getenv("CAPELLA_API_ENDPOINT"):
-                if not test_capella_connectivity():
-                    logger.warning(
-                        "❌ Capella AI connectivity test failed. Will use OpenAI fallback."
-                    )
-            else:
-                logger.info("ℹ️ Capella API not configured - will use OpenAI models")
-
-        with application_span.new("Couchbase Connection"):
-            couchbase_client = CouchbaseClient(
-                conn_string=os.getenv("CB_CONN_STRING"),
-                username=os.getenv("CB_USERNAME"),
-                password=os.getenv("CB_PASSWORD"),
-                bucket_name=os.getenv("CB_BUCKET", DEFAULT_BUCKET),
-            )
-
-            couchbase_client.connect()
-
-        with application_span.new("Couchbase Collection Setup"):
-            couchbase_client.setup_collection(
-                os.getenv("CB_SCOPE", DEFAULT_SCOPE),
-                os.getenv("CB_COLLECTION", DEFAULT_COLLECTION)
-            )
-
-        with application_span.new("Vector Index Setup"):
-            try:
-                with open("agentcatalog_index.json", "r") as file:
-                    index_definition = json.load(file)
-                logger.info(
-                    "Loaded vector search index definition from agentcatalog_index.json"
+        # Test Capella AI connectivity if configured
+        if os.getenv("CAPELLA_API_ENDPOINT"):
+            if not test_capella_connectivity():
+                logger.warning(
+                    "❌ Capella AI connectivity test failed. Will use OpenAI fallback."
                 )
-            except Exception as e:
-                raise ValueError(f"Error loading index definition: {e!s}")
+        else:
+            logger.info("ℹ️ Capella API not configured - will use OpenAI models")
 
-            couchbase_client.setup_vector_search_index(
-                index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
+        # Setup Couchbase connection and collections
+        couchbase_client = CouchbaseClient(
+            conn_string=os.getenv("CB_CONN_STRING"),
+            username=os.getenv("CB_USERNAME"),
+            password=os.getenv("CB_PASSWORD"),
+            bucket_name=os.getenv("CB_BUCKET", DEFAULT_BUCKET),
+        )
+        couchbase_client.connect()
+        couchbase_client.setup_collection(
+            os.getenv("CB_SCOPE", DEFAULT_SCOPE),
+            os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
+        )
+
+        # Setup vector index
+        try:
+            with open("agentcatalog_index.json", "r") as file:
+                index_definition = json.load(file)
+            logger.info(
+                "Loaded vector search index definition from agentcatalog_index.json"
             )
+        except Exception as e:
+            raise ValueError(f"Error loading index definition: {e!s}")
 
-        with application_span.new("Vector Store Setup"):
-            # Setup embeddings using CB_USERNAME/CB_PASSWORD like flight search agent
-            try:
-                if (
-                    os.getenv("CB_USERNAME")
-                    and os.getenv("CB_PASSWORD")
-                    and os.getenv("CAPELLA_API_ENDPOINT")
-                    and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
-                ):
-                    # Create API key for Capella AI
-                    import base64
+        couchbase_client.setup_vector_search_index(
+            index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
+        )
 
-                    api_key = base64.b64encode(
-                        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-                    ).decode()
-
-                    # Use OpenAI embeddings client with Capella endpoint
-                    embeddings = OpenAIEmbeddings(
-                        model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                        api_key=api_key,
-                        base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                    )
-                    logger.info("✅ Using Capella AI for embeddings")
-                else:
-                    raise ValueError("Capella AI credentials not available")
-            except Exception as e:
-                logger.error(f"❌ Capella AI embeddings failed: {e}")
-                raise RuntimeError(
-                    "Capella AI embeddings required for this configuration"
-                )
-
-            couchbase_client.setup_vector_store(
-                os.getenv("CB_SCOPE", DEFAULT_SCOPE),
-                os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
-                os.getenv("CB_INDEX", DEFAULT_INDEX),
-                embeddings,
-            )
-
-        with application_span.new("LLM Setup"):
-            # Setup LLM with Agent Catalog callback - try Capella AI first, fallback to OpenAI
-            try:
-                # Create API key for Capella AI using same pattern as embeddings
+        # Setup embeddings
+        try:
+            if (
+                os.getenv("CB_USERNAME")
+                and os.getenv("CB_PASSWORD")
+                and os.getenv("CAPELLA_API_ENDPOINT")
+                and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
+            ):
                 api_key = base64.b64encode(
                     f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
                 ).decode()
-
-                llm = ChatOpenAI(
+                embeddings = OpenAIEmbeddings(
+                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
                     api_key=api_key,
                     base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                    model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                    temperature=0,
-                    callbacks=[agentc_langchain.chat.Callback(span=application_span)],
                 )
-                # Test the LLM works
-                llm.invoke("Hello")
-                logger.info("✅ Using Capella AI LLM")
-            except Exception as e:
-                logger.warning(f"⚠️ Capella AI LLM failed: {e}")
-                logger.info("🔄 Falling back to OpenAI LLM...")
-                _set_if_undefined("OPENAI_API_KEY")
-                llm = ChatOpenAI(
-                    api_key=os.getenv("OPENAI_API_KEY"),
-                    model="gpt-4o",
-                    temperature=0,
-                    callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-                )
-                logger.info("✅ Using OpenAI LLM as fallback")
+                logger.info("✅ Using Capella AI for embeddings")
+            else:
+                raise ValueError("Capella AI credentials not available")
+        except Exception as e:
+            logger.error(f"❌ Capella AI embeddings failed: {e}")
+            raise RuntimeError("Capella AI embeddings required for this configuration")
 
-        with application_span.new("Tool Loading"):
-            # Load only the search tool from Agent Catalog
-            tool_search = catalog.find("tool", name="search_vector_database")
+        couchbase_client.setup_vector_store(
+            os.getenv("CB_SCOPE", DEFAULT_SCOPE),
+            os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
+            os.getenv("CB_INDEX", DEFAULT_INDEX),
+            embeddings,
+        )
 
-            if not tool_search:
-                raise ValueError(
-                    "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
-                )
+        llm = None
 
-            # Create single tool list
-            tools = [
-                Tool(
-                    name=tool_search.meta.name,
-                    description=tool_search.meta.description,
-                    func=tool_search.func,
+        # Try Capella AI LLM first
+        try:
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            llm = ChatOpenAI(
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                temperature=0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using Capella AI LLM")
+        except Exception as e:
+            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
+
+        # COMMENTED OUT - NIM LLM (only for prototype)
+        # try:
+        #     _set_if_undefined("NVIDIA_API_KEY")
+        #     llm = ChatOpenAI(
+        #         api_key=os.getenv("NVIDIA_API_KEY"),
+        #         base_url=os.getenv("NVIDIA_API_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+        #         model=os.getenv("NVIDIA_API_LLM_MODEL", DEFAULT_NVIDIA_API_LLM_MODEL),
+        #         temperature=0,
+        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+        #     )
+        #     logger.info("✅ Using NIM LLM")
+        # except Exception as e:
+        #     logger.warning(f"⚠️ NIM LLM failed: {e}")
+
+        # Fallback to OpenAI if no other LLM worked
+        if not llm:
+            logger.info("🔄 Falling back to OpenAI LLM...")
+            _set_if_undefined("OPENAI_API_KEY")
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENAI_API_KEY"),
+                model="gpt-4o",
+                temperature=0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+            )
+            logger.info("✅ Using OpenAI LLM as fallback")
+
+        # Load tools and create agent
+        tool_search = catalog.find("tool", name="search_vector_database")
+        if not tool_search:
+            raise ValueError(
+                "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
+            )
+
+        tools = [
+            Tool(
+                name=tool_search.meta.name,
+                description=tool_search.meta.description,
+                func=tool_search.func,
+            ),
+        ]
+
+        hotel_prompt = catalog.find("prompt", name="hotel_search_assistant")
+        if not hotel_prompt:
+            raise ValueError(
+                "Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
+            )
+
+        custom_prompt = PromptTemplate(
+            template=hotel_prompt.content.strip(),
+            input_variables=["input", "agent_scratchpad"],
+            partial_variables={
+                "tools": "\n".join(
+                    [f"{tool.name}: {tool.description}" for tool in tools]
                 ),
-            ]
+                "tool_names": ", ".join([tool.name for tool in tools]),
+            },
+        )
 
-        with application_span.new("Agent Creation"):
-            # Get prompt from Agent Catalog
-            hotel_prompt = catalog.find("prompt", name="hotel_search_assistant")
-            if not hotel_prompt:
-                raise ValueError(
-                    "Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
-                )
-
-            # Create a custom prompt using the catalog prompt content
-            prompt_content = hotel_prompt.content.strip()
-
-            custom_prompt = PromptTemplate(
-                template=prompt_content,
-                input_variables=["input", "agent_scratchpad"],
-                partial_variables={
-                    "tools": "\n".join(
-                        [f"{tool.name}: {tool.description}" for tool in tools]
-                    ),
-                    "tool_names": ", ".join([tool.name for tool in tools]),
-                },
-            )
-
-            agent = create_react_agent(llm, tools, custom_prompt)
-            agent_executor = AgentExecutor(
-                agent=agent,
-                tools=tools,
-                verbose=True,
-                handle_parsing_errors=True,
-                max_iterations=5,  # Reduced for simpler operation
-                max_execution_time=60,  # Add 60 second timeout to prevent hanging
-            )
+        agent = create_react_agent(llm, tools, custom_prompt)
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=tools,
+            verbose=True,
+            handle_parsing_errors=True,
+            max_iterations=5,
+            max_execution_time=60,
+        )
 
         return agent_executor, application_span
 
@@ -545,9 +551,7 @@ def run_interactive_demo():
         logger.info("─" * 40)
 
         while True:
-            query = input(
-                "🔍 Enter hotel search query (or 'quit' to exit): "
-            ).strip()
+            query = input("🔍 Enter hotel search query (or 'quit' to exit): ").strip()
 
             if query.lower() in ["quit", "exit", "q"]:
                 logger.info("Thanks for using Hotel Support Agent!")
@@ -587,12 +591,12 @@ def run_test():
 
         # Import shared queries
         from data.queries import get_simple_queries
-        
+
         # Test scenarios covering different types of hotel searches
         test_queries = get_simple_queries()
 
         logger.info(f"Running {len(test_queries)} test queries...")
-        
+
         for i, query in enumerate(test_queries, 1):
             logger.info(f"\n🔍 Test {i}: {query}")
             try:
@@ -618,23 +622,23 @@ def test_data_loading():
     """Test data loading from travel-sample independently."""
     logger.info("Testing Hotel Data Loading from travel-sample")
     logger.info("=" * 50)
-    
+
     try:
         from data.hotel_data import get_hotel_count, get_hotel_texts
-        
+
         # Test hotel count
         count = get_hotel_count()
         logger.info(f"✅ Hotel count in travel-sample.inventory.hotel: {count}")
-        
+
         # Test hotel text generation
         texts = get_hotel_texts()
         logger.info(f"✅ Generated {len(texts)} hotel texts for embeddings")
-        
+
         if texts:
             logger.info(f"✅ First hotel text sample: {texts[0][:200]}...")
-        
+
         logger.info("✅ Data loading test completed successfully")
-        
+
     except Exception as e:
         logger.exception(f"❌ Data loading test failed: {e}")
 
