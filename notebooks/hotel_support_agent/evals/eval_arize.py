@@ -662,19 +662,25 @@ class ArizeHotelSupportEvaluator:
             if evaluation_results:
                 self._format_evaluation_results(evaluation_results, len(results_df))
 
-        # Sample results
+        # Sample results with FULL detailed explanations for debugging
         if len(results_df) > 0:
-            logger.info("\n📝 Sample evaluation results:")
-            for i in range(min(2, len(results_df))):
+            logger.info("\n📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):")
+            logger.info("="*80)
+            for i in range(min(len(results_df), len(results_df))):  # Show all results, not just 2
                 row = results_df.iloc[i]
-                logger.info(f"   Query: {row['query']}")
+                logger.info(f"\n🔍 QUERY {i+1}: {row['query']}")
+                logger.info("-"*60)
 
                 for eval_type in ["relevance", "qa_correctness", "hallucination", "toxicity"]:
                     if eval_type in row:
                         result = row[eval_type]
-                        explanation = str(row.get(f"{eval_type}_explanation", ""))[:80] + "..."
-                        logger.info(f"   {eval_type}: {result} - {explanation}")
-                logger.info("")
+                        # Show FULL explanation instead of truncated version
+                        full_explanation = str(row.get(f"{eval_type}_explanation", "No explanation provided"))
+                        logger.info(f"\n📊 {eval_type.upper()}: {result}")
+                        logger.info(f"💭 FULL REASONING:")
+                        logger.info(f"{full_explanation}")
+                        logger.info("-"*40)
+                logger.info("="*80)
 
     def cleanup(self) -> None:
         """Clean up all resources."""

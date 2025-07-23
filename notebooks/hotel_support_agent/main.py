@@ -30,6 +30,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
 # Import hotel data from the data module
 from data.hotel_data import get_hotel_texts, load_hotel_data_to_couchbase
@@ -48,6 +49,12 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 
 # Load environment variables
 dotenv.load_dotenv(override=True)
+
+# Generate Capella AI API key if endpoint is provided
+if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CB_USERNAME') and os.getenv('CB_PASSWORD'):
+    os.environ['CAPELLA_API_KEY'] = base64.b64encode(
+        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
+    ).decode("utf-8")
 
 # Set default values for travel-sample bucket configuration
 DEFAULT_BUCKET = "travel-sample"
@@ -160,6 +167,8 @@ def setup_environment():
             logger.info(
                 f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
             )
+
+    
 
     # Test Capella AI connectivity
     test_capella_connectivity()
@@ -409,26 +418,31 @@ def setup_hotel_support_agent():
 
         # Setup embeddings
         try:
-            if (
-                os.getenv("CB_USERNAME")
-                and os.getenv("CB_PASSWORD")
-                and os.getenv("CAPELLA_API_ENDPOINT")
-                and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
-            ):
-                api_key = base64.b64encode(
-                    f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-                ).decode()
-                embeddings = OpenAIEmbeddings(
-                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                    api_key=api_key,
-                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                )
-                logger.info("✅ Using Capella AI for embeddings")
-            else:
-                raise ValueError("Capella AI credentials not available")
+            # COMMENTED OUT - Capella AI embeddings (testing NVIDIA embeddings instead)
+            # if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CAPELLA_API_KEY'):
+            #     embeddings = OpenAIEmbeddings(
+            #         model=os.getenv('CAPELLA_API_EMBEDDING_MODEL', 'intfloat/e5-mistral-7b-instruct'),
+            #         api_key=os.getenv('CAPELLA_API_KEY'),
+            #         base_url=os.getenv('CAPELLA_API_ENDPOINT')
+            #     )
+
+            # COMMENTED OUT - OpenAI embeddings (testing NVIDIA embeddings instead)
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                api_key=os.getenv('OPENAI_API_KEY'),
+                base_url=os.getenv('OPENAI_API_ENDPOINT'),
+            )
+
+            # _set_if_undefined("NVIDIA_API_KEY")
+            # embeddings = NVIDIAEmbeddings(
+            #     model="nvidia/nv-embedqa-e5-v5", 
+            #     api_key=os.getenv('NVIDIA_API_KEY')
+            # )
+            # logger.info("✅ Using nvidia/nv-embedqa-e5-v5 for embeddings")
+            
         except Exception as e:
-            logger.error(f"❌ Capella AI embeddings failed: {e}")
-            raise RuntimeError("Capella AI embeddings required for this configuration")
+            logger.error(f"❌ Embeddings setup failed: {e}")
+            raise RuntimeError("Embeddings configuration required")
 
         couchbase_client.setup_vector_store(
             os.getenv("CB_SCOPE", DEFAULT_SCOPE),
@@ -440,21 +454,21 @@ def setup_hotel_support_agent():
         llm = None
 
         # Try Capella AI LLM first
-        try:
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-            llm = ChatOpenAI(
-                api_key=api_key,
-                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                temperature=0,
-                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-            )
-            llm.invoke("Hello")  # Test the LLM works
-            logger.info("✅ Using Capella AI LLM")
-        except Exception as e:
-            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
+        # try:
+        #     api_key = base64.b64encode(
+        #         f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+        #     ).decode()
+        #     llm = ChatOpenAI(
+        #         api_key=api_key,
+        #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+        #         model=os.getenv("CAPELLA_API_LLM_MODEL"),
+        #         temperature=0,
+        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+        #     )
+        #     llm.invoke("Hello")  # Test the LLM works
+        #     logger.info("✅ Using Capella AI LLM")
+        # except Exception as e:
+        #     logger.warning(f"⚠️ Capella AI LLM failed: {e}")
 
         # COMMENTED OUT - NIM LLM (only for prototype)
         # try:

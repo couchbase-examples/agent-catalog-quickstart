@@ -8,6 +8,9 @@ import dotenv
 import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+
+
 from datetime import timedelta
 
 dotenv.load_dotenv()
@@ -75,17 +78,27 @@ def search_vector_database(query: str) -> str:
         
         # Setup embeddings
         try:
-            if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CAPELLA_API_KEY'):
-                embeddings = OpenAIEmbeddings(
-                    model=os.getenv('CAPELLA_API_EMBEDDING_MODEL', 'intfloat/e5-mistral-7b-instruct'),
-                    api_key=os.getenv('CAPELLA_API_KEY'),
-                    base_url=os.getenv('CAPELLA_API_ENDPOINT')
-                )
-            else:
-                embeddings = OpenAIEmbeddings(
-                    model="text-embedding-3-large",
-                    api_key=os.getenv('OPENAI_API_KEY')
-                )
+            # COMMENTED OUT - Capella AI embeddings (testing NVIDIA embeddings instead)
+            # if os.getenv('CAPELLA_API_ENDPOINT') and os.getenv('CAPELLA_API_KEY'):
+            #     embeddings = OpenAIEmbeddings(
+            #         model=os.getenv('CAPELLA_API_EMBEDDING_MODEL', 'intfloat/e5-mistral-7b-instruct'),
+            #         api_key=os.getenv('CAPELLA_API_KEY'),
+            #         base_url=os.getenv('CAPELLA_API_ENDPOINT')
+            #     )
+
+            # COMMENTED OUT - OpenAI embeddings (testing NVIDIA embeddings instead)
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                api_key=os.getenv('OPENAI_API_KEY'),
+                base_url=os.getenv('OPENAI_API_ENDPOINT'),
+            )
+
+            # embeddings = NVIDIAEmbeddings(
+            #     model="nvidia/nv-embedqa-e5-v5", 
+            #     api_key=os.getenv('NVIDIA_API_KEY'),
+            #     truncate="END", 
+            # )
+
         except Exception as e:
             return f"Error setting up embeddings: {str(e)}"
         
