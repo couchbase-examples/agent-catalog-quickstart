@@ -543,24 +543,41 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
             # Create wrapper function to handle proper parameter parsing
             def create_tool_wrapper(original_tool, name):
+                """Create a wrapper for Agent Catalog tools with improved input handling."""
+
                 def wrapper_func(tool_input: str) -> str:
-                    """Wrapper to handle proper parameter parsing for each tool."""
+                    """Wrapper function that handles input parsing and error handling."""
                     try:
-                        logger.info(f"🔧 Tool {name} called with input: '{tool_input}'")
+                        logger.info(f"🔧 Tool {name} called with input: {repr(tool_input)}")
+                        
+                        # Sanitize input - remove quotes, newlines, and extra whitespace
+                        if isinstance(tool_input, str):
+                            tool_input = tool_input.strip().strip('"\'').strip()
+                            # Remove any trailing/leading newlines and quotes that might come from LLM
+                            tool_input = tool_input.replace('\n', ' ').replace('\r', ' ')
+                            # Clean up multiple spaces
+                            tool_input = ' '.join(tool_input.split())
 
                         # Parse input based on tool requirements
                         if name == "lookup_flight_info":
                             # Expected format: "JFK,LAX" - parse and pass as separate parameters
-                            parts = tool_input.replace(" to ", ",").replace("from ", "").split(",")
+                            # Handle various input formats: "JFK,LAX", "JFK to LAX", "from JFK to LAX"
+                            clean_input = tool_input.replace(" to ", ",").replace("from ", "").replace(" ", "")
+                            parts = clean_input.split(",")
                             if len(parts) >= 2:
-                                source_airport = parts[0].strip()
-                                destination_airport = parts[1].strip()
+                                source_airport = parts[0].strip().upper()
+                                destination_airport = parts[1].strip().upper()
+                                
+                                # Validate airport codes
+                                if len(source_airport) != 3 or len(destination_airport) != 3:
+                                    return f"Error: Airport codes must be 3 letters. Got: {source_airport}, {destination_airport}"
+                                
                                 result = original_tool.func(
                                     source_airport=source_airport,
                                     destination_airport=destination_airport,
                                 )
                             else:
-                                return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX')"
+                                return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX'). Got: {tool_input}"
 
                         elif name == "save_flight_booking":
                             import re, datetime
@@ -641,9 +658,26 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Create ReAct agent with tools and prompt
         agent = create_react_agent(self.chat_model, tools, react_prompt)
 
+        # Custom parsing error handler
+        def handle_parsing_errors(error):
+            """Custom handler for parsing errors to provide better guidance."""
+            error_msg = str(error)
+            if "Missing 'Action:'" in error_msg:
+                return "I need to follow the correct format. Let me try again.\n\nThought: I should use the proper ReAct format with Action: and Action Input:"
+            elif "both a final answer and a parse-able action" in error_msg:
+                return "I should not include both Action and Final Answer in the same response. Let me provide only one."
+            else:
+                return f"I made a formatting error: {error_msg}. Let me follow the correct format."
+
         # Create agent executor
         agent_executor = AgentExecutor(
-            agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=10
+            agent=agent, 
+            tools=tools, 
+            verbose=True, 
+            handle_parsing_errors=handle_parsing_errors, 
+            max_iterations=15,
+            early_stopping_method="generate",
+            return_intermediate_steps=True
         )
 
         # Execute the agent
