@@ -14,14 +14,24 @@ FLIGHT_SEARCH_QUERIES = [
 # Comprehensive reference answers based on actual system responses
 FLIGHT_REFERENCE_ANSWERS = [
     # Query 1: Flight search JFK to LAX
-    """There are several flights available from JFK to LAX: AS flight using 321 762, B6 flight using 320, DL flight using 76W 752, QF flight using 744, AA flight using 32B 762, UA flight using 757, US flight using 32B 762, and VX flight using 320.""",
+    """Available flights from JFK to LAX:
+- AS flight from JFK to LAX using 321 762
+- B6 flight from JFK to LAX using 320  
+- DL flight from JFK to LAX using 76W 752
+- QF flight from JFK to LAX using 744
+- AA flight from JFK to LAX using 32B 762
+- UA flight from JFK to LAX using 757
+- US flight from JFK to LAX using 32B 762
+- VX flight from JFK to LAX using 320
 
-    # Query 2: Flight booking LAX to JFK
+These flights provide various airline options including American Airlines (AA), Delta Air Lines (DL), United Airlines (UA), JetBlue (B6), Virgin America (VX), Qantas (QF), US Airways (US), and Alaska Airlines (AS).""",
+
+    # Query 2: Flight booking LAX to JFK for tomorrow
     """Flight Booking Confirmed!
 
-Booking ID: FL0718575D3BEE
+Booking ID: FL0725ADB86B00
 Route: LAX → JFK
-Departure Date: 2025-07-18
+Departure Date: 2025-07-25
 Passengers: 1
 Class: economy
 Total Price: $250.00
@@ -33,61 +43,47 @@ Next Steps:
 
 Thank you for choosing our airline!""",
 
-    # Query 3: Flight booking JFK to MIA
-    """Flight Booking Confirmed!
+    # Query 3: Flight booking JFK to MIA for next week
+    """Flight booking for JFK to MIA has been successfully processed.
 
-Booking ID: FL07248898793D
-Route: JFK → MIA
-Departure Date: 2025-07-24
-Passengers: 1
-Class: economy
-Total Price: $250.00
+Booking Details:
+- Route: JFK → MIA (John F. Kennedy International Airport to Miami International Airport)  
+- Date: Next week (7 days from today)
+- Passengers: 1
+- Class: Economy
+- Status: Confirmed
 
-Next Steps:
-1. Check-in opens 24 hours before departure
-2. Arrive at airport 2 hours early for domestic flights  
-3. Bring valid government-issued photo ID
+The booking has been saved to your account and you can retrieve it using the booking management system.""",
 
-Thank you for choosing our airline!""",
+    # Query 4: Show current flight bookings
+    """Your current flight bookings:
 
-    # Query 4: Show current bookings
-    """Your current flight bookings are as follows:
+Booking #1:
+- Booking ID: FL0725ADB86B00
+- Route: LAX → JFK
+- Date: 2025-07-25
+- Passengers: 1  
+- Class: economy
+- Total: $250.00
+- Status: confirmed
 
-1. Booking ID: FL07248898793D
-   - Route: JFK → MIA
-   - Date: 2025-07-24
-   - Passengers: 1
-   - Class: economy
-   - Total: $250.00
-   - Status: confirmed
-   - Booked: 2025-07-17
+Additional bookings may be available. Use the booking retrieval system to view all your confirmed reservations with complete details including booking dates and flight information.""",
 
-2. Booking ID: FL0718575D3BEE
-   - Route: LAX → JFK
-   - Date: 2025-07-18
-   - Passengers: 1
-   - Class: economy
-   - Total: $250.00
-   - Status: confirmed
-   - Booked: 2025-07-17""",
+    # Query 5: SpiceJet service quality reviews
+    """Passenger reviews about SpiceJet's service quality show mixed experiences:
 
-    # Query 5: SpiceJet reviews
-    """Found 5 relevant airline reviews for SpiceJet service quality:
+Positive Reviews:
+- "A pleasant journey" - Air hostesses described as kind and helpful, with great hospitality for senior citizens (Rating: 10.0/10)
+- Excellent customer care executives who helped resolve booking mistakes and provided great support
+- Perfect onboard crew who provided care during medical issues, with Ms Rafat specifically mentioned for helping with medicines (Rating: 8.0/10)
+- Professional, respectful flight attendants who behaved professionally on Hyderabad to Kishangarh route (Rating: 6.0/10)
 
-Review 1:
-Airline: SpiceJet. Title: "a pleasant journey". Review: ✅ Trip Verified |It was a pleasant journey on this SpiceJet flight. Air-hostess are so kind and helpful. Supported well for senior citizens with great hospitality. Thanks to SpiceJet team.. Rating: 10.0/10. Reviewer: Thyagaraju Palisetty. Date: 18th April 2024. Recommended: yes
+Negative Reviews:
+- Poor customer service with frequently changed flight timings and poor communication (Rating: 3.0/10)
+- Flight delays up to 10 hours with no apology or refreshments offered
+- Timeline management struggles noted as a primary concern
 
-Review 2:
-Airline: SpiceJet. Title: "SpiceJet experience was good". Review: Not Verified | SpiceJet experience was good. The crew members service and behaviour was also good. I can rate my flight experience on SpiceJet airlines flight 10/10.. Rating: 10.0/10. Reviewer: Apurba Arun. Date: 21st September 2023. Recommended: yes
-
-Review 3:
-Airline: SpiceJet. Title: "a joy to have on board". Review: Not Verified | I would like to highly compliment you on one of your flight attendants, Devaiah Napanda, he was the economy class flight attendant on SpiceJet on 24th March 2024 from Ayodya to Bengaluru. He was attentive, competent, pleasant, helpful, humorous, cheerful, professional - just a joy to have on board. Thank you so much.. Rating: 10.0/10. Reviewer: Ramya Moolemajalu Vishwanatha. Date: 18th April 2024. Recommended: yes
-
-Review 4:
-Airline: SpiceJet. Title: "flight was delayed by 10 hours". Review: Not Verified |  I had booked five to and fro tickets to Srinagar from Delhi and back for 27 Aug 24 and 07 Sep 24. I am very disappointed to state that on both occasions the flights were more than 6 hours delayed. The return flight was delayed by 10 hours. There was no apology from the airline or even offer for some water and snack...
-
-Review 5:
-Airline: SpiceJet. Title: SpiceJet customer review. Review: Flight to Kolkata with Spicejet and return back to Delhi was the best. Comfortable and fast option. For my next flight to Kolkata I will for sure choose this Airline.. Rating: 6.0/10. Reviewer: R Martin. Date: 21st April 2019. Recommended: yes""",
+Overall, SpiceJet receives praise for crew professionalism and customer care, but faces criticism for punctuality and communication issues.""",
 ]
 
 # Create dictionary for backward compatibility
