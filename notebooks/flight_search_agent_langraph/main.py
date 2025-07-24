@@ -563,8 +563,32 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                 return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX')"
 
                         elif name == "save_flight_booking":
-                            # Pass the full string directly - tool expects "source,dest,date" format
-                            result = original_tool.func(booking_input=tool_input)
+                            import re, datetime
+                            formatted_input = tool_input.strip()
+                            # Detect if input already in the expected CSV pattern
+                            if not re.match(r"^[A-Za-z]{3},[A-Za-z]{3},\d{4}-\d{2}-\d{2}$", formatted_input):
+                                # Try to parse natural language patterns
+                                src_match = re.search(r"from\s+([A-Za-z]{3})", tool_input, re.I)
+                                dst_match = re.search(r"to\s+([A-Za-z]{3})", tool_input, re.I)
+
+                                # Determine date component
+                                date_str = None
+                                if re.search(r"\btomorrow\b", tool_input, re.I):
+                                    date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                                elif re.search(r"\bnext week\b", tool_input, re.I):
+                                    date_str = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+                                else:
+                                    explicit_date = re.search(r"(\d{4}-\d{2}-\d{2})", tool_input)
+                                    if explicit_date:
+                                        date_str = explicit_date.group(1)
+
+                                if src_match and dst_match and date_str:
+                                    formatted_input = f"{src_match.group(1).upper()},{dst_match.group(1).upper()},{date_str}"
+                                else:
+                                    # Leave as-is to surface validation error from the tool, aiding the LLM
+                                    formatted_input = tool_input.strip()
+
+                            result = original_tool.func(booking_input=formatted_input)
 
                         elif name == "retrieve_flight_bookings":
                             # Pass the full string directly - tool expects string input
