@@ -8,7 +8,7 @@ import dotenv
 import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-# from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
 
 from datetime import timedelta
@@ -67,19 +67,19 @@ def search_vector_database(query: str) -> str:
         # Setup embeddings
         try:
             # Capella AI embeddings
-            if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
-                embeddings = OpenAIEmbeddings(
-                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                    api_key=os.getenv("CAPELLA_API_KEY"),
-                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                )
+            # if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
+            #     embeddings = OpenAIEmbeddings(
+            #         model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+            #         api_key=os.getenv("CAPELLA_API_KEY"),
+            #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+            #     )
 
             # NVIDIA embeddings
-            # embeddings = NVIDIAEmbeddings(
-            #     model="nvidia/nv-embedqa-e5-v5",
-            #     api_key=os.getenv('NVIDIA_API_KEY'),
-            #     truncate="END",
-            # )
+            embeddings = NVIDIAEmbeddings(
+                model="nvidia/nv-embedqa-e5-v5",
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                truncate="END",
+            )
 
             # OpenAI embeddings
             # embeddings = OpenAIEmbeddings(
@@ -117,11 +117,11 @@ def search_vector_database(query: str) -> str:
         for doc, score in search_results:
             # Use first 60 characters as deduplication key
             content_key = doc.page_content[:60].strip()
-            
+
             if content_key not in seen_content:
                 unique_results.append((doc, score))
                 seen_content.add(content_key)
-            
+
             # Limit to top 6 unique results
             if len(unique_results) >= 6:
                 break

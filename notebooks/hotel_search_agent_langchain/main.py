@@ -421,26 +421,27 @@ def setup_hotel_support_agent():
         # Setup embeddings
         try:
             # Capella AI embeddings
-            if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
-                embeddings = OpenAIEmbeddings(
-                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                    api_key=os.getenv("CAPELLA_API_KEY"),
-                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                )
+            # if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
+            #     embeddings = OpenAIEmbeddings(
+            #         model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+            #         api_key=os.getenv("CAPELLA_API_KEY"),
+            #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+            #     )
 
             # NVIDIA embeddings
             # _set_if_undefined("NVIDIA_API_KEY")
-            # embeddings = NVIDIAEmbeddings(
-            #     model="nvidia/nv-embedqa-e5-v5",
-            #     api_key=os.getenv('NVIDIA_API_KEY')
-            # )
+            embeddings = NVIDIAEmbeddings(
+                model="nvidia/nv-embedqa-e5-v5",
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                truncate="END",
+            )
             # logger.info("✅ Using nvidia/nv-embedqa-e5-v5 for embeddings")
 
             # OpenAI embeddings
             # embeddings = OpenAIEmbeddings(
             #     model="text-embedding-3-small",
-            #     api_key=os.getenv('OPENAI_API_KEY'),
-            #     base_url=os.getenv('OPENAI_API_ENDPOINT'),
+            #     api_key=os.getenv("OPENAI_API_KEY"),
+            #     base_url=os.getenv("OPENAI_API_ENDPOINT"),
             # )
 
         except Exception as e:
@@ -454,6 +455,7 @@ def setup_hotel_support_agent():
             embeddings,
         )
 
+        # Setup LLM with deterministic settings
         llm = None
 
         # Try Capella AI LLM first
@@ -465,7 +467,7 @@ def setup_hotel_support_agent():
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
                 model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                temperature=0,
+                temperature=0.1,
                 callbacks=[agentc_langchain.chat.Callback(span=application_span)],
             )
             llm.invoke("Hello")  # Test the LLM works
@@ -488,16 +490,16 @@ def setup_hotel_support_agent():
         #     logger.warning(f"⚠️ NIM LLM failed: {e}")
 
         # Fallback to OpenAI if no other LLM worked
-        if not llm:
-            logger.info("🔄 Falling back to OpenAI LLM...")
-            _set_if_undefined("OPENAI_API_KEY")
-            llm = ChatOpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                model="gpt-4o",
-                temperature=0,
-                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-            )
-            logger.info("✅ Using OpenAI LLM as fallback")
+        # if not llm:
+        #     logger.info("🔄 Falling back to OpenAI LLM...")
+        #     _set_if_undefined("OPENAI_API_KEY")
+        #     llm = ChatOpenAI(
+        #         api_key=os.getenv("OPENAI_API_KEY"),
+        #         model="gpt-4o",
+        #         temperature=0,
+        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
+        #     )
+        #     logger.info("✅ Using OpenAI LLM as fallback")
 
         # Load tools and create agent
         tool_search = catalog.find("tool", name="search_vector_database")
@@ -531,6 +533,11 @@ def setup_hotel_support_agent():
             },
         )
 
+        def handle_parsing_error(error) -> str:
+            """Custom error handler for parsing errors."""
+            logger.warning(f"Parsing error occurred: {error}")
+            return "I encountered an issue processing that request. Let me try a different approach. Please provide your hotel search request again."
+
         agent = create_react_agent(llm, tools, custom_prompt)
         agent_executor = AgentExecutor(
             agent=agent,
@@ -548,23 +555,6 @@ def setup_hotel_support_agent():
     except Exception as e:
         logger.exception(f"Error setting up hotel support agent: {e}")
         raise
-
-
-def handle_parsing_error(error) -> str:
-    """Custom error handler for parsing errors."""
-    logger.warning(f"Parsing error occurred: {error}")
-    return "I encountered an issue processing that request. Let me try a different approach. Please provide your hotel search request again."
-
-def handle_event_loop_error(func, *args, **kwargs):
-    """Handle event loop errors by catching and logging them."""
-    try:
-        return func(*args, **kwargs)
-    except RuntimeError as e:
-        if "Event loop is closed" in str(e):
-            logger.error(f"Event loop error caught and logged: {e}")
-            return None
-        else:
-            raise e
 
 
 def run_interactive_demo():
