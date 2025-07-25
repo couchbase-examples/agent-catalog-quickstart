@@ -93,6 +93,41 @@ def save_flight_booking(booking_input: str) -> str:
         if not booking_input or not isinstance(booking_input, str):
             return "Error: Input must be a string in format 'source_airport,destination_airport,date'"
 
+        # Handle natural language parsing
+        import re
+        original_input = booking_input.strip()
+        
+        # Try to extract airport codes and date from natural language
+        if not re.match(r"^[A-Z]{3},[A-Z]{3},\d{4}-\d{2}-\d{2}$", original_input):
+            # Extract airport codes (3 letter codes)
+            airport_codes = re.findall(r'\b[A-Z]{3}\b', original_input.upper())
+            
+            # Extract or calculate date
+            date_str = None
+            if re.search(r'\btomorrow\b', original_input, re.I):
+                date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            elif re.search(r'\bnext week\b', original_input, re.I):
+                date_str = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+            else:
+                # Look for explicit date
+                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', original_input)
+                if date_match:
+                    date_str = date_match.group(1)
+                else:
+                    # Default to tomorrow if no date specified
+                    date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            
+            # Reconstruct input if we found airport codes
+            if len(airport_codes) >= 2 and date_str:
+                booking_input = f"{airport_codes[0]},{airport_codes[1]},{date_str}"
+            else:
+                # Try comma-separated format
+                parts = original_input.split(",")
+                if len(parts) >= 2:
+                    booking_input = original_input
+                else:
+                    return f"Error: Could not parse booking request. Please use format 'JFK,LAX,2025-12-25' or specify clear airport codes and date. Input was: {original_input}"
+
         # Split and validate input
         parts = booking_input.strip().split(",")
         if len(parts) != 3:
@@ -168,17 +203,13 @@ def save_flight_booking(booking_input: str) -> str:
 
             if existing_bookings:
                 existing_booking = existing_bookings[0]
-                return f"""
-Duplicate Booking Detected!
-
-You already have a confirmed booking for this flight:
+                return f"""Duplicate booking found! You already have a confirmed booking:
 - Booking ID: {existing_booking['booking_id']}
 - Route: {source_airport} → {destination_airport}
 - Date: {departure_date}
 - Total: ${existing_booking['total_price']:.2f}
 
-No new booking was created. Use the existing booking ID for reference.
-                """.strip()
+No new booking was created. Use the existing booking ID for reference."""
 
         except Exception as e:
             # Continue with booking creation if duplicate check fails
@@ -215,8 +246,7 @@ No new booking was created. Use the existing booking ID for reference.
         cluster.query(insert_query, booking_id=booking_id, booking_data=booking_data).execute()
 
         # Create booking confirmation
-        booking_summary = f"""
-Flight Booking Confirmed!
+        booking_summary = f"""Flight Booking Confirmed!
 
 Booking ID: {booking_id}
 Route: {source_airport} → {destination_airport}
@@ -230,10 +260,9 @@ Next Steps:
 2. Arrive at airport 2 hours early for domestic flights
 3. Bring valid government-issued photo ID
 
-Thank you for choosing our airline!
-        """
+Thank you for choosing our airline!"""
 
-        return booking_summary.strip()
+        return booking_summary
 
     except Exception as e:
         logger.exception(f"Booking processing error: {e}")

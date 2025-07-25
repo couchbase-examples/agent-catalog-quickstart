@@ -558,61 +558,37 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                             # Clean up multiple spaces
                             tool_input = ' '.join(tool_input.split())
 
-                        # Parse input based on tool requirements
+                        # Simplified input handling - let tools handle their own validation
                         if name == "lookup_flight_info":
-                            # Expected format: "JFK,LAX" - parse and pass as separate parameters
-                            # Handle various input formats: "JFK,LAX", "JFK to LAX", "from JFK to LAX"
+                            # Handle various input formats and normalize to SOURCE,DESTINATION
                             clean_input = tool_input.replace(" to ", ",").replace("from ", "").replace(" ", "")
                             parts = clean_input.split(",")
                             if len(parts) >= 2:
                                 source_airport = parts[0].strip().upper()
                                 destination_airport = parts[1].strip().upper()
-                                
-                                # Validate airport codes
-                                if len(source_airport) != 3 or len(destination_airport) != 3:
-                                    return f"Error: Airport codes must be 3 letters. Got: {source_airport}, {destination_airport}"
-                                
                                 result = original_tool.func(
                                     source_airport=source_airport,
                                     destination_airport=destination_airport,
                                 )
                             else:
-                                return f"Error: lookup_flight_info requires format 'SOURCE,DESTINATION' (e.g., 'JFK,LAX'). Got: {tool_input}"
+                                result = original_tool.func(
+                                    source_airport=tool_input.split()[0] if tool_input.split() else "",
+                                    destination_airport=tool_input.split()[-1] if tool_input.split() else "",
+                                )
 
                         elif name == "save_flight_booking":
-                            import re, datetime
-                            formatted_input = tool_input.strip()
-                            # Detect if input already in the expected CSV pattern
-                            if not re.match(r"^[A-Za-z]{3},[A-Za-z]{3},\d{4}-\d{2}-\d{2}$", formatted_input):
-                                # Try to parse natural language patterns
-                                src_match = re.search(r"from\s+([A-Za-z]{3})", tool_input, re.I)
-                                dst_match = re.search(r"to\s+([A-Za-z]{3})", tool_input, re.I)
-
-                                # Determine date component
-                                date_str = None
-                                if re.search(r"\btomorrow\b", tool_input, re.I):
-                                    date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-                                elif re.search(r"\bnext week\b", tool_input, re.I):
-                                    date_str = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
-                                else:
-                                    explicit_date = re.search(r"(\d{4}-\d{2}-\d{2})", tool_input)
-                                    if explicit_date:
-                                        date_str = explicit_date.group(1)
-
-                                if src_match and dst_match and date_str:
-                                    formatted_input = f"{src_match.group(1).upper()},{dst_match.group(1).upper()},{date_str}"
-                                else:
-                                    # Leave as-is to surface validation error from the tool, aiding the LLM
-                                    formatted_input = tool_input.strip()
-
-                            result = original_tool.func(booking_input=formatted_input)
+                            # Pass input directly to tool - let tool handle parsing
+                            result = original_tool.func(booking_input=tool_input)
 
                         elif name == "retrieve_flight_bookings":
-                            # Pass the full string directly - tool expects string input
-                            result = original_tool.func(booking_query=tool_input)
+                            # Handle empty string properly
+                            if tool_input.lower() in ["(empty string)", "empty", "", "none", "all"]:
+                                result = original_tool.func(booking_query="")
+                            else:
+                                result = original_tool.func(booking_query=tool_input)
 
                         elif name == "search_airline_reviews":
-                            # Pass the full string directly - tool expects query string
+                            # Pass input directly
                             result = original_tool.func(query=tool_input)
 
                         else:
@@ -663,11 +639,11 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             """Custom handler for parsing errors to provide better guidance."""
             error_msg = str(error)
             if "Missing 'Action:'" in error_msg:
-                return "I need to follow the correct format. Let me try again.\n\nThought: I should use the proper ReAct format with Action: and Action Input:"
+                return "I need to use the correct format with Action: and Action Input:"
             elif "both a final answer and a parse-able action" in error_msg:
-                return "I should not include both Action and Final Answer in the same response. Let me provide only one."
+                return "I should provide either an Action OR Final Answer, not both."
             else:
-                return f"I made a formatting error: {error_msg}. Let me follow the correct format."
+                return f"Let me correct the format and try again."
 
         # Create agent executor
         agent_executor = AgentExecutor(
@@ -675,7 +651,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             tools=tools, 
             verbose=True, 
             handle_parsing_errors=handle_parsing_errors, 
-            max_iterations=15,
+            max_iterations=10,
             early_stopping_method="generate",
             return_intermediate_steps=True
         )
