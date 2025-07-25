@@ -652,7 +652,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             verbose=True, 
             handle_parsing_errors=handle_parsing_errors, 
             max_iterations=10,
-            early_stopping_method="generate",
             return_intermediate_steps=True
         )
 
