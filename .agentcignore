@@ -1,0 +1,4 @@
+.venv/
+agent-catalog/
+notebooks/
+examples/
