@@ -467,7 +467,7 @@ def setup_hotel_support_agent():
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
                 model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                temperature=0.1,
+                temperature=0.0,
                 callbacks=[agentc_langchain.chat.Callback(span=application_span)],
             )
             llm.invoke("Hello")  # Test the LLM works
@@ -534,9 +534,13 @@ def setup_hotel_support_agent():
         )
 
         def handle_parsing_error(error) -> str:
-            """Custom error handler for parsing errors."""
+            """Custom error handler for parsing errors that guides agent back to ReAct format."""
             logger.warning(f"Parsing error occurred: {error}")
-            return "I encountered an issue processing that request. Let me try a different approach. Please provide your hotel search request again."
+            return """I need to use the correct format. Let me start over:
+
+Thought: I need to search for hotels using the search_vector_database tool
+Action: search_vector_database
+Action Input: """
 
         agent = create_react_agent(llm, tools, custom_prompt)
         agent_executor = AgentExecutor(

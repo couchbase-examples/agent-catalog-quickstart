@@ -1,6 +1,14 @@
 # The repo itself
 agent-catalog/
 couchbase/
+logs/
+
+# Test and debug folders
+tests/
+debug/
+test_*.py
+test_*.ipynb
+debug_*.py
 
 # The quickstart folder
 .agent-catalog/
