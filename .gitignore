@@ -3,6 +3,15 @@ agent-catalog/
 couchbase/
 logs/
 
+# Certificates
+*.pem
+*.crt
+*.key
+*.csr
+*.pem
+*.crt
+*certificate*.txt
+
 # Test and debug folders
 tests/
 debug/

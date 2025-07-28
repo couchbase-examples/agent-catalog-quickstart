@@ -19,12 +19,10 @@ dependencies = [
     "langchain-couchbase>=0.2.4,<0.3.0",
     "langchain-openai>=0.3.13,<0.4.0",
     "langchain-nvidia-ai-endpoints>=0.3.0,<0.4.0",
-    "langgraph>=0.4.1,<0.5.0",
 
     # Agent Catalog
     "agentc @ ../../agent-catalog/libs/agentc",
     "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
-    "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
 
     # Arize and related instrumentation
     "arize-phoenix[evals]>=11.0.0",
