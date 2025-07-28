@@ -4,83 +4,94 @@ This repository provides a quickstart guide for using the Agent Catalog with Cap
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.12+
 - Poetry ([Installation Guide](https://python-poetry.org/docs/#installation))
-- pip (Python package installer)
 - Git (for repository management)
 - An OpenAI API Key (or other LLM provider)
 - Couchbase Capella account (or local Couchbase installation)
 
-## Quick Setup (Automated)
+## 🚀 Quick Setup (Recommended)
 
-The fastest way to get started is using our automated setup script:
+**The simplest way to get started** with any individual agent:
+
+```bash
+# Choose an agent project
+cd notebooks/hotel_search_agent_langchain
+# OR cd notebooks/flight_search_agent_langraph  
+# OR cd notebooks/landmark_search_agent_llamaindex
+
+# Install all dependencies with a single command
+poetry install --no-root
+
+# Set up your environment (see Environment Configuration below)
+cp .env.sample .env
+# Edit .env with your credentials
+
+# Run the agent
+poetry run python main.py
+```
+
+That's it! 🎯 Poetry automatically handles all Agent Catalog dependencies and integrations.
+
+## Alternative: Full Setup (All Agents + Global CLI)
+
+If you want to set up **all agents at once** and install the global `agentc` CLI:
 
 ```bash
 # Clone the repository
 git clone https://github.com/couchbaselabs/agent-catalog-quickstart.git
 cd agent-catalog-quickstart
 
-# Make the setup script executable
-chmod +x scripts/setup.sh
-
 # Run the automated setup script
 bash scripts/setup.sh
 ```
 
-This script will:
-- Install all Agent Catalog libraries and dependencies
-- Run `poetry install` at the root and in all example directories
-- Install required LlamaIndex packages
-- Create template environment files for all examples
-- Set up git for clean repository state
+This comprehensive script will:
+- Install all Agent Catalog libraries globally
+- Set up all three agent environments
+- Install the global `agentc` CLI command
 - Verify the installation
-- Provide next steps
 
 ## Manual Setup (Step-by-Step)
 
-If you prefer to install manually or need to troubleshoot:
+### Option 1: Individual Agent Setup (Recommended)
 
-### 1. Install Agent Catalog Libraries
-
-Install all libraries in the correct dependency order:
+For working with a single agent, this is the simplest approach:
 
 ```bash
-# Install core library first
+# Navigate to any agent directory
+cd notebooks/hotel_search_agent_langchain
+
+# Install all dependencies automatically
+poetry install --no-root
+
+# Set up environment
+cp .env.sample .env
+# Edit .env with your credentials
+
+# Test the installation
+poetry run python -c "import agentc; print('✅ Agent Catalog ready!')"
+```
+
+### Option 2: Global Installation (For CLI Usage)
+
+If you need the global `agentc` CLI or want to work with multiple agents:
+
+```bash
+# Install Agent Catalog libraries in dependency order
 pip install -e agent-catalog/libs/agentc_core
-
-# Install integrations
-pip install -e agent-catalog/libs/agentc_integrations/langchain \
-            -e agent-catalog/libs/agentc_integrations/langgraph \
-            -e agent-catalog/libs/agentc_integrations/llamaindex
-
-# Install CLI and testing
-pip install -e agent-catalog/libs/agentc_cli \
-            -e agent-catalog/libs/agentc_testing
-
-# Install main package
+pip install -e agent-catalog/libs/agentc_cli  
 pip install -e agent-catalog/libs/agentc
+pip install -e agent-catalog/libs/agentc_integrations/langchain
+pip install -e agent-catalog/libs/agentc_integrations/langgraph
+pip install -e agent-catalog/libs/agentc_integrations/llamaindex
 
-# Install LlamaIndex dependencies
-pip install llama-index llama-index-vector-stores-couchbase
-```
+# Install each agent's dependencies
+cd notebooks/flight_search_agent_langraph && poetry install --no-root && cd ../..
+cd notebooks/hotel_search_agent_langchain && poetry install --no-root && cd ../..
+cd notebooks/landmark_search_agent_llamaindex && poetry install --no-root && cd ../..
 
-### 2. Install Poetry Dependencies
-
-**Important:** You must run `poetry install` in multiple locations:
-
-```bash
-# Install root dependencies
-poetry install
-
-# Install dependencies for each example agent
-cd notebooks/flight_search_agent_langraph && poetry install && cd ../..
-cd notebooks/hotel_search_agent_langchain && poetry install && cd ../..
-cd notebooks/landmark_search_agent_llamaindex && poetry install && cd ../..
-```
-
-### 3. Verify Installation
-
-```bash
+# Verify global CLI installation
 agentc --help
 ```
 
@@ -150,58 +161,69 @@ TOKENIZERS_PARALLELISM=false
 
 ## Usage
 
-### Initialize Agent Catalog
+### Running Agents (Simple Approach)
 
-Navigate to any example directory and initialize:
+If you used the recommended individual setup:
 
 ```bash
 cd notebooks/hotel_search_agent_langchain
+
+# Run the agent
+poetry run python main.py
+
+# Run with specific queries  
+poetry run python main.py "Find hotels in Paris with free breakfast"
+
+# Run evaluations
+poetry run python evals/eval_arize.py
+```
+
+### Using Global CLI (After Full Setup)
+
+If you installed the global CLI:
+
+```bash
+cd notebooks/hotel_search_agent_langchain
+
+# Initialize Agent Catalog
 agentc init
-```
 
-### Index Your Agent
-
-```bash
+# Index your agent
 agentc index .
-```
 
-### Publish Your Agent
-
-**Important:** The git repository must be clean before publishing:
-
-```bash
-# Commit any changes first
-git add .
-git commit -m "Your commit message"
-
-# Then publish
+# Publish your agent (requires clean git)
+git add . && git commit -m "Your changes"
 agentc publish
-```
 
-### Run Example Agents
-
-```bash
-# Run the hotel search agent
-python main.py
-
-# Run with specific queries
+# Run the agent
 python main.py "Find hotels in Paris with free breakfast"
 ```
 
 ## Available Examples
 
-This quickstart includes three example agents:
+This quickstart includes three self-contained example agents:
 
-- **Flight Search Agent** (`notebooks/flight_search_agent_langraph/`) - Searches and books flights using LangGraph
-- **Hotel Search Agent** (`notebooks/hotel_search_agent_langchain/`) - Hotel search and support using LangChain
-- **Landmark Search Agent** (`notebooks/landmark_search_agent_llamaindex/`) - Searches landmarks and attractions using LlamaIndex
+### 🛩️ Flight Search Agent (`notebooks/flight_search_agent_langraph/`)
+- **Framework**: LangGraph
+- **Setup**: `poetry install --no-root`
+- **Run**: `poetry run python main.py`
 
-Each example includes:
-- Complete source code
-- Configuration files
-- Test cases
-- Documentation
-- **Own poetry dependencies** (requires `poetry install` in each directory)
+### 🏨 Hotel Search Agent (`notebooks/hotel_search_agent_langchain/`) 
+- **Framework**: LangChain
+- **Setup**: `poetry install --no-root`
+- **Run**: `poetry run python main.py`
+
+### 🗺️ Landmark Search Agent (`notebooks/landmark_search_agent_llamaindex/`)
+- **Framework**: LlamaIndex  
+- **Setup**: `poetry install --no-root`
+- **Run**: `poetry run python main.py`
+
+Each example is **completely independent** and includes:
+- Complete source code with all dependencies
+- Configuration files (`pyproject.toml`, `.env.sample`)
+- Test cases and evaluation scripts
+- Documentation and prompts
+- **One-command setup** with Poetry
 
 ## Agent Catalog CLI Commands
 
@@ -217,49 +239,50 @@ Each example includes:
 
 ### Common Issues
 
-1. **"command not found: agentc"**
-   - Run the setup script: `bash scripts/setup.sh`
-   - Or install manually following the manual setup steps
+1. **"No module named 'agentc'"**
+   - **Solution**: Run `poetry install --no-root` in the agent directory
+   - Poetry automatically handles all Agent Catalog dependencies
 
-2. **"No module named 'llama_index.vector_stores'"**
-   - Install LlamaIndex: `pip install llama-index llama-index-vector-stores-couchbase`
-   - Run `poetry install` in the example directory
+2. **"command not found: agentc"** (when using CLI)
+   - **Solution**: Install globally with `bash scripts/setup.sh`
+   - Or follow the global installation steps in Manual Setup
 
-3. **"Could not find the environment variable $AGENT_CATALOG_CONN_STRING"**
-   - Ensure each example directory has its own `.env` file
+3. **"No module named 'llama_index.vector_stores'"**
+   - **Solution**: Run `poetry install --no-root` (should auto-install)
+   - If still failing, check the `pyproject.toml` in that agent directory
+
+4. **"Could not find the environment variable $AGENT_CATALOG_CONN_STRING"**
+   - **Solution**: Copy `.env.sample` to `.env` and edit with your credentials
    - Include `AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""` in the `.env` file
 
-4. **"Cannot publish a dirty catalog to the DB"**
-   - Commit all changes: `git add . && git commit -m "Your message"`
-   - Ensure `git status` shows a clean repository before `agentc publish`
+5. **Poetry installation fails**
+   - **Solution**: Delete `poetry.lock` and run `poetry install --no-root` again
+   - Check Poetry version: `poetry --version` (should be 1.5+)
 
-5. **Connection errors to Couchbase**
-   - Verify your `.env` configuration in each example directory
+6. **Connection errors to Couchbase**
+   - **Solution**: Verify your `.env` configuration 
    - Check that your Couchbase cluster is accessible
    - Ensure proper credentials and connection strings
 
-6. **"Certificate error" when connecting**
-   - For local installations, use `couchbase://127.0.0.1`
-   - For Capella, ensure you're using the correct `couchbases://` connection string
+7. **"Certificate error" when connecting**
+   - **Solution**: For local use `couchbase://127.0.0.1`
+   - For Capella use `couchbases://` connection string
    - Include `AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""` in your `.env`
 
-7. **Poetry dependency issues**
-   - Run `poetry install` in the root directory
-   - Run `poetry install` in each example directory separately
-   - Each example has its own `pyproject.toml` and requires separate installation
-
 8. **Tokenizer parallelism warnings**
-   - Add `TOKENIZERS_PARALLELISM=false` to your `.env` files
+   - **Solution**: Add `TOKENIZERS_PARALLELISM=false` to your `.env` files
 
 ### Setup Requirements Checklist
 
-- [ ] Poetry installed
-- [ ] Agent Catalog libraries installed (`pip install -e ...`)
-- [ ] LlamaIndex installed (`pip install llama-index llama-index-vector-stores-couchbase`)
-- [ ] Root poetry dependencies installed (`poetry install` in root)
-- [ ] Example poetry dependencies installed (`poetry install` in each example directory)
-- [ ] `.env` files created in each example directory
+#### For Individual Agent (Recommended)
+- [ ] Poetry installed (`poetry --version`)
+- [ ] Agent dependencies installed (`poetry install --no-root`)
+- [ ] `.env` file created (`cp .env.sample .env`)
 - [ ] Environment variables configured with actual credentials
+
+#### For Global CLI Usage (Optional)
+- [ ] Agent Catalog libraries installed globally (`bash scripts/setup.sh`)
+- [ ] Global `agentc` CLI available (`agentc --help`)
 - [ ] Git repository in clean state (for publishing)
 
 ### Getting Help

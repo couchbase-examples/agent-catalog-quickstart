@@ -1,11 +1,29 @@
 #!/bin/bash
 
 # Agent Catalog Quickstart Setup Script
-# This script installs the Agent Catalog CLI and required dependencies
+# This script installs Agent Catalog globally and sets up all example agents
 
 set -e  # Exit on any error
 
-echo "🚀 Setting up Agent Catalog CLI..."
+echo "🚀 Agent Catalog Quickstart Setup"
+echo ""
+echo "ℹ️  For a single agent, you can use the simpler approach:"
+echo "   cd notebooks/hotel_search_agent_langchain"
+echo "   poetry install --no-root"
+echo ""
+echo "🔧 This script provides comprehensive setup for:"
+echo "   • Global agentc CLI installation"
+echo "   • All three example agents"
+echo "   • Development tools and dependencies"
+echo ""
+read -p "Continue with full setup? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Setup cancelled. Use 'poetry install --no-root' for individual agents."
+    exit 0
+fi
+
+echo "🚀 Starting full Agent Catalog setup..."
 
 # Check if Python is available
 if ! command -v python3 &> /dev/null; then
@@ -15,8 +33,17 @@ fi
 
 echo "✅ Python 3 found"
 
+# Check if Poetry is available
+if ! command -v poetry &> /dev/null; then
+    echo "❌ Poetry is required but not installed. Please install Poetry first:"
+    echo "   https://python-poetry.org/docs/#installation"
+    exit 1
+fi
+
+echo "✅ Poetry found"
+
 # Install Agent Catalog libraries in dependency order
-echo "📦 Installing Agent Catalog libraries..."
+echo "📦 Installing Agent Catalog libraries globally..."
 
 echo "  Installing agentc_core..."
 pip install -e ./agent-catalog/libs/agentc_core/
@@ -39,13 +66,17 @@ pip install -e ./agent-catalog/libs/agentc_integrations/llamaindex/
 echo "  Installing agentc_testing..."
 pip install -e ./agent-catalog/libs/agentc_testing/
 
-# Install additional dependencies for the quickstart
-echo "📦 Installing additional dependencies..."
-pip install python-dotenv langchain-openai langchain langgraph
+# Install Poetry dependencies for each agent
+echo "📦 Installing agent dependencies with Poetry..."
 
-# Install LlamaIndex dependencies
-echo "📦 Installing LlamaIndex dependencies..."
-pip install llama-index-vector-stores-couchbase llama-index-embeddings-openai llama-index-llms-openai llama-index
+echo "  Setting up Flight Search Agent (LangGraph)..."
+cd notebooks/flight_search_agent_langraph && poetry install --no-root && cd ../..
+
+echo "  Setting up Hotel Search Agent (LangChain)..."
+cd notebooks/hotel_search_agent_langchain && poetry install --no-root && cd ../..
+
+echo "  Setting up Landmark Search Agent (LlamaIndex)..."
+cd notebooks/landmark_search_agent_llamaindex && poetry install --no-root && cd ../..
 
 # Add local bin to PATH if not already there
 echo "🔧 Configuring PATH..."
@@ -87,19 +118,31 @@ else
     echo "✅ PATH already includes $LOCAL_BIN"
 fi
 
-echo "✅ Agent Catalog CLI installation complete!"
+echo "✅ Agent Catalog global installation complete!"
 
 # Verify installation
 export PATH="$PATH:$LOCAL_BIN"
 if command -v agentc &> /dev/null; then
-    echo "✅ agentc command is available"
+    echo "✅ Global agentc CLI is available"
     echo ""
-    echo "🎉 Setup complete! Next steps:"
-    echo "   1. Restart your shell or run: export PATH=\"\$PATH:$HOME/.local/bin\""
-    echo "   2. Configure Poetry environments (see README.md)"
-    echo "   3. Set up .env files (see README.md)"
-    echo "   4. Run 'agentc --help' to see available commands"
-    echo "   5. Initialize a project with 'agentc init'"
+    echo "🎉 Full setup complete! You can now:"
+    echo ""
+    echo "📁 Work with any agent:"
+    echo "   cd notebooks/hotel_search_agent_langchain"
+    echo "   cp .env.sample .env  # Edit with your credentials"
+    echo "   poetry run python main.py"
+    echo ""
+    echo "🔧 Use global CLI commands:"
+    echo "   agentc init"
+    echo "   agentc index ."
+    echo "   agentc publish"
+    echo ""
+    echo "📖 See README.md for environment configuration details"
+    echo ""
+    echo "💡 Next steps:"
+    echo "   1. Set up .env files in each agent directory"
+    echo "   2. Configure your Couchbase and OpenAI credentials"
+    echo "   3. Run any agent with 'poetry run python main.py'"
 else
     echo "❌ agentc command not found. Try restarting your shell or manually add $LOCAL_BIN to PATH"
     echo "Run: export PATH=\"\$PATH:$LOCAL_BIN\""
