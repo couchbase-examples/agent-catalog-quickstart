@@ -15,12 +15,18 @@ This repository provides a quickstart guide for using the Agent Catalog with Cap
 **The simplest way to get started** with any individual agent:
 
 ```bash
-# Choose an agent project
+# Install Agent Catalog packages
+pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
+
+# Install root dependencies
+poetry install
+
+# Choose an agent project and install its dependencies
 cd notebooks/hotel_search_agent_langchain
 # OR cd notebooks/flight_search_agent_langraph  
 # OR cd notebooks/landmark_search_agent_llamaindex
 
-# Install all dependencies with a single command
+# Install notebook-specific dependencies
 poetry install --no-root
 
 # Set up your environment (see Environment Configuration below)
@@ -31,11 +37,11 @@ cp .env.sample .env
 poetry run python main.py
 ```
 
-That's it! 🎯 Poetry automatically handles all Agent Catalog dependencies and integrations.
+That's it! 🎯 The `pip3 install` handles all Agent Catalog packages, and Poetry manages the project-specific dependencies.
 
-## Alternative: Full Setup (All Agents + Global CLI)
+## Alternative: Automated Setup Script (Fallback)
 
-If you want to set up **all agents at once** and install the global `agentc` CLI:
+If you encounter issues with the pip installation or prefer an automated approach:
 
 ```bash
 # Clone the repository
@@ -46,23 +52,29 @@ cd agent-catalog-quickstart
 bash scripts/setup.sh
 ```
 
-This comprehensive script will:
-- Install all Agent Catalog libraries globally
+This fallback script will:
+- Install all Agent Catalog libraries from local source
 - Set up all three agent environments
 - Install the global `agentc` CLI command
 - Verify the installation
 
 ## Manual Setup (Step-by-Step)
 
-### Option 1: Individual Agent Setup (Recommended)
+### Option 1: Simple Installation (Recommended)
 
-For working with a single agent, this is the simplest approach:
+The easiest approach using published packages:
 
 ```bash
+# Install Agent Catalog packages from PyPI
+pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
+
+# Install root dependencies
+poetry install
+
 # Navigate to any agent directory
 cd notebooks/hotel_search_agent_langchain
 
-# Install all dependencies automatically
+# Install notebook-specific dependencies
 poetry install --no-root
 
 # Set up environment
@@ -73,12 +85,12 @@ cp .env.sample .env
 poetry run python -c "import agentc; print('✅ Agent Catalog ready!')"
 ```
 
-### Option 2: Global Installation (For CLI Usage)
+### Option 2: Local Development Installation
 
-If you need the global `agentc` CLI or want to work with multiple agents:
+If you need to modify the Agent Catalog source code:
 
 ```bash
-# Install Agent Catalog libraries in dependency order
+# Install Agent Catalog libraries from local source
 pip install -e agent-catalog/libs/agentc_core
 pip install -e agent-catalog/libs/agentc_cli  
 pip install -e agent-catalog/libs/agentc
@@ -86,78 +98,34 @@ pip install -e agent-catalog/libs/agentc_integrations/langchain
 pip install -e agent-catalog/libs/agentc_integrations/langgraph
 pip install -e agent-catalog/libs/agentc_integrations/llamaindex
 
+# Install root dependencies
+poetry install
+
 # Install each agent's dependencies
 cd notebooks/flight_search_agent_langraph && poetry install --no-root && cd ../..
 cd notebooks/hotel_search_agent_langchain && poetry install --no-root && cd ../..
 cd notebooks/landmark_search_agent_llamaindex && poetry install --no-root && cd ../..
 
-# Verify global CLI installation
+# Verify installation
 agentc --help
 ```
 
-### 4. Environment Configuration
+## Environment Configuration
 
-Create a `.env` file in each example directory with the following configuration:
+Each agent needs its own `.env` file with your credentials:
 
-#### For Couchbase Capella (Cloud):
 ```bash
-# OpenAI API Configuration
-OPENAI_API_KEY="your-openai-api-key"
-
-# Couchbase Configuration
-CB_CONN_STRING="couchbases://your-cluster.cloud.couchbase.com"
-CB_USERNAME="your-username"
-CB_PASSWORD="your-password"
-CB_BUCKET="vector-search-testing"
-CB_SCOPE="agentc_data"
-CB_COLLECTION="hotel_data"
-CB_INDEX="hotel_data_index"
-
-# Capella API Configuration
-CAPELLA_API_ENDPOINT="https://your-endpoint.ai.cloud.couchbase.com"
-CAPELLA_API_EMBEDDING_MODEL="intfloat/e5-mistral-7b-instruct"
-CAPELLA_API_LLM_MODEL="meta-llama/Llama-3.1-8B-Instruct"
-
-# Agent Catalog Configuration
-AGENT_CATALOG_CONN_STRING="couchbase://127.0.0.1"
-AGENT_CATALOG_BUCKET="vector-search-testing"
-AGENT_CATALOG_USERNAME="your-username"
-AGENT_CATALOG_PASSWORD="your-password"
-AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""
-
-# Environment variable to prevent tokenizer warnings
-TOKENIZERS_PARALLELISM=false
+# Copy the sample file and edit it
+cp .env.sample .env
+# Edit .env with your actual credentials
 ```
 
-#### For Local Couchbase:
-```bash
-# OpenAI API Configuration
-OPENAI_API_KEY="your-openai-api-key"
-
-# Couchbase Configuration
-CB_CONN_STRING="couchbase://127.0.0.1"
-CB_USERNAME="Administrator"
-CB_PASSWORD="password"
-CB_BUCKET="default"
-CB_SCOPE="_default"
-CB_COLLECTION="_default"
-CB_INDEX="vector_index"
-
-# Agent Catalog Configuration
-AGENT_CATALOG_CONN_STRING="couchbase://127.0.0.1"
-AGENT_CATALOG_BUCKET="default"
-AGENT_CATALOG_USERNAME="Administrator"
-AGENT_CATALOG_PASSWORD="password"
-AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""
-
-# Environment variable to prevent tokenizer warnings
-TOKENIZERS_PARALLELISM=false
-```
-
-**Important:** Each example directory needs its own `.env` file:
+**Required files:**
 - `notebooks/flight_search_agent_langraph/.env`
 - `notebooks/hotel_search_agent_langchain/.env`
 - `notebooks/landmark_search_agent_llamaindex/.env`
+
+For complete environment configuration examples (Capella vs Local), see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md#environment-configuration-examples)**.
 
 ## Usage
 
@@ -237,60 +205,16 @@ Each example is **completely independent** and includes:
 
 ## Troubleshooting
 
-### Common Issues
+Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
 
-1. **"No module named 'agentc'"**
-   - **Solution**: Run `poetry install --no-root` in the agent directory
-   - Poetry automatically handles all Agent Catalog dependencies
+### Quick Fixes
 
-2. **"command not found: agentc"** (when using CLI)
-   - **Solution**: Install globally with `bash scripts/setup.sh`
-   - Or follow the global installation steps in Manual Setup
+- **"No module named 'agentc'"**: Run `pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex`
+- **Poetry issues**: Delete `poetry.lock` and run `poetry install --no-root` again  
+- **Environment errors**: Copy `.env.sample` to `.env` and edit with your credentials
+- **CLI not found**: Try the fallback setup script: `bash scripts/setup.sh`
 
-3. **"No module named 'llama_index.vector_stores'"**
-   - **Solution**: Run `poetry install --no-root` (should auto-install)
-   - If still failing, check the `pyproject.toml` in that agent directory
-
-4. **"Could not find the environment variable $AGENT_CATALOG_CONN_STRING"**
-   - **Solution**: Copy `.env.sample` to `.env` and edit with your credentials
-   - Include `AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""` in the `.env` file
-
-5. **Poetry installation fails**
-   - **Solution**: Delete `poetry.lock` and run `poetry install --no-root` again
-   - Check Poetry version: `poetry --version` (should be 1.5+)
-
-6. **Connection errors to Couchbase**
-   - **Solution**: Verify your `.env` configuration 
-   - Check that your Couchbase cluster is accessible
-   - Ensure proper credentials and connection strings
-
-7. **"Certificate error" when connecting**
-   - **Solution**: For local use `couchbase://127.0.0.1`
-   - For Capella use `couchbases://` connection string
-   - Include `AGENT_CATALOG_CONN_ROOT_CERTIFICATE=""` in your `.env`
-
-8. **Tokenizer parallelism warnings**
-   - **Solution**: Add `TOKENIZERS_PARALLELISM=false` to your `.env` files
-
-### Setup Requirements Checklist
-
-#### For Individual Agent (Recommended)
-- [ ] Poetry installed (`poetry --version`)
-- [ ] Agent dependencies installed (`poetry install --no-root`)
-- [ ] `.env` file created (`cp .env.sample .env`)
-- [ ] Environment variables configured with actual credentials
-
-#### For Global CLI Usage (Optional)
-- [ ] Agent Catalog libraries installed globally (`bash scripts/setup.sh`)
-- [ ] Global `agentc` CLI available (`agentc --help`)
-- [ ] Git repository in clean state (for publishing)
-
-### Getting Help
-
-- Check the `docs/` directory for detailed guides
-- Look at example implementations in `notebooks/`
-- Review error messages for specific configuration issues
-- Ensure you've run `poetry install` in all required directories
+For detailed solutions, environment configuration examples, and debugging commands, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**.
 
 ## Development
 
@@ -299,22 +223,17 @@ Each example is **completely independent** and includes:
 1. Create a new directory under `notebooks/`
 2. Add your agent code, prompts, and tools
 3. Create appropriate configuration files (`pyproject.toml`, `.env`)
-4. Run `poetry install` in the new directory
-5. Run `agentc init` and `agentc index .`
-
-### Running Tests
-
-```bash
-cd notebooks/hotel_search_agent_langchain
-python -m pytest tests/
-```
+4. Install Agent Catalog: `pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex`
+5. Install root dependencies: `poetry install`
+6. Run `poetry install --no-root` in the new directory
+7. Run `agentc init` and `agentc index .`
 
 ### Evaluation
 
 Run evaluations with Arize:
 
 ```bash
-python run_evaluations.py
+poetry run python evals/eval_arize.py
 ```
 
 ## Architecture
@@ -328,7 +247,6 @@ notebooks/agent_name/
 ├── prompts/             # Agent prompts and templates
 ├── tools/               # Agent tools and functions
 ├── data/                # Data loading and processing
-├── tests/               # Test cases
 └── evals/               # Evaluation scripts
 ```
 
