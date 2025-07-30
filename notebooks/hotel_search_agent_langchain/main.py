@@ -134,13 +134,17 @@ def setup_embeddings_service(input_type="query"):
         and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
     ):
         try:
+            # Check if model needs input_type parameter
+            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
+            model_kwargs = {}
+            if "llama-3.2-nv-embedqa" in model_name:
+                model_kwargs["input_type"] = input_type
+                
             embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                model=model_name,
                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs={
-                    "input_type": input_type
-                },  # Required for nvidia asymmetric models
+                model_kwargs=model_kwargs,
             )
             logger.info("✅ Using new Capella AI embeddings (direct API key)")
         except Exception as e:
@@ -157,13 +161,18 @@ def setup_embeddings_service(input_type="query"):
             api_key = base64.b64encode(
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
+            
+            # Check if model needs input_type parameter
+            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
+            model_kwargs = {}
+            if "llama-3.2-nv-embedqa" in model_name:
+                model_kwargs["input_type"] = input_type
+                
             embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                model=model_name,
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs={
-                    "input_type": input_type
-                },
+                model_kwargs=model_kwargs,
             )
             logger.info("✅ Using old Capella AI embeddings (base64 encoding)")
         except Exception as e:
@@ -174,7 +183,7 @@ def setup_embeddings_service(input_type="query"):
         try:
             from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
             embeddings = NVIDIAEmbeddings(
-                model=os.getenv("NVIDIA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
+                model=os.getenv("NVIDIA_API_EMBEDDING_MODEL",DEFAULT_NVIDIA_API_EMBEDDING_MODEL),
                 api_key=os.getenv("NVIDIA_API_KEY"),
                 truncate="END",
             )
@@ -272,7 +281,7 @@ def setup_llm_service(application_span=None):
             llm = ChatOpenAI(
                 api_key=os.getenv("NVIDIA_API_KEY"),
                 base_url=os.getenv("NVIDIA_API_BASE_URL", "https://integrate.api.nvidia.com/v1"),
-                model=os.getenv("NVIDIA_API_LLM_MODEL", "meta/llama3-70b-instruct"),
+                model=os.getenv("NVIDIA_API_LLM_MODEL", DEFAULT_NVIDIA_API_LLM_MODEL),
                 temperature=0.0,
                 callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
             )
@@ -345,8 +354,11 @@ def test_capella_connectivity():
             "input_type": "query",
         }
 
-        # Use correct v1 endpoint
-        embedding_url = f"{endpoint}/v1/embeddings"
+        # Smart URL construction - check if /v1 is already present
+        if endpoint.endswith("/v1"):
+            embedding_url = f"{endpoint}/embeddings"
+        else:
+            embedding_url = f"{endpoint}/v1/embeddings"
         response = requests.post(
             embedding_url, json=embedding_data, headers=headers, timeout=30
         )
@@ -390,13 +402,14 @@ def setup_environment():
     # Optional Capella AI configuration
     if os.getenv("CAPELLA_API_ENDPOINT"):
         # Ensure endpoint has /v1 suffix for OpenAI compatibility
-        if not os.getenv("CAPELLA_API_ENDPOINT").endswith("/v1"):
-            os.environ["CAPELLA_API_ENDPOINT"] = (
-                os.getenv("CAPELLA_API_ENDPOINT").rstrip("/") + "/v1"
-            )
+        endpoint = os.getenv("CAPELLA_API_ENDPOINT").rstrip("/")
+        if not endpoint.endswith("/v1"):
+            os.environ["CAPELLA_API_ENDPOINT"] = endpoint + "/v1"
             logger.info(
                 f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
             )
+        else:
+            logger.info(f"Endpoint already has /v1 suffix: {endpoint}")
 
     # Test Capella AI connectivity
     test_capella_connectivity()

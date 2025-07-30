@@ -48,13 +48,17 @@ def setup_embeddings_service_for_tool():
         and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
     ):
         try:
+            # Check if model needs input_type parameter
+            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
+            model_kwargs = {}
+            if "llama-3.2-nv-embedqa" in model_name:
+                model_kwargs["input_type"] = "query"
+                
             embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                model=model_name,
                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs={
-                    "input_type": "query"
-                },  # Required for nvidia asymmetric models
+                model_kwargs=model_kwargs,
             )
         except Exception:
             pass  # Try next option
@@ -70,13 +74,18 @@ def setup_embeddings_service_for_tool():
             api_key = base64.b64encode(
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
+            
+            # Check if model needs input_type parameter
+            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
+            model_kwargs = {}
+            if "llama-3.2-nv-embedqa" in model_name:
+                model_kwargs["input_type"] = "query"
+                
             embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                model=model_name,
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs={
-                    "input_type": "query"
-                },
+                model_kwargs=model_kwargs,
             )
         except Exception:
             pass  # Try next option
