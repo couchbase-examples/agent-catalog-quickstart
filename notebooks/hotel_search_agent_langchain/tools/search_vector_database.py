@@ -1,17 +1,24 @@
-import agentc
 import base64
+import os
+
+# Import custom Capella embeddings for nv-embedqa models
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from datetime import timedelta
+
+import agentc
 import couchbase.auth
 import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
-import os
-from langchain_openai import OpenAIEmbeddings
+
+from capella_model_services import create_capella_embeddings
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-
-
-from datetime import timedelta
+from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv()
 
@@ -48,17 +55,13 @@ def setup_embeddings_service_for_tool():
         and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
     ):
         try:
-            # Check if model needs input_type parameter
-            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
-            model_kwargs = {}
-            if "llama-3.2-nv-embedqa" in model_name:
-                model_kwargs["input_type"] = "query"
-                
-            embeddings = OpenAIEmbeddings(
-                model=model_name,
+            # Use custom Capella embeddings for ALL models with explicit endpoint
+            embeddings = create_capella_embeddings(
                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs=model_kwargs,
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                input_type_for_query="query",
+                input_type_for_passage="passage"
             )
         except Exception:
             pass  # Try next option
@@ -71,21 +74,15 @@ def setup_embeddings_service_for_tool():
         and os.getenv("CB_PASSWORD")
     ):
         try:
+            # Use standard OpenAI embeddings for ALL models
             api_key = base64.b64encode(
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
             
-            # Check if model needs input_type parameter
-            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
-            model_kwargs = {}
-            if "llama-3.2-nv-embedqa" in model_name:
-                model_kwargs["input_type"] = "query"
-                
             embeddings = OpenAIEmbeddings(
-                model=model_name,
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs=model_kwargs,
             )
         except Exception:
             pass  # Try next option

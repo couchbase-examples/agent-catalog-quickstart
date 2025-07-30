@@ -35,6 +35,9 @@ from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
+# Import custom Capella model services (embeddings and LLM)
+from capella_model_services import create_capella_embeddings, create_capella_chat_llm
+
 # Setup logging with essential level only
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -134,17 +137,13 @@ def setup_embeddings_service(input_type="query"):
         and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
     ):
         try:
-            # Check if model needs input_type parameter
-            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
-            model_kwargs = {}
-            if "llama-3.2-nv-embedqa" in model_name:
-                model_kwargs["input_type"] = input_type
-                
-            embeddings = OpenAIEmbeddings(
-                model=model_name,
+            # Use custom Capella embeddings for ALL models with explicit endpoint
+            embeddings = create_capella_embeddings(
                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs=model_kwargs,
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                input_type_for_query="query",
+                input_type_for_passage="passage"
             )
             logger.info("✅ Using new Capella AI embeddings (direct API key)")
         except Exception as e:
@@ -158,21 +157,15 @@ def setup_embeddings_service(input_type="query"):
         and os.getenv("CB_PASSWORD")
     ):
         try:
+            # Use standard OpenAI embeddings for ALL models
             api_key = base64.b64encode(
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
             
-            # Check if model needs input_type parameter
-            model_name = os.getenv("CAPELLA_API_EMBEDDING_MODEL", "")
-            model_kwargs = {}
-            if "llama-3.2-nv-embedqa" in model_name:
-                model_kwargs["input_type"] = input_type
-                
             embeddings = OpenAIEmbeddings(
-                model=model_name,
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
                 api_key=api_key,
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model_kwargs=model_kwargs,
             )
             logger.info("✅ Using old Capella AI embeddings (base64 encoding)")
         except Exception as e:
@@ -238,12 +231,14 @@ def setup_llm_service(application_span=None):
         and os.getenv("CAPELLA_API_LLM_KEY")
     ):
         try:
-            llm = ChatOpenAI(
+            # Use custom Capella LLM for ALL models with explicit endpoint
+            callbacks = [agentc_langchain.chat.Callback(span=application_span)] if application_span else []
+            llm = create_capella_chat_llm(
                 api_key=os.getenv("CAPELLA_API_LLM_KEY"),
                 base_url=os.getenv("CAPELLA_API_ENDPOINT"),
                 model=os.getenv("CAPELLA_API_LLM_MODEL"),
                 temperature=0.0,
-                callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
+                callbacks=callbacks,
             )
             llm.invoke("Hello")  # Test the LLM works
             logger.info("✅ Using new Capella AI LLM (direct API key)")
@@ -259,6 +254,7 @@ def setup_llm_service(application_span=None):
         and os.getenv("CB_PASSWORD")
     ):
         try:
+            # Use standard ChatOpenAI for ALL models
             api_key = base64.b64encode(
                 f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
             ).decode()
@@ -653,9 +649,15 @@ def setup_hotel_support_agent():
         except Exception as e:
             raise ValueError(f"Error loading index definition: {e!s}")
 
-        couchbase_client.setup_vector_search_index(
-            index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
-        )
+        # Try to setup vector search index, but continue if it fails
+        try:
+            couchbase_client.setup_vector_search_index(
+                index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
+            )
+            logger.info("✅ Vector search index setup completed")
+        except Exception as e:
+            logger.warning(f"⚠️ Vector search index setup failed: {e}")
+            logger.info("🔄 Continuing without vector search index - basic functionality will still work")
 
         # Setup embeddings with priority order
         embeddings = setup_embeddings_service(input_type="passage")

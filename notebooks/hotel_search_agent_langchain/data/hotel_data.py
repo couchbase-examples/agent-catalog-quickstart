@@ -5,10 +5,9 @@ Loads real hotel data from travel-sample.inventory.hotel collection.
 """
 
 import os
-import json
 import logging
+import time
 from datetime import timedelta
-from typing import List, Dict, Any
 
 import couchbase.auth
 import couchbase.cluster
@@ -24,6 +23,19 @@ dotenv.load_dotenv()
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def retry_with_backoff(func, retries=3):
+    """Simple retry with exponential backoff."""
+    for attempt in range(retries):
+        try:
+            return func()
+        except Exception:
+            if attempt == retries - 1:
+                raise
+            delay = 2 ** attempt
+            logger.warning(f"Attempt {attempt + 1} failed, retrying in {delay}s...")
+            time.sleep(delay)
 
 
 def get_cluster_connection():
@@ -88,37 +100,52 @@ def get_hotel_texts():
         city = hotel.get("city", "Unknown City")
         country = hotel.get("country", "Unknown Country")
 
-        # Build comprehensive text with all available fields
+        # Build text with PRIORITIZED information for search
         text_parts = [f"{name} in {city}, {country}"]
 
-        # Add all fields dynamically instead of manual selection
-        field_mappings = {
-            "title": "Title",
-            "description": "Description",
-            "address": "Address",
-            "directions": "Directions",
-            "phone": "Phone",
-            "tollfree": "Toll-free",
-            "email": "Email",
-            "fax": "Fax",
-            "url": "Website",
-            "checkin": "Check-in",
-            "checkout": "Check-out",
-            "price": "Price",
-            "state": "State",
-            "type": "Type",
-            "vacancy": "Vacancy",
-            "alias": "Also known as",
-            "pets_ok": "Pets allowed",
-            "free_breakfast": "Free breakfast",
-            "free_internet": "Free internet",
-            "free_parking": "Free parking",
-        }
-
-        # Add all available fields
-        for field, label in field_mappings.items():
+        # PRIORITY 1: Location details (critical for search)
+        location_fields = ["address", "state", "directions"]
+        for field in location_fields:
             value = hotel.get(field)
-            if value is not None and value != "" and value != "None":
+            if value and value != "None":
+                text_parts.append(f"{field.title()}: {value}")
+
+        # PRIORITY 2: Key amenities (most searched features)
+        amenity_fields = [
+            ("free_breakfast", "Free breakfast"),
+            ("free_internet", "Free internet"), 
+            ("free_parking", "Free parking"),
+            ("pets_ok", "Pets allowed")
+        ]
+        for field, label in amenity_fields:
+            value = hotel.get(field)
+            if value is not None:
+                text_parts.append(f"{label}: {'Yes' if value else 'No'}")
+
+        # PRIORITY 3: Hotel description and type
+        description_fields = [
+            ("description", "Description"),
+            ("type", "Type"),
+            ("title", "Title")
+        ]
+        for field, label in description_fields:
+            value = hotel.get(field)
+            if value and value != "None":
+                text_parts.append(f"{label}: {value}")
+
+        # PRIORITY 4: Other details (less critical for search)
+        other_fields = [
+            ("price", "Price"),
+            ("checkin", "Check-in"),
+            ("checkout", "Check-out"),
+            ("phone", "Phone"),
+            ("email", "Email"),
+            ("vacancy", "Vacancy"),
+            ("alias", "Also known as")
+        ]
+        for field, label in other_fields:
+            value = hotel.get(field)
+            if value and value != "None":
                 if isinstance(value, bool):
                     text_parts.append(f"{label}: {'Yes' if value else 'No'}")
                 else:
@@ -184,8 +211,7 @@ def load_hotel_data_to_couchbase(
             )
             return
 
-        # Get the source hotels from travel-sample
-        hotels = load_hotel_data_from_travel_sample()
+        # Get hotel texts for embeddings
         hotel_texts = get_hotel_texts()
 
         # Setup vector store for the target collection
@@ -203,14 +229,17 @@ def load_hotel_data_to_couchbase(
             f"Loading {len(hotel_texts)} hotel embeddings to {bucket_name}.{scope_name}.{collection_name}"
         )
 
-        # Process in batches to avoid memory issues and respect Capella AI batch limit
-        batch_size = 25  # Well below Capella AI embedding model limit of 32
+        # Process in batches with simple retry
+        batch_size = 10
 
         with tqdm(total=len(hotel_texts), desc="Loading hotel embeddings") as pbar:
             for i in range(0, len(hotel_texts), batch_size):
                 batch = hotel_texts[i : i + batch_size]
-
-                vector_store.add_texts(texts=batch, batch_size=batch_size)
+                
+                def add_batch():
+                    return vector_store.add_texts(texts=batch, batch_size=batch_size)
+                
+                retry_with_backoff(add_batch, retries=3)
                 pbar.update(len(batch))
 
         logger.info(
