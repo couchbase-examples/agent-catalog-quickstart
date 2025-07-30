@@ -33,20 +33,20 @@ logger = logging.getLogger(__name__)
 
 class AirlineReviewsDataManager:
     """Manages airline reviews data loading, processing, and embedding."""
-    
+
     def __init__(self):
         self._raw_data_cache = None
         self._processed_texts_cache = None
-        
+
     def load_raw_data(self):
         """Load raw airline reviews data from Kaggle dataset (with caching)."""
         if self._raw_data_cache is not None:
             return self._raw_data_cache
-            
+
         try:
             if kagglehub is None:
                 raise ImportError("kagglehub is not available")
-            
+
             # Download the dataset from Kaggle
             logger.info("Downloading Indian Airlines Customer Reviews dataset from Kaggle...")
             path = kagglehub.dataset_download("jagathratchakan/indian-airlines-customer-reviews")
@@ -79,7 +79,7 @@ class AirlineReviewsDataManager:
         """Process raw data into formatted text strings for embedding (with caching)."""
         if self._processed_texts_cache is not None:
             return self._processed_texts_cache
-            
+
         reviews = self.load_raw_data()
         review_texts = []
 
@@ -124,18 +124,29 @@ class AirlineReviewsDataManager:
         logger.info(f"Processed {len(review_texts)} airline reviews into text format")
         return review_texts
 
-    def load_to_vector_store(self, cluster, bucket_name: str, scope_name: str, 
-                           collection_name: str, embeddings, index_name: str):
+    def load_to_vector_store(
+        self,
+        cluster,
+        bucket_name: str,
+        scope_name: str,
+        collection_name: str,
+        embeddings,
+        index_name: str,
+    ):
         """Load airline reviews into Couchbase vector store with embeddings."""
         try:
             # Check if data already exists
-            count_query = f"SELECT COUNT(*) as count FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+            count_query = (
+                f"SELECT COUNT(*) as count FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+            )
             count_result = cluster.query(count_query)
             count_row = next(iter(count_result))
             existing_count = count_row["count"]
 
             if existing_count > 0:
-                logger.info(f"Found {existing_count} existing documents in collection, skipping data load")
+                logger.info(
+                    f"Found {existing_count} existing documents in collection, skipping data load"
+                )
                 return
 
             # Get the processed review texts
@@ -152,25 +163,31 @@ class AirlineReviewsDataManager:
             )
 
             # Add review texts to vector store with batch processing and progress bar
-            logger.info(f"Loading {len(review_texts)} airline review embeddings to {bucket_name}.{scope_name}.{collection_name}")
+            logger.info(
+                f"Loading {len(review_texts)} airline review embeddings to {bucket_name}.{scope_name}.{collection_name}"
+            )
 
             # Process in batches to avoid memory issues and respect Capella AI batch limit
             batch_size = 10  # Conservative batch size for stability
             total_batches = (len(review_texts) + batch_size - 1) // batch_size
-            
-            with tqdm(total=len(review_texts), desc="Loading airline reviews", unit="reviews") as pbar:
+
+            with tqdm(
+                total=len(review_texts), desc="Loading airline reviews", unit="reviews"
+            ) as pbar:
                 for i in range(0, len(review_texts), batch_size):
                     batch_num = i // batch_size + 1
-                    batch = review_texts[i:i + batch_size]
-                    
+                    batch = review_texts[i : i + batch_size]
+
                     # Add this batch to vector store
                     vector_store.add_texts(texts=batch, batch_size=len(batch))
-                    
+
                     # Update progress bar
                     pbar.update(len(batch))
                     pbar.set_postfix(batch=f"{batch_num}/{total_batches}")
 
-            logger.info(f"Successfully loaded {len(review_texts)} airline review embeddings to vector store")
+            logger.info(
+                f"Successfully loaded {len(review_texts)} airline review embeddings to vector store"
+            )
 
         except Exception as e:
             logger.exception(f"Error loading airline reviews to Couchbase: {e!s}")
@@ -191,8 +208,9 @@ def load_airline_reviews_from_kaggle():
     return _data_manager.load_raw_data()
 
 
-def load_airline_reviews_to_couchbase(cluster, bucket_name: str, scope_name: str, 
-                                     collection_name: str, embeddings, index_name: str):
+def load_airline_reviews_to_couchbase(
+    cluster, bucket_name: str, scope_name: str, collection_name: str, embeddings, index_name: str
+):
     """Load airline reviews into Couchbase vector store (uses global cached instance)."""
     return _data_manager.load_to_vector_store(
         cluster, bucket_name, scope_name, collection_name, embeddings, index_name

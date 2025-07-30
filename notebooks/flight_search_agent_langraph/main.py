@@ -60,16 +60,14 @@ def setup_capella_ai_config():
     # Verify required environment variables are set (no defaults)
     required_capella_vars = [
         "CB_USERNAME",
-        "CB_PASSWORD", 
+        "CB_PASSWORD",
         "CAPELLA_API_ENDPOINT",
         "CAPELLA_API_EMBEDDING_MODEL",
         "CAPELLA_API_LLM_MODEL",
     ]
     missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
     if missing_vars:
-        raise ValueError(
-            f"Missing required Capella AI environment variables: {missing_vars}"
-        )
+        raise ValueError(f"Missing required Capella AI environment variables: {missing_vars}")
 
     return {
         "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
@@ -106,9 +104,7 @@ def test_capella_connectivity():
                 "input": "test connectivity",
             }
 
-            response = requests.post(
-                f"{endpoint}/embeddings", json=embedding_data, headers=headers
-            )
+            response = requests.post(f"{endpoint}/embeddings", json=embedding_data, headers=headers)
             if response.status_code == 200:
                 logger.info("✅ Capella AI embedding test successful")
                 return True
@@ -136,10 +132,10 @@ def _set_if_undefined(env_var: str, default_value: str = None):
 def setup_environment():
     """Setup required environment variables with defaults."""
     logger.info("Setting up environment variables...")
-    
+
     required_vars = [
         "CB_CONN_STRING",
-        "CB_USERNAME", 
+        "CB_USERNAME",
         "CB_PASSWORD",
         "CB_BUCKET",
         "AGENT_CATALOG_CONN_STRING",
@@ -166,7 +162,7 @@ def setup_environment():
     os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "airline_reviews_index")
     os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
     os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "airline_reviews")
-    
+
     # Optional Capella AI configuration
     if os.getenv("CAPELLA_API_ENDPOINT"):
         # Ensure endpoint has /v1 suffix for OpenAI compatibility
@@ -174,9 +170,7 @@ def setup_environment():
             os.environ["CAPELLA_API_ENDPOINT"] = (
                 os.getenv("CAPELLA_API_ENDPOINT").rstrip("/") + "/v1"
             )
-            logger.info(
-                f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}"
-            )
+            logger.info(f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}")
 
     # Test Capella AI connectivity
     test_capella_connectivity()
@@ -549,19 +543,23 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                     """Wrapper function that handles input parsing and error handling."""
                     try:
                         logger.info(f"🔧 Tool {name} called with input: {repr(tool_input)}")
-                        
+
                         # Sanitize input - remove quotes, newlines, and extra whitespace
                         if isinstance(tool_input, str):
-                            tool_input = tool_input.strip().strip('"\'').strip()
+                            tool_input = tool_input.strip().strip("\"'").strip()
                             # Remove any trailing/leading newlines and quotes that might come from LLM
-                            tool_input = tool_input.replace('\n', ' ').replace('\r', ' ')
+                            tool_input = tool_input.replace("\n", " ").replace("\r", " ")
                             # Clean up multiple spaces
-                            tool_input = ' '.join(tool_input.split())
+                            tool_input = " ".join(tool_input.split())
 
                         # Simplified input handling - let tools handle their own validation
                         if name == "lookup_flight_info":
                             # Handle various input formats and normalize to SOURCE,DESTINATION
-                            clean_input = tool_input.replace(" to ", ",").replace("from ", "").replace(" ", "")
+                            clean_input = (
+                                tool_input.replace(" to ", ",")
+                                .replace("from ", "")
+                                .replace(" ", "")
+                            )
                             parts = clean_input.split(",")
                             if len(parts) >= 2:
                                 source_airport = parts[0].strip().upper()
@@ -572,8 +570,12 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                                 )
                             else:
                                 result = original_tool.func(
-                                    source_airport=tool_input.split()[0] if tool_input.split() else "",
-                                    destination_airport=tool_input.split()[-1] if tool_input.split() else "",
+                                    source_airport=tool_input.split()[0]
+                                    if tool_input.split()
+                                    else "",
+                                    destination_airport=tool_input.split()[-1]
+                                    if tool_input.split()
+                                    else "",
                                 )
 
                         elif name == "save_flight_booking":
@@ -647,12 +649,12 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Create agent executor
         agent_executor = AgentExecutor(
-            agent=agent, 
-            tools=tools, 
-            verbose=True, 
-            handle_parsing_errors=handle_parsing_errors, 
+            agent=agent,
+            tools=tools,
+            verbose=True,
+            handle_parsing_errors=handle_parsing_errors,
             max_iterations=10,
-            return_intermediate_steps=True
+            return_intermediate_steps=True,
         )
 
         # Execute the agent
@@ -688,7 +690,9 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
         """Compile the LangGraph workflow."""
 
         # Build the flight search agent with catalog integration
-        search_agent = FlightSearchAgent(catalog=self.catalog, span=self.span, chat_model=self.chat_model)
+        search_agent = FlightSearchAgent(
+            catalog=self.catalog, span=self.span, chat_model=self.chat_model
+        )
 
         # Create a wrapper function for the ReActAgent
         def flight_search_node(state: FlightSearchState) -> FlightSearchState:
@@ -848,9 +852,7 @@ def setup_flight_search_agent():
         # Test Capella AI connectivity
         if os.getenv("CAPELLA_API_ENDPOINT"):
             if not test_capella_connectivity():
-                logger.warning(
-                    "❌ Capella AI connectivity test failed. Will use OpenAI fallback."
-                )
+                logger.warning("❌ Capella AI connectivity test failed. Will use OpenAI fallback.")
         else:
             logger.info("ℹ️ Capella API not configured - will use OpenAI models")
 
@@ -944,7 +946,9 @@ def setup_flight_search_agent():
             logger.info("✅ Using OpenAI LLM as fallback")
 
         # Create the flight search graph with the chat model
-        flight_graph = FlightSearchGraph(catalog=catalog, span=application_span, chat_model=chat_model)
+        flight_graph = FlightSearchGraph(
+            catalog=catalog, span=application_span, chat_model=chat_model
+        )
         # Compile the graph
         compiled_graph = flight_graph.compile()
 
