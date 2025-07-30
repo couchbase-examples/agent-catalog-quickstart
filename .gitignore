@@ -1,7 +1,6 @@
 # The repo itself
 agent-catalog/
 couchbase/
-logs/
 
 # Certificates
 *.pem
