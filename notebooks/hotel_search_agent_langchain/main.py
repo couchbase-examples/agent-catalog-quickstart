@@ -25,15 +25,15 @@ from couchbase.cluster import Cluster
 from couchbase.management.buckets import CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
+
+# Import hotel data from the data module
+from data.hotel_data import load_hotel_data_to_couchbase
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-
-# Import hotel data from the data module
-from data.hotel_data import get_hotel_texts, load_hotel_data_to_couchbase
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # Setup logging with essential level only
 logging.basicConfig(
@@ -50,21 +50,36 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 # Load environment variables
 dotenv.load_dotenv(override=True)
 
-# Generate Capella AI API key if endpoint is provided
+# Generate Capella AI API keys if endpoint is provided and no direct API keys exist
 if (
     os.getenv("CAPELLA_API_ENDPOINT")
     and os.getenv("CB_USERNAME")
     and os.getenv("CB_PASSWORD")
 ):
-    os.environ["CAPELLA_API_KEY"] = base64.b64encode(
-        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
-    ).decode("utf-8")
+    # Generate embeddings API key if not provided
+    if not os.getenv("CAPELLA_API_EMBEDDINGS_KEY"):
+        logger.info("Generating Capella embeddings API key from username:password")
+        os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = base64.b64encode(
+            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
+        ).decode("utf-8")
+    
+    # Generate LLM API key if not provided
+    if not os.getenv("CAPELLA_API_LLM_KEY"):
+        logger.info("Generating Capella LLM API key from username:password")
+        os.environ["CAPELLA_API_LLM_KEY"] = base64.b64encode(
+            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
+        ).decode("utf-8")
+
+if os.getenv("CAPELLA_API_EMBEDDINGS_KEY") or os.getenv("CAPELLA_API_LLM_KEY"):
+    logger.info("Using direct Capella API keys from environment")
 
 # Set default values for travel-sample bucket configuration
 DEFAULT_BUCKET = "travel-sample"
 DEFAULT_SCOPE = "agentc_data"
 DEFAULT_COLLECTION = "hotel_data"
 DEFAULT_INDEX = "hotel_data_index"
+
+DEFAULT_NVIDIA_API_EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5"
 DEFAULT_NVIDIA_API_LLM_MODEL = "meta/llama-4-maverick-17b-128e-instruct"
 
 
@@ -91,6 +106,205 @@ def setup_capella_ai_config():
     }
 
 
+def setup_embeddings_service(input_type="query"):
+    """
+    Setup embeddings service with priority order.
+    
+    Priority Order:
+    1. New Capella model services (with direct API key)
+    2. Old Capella model services (with base64 encoding)
+    3. NVIDIA NIM API
+    4. OpenAI fallback
+    
+    Args:
+        input_type (str): Type of input for asymmetric models ("query" or "passage")
+        
+    Returns:
+        Embeddings: Configured embeddings service
+        
+    Raises:
+        RuntimeError: If no embeddings service is available
+    """
+    embeddings = None
+    
+    # 1. New Capella model services (with direct API key)
+    if (
+        not embeddings 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
+    ):
+        try:
+            embeddings = OpenAIEmbeddings(
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model_kwargs={
+                    "input_type": input_type
+                },  # Required for nvidia asymmetric models
+            )
+            logger.info("✅ Using new Capella AI embeddings (direct API key)")
+        except Exception as e:
+            logger.warning(f"⚠️ New Capella AI embeddings failed: {e}")
+
+    # 2. Old Capella model services (with base64 encoding)
+    if (
+        not embeddings 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CB_USERNAME") 
+        and os.getenv("CB_PASSWORD")
+    ):
+        try:
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            embeddings = OpenAIEmbeddings(
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model_kwargs={
+                    "input_type": input_type
+                },
+            )
+            logger.info("✅ Using old Capella AI embeddings (base64 encoding)")
+        except Exception as e:
+            logger.warning(f"⚠️ Old Capella AI embeddings failed: {e}")
+
+    # 3. NVIDIA NIM API
+    if not embeddings and os.getenv("NVIDIA_API_KEY"):
+        try:
+            from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+            embeddings = NVIDIAEmbeddings(
+                model=os.getenv("NVIDIA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                truncate="END",
+            )
+            logger.info("✅ Using NVIDIA NIM embeddings")
+        except Exception as e:
+            logger.warning(f"⚠️ NVIDIA NIM embeddings failed: {e}")
+
+    # 4. OpenAI fallback
+    if not embeddings and os.getenv("OPENAI_API_KEY"):
+        try:
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                api_key=os.getenv("OPENAI_API_KEY"),
+                base_url=os.getenv("OPENAI_API_ENDPOINT"),
+            )
+            logger.info("✅ Using OpenAI embeddings (fallback)")
+        except Exception as e:
+            logger.warning(f"⚠️ OpenAI embeddings failed: {e}")
+
+    if not embeddings:
+        logger.error("❌ No embeddings service available")
+        raise RuntimeError("Embeddings configuration required")
+        
+    return embeddings
+
+
+def setup_llm_service(application_span=None):
+    """
+    Setup LLM service with priority order.
+    
+    Priority Order:
+    1. New Capella model services (with direct API key)
+    2. Old Capella model services (with base64 encoding)
+    3. NVIDIA NIM API
+    4. OpenAI fallback
+    
+    Args:
+        application_span: Application span for callbacks
+        
+    Returns:
+        ChatLLM: Configured LLM service
+        
+    Raises:
+        RuntimeError: If no LLM service is available
+    """
+    llm = None
+
+    # 1. New Capella model services (with direct API key)
+    if (
+        not llm 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CAPELLA_API_LLM_KEY")
+    ):
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("CAPELLA_API_LLM_KEY"),
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                temperature=0.0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using new Capella AI LLM (direct API key)")
+        except Exception as e:
+            logger.warning(f"⚠️ New Capella AI LLM failed: {e}")
+            llm = None
+
+    # 2. Old Capella model services (with base64 encoding)
+    if (
+        not llm 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CB_USERNAME") 
+        and os.getenv("CB_PASSWORD")
+    ):
+        try:
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            llm = ChatOpenAI(
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                temperature=0.0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using old Capella AI LLM (base64 encoding)")
+        except Exception as e:
+            logger.warning(f"⚠️ Old Capella AI LLM failed: {e}")
+            llm = None
+
+    # 3. NVIDIA NIM API
+    if not llm and os.getenv("NVIDIA_API_KEY"):
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                base_url=os.getenv("NVIDIA_API_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                model=os.getenv("NVIDIA_API_LLM_MODEL", "meta/llama3-70b-instruct"),
+                temperature=0.0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using NVIDIA NIM LLM")
+        except Exception as e:
+            logger.warning(f"⚠️ NVIDIA NIM LLM failed: {e}")
+            llm = None
+
+    # 4. OpenAI fallback
+    if not llm and os.getenv("OPENAI_API_KEY"):
+        try:
+            logger.info("🔄 Falling back to OpenAI LLM...")
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENAI_API_KEY"),
+                model="gpt-4o",
+                temperature=0.0,
+                callbacks=[agentc_langchain.chat.Callback(span=application_span)] if application_span else [],
+            )
+            llm.invoke("Hello")  # Test the LLM works
+            logger.info("✅ Using OpenAI LLM (fallback)")
+        except Exception as e:
+            logger.warning(f"⚠️ OpenAI LLM failed: {e}")
+            llm = None
+
+    if not llm:
+        logger.error("❌ No LLM service available")
+        raise RuntimeError("LLM configuration required")
+        
+    return llm
+
+
 def test_capella_connectivity():
     """Test connectivity to Capella AI services."""
     try:
@@ -99,37 +313,49 @@ def test_capella_connectivity():
             logger.warning("CAPELLA_API_ENDPOINT not configured")
             return False
 
-        # Test embedding model (requires API key)
-        if os.getenv("CB_USERNAME") and os.getenv("CB_PASSWORD"):
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
+        # Get embeddings API key for connectivity test
+        api_key = os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
 
+        if api_key:
+            logger.info("Using direct Capella embeddings API key for connectivity test")
             headers = {
-                "Authorization": f"Basic {api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             }
-
-            # Test embedding
-            logger.info("Testing Capella AI connectivity...")
-            embedding_data = {
-                "model": os.getenv(
-                    "CAPELLA_API_EMBEDDING_MODEL", "intfloat/e5-mistral-7b-instruct"
-                ),
-                "input": "test connectivity",
-            }
-
-            response = requests.post(
-                f"{endpoint}/embeddings", json=embedding_data, headers=headers
+        elif os.getenv("CB_USERNAME") and os.getenv("CB_PASSWORD"):
+            logger.info(
+                "Generating Capella embeddings API key from username:password for connectivity test"
             )
-            if response.status_code == 200:
-                logger.info("✅ Capella AI embedding test successful")
-                return True
-            else:
-                logger.warning(f"❌ Capella AI embedding test failed: {response.text}")
-                return False
+            generated_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            headers = {
+                "Authorization": f"Basic {generated_key}",
+                "Content-Type": "application/json",
+            }
         else:
-            logger.warning("Capella AI credentials not available")
+            logger.warning("No Capella AI embeddings credentials available")
+            return False
+
+        # Test embedding with correct endpoint and parameters
+        logger.info("Testing Capella AI connectivity...")
+        embedding_data = {
+            "model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+            "input": ["test connectivity"],
+            "input_type": "query",
+        }
+
+        # Use correct v1 endpoint
+        embedding_url = f"{endpoint}/v1/embeddings"
+        response = requests.post(
+            embedding_url, json=embedding_data, headers=headers, timeout=30
+        )
+
+        if response.status_code == 200:
+            logger.info("✅ Capella AI embedding test successful")
+            return True
+        else:
+            logger.warning(f"❌ Capella AI embedding test failed: {response.text}")
             return False
     except Exception as e:
         logger.warning(f"❌ Capella AI connectivity test failed: {e}")
@@ -418,35 +644,8 @@ def setup_hotel_support_agent():
             index_definition, os.getenv("CB_SCOPE", DEFAULT_SCOPE)
         )
 
-        # Setup embeddings
-        try:
-            # Capella AI embeddings
-            # if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
-            #     embeddings = OpenAIEmbeddings(
-            #         model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-            #         api_key=os.getenv("CAPELLA_API_KEY"),
-            #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-            #     )
-
-            # NVIDIA embeddings
-            # _set_if_undefined("NVIDIA_API_KEY")
-            embeddings = NVIDIAEmbeddings(
-                model="nvidia/nv-embedqa-e5-v5",
-                api_key=os.getenv("NVIDIA_API_KEY"),
-                truncate="END",
-            )
-            # logger.info("✅ Using nvidia/nv-embedqa-e5-v5 for embeddings")
-
-            # OpenAI embeddings
-            # embeddings = OpenAIEmbeddings(
-            #     model="text-embedding-3-small",
-            #     api_key=os.getenv("OPENAI_API_KEY"),
-            #     base_url=os.getenv("OPENAI_API_ENDPOINT"),
-            # )
-
-        except Exception as e:
-            logger.error(f"❌ Embeddings setup failed: {e}")
-            raise RuntimeError("Embeddings configuration required")
+        # Setup embeddings with priority order
+        embeddings = setup_embeddings_service(input_type="passage")
 
         couchbase_client.setup_vector_store(
             os.getenv("CB_SCOPE", DEFAULT_SCOPE),
@@ -455,51 +654,8 @@ def setup_hotel_support_agent():
             embeddings,
         )
 
-        # Setup LLM with deterministic settings
-        llm = None
-
-        # Try Capella AI LLM first
-        try:
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-            llm = ChatOpenAI(
-                api_key=api_key,
-                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                temperature=0.0,
-                callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-            )
-            llm.invoke("Hello")  # Test the LLM works
-            logger.info("✅ Using Capella AI LLM")
-        except Exception as e:
-            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
-
-        # COMMENTED OUT - NIM LLM (only for prototype)
-        # try:
-        #     _set_if_undefined("NVIDIA_API_KEY")
-        #     llm = ChatOpenAI(
-        #         api_key=os.getenv("NVIDIA_API_KEY"),
-        #         base_url=os.getenv("NVIDIA_API_BASE_URL", "https://integrate.api.nvidia.com/v1"),
-        #         model=os.getenv("NVIDIA_API_LLM_MODEL", DEFAULT_NVIDIA_API_LLM_MODEL),
-        #         temperature=0,
-        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-        #     )
-        #     logger.info("✅ Using NIM LLM")
-        # except Exception as e:
-        #     logger.warning(f"⚠️ NIM LLM failed: {e}")
-
-        # Fallback to OpenAI if no other LLM worked
-        # if not llm:
-        #     logger.info("🔄 Falling back to OpenAI LLM...")
-        #     _set_if_undefined("OPENAI_API_KEY")
-        #     llm = ChatOpenAI(
-        #         api_key=os.getenv("OPENAI_API_KEY"),
-        #         model="gpt-4o",
-        #         temperature=0,
-        #         callbacks=[agentc_langchain.chat.Callback(span=application_span)],
-        #     )
-        #     logger.info("✅ Using OpenAI LLM as fallback")
+        # Setup LLM with priority order
+        llm = setup_llm_service(application_span)
 
         # Load tools and create agent
         tool_search = catalog.find("tool", name="search_vector_database")

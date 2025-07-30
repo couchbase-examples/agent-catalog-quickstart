@@ -26,6 +26,86 @@ if (
     ).decode("utf-8")
 
 
+def setup_embeddings_service_for_tool():
+    """
+    Setup embeddings service for tool usage with priority order.
+    
+    Priority Order:
+    1. New Capella model services (with direct API key)
+    2. Old Capella model services (with base64 encoding)
+    3. NVIDIA NIM API
+    4. OpenAI fallback
+    
+    Returns:
+        Embeddings: Configured embeddings service or None if all fail
+    """
+    embeddings = None
+    
+    # 1. New Capella model services (with direct API key)
+    if (
+        not embeddings 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
+    ):
+        try:
+            embeddings = OpenAIEmbeddings(
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model_kwargs={
+                    "input_type": "query"
+                },  # Required for nvidia asymmetric models
+            )
+        except Exception:
+            pass  # Try next option
+
+    # 2. Old Capella model services (with base64 encoding)
+    if (
+        not embeddings 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CB_USERNAME") 
+        and os.getenv("CB_PASSWORD")
+    ):
+        try:
+            api_key = base64.b64encode(
+                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
+            ).decode()
+            embeddings = OpenAIEmbeddings(
+                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                api_key=api_key,
+                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
+                model_kwargs={
+                    "input_type": "query"
+                },
+            )
+        except Exception:
+            pass  # Try next option
+
+    # 3. NVIDIA NIM API
+    if not embeddings and os.getenv("NVIDIA_API_KEY"):
+        try:
+            embeddings = NVIDIAEmbeddings(
+                model=os.getenv("NVIDIA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
+                api_key=os.getenv("NVIDIA_API_KEY"),
+                truncate="END",
+            )
+        except Exception:
+            pass  # Try next option
+
+    # 4. OpenAI fallback
+    if not embeddings and os.getenv("OPENAI_API_KEY"):
+        try:
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                api_key=os.getenv('OPENAI_API_KEY'),
+                base_url=os.getenv('OPENAI_API_ENDPOINT'),
+            )
+        except Exception:
+            pass  # Final option failed
+
+    return embeddings
+
+
 def get_cluster_connection():
     """Get a fresh cluster connection for each request."""
     try:
@@ -64,32 +144,10 @@ def search_vector_database(query: str) -> str:
         if not cluster:
             return "ERROR: Could not connect to database"
 
-        # Setup embeddings
-        try:
-            # Capella AI embeddings
-            # if os.getenv("CAPELLA_API_ENDPOINT") and os.getenv("CAPELLA_API_KEY"):
-            #     embeddings = OpenAIEmbeddings(
-            #         model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-            #         api_key=os.getenv("CAPELLA_API_KEY"),
-            #         base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-            #     )
-
-            # NVIDIA embeddings
-            embeddings = NVIDIAEmbeddings(
-                model="nvidia/nv-embedqa-e5-v5",
-                api_key=os.getenv("NVIDIA_API_KEY"),
-                truncate="END",
-            )
-
-            # OpenAI embeddings
-            # embeddings = OpenAIEmbeddings(
-            #     model="text-embedding-3-small",
-            #     api_key=os.getenv('OPENAI_API_KEY'),
-            #     base_url=os.getenv('OPENAI_API_ENDPOINT'),
-            # )
-
-        except Exception as e:
-            return f"ERROR: Search system unavailable - {str(e)}"
+        # Setup embeddings with priority order
+        embeddings = setup_embeddings_service_for_tool()
+        if not embeddings:
+            return "ERROR: No embeddings service available"
 
         # Setup vector store
         vector_store = CouchbaseVectorStore(
