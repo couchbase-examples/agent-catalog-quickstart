@@ -211,9 +211,26 @@ class CapellaChatLLM(BaseChatModel):
             logger.error(f"❌ Capella LLM API call failed: {e}")
             raise
 
-    def _stream(self, *args, **kwargs):
-        """Streaming not implemented for Capella."""
-        raise NotImplementedError("Streaming not supported for Capella LLM")
+    def _stream(self, messages, stop=None, run_manager=None, **kwargs):
+        """Fallback to non-streaming for Capella LLM."""
+        # Convert single generation to streaming chunks
+        result = self._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
+        
+        # Get the first (and only) generation
+        if result.generations and result.generations[0]:
+            generation = result.generations[0]
+            content = generation.text
+            
+            # Import here to avoid circular imports
+            from langchain_core.outputs import ChatGenerationChunk
+            from langchain_core.messages import AIMessageChunk
+            
+            # Yield the content as a single chunk
+            chunk = ChatGenerationChunk(
+                message=AIMessageChunk(content=content),
+                generation_info=generation.generation_info
+            )
+            yield chunk
 
 
 def create_capella_embeddings(

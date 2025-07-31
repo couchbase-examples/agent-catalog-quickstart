@@ -8,7 +8,6 @@ Uses real hotel data from travel-sample.inventory.hotel collection.
 """
 
 import base64
-import getpass
 import json
 import logging
 import os
@@ -24,9 +23,30 @@ from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 
-# Import shared modules
-sys.path.append('..')  # Add parent directory to path
-from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
+
+# Import shared modules using robust project root discovery
+def find_project_root():
+    """Find the project root by looking for the shared directory."""
+    current = os.path.dirname(os.path.abspath(__file__))
+    while current != os.path.dirname(current):  # Stop at filesystem root
+        # Look for the shared directory as the definitive marker
+        shared_path = os.path.join(current, "shared")
+        if os.path.exists(shared_path) and os.path.isdir(shared_path):
+            return current
+        current = os.path.dirname(current)
+    return None
+
+
+# Add project root to Python path
+project_root = find_project_root()
+if project_root and project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from shared.agent_setup import (
+    setup_ai_services,
+    setup_environment,
+    test_capella_connectivity,
+)
 from shared.couchbase_client import create_couchbase_client
 
 # Setup logging with essential level only
@@ -56,7 +76,7 @@ if (
         os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = base64.b64encode(
             f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
         ).decode("utf-8")
-    
+
     # Generate LLM API key if not provided
     if not os.getenv("CAPELLA_API_LLM_KEY"):
         logger.info("Generating Capella LLM API key from username:password")
@@ -106,21 +126,16 @@ def setup_embeddings_service(input_type="query"):
     embeddings, _ = setup_ai_services(framework="langchain")
     return embeddings
 
+
 def setup_llm_service(application_span=None):
-    """Setup LLM service using shared 4-case priority ladder.""" 
-    callbacks = [agentc_langchain.chat.Callback(span=application_span)] if application_span else None
+    """Setup LLM service using shared 4-case priority ladder."""
+    callbacks = (
+        [agentc_langchain.chat.Callback(span=application_span)]
+        if application_span
+        else None
+    )
     _, llm = setup_ai_services(framework="langchain", callbacks=callbacks)
     return llm
-
-
-def _set_if_undefined(env_var: str, default_value: str = None):
-    """Set environment variable if not already defined."""
-    if not os.getenv(env_var):
-        if default_value is None:
-            value = getpass.getpass(f"Enter {env_var}: ")
-        else:
-            value = default_value
-        os.environ[env_var] = value
 
 
 def setup_hotel_support_agent():
@@ -168,7 +183,9 @@ def setup_hotel_support_agent():
             logger.info("✅ Vector search index setup completed")
         except Exception as e:
             logger.warning(f"⚠️ Vector search index setup failed: {e}")
-            logger.info("🔄 Continuing without vector search index - basic functionality will still work")
+            logger.info(
+                "🔄 Continuing without vector search index - basic functionality will still work"
+            )
 
         # Setup embeddings with priority order
         embeddings = setup_embeddings_service(input_type="passage")
@@ -332,38 +349,11 @@ def run_test():
         logger.exception(f"Test error: {e}")
 
 
-def test_data_loading():
-    """Test data loading from travel-sample independently."""
-    logger.info("Testing Hotel Data Loading from travel-sample")
-    logger.info("=" * 50)
-
-    try:
-        from data.hotel_data import get_hotel_count, get_hotel_texts
-
-        # Test hotel count
-        count = get_hotel_count()
-        logger.info(f"✅ Hotel count in travel-sample.inventory.hotel: {count}")
-
-        # Test hotel text generation
-        texts = get_hotel_texts()
-        logger.info(f"✅ Generated {len(texts)} hotel texts for embeddings")
-
-        if texts:
-            logger.info(f"✅ First hotel text sample: {texts[0][:200]}...")
-
-        logger.info("✅ Data loading test completed successfully")
-
-    except Exception as e:
-        logger.exception(f"❌ Data loading test failed: {e}")
-
-
 def main():
     """Main entry point - runs interactive demo by default."""
     if len(sys.argv) > 1:
         if sys.argv[1] == "test":
             run_test()
-        elif sys.argv[1] == "test-data":
-            test_data_loading()
         else:
             run_interactive_demo()
     else:

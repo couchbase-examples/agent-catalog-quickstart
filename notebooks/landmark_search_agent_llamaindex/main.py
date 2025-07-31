@@ -8,34 +8,34 @@ with LlamaIndex and Couchbase vector search for landmark discovery assistance.
 
 import base64
 import getpass
-import json
 import logging
 import os
 import sys
-import time
-from datetime import timedelta
 
 import agentc
 import dotenv
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import Cluster
-from couchbase.management.search import SearchIndex
-from couchbase.options import ClusterOptions
 from llama_index.core import Settings
-from llama_index.core.agent import ReActAgent
-from llama_index.core.tools import FunctionTool
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.llms.nvidia import NVIDIA
-from llama_index.llms.openai_like import OpenAILike
-from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 
 # Import landmark data from the data module
 from data.landmark_data import load_landmark_data_to_couchbase
 
-# Import shared modules - robust path handling
-import os
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+# Import shared modules using robust project root discovery
+def find_project_root():
+    """Find the project root by looking for the shared directory."""
+    current = os.path.dirname(os.path.abspath(__file__))
+    while current != os.path.dirname(current):  # Stop at filesystem root
+        # Look for the shared directory as the definitive marker
+        shared_path = os.path.join(current, 'shared')
+        if os.path.exists(shared_path) and os.path.isdir(shared_path):
+            return current
+        current = os.path.dirname(current)
+    return None
+
+# Add project root to Python path
+project_root = find_project_root()
+if project_root and project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
 from shared.couchbase_client import create_couchbase_client
 
@@ -85,7 +85,7 @@ def setup_environment():
     _set_if_undefined("CB_CONN_STRING")
     _set_if_undefined("CB_USERNAME")
     _set_if_undefined("CB_PASSWORD")
-    
+
     # NVIDIA NIMs API key (for LLM)
     _set_if_undefined("NVIDIA_API_KEY")
 
@@ -105,22 +105,26 @@ def setup_environment():
             f"{os.environ['CB_USERNAME']}:{os.environ['CB_PASSWORD']}".encode("utf-8")
         ).decode("utf-8")
 
-        print(f"Using Capella AI endpoint for embeddings: {os.environ['CAPELLA_API_ENDPOINT']}")
-        print(f"Using NVIDIA NIMs for LLM with API key: {os.environ['NVIDIA_API_KEY'][:10]}...")
+        logger.info(
+            f"Using Capella AI endpoint for embeddings: {os.environ['CAPELLA_API_ENDPOINT']}"
+        )
+        logger.info(
+            f"Using NVIDIA NIMs for LLM with API key: {os.environ['NVIDIA_API_KEY'][:10]}..."
+        )
 
     # Validate configuration consistency
-    print(f"✅ Configuration loaded:")
-    print(f"   Bucket: {os.environ['CB_BUCKET']}")
-    print(f"   Scope: {os.environ['CB_SCOPE']}")
-    print(f"   Collection: {os.environ['CB_COLLECTION']}")
-    print(f"   Index: {os.environ['CB_INDEX']}")
+    logger.info(f"✅ Configuration loaded:")
+    logger.info(f"   Bucket: {os.environ['CB_BUCKET']}")
+    logger.info(f"   Scope: {os.environ['CB_SCOPE']}")
+    logger.info(f"   Collection: {os.environ['CB_COLLECTION']}")
+    logger.info(f"   Index: {os.environ['CB_INDEX']}")
 
     # Validate configuration consistency
-    print(f"✅ Configuration loaded:")
-    print(f"   Bucket: {os.environ['CB_BUCKET']}")
-    print(f"   Scope: {os.environ['CB_SCOPE']}")
-    print(f"   Collection: {os.environ['CB_COLLECTION']}")
-    print(f"   Index: {os.environ['CB_INDEX']}")
+    logger.info(f"✅ Configuration loaded:")
+    logger.info(f"   Bucket: {os.environ['CB_BUCKET']}")
+    logger.info(f"   Scope: {os.environ['CB_SCOPE']}")
+    logger.info(f"   Collection: {os.environ['CB_COLLECTION']}")
+    logger.info(f"   Index: {os.environ['CB_INDEX']}")
 
 
 def create_llamaindex_agent(catalog, span):
@@ -128,7 +132,7 @@ def create_llamaindex_agent(catalog, span):
     try:
         from llama_index.agent.react import ReActAgent
         from llama_index.core.tools import FunctionTool
-        
+
         # Get tools from Agent Catalog
         tools = []
 
@@ -195,29 +199,29 @@ def setup_landmark_agent():
     # Setup database client using shared module
     client = create_couchbase_client()
     client.connect()
-    
+
     # Setup LLM and embeddings using shared module
     embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1)
-    
+
     # Set global LlamaIndex settings
     Settings.llm = llm
     Settings.embed_model = embeddings
-    
+
     # Setup collection
     client.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
-    
+
     # Setup vector search index
     index_definition = client.load_index_definition()
     if index_definition:
         client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
-    
+
     # Setup vector store with landmark data
     vector_store = client.setup_vector_store_llamaindex(
         scope_name=os.environ["CB_SCOPE"],
         collection_name=os.environ["CB_COLLECTION"],
         index_name=os.environ["CB_INDEX"],
     )
-    
+
     # Load landmark data
     load_landmark_data_to_couchbase(
         cluster=client.cluster,
@@ -227,7 +231,7 @@ def setup_landmark_agent():
         embeddings=embeddings,
         index_name=os.environ["CB_INDEX"],
     )
-    
+
     # Create LlamaIndex ReAct agent
     agent = create_llamaindex_agent(catalog, span)
 
@@ -264,13 +268,13 @@ def run_interactive_demo():
                 response = agent.chat(query, chat_history=[])
                 result = response.response
 
-                print(f"\n🏛️ Agent Response:\n{result}\n")
-                print("─" * 40)
+                logger.info(f"\n🏛️ Agent Response:\n{result}\n")
+                logger.info("─" * 40)
 
             except Exception as e:
                 logger.error(f"Error processing query: {e}")
-                print(f"❌ Error: {e}")
-                print("─" * 40)
+                logger.error(f"❌ Error: {e}")
+                logger.info("─" * 40)
 
     except KeyboardInterrupt:
         logger.info("Demo interrupted by user")

@@ -36,10 +36,23 @@ from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
 
-# Import shared modules - robust path handling
-import os
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+# Import shared modules using robust project root discovery
+def find_project_root():
+    """Find the project root by looking for the shared directory."""
+    current = os.path.dirname(os.path.abspath(__file__))
+    while current != os.path.dirname(current):  # Stop at filesystem root
+        # Look for the shared directory as the definitive marker
+        shared_path = os.path.join(current, 'shared')
+        if os.path.exists(shared_path) and os.path.isdir(shared_path):
+            return current
+        current = os.path.dirname(current)
+    return None
+
+# Add project root to Python path
+project_root = find_project_root()
+if project_root and project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
 from shared.couchbase_client import create_couchbase_client
 
