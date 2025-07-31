@@ -32,6 +32,13 @@ from llama_index.vector_stores.couchbase import CouchbaseSearchVectorStore
 # Import landmark data from the data module
 from data.landmark_data import load_landmark_data_to_couchbase
 
+# Import shared modules - robust path handling
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
+from shared.couchbase_client import create_couchbase_client
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -116,317 +123,65 @@ def setup_environment():
     print(f"   Index: {os.environ['CB_INDEX']}")
 
 
-class CouchbaseClient:
-    """Centralized Couchbase client for all database operations."""
-
-    def __init__(self, conn_string: str, username: str, password: str, bucket_name: str):
-        """Initialize Couchbase client with connection details."""
-        self.conn_string = conn_string
-        self.username = username
-        self.password = password
-        self.bucket_name = bucket_name
-        self.cluster = None
-        self.bucket = None
-        self._collections = {}
-
-    def connect(self):
-        """Establish connection to Couchbase cluster."""
-        try:
-            auth = PasswordAuthenticator(self.username, self.password)
-            options = ClusterOptions(auth)
-
-            # Use WAN profile for better timeout handling with remote clusters
-            options.apply_profile("wan_development")
-            self.cluster = Cluster(self.conn_string, options)
-            self.cluster.wait_until_ready(timedelta(seconds=20))
-            logger.info("Successfully connected to Couchbase")
-            return self.cluster
-        except Exception as e:
-            raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
-
-    def setup_collection(self, scope_name: str, collection_name: str):
-        """Setup collection - create scope and collection if they don't exist, but don't clear scope."""
-        try:
-            # Ensure cluster connection
-            if not self.cluster:
-                self.connect()
-
-            # For travel-sample bucket, assume it exists
-            if not self.bucket:
-                self.bucket = self.cluster.bucket(self.bucket_name)
-                logger.info(f"Connected to bucket '{self.bucket_name}'")
-
-            # Setup scope
-            bucket_manager = self.bucket.collections()
-            scopes = bucket_manager.get_all_scopes()
-            scope_exists = any(scope.name == scope_name for scope in scopes)
-
-            if not scope_exists and scope_name != "_default":
-                logger.info(f"Creating scope '{scope_name}'...")
-                bucket_manager.create_scope(scope_name)
-                logger.info(f"Scope '{scope_name}' created successfully")
-
-            # Setup collection - clear if exists, create if doesn't
-            collections = bucket_manager.get_all_scopes()
-            collection_exists = any(
-                scope.name == scope_name
-                and collection_name in [col.name for col in scope.collections]
-                for scope in collections
-            )
-
-            if collection_exists:
-                logger.info(f"Collection '{collection_name}' exists, clearing data...")
-                # Clear existing data
-                self.clear_collection_data(scope_name, collection_name)
-            else:
-                logger.info(f"Creating collection '{collection_name}'...")
-                bucket_manager.create_collection(scope_name, collection_name)
-                logger.info(f"Collection '{collection_name}' created successfully")
-
-            time.sleep(3)
-
-            # Create primary index
-            try:
-                self.cluster.query(
-                    f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-                ).execute()
-                logger.info("Primary index created successfully")
-            except Exception as e:
-                logger.warning(f"Error creating primary index: {e}")
-
-            logger.info("Collection setup complete")
-            return self.bucket.scope(scope_name).collection(collection_name)
-
-        except Exception as e:
-            raise RuntimeError(f"Error setting up collection: {e!s}")
-
-    def clear_collection_data(self, scope_name: str, collection_name: str):
-        """Clear all data from a collection."""
-        try:
-            logger.info(f"Clearing data from {self.bucket_name}.{scope_name}.{collection_name}...")
-
-            # Use N1QL to delete all documents with explicit execution
-            delete_query = f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-            result = self.cluster.query(delete_query)
-
-            # Execute the query and get the results
-            rows = list(result)
-
-            # Wait a moment for the deletion to propagate
-            time.sleep(2)
-
-            # Verify collection is empty
-            count_query = f"SELECT COUNT(*) as count FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-            count_result = self.cluster.query(count_query)
-            count_row = list(count_result)[0]
-            remaining_count = count_row["count"]
-
-            if remaining_count == 0:
-                logger.info(
-                    f"Collection cleared successfully, {remaining_count} documents remaining"
-                )
-            else:
-                logger.warning(
-                    f"Collection clear incomplete, {remaining_count} documents remaining"
-                )
-
-        except Exception as e:
-            logger.warning(f"Error clearing collection data: {e}")
-            # If N1QL fails, try to continue anyway
-            pass
-
-    def get_collection(self, scope_name: str, collection_name: str):
-        """Get a collection object."""
-        key = f"{scope_name}.{collection_name}"
-        if key not in self._collections:
-            self._collections[key] = self.bucket.scope(scope_name).collection(collection_name)
-        return self._collections[key]
-
-    def setup_vector_search_index(self, index_definition: dict, scope_name: str):
-        """Setup vector search index for the specified scope."""
-        try:
-            if not self.bucket:
-                raise RuntimeError("Bucket not initialized. Call setup_collection first.")
-
-            scope_index_manager = self.bucket.scope(scope_name).search_indexes()
-            existing_indexes = scope_index_manager.get_all_indexes()
-            index_name = index_definition["name"]
-
-            if index_name not in [index.name for index in existing_indexes]:
-                logger.info(f"Creating vector search index '{index_name}'...")
-                search_index = SearchIndex.from_json(index_definition)
-                scope_index_manager.upsert_index(search_index)
-                logger.info(f"Vector search index '{index_name}' created successfully")
-            else:
-                logger.info(f"Vector search index '{index_name}' already exists")
-        except Exception as e:
-            raise RuntimeError(f"Error setting up vector search index: {e!s}")
-
-    def load_landmark_data(self, scope_name, collection_name, index_name, embeddings):
-        """Load landmark data into Couchbase."""
-        try:
-            # Load landmark data using the data loading script
-            load_landmark_data_to_couchbase(
-                cluster=self.cluster,
-                bucket_name=self.bucket_name,
-                scope_name=scope_name,
-                collection_name=collection_name,
-                embeddings=embeddings,
-                index_name=index_name,
-            )
-            logger.info("Landmark data loaded into vector store successfully")
-
-        except Exception as e:
-            raise RuntimeError(f"Error loading landmark data: {e!s}")
-
-    def setup_vector_store(self, catalog, span):
-        """Setup vector store with landmark data."""
-        # Setup LLM and embeddings
-        llm = None
-        embeddings = None
+def create_llamaindex_agent(catalog, span):
+    """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
+    try:
+        from llama_index.agent.react import ReActAgent
+        from llama_index.core.tools import FunctionTool
         
-        try:
-            if os.environ.get("CAPELLA_API_ENDPOINT"):
-                # Use NVIDIA NIMs for LLM, Capella for embeddings
-                llm = NVIDIA(
-                    model=DEFAULT_NVIDIA_API_LLM_MODEL,
-                    api_key=os.environ["NVIDIA_API_KEY"],
-                    temperature=0.1,
+        # Get tools from Agent Catalog
+        tools = []
+
+        # Search landmarks tool
+        search_tool_result = catalog.find("tool", name="search_landmarks")
+        if search_tool_result:
+            tools.append(
+                FunctionTool.from_defaults(
+                    fn=search_tool_result.func,
+                    name="search_landmarks",
+                    description=getattr(search_tool_result.meta, "description", None)
+                    or "Search for landmark information using semantic vector search. Use for finding attractions, monuments, museums, parks, and other points of interest.",
                 )
-                embeddings = OpenAIEmbedding(
-                    api_key=os.environ["CAPELLA_API_KEY"],
-                    api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-                    model_name=os.environ["CAPELLA_API_EMBEDDING_MODEL"],
-                    embed_batch_size=30,
-                )
-                # Comment out old Capella LLM configuration
-                # llm = OpenAILike(
-                #     model=os.environ["CAPELLA_API_LLM_MODEL"],
-                #     api_base=f"{os.environ['CAPELLA_API_ENDPOINT']}/v1",
-                #     api_key=os.environ["CAPELLA_API_KEY"],
-                #     is_chat_model=True,
-                #     temperature=0.1,
-                # )
-            else:
-                # Fallback to OpenAI if Capella not available
-                llm = OpenAILike(
-                    model="gpt-4o",
-                    api_key=os.environ.get("OPENAI_API_KEY"),
-                    is_chat_model=True,
-                    temperature=0.1,
-                )
-                logger.exception("Capella API not available, cannot use fallback embeddings")
-        except Exception as e:
-            raise ValueError(f"Error setting up LLM and embeddings: {e!s}")
-
-        # Set global settings
-        try:
-            Settings.llm = llm
-            Settings.embed_model = embeddings
-        except Exception as e:
-            raise ValueError(f"Error setting global settings: {e!s}")
-
-        # Setup collection
-        try:
-            self.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
-        except Exception as e:
-            raise ValueError(f"Error setting up collection: {e!s}")
-
-        # Setup vector search index
-        try:
-            with open("agentcatalog_index.json") as file:
-                index_definition = json.load(file)
-            logger.info("Loaded vector search index definition from agentcatalog_index.json")
-            self.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
-        except FileNotFoundError:
-            logger.warning("agentcatalog_index.json not found, continuing without vector search index...")
-        except json.JSONDecodeError as e:
-            logger.warning(f"Error parsing index definition JSON: {e!s}")
-            logger.info("Continuing without vector search index...")
-        except Exception as e:
-            logger.warning(f"Error setting up vector search index: {e!s}")
-            logger.info("Continuing without vector search index...")
-
-        # Load landmark data
-        try:
-            self.load_landmark_data(
-                os.environ["CB_SCOPE"],
-                os.environ["CB_COLLECTION"],
-                os.environ["CB_INDEX"],
-                embeddings,
             )
-        except Exception as e:
-            raise ValueError(f"Error loading landmark data: {e!s}")
+            logger.info("Loaded search_landmarks tool from AgentC")
 
-        # Create vector store
-        try:
-            vector_store = CouchbaseSearchVectorStore(
-                cluster=self.cluster,
-                bucket_name=self.bucket_name,
-                scope_name=os.environ["CB_SCOPE"],
-                collection_name=os.environ["CB_COLLECTION"],
-                index_name=os.environ["CB_INDEX"],
-            )
-            return vector_store
-        except Exception as e:
-            raise ValueError(f"Error creating vector store: {e!s}")
+        if not tools:
+            logger.warning("No tools found in Agent Catalog")
+        else:
+            logger.info(f"Loaded {len(tools)} tools from Agent Catalog")
 
-    def create_llamaindex_agent(self, catalog, span):
-        """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
-        try:
-            # Get tools from Agent Catalog
-            tools = []
+        # Get prompt from Agent Catalog - REQUIRED, no fallbacks
+        prompt_result = catalog.find("prompt", name="landmark_search_assistant")
+        if not prompt_result:
+            raise RuntimeError("Prompt 'landmark_search_assistant' not found in Agent Catalog")
 
-            # Search landmarks tool
-            search_tool_result = catalog.find("tool", name="search_landmarks")
-            if search_tool_result:
-                tools.append(
-                    FunctionTool.from_defaults(
-                        fn=search_tool_result.func,
-                        name="search_landmarks",
-                        description=getattr(search_tool_result.meta, "description", None)
-                        or "Search for landmark information using semantic vector search. Use for finding attractions, monuments, museums, parks, and other points of interest.",
-                    )
-                )
-                logger.info("Loaded search_landmarks tool from AgentC")
-
-            if not tools:
-                logger.warning("No tools found in Agent Catalog")
-            else:
-                logger.info(f"Loaded {len(tools)} tools from Agent Catalog")
-
-            # Get prompt from Agent Catalog - REQUIRED, no fallbacks
-            prompt_result = catalog.find("prompt", name="landmark_search_assistant")
-            if not prompt_result:
-                raise RuntimeError("Prompt 'landmark_search_assistant' not found in Agent Catalog")
-
-            # Try different possible attributes for the prompt content
-            system_prompt = (
-                getattr(prompt_result, "content", None)
-                or getattr(prompt_result, "template", None)
-                or getattr(prompt_result, "text", None)
-            )
-            if not system_prompt:
-                raise RuntimeError(
-                    "Could not access prompt content from AgentC - prompt content is None or empty"
-                )
-
-            logger.info("Loaded system prompt from Agent Catalog")
-
-            # Create ReAct agent with limits to prevent excessive iterations
-            agent = ReActAgent.from_tools(
-                tools=tools,
-                llm=Settings.llm,
-                verbose=True,  # Turn back on for debugging
-                system_prompt=system_prompt,
-                max_iterations=12,  # Medium level - enough for complex queries, not too much
+        # Try different possible attributes for the prompt content
+        system_prompt = (
+            getattr(prompt_result, "content", None)
+            or getattr(prompt_result, "template", None)
+            or getattr(prompt_result, "text", None)
+        )
+        if not system_prompt:
+            raise RuntimeError(
+                "Could not access prompt content from AgentC - prompt content is None or empty"
             )
 
-            logger.info("LlamaIndex ReAct agent created successfully")
-            return agent
+        logger.info("Loaded system prompt from Agent Catalog")
 
-        except Exception as e:
-            raise RuntimeError(f"Error creating LlamaIndex agent: {e!s}")
+        # Create ReAct agent with limits to prevent excessive iterations
+        agent = ReActAgent.from_tools(
+            tools=tools,
+            llm=Settings.llm,
+            verbose=True,  # Turn back on for debugging
+            system_prompt=system_prompt,
+            max_iterations=12,  # Medium level - enough for complex queries, not too much
+        )
+
+        logger.info("LlamaIndex ReAct agent created successfully")
+        return agent
+
+    except Exception as e:
+        raise RuntimeError(f"Error creating LlamaIndex agent: {e!s}")
 
 
 def setup_landmark_agent():
@@ -437,19 +192,44 @@ def setup_landmark_agent():
     catalog = agentc.Catalog()
     span = catalog.Span(name="Landmark Search Agent Setup")
 
-    # Setup database client
-    client = CouchbaseClient(
-        conn_string=os.environ["CB_CONN_STRING"],
-        username=os.environ["CB_USERNAME"],
-        password=os.environ["CB_PASSWORD"],
-        bucket_name=os.environ["CB_BUCKET"],
+    # Setup database client using shared module
+    client = create_couchbase_client()
+    client.connect()
+    
+    # Setup LLM and embeddings using shared module
+    embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1)
+    
+    # Set global LlamaIndex settings
+    Settings.llm = llm
+    Settings.embed_model = embeddings
+    
+    # Setup collection
+    client.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+    
+    # Setup vector search index
+    index_definition = client.load_index_definition()
+    if index_definition:
+        client.setup_vector_search_index(index_definition, os.environ["CB_SCOPE"])
+    
+    # Setup vector store with landmark data
+    vector_store = client.setup_vector_store_llamaindex(
+        scope_name=os.environ["CB_SCOPE"],
+        collection_name=os.environ["CB_COLLECTION"],
+        index_name=os.environ["CB_INDEX"],
     )
-
-    # Setup vector store
-    vector_store = client.setup_vector_store(catalog, span)
-
-    # Create agent
-    agent = client.create_llamaindex_agent(catalog, span)
+    
+    # Load landmark data
+    load_landmark_data_to_couchbase(
+        cluster=client.cluster,
+        bucket_name=client.bucket_name,
+        scope_name=os.environ["CB_SCOPE"],
+        collection_name=os.environ["CB_COLLECTION"],
+        embeddings=embeddings,
+        index_name=os.environ["CB_INDEX"],
+    )
+    
+    # Create LlamaIndex ReAct agent
+    agent = create_llamaindex_agent(catalog, span)
 
     return agent, client
 

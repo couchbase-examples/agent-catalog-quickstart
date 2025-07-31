@@ -1,11 +1,5 @@
-import base64
 import os
-
-# Import custom Capella embeddings for nv-embedqa models
 import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 from datetime import timedelta
 
 import agentc
@@ -15,100 +9,17 @@ import couchbase.exceptions
 import couchbase.options
 import dotenv
 
-from capella_model_services import create_capella_embeddings
+# Import shared AI services module - robust path handling
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))  # Go up 2 levels to reach shared/
+from shared.agent_setup import setup_ai_services
+
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv()
 
-# Generate Capella AI API key if endpoint is provided
-if (
-    os.getenv("CAPELLA_API_ENDPOINT")
-    and os.getenv("CB_USERNAME")
-    and os.getenv("CB_PASSWORD")
-):
-    os.environ["CAPELLA_API_KEY"] = base64.b64encode(
-        f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
-    ).decode("utf-8")
-
-
 def setup_embeddings_service_for_tool():
-    """
-    Setup embeddings service for tool usage with priority order.
-    
-    Priority Order:
-    1. New Capella model services (with direct API key)
-    2. Old Capella model services (with base64 encoding)
-    3. NVIDIA NIM API
-    4. OpenAI fallback
-    
-    Returns:
-        Embeddings: Configured embeddings service or None if all fail
-    """
-    embeddings = None
-    
-    # 1. New Capella model services (with direct API key)
-    if (
-        not embeddings 
-        and os.getenv("CAPELLA_API_ENDPOINT") 
-        and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
-    ):
-        try:
-            # Use custom Capella embeddings for ALL models with explicit endpoint
-            embeddings = create_capella_embeddings(
-                api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
-                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                input_type_for_query="query",
-                input_type_for_passage="passage"
-            )
-        except Exception:
-            pass  # Try next option
-
-    # 2. Old Capella model services (with base64 encoding)
-    if (
-        not embeddings 
-        and os.getenv("CAPELLA_API_ENDPOINT") 
-        and os.getenv("CB_USERNAME") 
-        and os.getenv("CB_PASSWORD")
-    ):
-        try:
-            # Use standard OpenAI embeddings for ALL models
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-            
-            embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                api_key=api_key,
-                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-            )
-        except Exception:
-            pass  # Try next option
-
-    # 3. NVIDIA NIM API
-    if not embeddings and os.getenv("NVIDIA_API_KEY"):
-        try:
-            embeddings = NVIDIAEmbeddings(
-                model=os.getenv("NVIDIA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
-                api_key=os.getenv("NVIDIA_API_KEY"),
-                truncate="END",
-            )
-        except Exception:
-            pass  # Try next option
-
-    # 4. OpenAI fallback
-    if not embeddings and os.getenv("OPENAI_API_KEY"):
-        try:
-            embeddings = OpenAIEmbeddings(
-                model="text-embedding-3-small",
-                api_key=os.getenv('OPENAI_API_KEY'),
-                base_url=os.getenv('OPENAI_API_ENDPOINT'),
-            )
-        except Exception:
-            pass  # Final option failed
-
+    """Setup embeddings service using shared 4-case priority ladder."""
+    embeddings, _ = setup_ai_services(framework="langchain")
     return embeddings
 
 

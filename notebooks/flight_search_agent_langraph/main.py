@@ -36,6 +36,13 @@ from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
 
+# Import shared modules - robust path handling
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
+from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
+from shared.couchbase_client import create_couchbase_client
+
 # Setup logging with essential level only
 # Note: Agent Catalog does not integrate with Python logging
 # The main application span will generate meaningful logs
@@ -174,274 +181,6 @@ def setup_environment():
 
     # Test Capella AI connectivity
     test_capella_connectivity()
-
-
-class CouchbaseClient:
-    """Centralized Couchbase client for all database operations."""
-
-    def __init__(self, conn_string: str, username: str, password: str, bucket_name: str):
-        """Initialize Couchbase client with connection details."""
-        self.conn_string = conn_string
-        self.username = username
-        self.password = password
-        self.bucket_name = bucket_name
-        self.cluster = None
-        self.bucket = None
-        self._collections = {}
-
-    def connect(self):
-        """Establish connection to Couchbase cluster."""
-        try:
-            auth = PasswordAuthenticator(self.username, self.password)
-            options = ClusterOptions(auth)
-            self.cluster = Cluster(self.conn_string, options)
-            self.cluster.wait_until_ready(timedelta(seconds=10))
-            logger.info("Successfully connected to Couchbase")
-            return self.cluster
-        except Exception as e:
-            raise ConnectionError(f"Failed to connect to Couchbase: {e!s}")
-
-    def setup_collection(self, scope_name: str, collection_name: str):
-        """Setup bucket, scope and collection all in one function."""
-        try:
-            # Ensure cluster connection
-            if not self.cluster:
-                self.connect()
-
-            # Setup bucket
-            if not self.bucket and self.cluster is not None:
-                try:
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' exists")
-                except Exception:
-                    logger.info(f"Creating bucket '{self.bucket_name}'...")
-                    bucket_settings = CreateBucketSettings(
-                        name=self.bucket_name,
-                        bucket_type=BucketType.COUCHBASE,
-                        ram_quota_mb=1024,
-                        flush_enabled=True,
-                        num_replicas=0,
-                    )
-                    self.cluster.buckets().create_bucket(bucket_settings)
-                    time.sleep(5)
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-                    logger.info(f"Bucket '{self.bucket_name}' created successfully")
-
-            if not self.bucket:
-                raise RuntimeError("Failed to initialize bucket")
-
-            bucket_manager = self.bucket.collections()
-
-            # Handle scope creation
-            scopes = bucket_manager.get_all_scopes()
-            scope_exists = any(scope.name == scope_name for scope in scopes)
-
-            if not scope_exists and scope_name != "_default":
-                logger.info(f"Creating scope '{scope_name}'...")
-                bucket_manager.create_scope(scope_name)
-                logger.info(f"Scope '{scope_name}' created successfully")
-
-            # Handle collection creation
-            collections = bucket_manager.get_all_scopes()
-            collection_exists = any(
-                scope.name == scope_name
-                and collection_name in [col.name for col in scope.collections]
-                for scope in collections
-            )
-
-            if not collection_exists:
-                logger.info(f"Creating collection '{collection_name}'...")
-                bucket_manager.create_collection(scope_name, collection_name)
-                logger.info(f"Collection '{collection_name}' created successfully")
-
-            collection = self.bucket.scope(scope_name).collection(collection_name)
-            time.sleep(3)
-
-            # Create primary index
-            if self.cluster:
-                try:
-                    self.cluster.query(
-                        f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-                    ).execute()
-                    logger.info("Primary index created successfully")
-                except Exception as e:
-                    logger.warning(f"Error creating primary index: {e!s}")
-
-            # Cache the collection for reuse
-            collection_key = f"{scope_name}.{collection_name}"
-            self._collections[collection_key] = collection
-
-            logger.info(f"Collection setup complete for {scope_name}.{collection_name}")
-            return collection
-
-        except Exception as e:
-            raise RuntimeError(f"Error setting up collection: {e!s}")
-
-    def get_collection(self, scope_name: str, collection_name: str):
-        """Get a collection, creating it if it doesn't exist."""
-        collection_key = f"{scope_name}.{collection_name}"
-        if collection_key not in self._collections:
-            self.setup_collection(scope_name, collection_name)
-        return self._collections[collection_key]
-
-    def setup_vector_search_index(self, index_definition: dict, scope_name: str):
-        """Setup vector search index for the specified scope."""
-        try:
-            if not self.bucket:
-                raise RuntimeError("Bucket not initialized. Call setup_collection first.")
-
-            scope_index_manager = self.bucket.scope(scope_name).search_indexes()
-            existing_indexes = scope_index_manager.get_all_indexes()
-            index_name = index_definition["name"]
-
-            if index_name not in [index.name for index in existing_indexes]:
-                logger.info(f"Creating vector search index '{index_name}'...")
-                search_index = SearchIndex.from_json(index_definition)
-                scope_index_manager.upsert_index(search_index)
-                logger.info(f"Vector search index '{index_name}' created successfully")
-            else:
-                logger.info(f"Vector search index '{index_name}' already exists")
-        except Exception as e:
-            raise RuntimeError(f"Error setting up vector search index: {e!s}")
-
-    def setup_vector_store(
-        self, scope_name: str, collection_name: str, index_name: str, embeddings
-    ):
-        """Setup vector store with airline reviews data using unified data manager."""
-        try:
-            if not self.cluster:
-                raise RuntimeError("Cluster not connected. Call connect first.")
-
-            # Import the unified data manager
-            import sys
-
-            sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
-            from airline_reviews_data import load_airline_reviews_to_couchbase
-
-            # NOTE: Commented out as data is already loaded in Couchbase
-            logger.info("🔄 Setting up vector store with airline reviews data...")
-
-            # Use the unified data loading approach
-            load_airline_reviews_to_couchbase(
-                cluster=self.cluster,
-                bucket_name=self.bucket_name,
-                scope_name=scope_name,
-                collection_name=collection_name,
-                embeddings=embeddings,
-                index_name=index_name,
-            )
-
-            logger.info(
-                f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}"
-            )
-
-            # Create and return the vector store instance
-            vector_store = CouchbaseVectorStore(
-                cluster=self.cluster,
-                bucket_name=self.bucket_name,
-                scope_name=scope_name,
-                collection_name=collection_name,
-                embedding=embeddings,
-                index_name=index_name,
-            )
-
-            logger.info(
-                f"✅ Vector store setup complete: {self.bucket_name}.{scope_name}.{collection_name}"
-            )
-            return vector_store
-
-        except Exception as e:
-            logger.exception(f"Error setting up vector store: {e!s}")
-            raise
-
-    def clear_scope(self, scope_name: str):
-        """Clear all collections in the specified scope."""
-        try:
-            if not self.bucket:
-                # Ensure connection and bucket are ready
-                if not self.cluster:
-                    self.connect()
-                if self.cluster:
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-
-            if not self.bucket:
-                logger.warning("Cannot clear scope - bucket not available")
-                return
-
-            logger.info(f"🗑️  Clearing scope: {self.bucket_name}.{scope_name}")
-            bucket_manager = self.bucket.collections()
-            scopes = bucket_manager.get_all_scopes()
-
-            # Find the target scope
-            target_scope = None
-            for scope in scopes:
-                if scope.name == scope_name:
-                    target_scope = scope
-                    break
-
-            if not target_scope:
-                logger.info(
-                    f"Scope '{self.bucket_name}.{scope_name}' does not exist, nothing to clear"
-                )
-                return
-
-            # Clear all collections in the scope
-            for collection in target_scope.collections:
-                try:
-                    delete_query = (
-                        f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection.name}`"
-                    )
-                    if self.cluster:
-                        self.cluster.query(delete_query).execute()
-                        logger.info(
-                            f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection.name}"
-                        )
-                except Exception as e:
-                    logger.warning(
-                        f"❌ Could not clear collection {self.bucket_name}.{scope_name}.{collection.name}: {e}"
-                    )
-
-            logger.info(f"✅ Completed clearing scope: {self.bucket_name}.{scope_name}")
-
-        except Exception as e:
-            logger.warning(f"❌ Could not clear scope {self.bucket_name}.{scope_name}: {e}")
-
-    def clear_collection(self, scope_name: str, collection_name: str):
-        """Clear a specific collection in the specified scope."""
-        try:
-            if not self.bucket:
-                # Ensure connection and bucket are ready
-                if not self.cluster:
-                    self.connect()
-                if self.cluster:
-                    self.bucket = self.cluster.bucket(self.bucket_name)
-
-            if not self.bucket:
-                logger.warning(f"Cannot clear collection - bucket not available")
-                return
-
-            logger.info(
-                f"🗑️  Clearing collection: {self.bucket_name}.{scope_name}.{collection_name}"
-            )
-
-            # Clear the specific collection
-            try:
-                delete_query = (
-                    f"DELETE FROM `{self.bucket_name}`.`{scope_name}`.`{collection_name}`"
-                )
-                if self.cluster:
-                    result = self.cluster.query(delete_query).execute()
-                    logger.info(
-                        f"✅ Cleared collection: {self.bucket_name}.{scope_name}.{collection_name}"
-                    )
-            except Exception as e:
-                logger.info(
-                    f"Collection {self.bucket_name}.{scope_name}.{collection_name} does not exist or is already empty: {e}"
-                )
-
-        except Exception as e:
-            logger.exception(f"❌ Error clearing collection {scope_name}.{collection_name}: {e}")
-            raise
 
 
 class FlightSearchState(agentc_langgraph.agent.State):
@@ -719,12 +458,7 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
 def clear_bookings_and_reviews():
     """Clear existing flight bookings to start fresh for demo."""
     try:
-        client = CouchbaseClient(
-            conn_string=os.environ["CB_CONN_STRING"],
-            username=os.environ["CB_USERNAME"],
-            password=os.environ["CB_PASSWORD"],
-            bucket_name=os.environ["CB_BUCKET"],
-        )
+        client = create_couchbase_client()
         client.connect()
 
         # Clear bookings scope using environment variables
@@ -857,12 +591,7 @@ def setup_flight_search_agent():
             logger.info("ℹ️ Capella API not configured - will use OpenAI models")
 
         # Create CouchbaseClient for all operations
-        client = CouchbaseClient(
-            conn_string=os.environ["CB_CONN_STRING"],
-            username=os.environ["CB_USERNAME"],
-            password=os.environ["CB_PASSWORD"],
-            bucket_name=os.environ["CB_BUCKET"],
-        )
+        client = create_couchbase_client()
 
         # Setup everything in one call - bucket, scope, collection
         client.setup_collection(
@@ -879,71 +608,23 @@ def setup_flight_search_agent():
             logger.warning(f"Error loading index definition: {e!s}")
             logger.info("Continuing without vector search index...")
 
-        # Setup embeddings and vector store
-        # Use Capella AI embeddings if available, fallback to OpenAI
-        try:
-            if (
-                os.getenv("CB_USERNAME")
-                and os.getenv("CB_PASSWORD")
-                and os.getenv("CAPELLA_API_ENDPOINT")
-                and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
-            ):
-                # Create API key for Capella AI
-                api_key = base64.b64encode(
-                    f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-                ).decode()
+        # Setup embeddings using shared 4-case priority ladder
+        embeddings, _ = setup_ai_services(framework="langgraph")
 
-                # Use OpenAI embeddings client with Capella endpoint
-                embeddings = OpenAIEmbeddings(
-                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                    api_key=api_key,
-                    base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                )
-                logger.info("✅ Using Capella AI for embeddings")
-            else:
-                raise ValueError("Capella AI credentials not available")
-        except Exception as e:
-            logger.warning(f"⚠️ Capella AI embeddings failed: {e}")
-            logger.info("🔄 Falling back to OpenAI embeddings...")
-            _set_if_undefined("OPENAI_API_KEY")
-            embeddings = OpenAIEmbeddings(
-                api_key=SecretStr(os.environ["OPENAI_API_KEY"]), model="text-embedding-3-small"
-            )
-            logger.info("✅ Using OpenAI embeddings as fallback")
-
-        client.setup_vector_store(
+        # Import data loader function
+        from data.airline_reviews_data import load_airline_reviews_to_couchbase
+        
+        # Setup vector store with airline reviews data
+        vector_store = client.setup_vector_store_langchain(
             scope_name=os.environ["CB_SCOPE"],
             collection_name=os.environ["CB_COLLECTION"],
             index_name=os.environ["CB_INDEX"],
             embeddings=embeddings,
+            data_loader_func=load_airline_reviews_to_couchbase,
         )
 
-        # Setup LLM - try Capella AI first, fallback to OpenAI
-        try:
-            # Create API key for Capella AI using same pattern as embeddings
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-
-            chat_model = ChatOpenAI(
-                api_key=api_key,
-                base_url=os.getenv("CAPELLA_API_ENDPOINT"),
-                model=os.getenv("CAPELLA_API_LLM_MODEL"),
-                temperature=0.1,
-            )
-            # Test the LLM works
-            chat_model.invoke("Hello")
-            logger.info("✅ Using Capella AI LLM")
-        except Exception as e:
-            logger.warning(f"⚠️ Capella AI LLM failed: {e}")
-            logger.info("🔄 Falling back to OpenAI LLM...")
-            _set_if_undefined("OPENAI_API_KEY")
-            chat_model = ChatOpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                model="gpt-4o",
-                temperature=0.1,
-            )
-            logger.info("✅ Using OpenAI LLM as fallback")
+        # Setup LLM using shared 4-case priority ladder
+        _, chat_model = setup_ai_services(framework="langgraph", temperature=0.1)
 
         # Create the flight search graph with the chat model
         flight_graph = FlightSearchGraph(

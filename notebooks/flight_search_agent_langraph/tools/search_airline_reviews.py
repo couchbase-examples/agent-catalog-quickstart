@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import timedelta
 
 import agentc
@@ -8,9 +9,12 @@ import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
-import openai
+
+# Import shared AI services module - robust path handling
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))  # Go up 2 levels to reach shared/
+from shared.agent_setup import setup_ai_services
+
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv(override=True)
 
@@ -36,32 +40,10 @@ except couchbase.exceptions.CouchbaseException as e:
 
 
 def _get_vector_store():
-    """Get vector store instance for searching airline reviews - optimized for Capella AI."""
+    """Get vector store instance for searching airline reviews using shared 4-case priority ladder."""
     try:
-        # Use Capella AI embeddings if available, fallback to OpenAI
-        if (
-            os.getenv("CB_USERNAME")
-            and os.getenv("CB_PASSWORD")
-            and os.getenv("CAPELLA_API_ENDPOINT")
-            and os.getenv("CAPELLA_API_EMBEDDING_MODEL")
-        ):
-            logger.info("🔄 Using Capella AI embeddings for vector search")
-            import base64
-
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-
-            embeddings = OpenAIEmbeddings(
-                model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-                api_key=api_key,
-                base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-            )
-        else:
-            logger.info("🔄 Using OpenAI embeddings for vector search (Capella AI not configured)")
-            embeddings = OpenAIEmbeddings(
-                api_key=os.getenv("OPENAI_API_KEY"), model="text-embedding-3-small"
-            )
+        # Setup embeddings using shared module
+        embeddings, _ = setup_ai_services(framework="langgraph")
 
         # Updated to use airline reviews collection
         return CouchbaseVectorStore(
@@ -150,10 +132,6 @@ def search_airline_reviews(query: str) -> str:
 
         return summary + "\n\n".join(formatted_results)
 
-    except openai.OpenAIError as e:
-        # Handle OpenAI service errors (model unavailable, health errors, etc.)
-        logger.warning(f"OpenAI service error in search_airline_reviews: {e}")
-        return "The airline review search service is temporarily unavailable. Please try again in a few minutes or contact customer service for assistance."
     except couchbase.exceptions.CouchbaseException as e:
         error_msg = f"Database error while searching reviews: {e!s}"
         logger.exception("Database error in search_airline_reviews")
