@@ -51,7 +51,10 @@ def setup_ai_services(
         and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
     ):
         try:
-            from .capella_model_services import create_capella_embeddings
+            if framework == "llamaindex":
+                from .capella_model_services_llamaindex import create_capella_embeddings
+            else:
+                from .capella_model_services_langchain import create_capella_embeddings
             
             embeddings = create_capella_embeddings(
                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
@@ -70,7 +73,10 @@ def setup_ai_services(
         and os.getenv("CAPELLA_API_LLM_KEY")
     ):
         try:
-            from .capella_model_services import create_capella_chat_llm
+            if framework == "llamaindex":
+                from .capella_model_services_llamaindex import create_capella_chat_llm
+            else:
+                from .capella_model_services_langchain import create_capella_chat_llm
             
             # Framework-specific callback handling
             llm_callbacks = None

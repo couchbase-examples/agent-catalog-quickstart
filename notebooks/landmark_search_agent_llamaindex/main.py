@@ -130,7 +130,7 @@ def setup_environment():
 def create_llamaindex_agent(catalog, span):
     """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
     try:
-        from llama_index.agent.react import ReActAgent
+        from llama_index.core.agent import ReActAgent
         from llama_index.core.tools import FunctionTool
 
         # Get tools from Agent Catalog
@@ -208,7 +208,11 @@ def setup_landmark_agent():
     Settings.embed_model = embeddings
 
     # Setup collection
-    client.setup_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+    client.setup_collection(
+        os.environ["CB_SCOPE"], 
+        os.environ["CB_COLLECTION"],
+        clear_existing_data=False  # Let data loader decide based on count check
+    )
 
     # Setup vector search index
     index_definition = client.load_index_definition()

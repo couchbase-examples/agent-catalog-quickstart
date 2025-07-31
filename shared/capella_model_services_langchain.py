@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
 """
-Shared Capella AI Model Services
+LangChain-specific Capella AI Model Services
 
 Custom implementations for Capella AI embeddings and LLM that handle:
 - input_type parameter for asymmetric embedding models
 - Correct URL construction (/v1 suffix)
 - Token limits and text truncation
-- Framework-agnostic design for LangChain, LlamaIndex, LangGraph
+- LangChain framework compatibility
 """
 
 import logging
 import math
-import time
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Any
 
 import httpx
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
+from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
 
-class CapellaEmbeddings(Embeddings):
+class CapellaLangChainEmbeddings(Embeddings):
     """
     Custom embeddings class for Capella AI that handles input_type parameter.
     
@@ -81,31 +80,33 @@ class CapellaEmbeddings(Embeddings):
         return truncated
 
     def _make_embedding_request(self, texts: List[str], input_type: Optional[str] = None) -> List[List[float]]:
-        """Make direct API call to Capella embeddings endpoint."""
-        # Truncate texts to fit token limits
-        processed_texts = [self._truncate_text(text) for text in texts]
-        
-        # Prepare request payload
-        payload = {
-            "input": processed_texts,
-            "model": self.model
-        }
-        
-        # Add input_type if this model requires it
-        if self.needs_input_type and input_type:
-            payload["input_type"] = input_type
-        
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        # Make request
+        """Make embedding request to Capella API."""
         try:
-            with httpx.Client(timeout=30.0) as client:
+            # Truncate texts to fit token limits
+            truncated_texts = [self._truncate_text(text) for text in texts]
+            
+            # Prepare request data
+            data = {
+                "model": self.model,
+                "input": truncated_texts,
+            }
+            
+            # Add input_type if model requires it and type is specified
+            if self.needs_input_type and input_type:
+                data["input_type"] = input_type
+                logger.debug(f"🔧 Using input_type: {input_type} for {len(texts)} texts")
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            # Make API call
+            with httpx.Client(timeout=30) as client:
+                logger.debug(f"📡 Making embedding request for {len(texts)} texts")
                 response = client.post(
                     f"{self.base_url}/embeddings",
-                    json=payload,
+                    json=data,
                     headers=headers
                 )
                 response.raise_for_status()
@@ -127,34 +128,36 @@ class CapellaEmbeddings(Embeddings):
         return result[0]
 
 
-class CapellaChatLLM(BaseChatModel):
+class CapellaLangChainLLM(BaseChatModel):
     """
     Custom LLM class for Capella AI that handles URL construction correctly.
     
     Ensures the base_url has proper /v1 suffix and handles Capella-specific responses.
     """
     
-    model: str = Field(...)
-    api_key: SecretStr = Field(...)
-    base_url: str = Field(...)
-    temperature: float = Field(default=0.0)
-    max_tokens: Optional[int] = Field(default=None)
+    model: str = Field(..., description="Model name to use")
+    api_key: SecretStr = Field(..., description="API key for authentication")
+    base_url: str = Field(..., description="Base URL for the API")
+    temperature: float = Field(default=0.0, description="Temperature for generation")
+    max_tokens: Optional[int] = Field(default=None, description="Maximum tokens to generate")
     
+    class Config:
+        """Configuration for this pydantic object."""
+        extra = "forbid"
+
     def __init__(self, **kwargs):
-        # Ensure base_url has /v1 suffix
-        if 'base_url' in kwargs:
-            base_url = kwargs['base_url'].rstrip('/')
-            if not base_url.endswith('/v1'):
-                base_url += '/v1'
-            kwargs['base_url'] = base_url
-        
         super().__init__(**kwargs)
+        # Ensure base_url has /v1 suffix for chat endpoint
+        if not self.base_url.endswith('/v1'):
+            self.base_url = self.base_url.rstrip('/') + '/v1'
+        
         logger.info("✅ Using direct Capella LLM API key")
         logger.info(f"✅ Using Capella direct API for LLM: {self.model}")
 
     @property
     def _llm_type(self) -> str:
-        return "capella-chat"
+        """Return type of LLM."""
+        return "capella"
 
     def _generate(
         self,
@@ -163,39 +166,44 @@ class CapellaChatLLM(BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> ChatResult:
-        """Generate chat completion using Capella API."""
-        
-        # Convert messages to API format
-        api_messages = []
-        for msg in messages:
-            if isinstance(msg, HumanMessage):
-                api_messages.append({"role": "user", "content": msg.content})
-            elif isinstance(msg, AIMessage):
-                api_messages.append({"role": "assistant", "content": msg.content})
-        
-        # Prepare request payload
-        payload = {
-            "model": self.model,
-            "messages": api_messages,
-            "temperature": self.temperature,
-        }
-        
-        if self.max_tokens:
-            payload["max_tokens"] = self.max_tokens
-        if stop:
-            payload["stop"] = stop
-            
-        headers = {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}",
-            "Content-Type": "application/json"
-        }
-        
-        # Make request
+        """Generate chat response."""
         try:
-            with httpx.Client(timeout=30.0) as client:
+            # Convert messages to API format
+            api_messages = []
+            for message in messages:
+                if isinstance(message, HumanMessage):
+                    api_messages.append({"role": "user", "content": message.content})
+                elif isinstance(message, AIMessage):
+                    api_messages.append({"role": "assistant", "content": message.content})
+                else:
+                    # Default to user for other message types
+                    api_messages.append({"role": "user", "content": message.content})
+            
+            # Prepare request data
+            data = {
+                "model": self.model,
+                "messages": api_messages,
+                "temperature": self.temperature,
+                **kwargs
+            }
+            
+            if self.max_tokens:
+                data["max_tokens"] = self.max_tokens
+            
+            if stop:
+                data["stop"] = stop
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key.get_secret_value()}",
+                "Content-Type": "application/json"
+            }
+            
+            # Make API call
+            with httpx.Client(timeout=60) as client:
+                logger.debug(f"📡 Making LLM request with {len(api_messages)} messages")
                 response = client.post(
                     f"{self.base_url}/chat/completions",
-                    json=payload,
+                    json=data,
                     headers=headers
                 )
                 response.raise_for_status()
@@ -240,9 +248,9 @@ def create_capella_embeddings(
     input_type_for_query: str = "query",
     input_type_for_passage: str = "passage",
     **kwargs
-) -> CapellaEmbeddings:
-    """Factory function to create Capella embeddings instance."""
-    return CapellaEmbeddings(
+) -> CapellaLangChainEmbeddings:
+    """Factory function to create Capella embeddings instance for LangChain."""
+    return CapellaLangChainEmbeddings(
         api_key=api_key,
         base_url=base_url,
         model=model,
@@ -259,9 +267,9 @@ def create_capella_chat_llm(
     temperature: float = 0.0,
     callbacks: Optional[List] = None,
     **kwargs
-) -> CapellaChatLLM:
-    """Factory function to create Capella LLM instance."""
-    llm = CapellaChatLLM(
+) -> CapellaLangChainLLM:
+    """Factory function to create Capella LLM instance for LangChain."""
+    llm = CapellaLangChainLLM(
         model=model,
         api_key=SecretStr(api_key),
         base_url=base_url,

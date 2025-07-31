@@ -1,0 +1,880 @@
+
+
+
+
+
+
+poetry run python evals/eval_arize.py
+2025-07-31 12:01:17,993 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix
+2025-07-31 12:01:18,009 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_4db1b674-70b6-42f7-adb5-a688f8bf7293 initialized
+2025-07-31 12:01:23,129 - __main__ - INFO - ✅ Phoenix evaluators initialized
+2025-07-31 12:01:23,129 - __main__ - INFO - 🔧 Setting up Phoenix observability...
+2025-07-31 12:01:23,129 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix
+2025-07-31 12:01:23,205 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
+2025-07-31 12:01:23,206 - alembic.runtime.migration - INFO - Will assume transactional DDL.
+2025-07-31 12:01:23,234 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
+2025-07-31 12:01:23,269 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+2025-07-31 12:01:23,275 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+2025-07-31 12:01:23,277 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+2025-07-31 12:01:23,281 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+2025-07-31 12:01:23,288 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+2025-07-31 12:01:23,292 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+  next(self.gen)
+/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+  next(self.gen)
+2025-07-31 12:01:23,417 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+2025-07-31 12:01:23,421 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+2025-07-31 12:01:23,428 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+2025-07-31 12:01:23,434 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+2025-07-31 12:01:23,440 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+2025-07-31 12:01:23,647 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
+🔭 OpenTelemetry Tracing Details 🔭
+|  Phoenix Project: landmark-search-agent-evaluation
+|  Span Processor: SimpleSpanProcessor
+|  Collector Endpoint: http://localhost:6006/v1/traces
+|  Transport: HTTP + protobuf
+|  Transport Headers: {}
+|  
+|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.
+|  
+|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.
+|  
+|  `register` has set this TracerProvider as the global OpenTelemetry default.
+|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
+
+2025-07-31 12:01:24,607 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-07-31 12:01:24,607 - __main__ - INFO - ✅ Phoenix instrumentation enabled for LlamaIndex
+2025-07-31 12:01:24,609 - __main__ - INFO - 🔧 Setting up landmark search agent...
+2025-07-31 12:01:25,487 - main - INFO - Setting up environment variables...
+2025-07-31 12:01:25,487 - main - INFO - Using Capella AI endpoint for embeddings: https://b8ixsvhl0af8kgz.ai.sandbox.nonprod-project-avengers.com
+2025-07-31 12:01:25,487 - main - INFO - Using NVIDIA NIMs for LLM with API key: nvapi-pLiP...
+2025-07-31 12:01:25,487 - main - INFO - ✅ Configuration loaded:
+2025-07-31 12:01:25,487 - main - INFO -    Bucket: travel-sample
+2025-07-31 12:01:25,487 - main - INFO -    Scope: agentc_data
+2025-07-31 12:01:25,487 - main - INFO -    Collection: landmark_data
+2025-07-31 12:01:25,487 - main - INFO -    Index: landmark_data_index
+2025-07-31 12:01:25,487 - main - INFO - ✅ Configuration loaded:
+2025-07-31 12:01:25,487 - main - INFO -    Bucket: travel-sample
+2025-07-31 12:01:25,487 - main - INFO -    Scope: agentc_data
+2025-07-31 12:01:25,487 - main - INFO -    Collection: landmark_data
+2025-07-31 12:01:25,487 - main - INFO -    Index: landmark_data_index
+2025-07-31 12:01:25,570 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.
+2025-07-31 12:01:25,571 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.
+2025-07-31 12:01:25,619 - agentc_core.activity.span - INFO - Using both a local auditor and a remote auditor.
+2025-07-31 12:01:27,769 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-07-31 12:01:27,770 - shared.agent_setup - INFO - 🔧 Setting up AI services for llamaindex framework...
+2025-07-31 12:01:27,781 - shared.capella_model_services_llamaindex - INFO - ✅ Using direct Capella embeddings API key
+2025-07-31 12:01:27,781 - shared.capella_model_services_llamaindex - INFO - ✅ Using Capella direct API for model: nvidia/nv-embedqa-e5-v5
+2025-07-31 12:01:27,781 - shared.agent_setup - INFO - ✅ Using new Capella AI embeddings (direct API key)
+2025-07-31 12:01:27,781 - shared.capella_model_services_llamaindex - INFO - ✅ Using direct Capella LLM API key
+2025-07-31 12:01:27,781 - shared.capella_model_services_llamaindex - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+2025-07-31 12:01:28,967 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (direct API key)
+2025-07-31 12:01:28,967 - shared.agent_setup - INFO - ✅ AI services setup completed for llamaindex
+2025-07-31 12:01:30,275 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-07-31 12:01:32,522 - shared.couchbase_client - INFO - ℹ️ Collection 'landmark_data' exists, keeping existing data
+2025-07-31 12:01:36,515 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-07-31 12:01:36,516 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.landmark_data
+2025-07-31 12:01:36,519 - shared.couchbase_client - INFO - ✅ Loaded vector search index definition from agentcatalog_index.json
+2025-07-31 12:01:37,446 - shared.couchbase_client - INFO - ℹ️ Vector search index 'landmark_data_index' already exists
+2025-07-31 12:01:40,298 - shared.couchbase_client - INFO - ✅ LlamaIndex vector store setup complete: travel-sample.agentc_data.landmark_data
+2025-07-31 12:01:43,470 - data.landmark_data - INFO - Loading landmark data from travel-sample.inventory.landmark...
+2025-07-31 12:01:43,471 - data.landmark_data - INFO - Processing landmark documents...
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1753943506.639000 4438610 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+Loading landmarks: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4495/4495 [00:00<00:00, 2796824.87landmarks/s]
+2025-07-31 12:01:46,650 - data.landmark_data - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark
+2025-07-31 12:01:48,630 - data.landmark_data - INFO - Loading landmark data from travel-sample.inventory.landmark...
+2025-07-31 12:01:48,631 - data.landmark_data - INFO - Processing landmark documents...
+Loading landmarks: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4495/4495 [00:00<00:00, 6181441.47landmarks/s]
+2025-07-31 12:01:51,185 - data.landmark_data - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark
+2025-07-31 12:01:51,187 - data.landmark_data - INFO - Generating landmark text embeddings...
+Processing landmarks: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4495/4495 [00:00<00:00, 264549.67landmarks/s]
+2025-07-31 12:01:51,204 - data.landmark_data - INFO - Generated 4495 landmark text embeddings
+2025-07-31 12:01:54,241 - data.landmark_data - INFO - Creating 4495 LlamaIndex Documents...
+2025-07-31 12:01:54,302 - data.landmark_data - INFO - Processing documents with ingestion pipeline...
+2025-07-31 12:01:54,398 - data.landmark_data - INFO - Processing 4495 documents in 180 batches...
+Loading batches:   1%|█                                                                                                                                                                                           | 1/180 [00:06<20:17,  6.80s/batch]2025-07-31 12:02:03,351 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1585 to 1228 characters
+Loading batches:   3%|█████▏                                                                                                                                                                                      | 5/180 [00:31<17:51,  6.12s/batch]2025-07-31 12:02:29,441 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1614 to 1228 characters
+Loading batches:   3%|██████▎                                                                                                                                                                                     | 6/180 [00:37<17:52,  6.16s/batch]2025-07-31 12:02:32,028 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1546 to 1228 characters
+Loading batches:   4%|████████▎                                                                                                                                                                                   | 8/180 [00:51<18:29,  6.45s/batch]2025-07-31 12:02:45,794 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1960 to 1228 characters
+Loading batches:   7%|████████████▍                                                                                                                                                                              | 12/180 [01:19<19:41,  7.03s/batch]2025-07-31 12:03:16,266 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1598 to 1228 characters
+2025-07-31 12:03:18,087 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1610 to 1228 characters
+Loading batches:   7%|█████████████▌                                                                                                                                                                             | 13/180 [01:25<18:57,  6.81s/batch]2025-07-31 12:03:22,410 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1587 to 1228 characters
+Loading batches:   9%|████████████████▌                                                                                                                                                                          | 16/180 [01:43<17:09,  6.28s/batch]2025-07-31 12:03:38,418 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2386 to 1228 characters
+Loading batches:   9%|█████████████████▋                                                                                                                                                                         | 17/180 [01:49<16:48,  6.19s/batch]2025-07-31 12:03:44,392 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1571 to 1228 characters
+Loading batches:  10%|██████████████████▋                                                                                                                                                                        | 18/180 [01:55<16:35,  6.15s/batch]2025-07-31 12:03:50,427 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2105 to 1228 characters
+Loading batches:  11%|████████████████████▊                                                                                                                                                                      | 20/180 [02:08<16:52,  6.33s/batch]2025-07-31 12:04:03,336 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1995 to 1228 characters
+Loading batches:  12%|█████████████████████▊                                                                                                                                                                     | 21/180 [02:15<16:55,  6.39s/batch]2025-07-31 12:04:09,880 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1577 to 1228 characters
+Loading batches:  12%|██████████████████████▊                                                                                                                                                                    | 22/180 [02:23<18:16,  6.94s/batch]2025-07-31 12:04:18,086 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1598 to 1228 characters
+2025-07-31 12:04:21,755 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1925 to 1228 characters
+Loading batches:  14%|█████████████████████████▉                                                                                                                                                                 | 25/180 [02:44<18:03,  6.99s/batch]2025-07-31 12:04:38,991 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1896 to 1228 characters
+Loading batches:  15%|████████████████████████████                                                                                                                                                               | 27/180 [02:56<16:24,  6.44s/batch]2025-07-31 12:04:52,625 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1991 to 1228 characters
+Loading batches:  18%|██████████████████████████████████▎                                                                                                                                                        | 33/180 [03:33<15:15,  6.23s/batch]2025-07-31 12:05:28,040 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 3517 to 1228 characters
+Loading batches:  19%|███████████████████████████████████▎                                                                                                                                                       | 34/180 [03:39<15:02,  6.18s/batch]2025-07-31 12:05:34,082 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2157 to 1228 characters
+Loading batches:  20%|█████████████████████████████████████▍                                                                                                                                                     | 36/180 [03:52<15:18,  6.38s/batch]2025-07-31 12:05:47,292 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1765 to 1228 characters
+Loading batches:  24%|████████████████████████████████████████████▋                                                                                                                                              | 43/180 [04:36<13:52,  6.08s/batch]2025-07-31 12:06:35,336 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1856 to 1228 characters
+Loading batches:  25%|██████████████████████████████████████████████▊                                                                                                                                            | 45/180 [04:50<14:39,  6.52s/batch]2025-07-31 12:06:47,187 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1538 to 1228 characters
+Loading batches:  26%|███████████████████████████████████████████████▊                                                                                                                                           | 46/180 [04:56<14:06,  6.32s/batch]2025-07-31 12:06:51,360 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1829 to 1228 characters
+2025-07-31 12:06:53,460 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2372 to 1228 characters
+Loading batches:  27%|██████████████████████████████████████████████████▉                                                                                                                                        | 49/180 [05:15<13:48,  6.33s/batch]2025-07-31 12:07:10,389 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1621 to 1228 characters
+Loading batches:  28%|███████████████████████████████████████████████████▉                                                                                                                                       | 50/180 [05:21<13:32,  6.25s/batch]2025-07-31 12:07:18,265 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1605 to 1228 characters
+Loading batches:  29%|███████████████████████████████████████████████████████                                                                                                                                    | 53/180 [05:40<13:31,  6.39s/batch]2025-07-31 12:07:35,462 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2428 to 1228 characters
+Loading batches:  32%|███████████████████████████████████████████████████████████▏                                                                                                                               | 57/180 [06:09<13:48,  6.73s/batch]2025-07-31 12:08:03,688 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1574 to 1228 characters
+Loading batches:  33%|██████████████████████████████████████████████████████████████▎                                                                                                                            | 60/180 [06:27<12:26,  6.22s/batch]2025-07-31 12:08:25,465 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1939 to 1228 characters
+Loading batches:  34%|████████████████████████████████████████████████████████████████▍                                                                                                                          | 62/180 [06:39<11:57,  6.08s/batch]2025-07-31 12:08:33,504 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1793 to 1228 characters
+Loading batches:  37%|█████████████████████████████████████████████████████████████████████▌                                                                                                                     | 67/180 [07:09<11:32,  6.13s/batch]2025-07-31 12:09:05,646 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1727 to 1228 characters
+2025-07-31 12:09:05,646 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 3208 to 1228 characters
+Loading batches:  38%|██████████████████████████████████████████████████████████████████████▋                                                                                                                    | 68/180 [07:15<11:15,  6.03s/batch]2025-07-31 12:09:09,792 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1773 to 1228 characters
+Loading batches:  41%|███████████████████████████████████████████████████████████████████████████▊                                                                                                               | 73/180 [07:50<12:24,  6.96s/batch]2025-07-31 12:09:44,968 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1768 to 1228 characters
+Loading batches:  43%|███████████████████████████████████████████████████████████████████████████████▉                                                                                                           | 77/180 [08:15<10:48,  6.29s/batch]2025-07-31 12:10:11,612 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1602 to 1228 characters
+Loading batches:  43%|█████████████████████████████████████████████████████████████████████████████████                                                                                                          | 78/180 [08:21<10:46,  6.34s/batch]2025-07-31 12:10:16,026 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1762 to 1228 characters
+Loading batches:  44%|██████████████████████████████████████████████████████████████████████████████████                                                                                                         | 79/180 [08:27<10:34,  6.28s/batch]2025-07-31 12:10:24,155 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1640 to 1228 characters
+Loading batches:  44%|███████████████████████████████████████████████████████████████████████████████████                                                                                                        | 80/180 [08:33<10:24,  6.25s/batch]2025-07-31 12:10:30,325 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1663 to 1228 characters
+2025-07-31 12:10:30,325 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2325 to 1228 characters
+Loading batches:  48%|█████████████████████████████████████████████████████████████████████████████████████████▎                                                                                                 | 86/180 [09:11<09:43,  6.21s/batch]2025-07-31 12:11:07,843 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2106 to 1228 characters
+Loading batches:  51%|██████████████████████████████████████████████████████████████████████████████████████████████▌                                                                                            | 91/180 [09:43<09:20,  6.30s/batch]2025-07-31 12:11:39,774 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1605 to 1228 characters
+Loading batches:  52%|████████████████████████████████████████████████████████████████████████████████████████████████▌                                                                                          | 93/180 [09:55<08:56,  6.17s/batch]2025-07-31 12:11:53,792 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1545 to 1228 characters
+Loading batches:  52%|█████████████████████████████████████████████████████████████████████████████████████████████████▋                                                                                         | 94/180 [10:01<08:57,  6.25s/batch]2025-07-31 12:11:56,424 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1587 to 1228 characters
+2025-07-31 12:11:58,193 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1577 to 1228 characters
+2025-07-31 12:11:58,193 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1570 to 1228 characters
+2025-07-31 12:11:58,193 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1725 to 1228 characters
+2025-07-31 12:11:59,846 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1617 to 1228 characters
+2025-07-31 12:11:59,847 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1727 to 1228 characters
+Loading batches:  53%|██████████████████████████████████████████████████████████████████████████████████████████████████▋                                                                                        | 95/180 [10:07<08:38,  6.10s/batch]2025-07-31 12:12:02,173 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1865 to 1228 characters
+2025-07-31 12:12:02,173 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2080 to 1228 characters
+Loading batches:  53%|███████████████████████████████████████████████████████████████████████████████████████████████████▋                                                                                       | 96/180 [10:13<08:25,  6.02s/batch]2025-07-31 12:12:08,001 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1582 to 1228 characters
+2025-07-31 12:12:10,027 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2285 to 1228 characters
+Loading batches:  54%|█████████████████████████████████████████████████████████████████████████████████████████████████████▊                                                                                     | 98/180 [10:27<08:48,  6.45s/batch]2025-07-31 12:12:21,588 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2210 to 1228 characters
+Loading batches:  56%|███████████████████████████████████████████████████████████████████████████████████████████████████████▎                                                                                  | 100/180 [10:39<08:31,  6.40s/batch]2025-07-31 12:12:34,313 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1576 to 1228 characters
+2025-07-31 12:12:34,313 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1686 to 1228 characters
+2025-07-31 12:12:36,197 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1633 to 1228 characters
+2025-07-31 12:12:36,197 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1599 to 1228 characters
+2025-07-31 12:12:36,197 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1588 to 1228 characters
+Loading batches:  56%|████████████████████████████████████████████████████████████████████████████████████████████████████████▎                                                                                 | 101/180 [10:45<08:19,  6.32s/batch]2025-07-31 12:12:42,353 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2090 to 1228 characters
+2025-07-31 12:12:42,353 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1642 to 1228 characters
+2025-07-31 12:12:44,234 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1880 to 1228 characters
+Loading batches:  58%|████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                                             | 105/180 [11:09<07:32,  6.04s/batch]2025-07-31 12:13:06,107 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1552 to 1228 characters
+2025-07-31 12:13:06,108 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1668 to 1228 characters
+2025-07-31 12:13:06,108 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1542 to 1228 characters
+Loading batches:  59%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                                            | 106/180 [11:15<07:27,  6.04s/batch]2025-07-31 12:13:11,930 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1717 to 1228 characters
+Loading batches:  61%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                                                         | 109/180 [11:34<07:21,  6.22s/batch]2025-07-31 12:13:33,173 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1545 to 1228 characters
+Loading batches:  62%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                                                       | 111/180 [11:47<07:06,  6.19s/batch]2025-07-31 12:13:43,399 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1940 to 1228 characters
+Loading batches:  63%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊                                                                    | 114/180 [12:05<06:38,  6.04s/batch]2025-07-31 12:14:01,464 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1628 to 1228 characters
+2025-07-31 12:14:01,464 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1658 to 1228 characters
+Loading batches:  66%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                                               | 119/180 [12:37<06:36,  6.50s/batch]2025-07-31 12:14:34,001 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2067 to 1228 characters
+Loading batches:  69%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                         | 124/180 [13:08<05:47,  6.20s/batch]2025-07-31 12:15:04,916 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1768 to 1228 characters
+Loading batches:  69%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                        | 125/180 [13:14<05:44,  6.27s/batch]2025-07-31 12:15:09,414 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2154 to 1228 characters
+Loading batches:  71%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                      | 127/180 [13:27<05:32,  6.28s/batch]2025-07-31 12:15:23,740 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1681 to 1228 characters
+Loading batches:  71%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                                                     | 128/180 [13:33<05:18,  6.13s/batch]2025-07-31 12:15:27,760 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1798 to 1228 characters
+2025-07-31 12:15:31,354 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1668 to 1228 characters
+Loading batches:  72%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                                                    | 129/180 [13:39<05:06,  6.01s/batch]2025-07-31 12:15:36,833 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1637 to 1228 characters
+Loading batches:  72%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                                                   | 130/180 [13:44<04:52,  5.86s/batch]2025-07-31 12:15:39,036 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1955 to 1228 characters
+Loading batches:  73%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▍                                                 | 132/180 [13:56<04:45,  5.96s/batch]2025-07-31 12:15:54,579 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1856 to 1228 characters
+Loading batches:  74%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▍                                                | 133/180 [14:02<04:37,  5.91s/batch]2025-07-31 12:16:00,543 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1650 to 1228 characters
+Loading batches:  76%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                            | 137/180 [14:26<04:21,  6.07s/batch]2025-07-31 12:16:21,141 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1932 to 1228 characters
+Loading batches:  77%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                           | 138/180 [14:32<04:13,  6.03s/batch]2025-07-31 12:16:27,078 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1586 to 1228 characters
+2025-07-31 12:16:27,079 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1545 to 1228 characters
+2025-07-31 12:16:28,724 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1588 to 1228 characters
+Loading batches:  77%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                          | 139/180 [14:38<04:02,  5.92s/batch]2025-07-31 12:16:32,725 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1577 to 1228 characters
+2025-07-31 12:16:32,725 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1697 to 1228 characters
+Loading batches:  78%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                         | 140/180 [14:44<03:55,  5.90s/batch]2025-07-31 12:16:38,602 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1708 to 1228 characters
+Loading batches:  78%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                        | 141/180 [14:50<03:56,  6.07s/batch]2025-07-31 12:16:48,825 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2606 to 1228 characters
+Loading batches:  83%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████                               | 150/180 [15:46<03:06,  6.21s/batch]2025-07-31 12:17:43,258 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1629 to 1228 characters
+Loading batches:  88%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                     | 159/180 [16:42<02:09,  6.18s/batch]2025-07-31 12:18:37,331 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1723 to 1228 characters
+Loading batches:  89%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                    | 160/180 [16:49<02:03,  6.18s/batch]2025-07-31 12:18:47,444 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1594 to 1228 characters
+Loading batches:  91%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▍                | 164/180 [17:12<01:33,  5.85s/batch]2025-07-31 12:19:10,197 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1894 to 1228 characters
+Loading batches:  92%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌               | 165/180 [17:17<01:26,  5.75s/batch]2025-07-31 12:19:12,408 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1858 to 1228 characters
+Loading batches:  92%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌              | 166/180 [17:23<01:21,  5.81s/batch]2025-07-31 12:19:18,319 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1934 to 1228 characters
+2025-07-31 12:19:20,248 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1583 to 1228 characters
+Loading batches:  95%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋         | 171/180 [17:55<00:57,  6.41s/batch]2025-07-31 12:19:51,844 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1672 to 1228 characters
+Loading batches:  96%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋        | 172/180 [18:01<00:50,  6.28s/batch]2025-07-31 12:19:58,087 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1592 to 1228 characters
+2025-07-31 12:19:58,088 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1999 to 1228 characters
+Loading batches:  96%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊       | 173/180 [18:07<00:43,  6.23s/batch]2025-07-31 12:20:03,887 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2126 to 1228 characters
+Loading batches:  97%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊      | 174/180 [18:13<00:37,  6.20s/batch]2025-07-31 12:20:08,353 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1712 to 1228 characters
+Loading batches:  97%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▊     | 175/180 [18:21<00:33,  6.75s/batch]2025-07-31 12:20:18,045 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 1624 to 1228 characters
+Loading batches:  99%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉ | 179/180 [18:45<00:06,  6.15s/batch]2025-07-31 12:20:40,426 - shared.capella_model_services_llamaindex - WARNING - ⚠️ Truncated text from 2085 to 1228 characters
+Loading batches: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 180/180 [18:50<00:00,  6.28s/batch]
+2025-07-31 12:20:44,602 - data.landmark_data - INFO - Successfully loaded 4495 landmark documents to vector store
+2025-07-31 12:20:44,948 - main - INFO - Loaded search_landmarks tool from AgentC
+2025-07-31 12:20:44,948 - main - INFO - Loaded 1 tools from Agent Catalog
+2025-07-31 12:20:44,980 - main - INFO - Loaded system prompt from Agent Catalog
+/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/llama_index/core/agent/react/base.py:154: DeprecationWarning: Call to deprecated class ReActAgent. (ReActAgent has been rewritten and replaced by llama_index.core.agent.workflow.ReActAgent.
+
+This implementation will be removed in a v0.13.0 and the new implementation will be promoted to the `from llama_index.core.agent import ReActAgent` path.
+
+See the docs for more information: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return cls(
+/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/deprecated/classic.py:184: DeprecationWarning: Call to deprecated class AgentRunner. (AgentRunner has been deprecated and is not maintained.
+
+This implementation will be removed in a v0.13.0.
+
+See the docs for more information on updated agent usage: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return old_new1(cls, *args, **kwargs)
+2025-07-31 12:20:44,985 - main - INFO - LlamaIndex ReAct agent created successfully
+2025-07-31 12:20:44,987 - __main__ - INFO - ✅ Landmark search agent setup completed successfully
+2025-07-31 12:20:44,987 - __main__ - INFO - 🚀 Starting LlamaIndex landmark search evaluation with 5 queries
+2025-07-31 12:20:44,987 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-07-31 12:20:44,987 - __main__ - INFO -    🤖 Agent: Landmark Search Agent (LlamaIndex)
+2025-07-31 12:20:44,987 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-07-31 12:20:44,987 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-07-31 12:20:44,987 - __main__ - INFO - 
+📋 Query 1/5
+2025-07-31 12:20:44,988 - __main__ - INFO - 🔍 Evaluating query: Find museums and galleries in Glasgow
+> Running step eae8cc55-21d0-494d-a756-ebf1002c2b91. Step input: Find museums and galleries in Glasgow
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'museums and galleries in Glasgow', 'limit': 5}
+Observation: Found 5 landmarks matching 'museums and galleries in Glasgow':
+
+1. **Glasgow 2014**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do
+   🏠 Address: Argyle Street. Directions: subway: Kelvinhall. Phone: +44 141 276 9599. Website: http://www.glasgowlife.org.uk/museums/kelvingrove/. Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: ROOFTOP). ID: 38964
+   📞 Phone: +44 141 276 9599
+   🌐 Website: http://www.glasgowlife.org.uk/museums/kelvingrove/.
+   🕒 Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: ROOFTOP). ID: 38964
+   📝 Description: Glasgow 2014 (Kelvingrove Art Gallery and Museum) in Glasgow, United Kingdom. Description: Next door to the Kelvingrove Lawn Bowls Centre. The city's grandest public museum, with one of the finest civic collections in Europe housed within this Glasgow Victorian landmark. The collection is quite varied, with artworks, biological displays and anthropological artifacts. The museum as a whole is well-geared towards children and families and has a cafe.. Address: Argyle Street. Directions: subway: Kelvinhall. Phone: +44 141 276 9599. Website: http://www.glasgowlife.org.uk/museums/kelvingrove/. Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: ROOFTOP). ID: 38964
+
+2. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🏠 Address: Royal Exchange Square. Directions: on Queen Street in the City Centre. Phone: +44 141 287 3050. Website: http://www.glasgowlife.org.uk/museums/GoMA/. Hours: M-W, Sa 10:00–17:00, Th 10:00–20:00, F and Su 11:00–17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86006, -4.25234 (accuracy: ROOFTOP). ID: 10100
+   📞 Phone: +44 141 287 3050
+   🌐 Website: http://www.glasgowlife.org.uk/museums/GoMA/.
+   🕒 Hours: M-W, Sa 10:00–17:00, Th 10:00–20:00, F and Su 11:00–17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86006, -4.25234 (accuracy: ROOFTOP). ID: 10100
+   📝 Description: Glasgow (Gallery of Modern Art) in Glasgow, United Kingdom. Description: This gallery houses a terrific collection of recent paintings and sculptures, with space for new exhibitions. In the basement is one of Glasgow's many public libraries, with free internet access and cafe.. Address: Royal Exchange Square. Directions: on Queen Street in the City Centre. Phone: +44 141 287 3050. Website: http://www.glasgowlife.org.uk/museums/GoMA/. Hours: M-W, Sa 10:00–17:00, Th 10:00–20:00, F and Su 11:00–17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86006, -4.25234 (accuracy: ROOFTOP). ID: 10100
+
+3. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🏠 Address: Argyle Street, West End. Directions: subway: Kelvinhall. Phone: +44 141 276 9599. Website: http://www.glasgowlife.org.uk/museums/kelvingrove/. Hours: M-Th, Sa 10:00-17:00; F, Su 11:00-17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: APPROXIMATE). ID: 10104
+   📞 Phone: +44 141 276 9599
+   🌐 Website: http://www.glasgowlife.org.uk/museums/kelvingrove/.
+   🕒 Hours: M-Th, Sa 10:00-17:00; F, Su 11:00-17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: APPROXIMATE). ID: 10104
+   📝 Description: Glasgow (Kelvingrove Art Gallery and Museum) in Glasgow, United Kingdom. Description: The city's grandest public museum, with one of the finest civic collections in Europe housed within this Glasgow Victorian landmark. The collection is quite varied, with artworks, biological displays and anthropological artifacts. The museum as a whole is well-geared towards children and families, with &quot;discovery center&quot; rooms of interactive exhibits and all the displays labeled with easy-to-understand descriptions. The &quot;Life&quot; wing holds fossils, wildlife displays, artifacts from ancient Egypt, exhibits on the Scottish people, a hall of arms and armor, and even a Submarine Spitfire hanging in the main hall of the wing. The &quot;Expression&quot; wing holds a fantastic collection of fine and decorative arts, including Salvador Dalí's celebrated &quot;Crucifixion of St. John of the Cross&quot; painting and select works by renowned artists like Van Gogh, Monet and Rembrandt, as well as a hall of period Glasgow furnishings by Mackintosh. The main hall has a functioning organ, and daily recitals are played in the afternoon.. Address: Argyle Street, West End. Directions: subway: Kelvinhall. Phone: +44 141 276 9599. Website: http://www.glasgowlife.org.uk/museums/kelvingrove/. Hours: M-Th, Sa 10:00-17:00; F, Su 11:00-17:00. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86854, -4.2908 (accuracy: APPROXIMATE). ID: 10104
+
+4. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 2 Castle Street. Directions: next to the Glasgow Cathedral. Phone: +44 141 276 1625. Website: http://www.glasgowlife.org.uk/museums/st-mungo-museum/. Hours: Tu-Th, Sa 10AM-5PM, F, Su 11AM-5PM, closed M. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86252, -4.23606 (accuracy: ROOFTOP). ID: 10110
+   📞 Phone: +44 141 276 1625
+   🌐 Website: http://www.glasgowlife.org.uk/museums/st-mungo-museum/.
+   🕒 Hours: Tu-Th, Sa 10AM-5PM, F, Su 11AM-5PM, closed M. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86252, -4.23606 (accuracy: ROOFTOP). ID: 10110
+   📝 Description: Glasgow (St. Mungo's Museum of Religious Life and Art) in Glasgow, United Kingdom. Description: This museum features exhibits relating not only to Glasgow's patron saint and the growth of Christianity in the city, but numerous exhibits pertaining to many faiths practised locally and worldwide.. Address: 2 Castle Street. Directions: next to the Glasgow Cathedral. Phone: +44 141 276 1625. Website: http://www.glasgowlife.org.uk/museums/st-mungo-museum/. Hours: Tu-Th, Sa 10AM-5PM, F, Su 11AM-5PM, closed M. Price: Free. Activity type: see. Type: landmark. Coordinates: 55.86252, -4.23606 (accuracy: ROOFTOP). ID: 10110
+
+5. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🏠 Address: University Avenue, University Of Glasgow. Phone: +44 141 330 4221. Website: http://www.hunterian.gla.ac.uk/. Hours: Tu-Sa 10:00-17:00, Su 11:00-16:00, closed M. Price: Free in general; special exhibitions: £5.00 adult, £3.00 concession, free under 18. Activity type: see. Type: landmark. Coordinates: 55.87172, -4.28781 (accuracy: ROOFTOP). ID: 10103
+   📞 Phone: +44 141 330 4221
+   🌐 Website: http://www.hunterian.gla.ac.uk/.
+   🕒 Hours: Tu-Sa 10:00-17:00, Su 11:00-16:00, closed M. Price: Free in general; special exhibitions: £5.00 adult, £3.00 concession, free under 18. Activity type: see. Type: landmark. Coordinates: 55.87172, -4.28781 (accuracy: ROOFTOP). ID: 10103
+   💰 Price: £5
+   📝 Description: Glasgow (Hunterian Museum and Art Gallery) in Glasgow, United Kingdom. Description: The art gallery contains a world famous Whistler collection, and various temporary exhibitions. It also contains The Mackintosh House, a reconstruction of the principal interiors from the Glasgow home of the Scottish architect and designer Charles Rennie Mackintosh (1868-1928). The separate museum is the oldest public museum in Scotland and has a variety of exhibits, including a display on the Romans in Scotland (featuring items found in the Roman Fort in Bearsden), one on the various dinosaur discoveries found on the Isle of Skye, and various temporary exhibitions.. Address: University Avenue, University Of Glasgow. Phone: +44 141 330 4221. Website: http://www.hunterian.gla.ac.uk/. Hours: Tu-Sa 10:00-17:00, Su 11:00-16:00, closed M. Price: Free in general; special exhibitions: £5.00 adult, £3.00 concession, free under 18. Activity type: see. Type: landmark. Coordinates: 55.87172, -4.28781 (accuracy: ROOFTOP). ID: 10103
+> Running step 47c58464-76b8-43d0-9870-28acfcafe57a. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: There are several museums and galleries in Glasgow, including the Kelvingrove Art Gallery and Museum, the Gallery of Modern Art, the St. Mungo's Museum of Religious Life and Art, and the Hunterian Museum and Art Gallery.
+2025-07-31 12:20:56,181 - __main__ - INFO - ✅ Query completed in 11.19s
+2025-07-31 12:20:56,181 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-07-31 12:20:56,181 - __main__ - INFO - 
+📋 Query 2/5
+2025-07-31 12:20:56,181 - __main__ - INFO - 🔍 Evaluating query: Show me restaurants serving Asian cuisine
+> Running step ba92d01a-8562-4dc0-a6e9-b98b65697756. Step input: Show me restaurants serving Asian cuisine
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Asian cuisine restaurants', 'limit': 5}
+Observation: Found 5 landmarks matching 'Asian cuisine restaurants':
+
+1. **Beverly Hills**
+   📍 Location: Beverly Hills, United States
+   🎯 Activity: Eat
+   🏠 Address: 9291 Burton Way. Directions: inside Raffles L'Ermitage hotel. Phone: +1-310-278-3344. Website: http://beverlyhills.raffles.com/hsylaxra/restaurants_jaan.html. Hours: 6AM-11PM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.072542, -118.3954 (accuracy: ROOFTOP). ID: 3410
+   📞 Phone: +1-310-278-3344
+   🌐 Website: http://beverlyhills.raffles.com/hsylaxra/restaurants_jaan.html.
+   🕒 Hours: 6AM-11PM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.072542, -118.3954 (accuracy: ROOFTOP). ID: 3410
+   📝 Description: Beverly Hills (Jaan) in Beverly Hills, United States. Description: French-Asian cooking. Lavish surroundings. Both points come together is an inspired hotel dining experience inside the Raffles L'Ermitage. Guests can feast or relax on the patio around the fireplace or next to a lighted waterfall. Jaan (the word is Cambodian for dish or bowl) menu changes monthly, alternating between diverse flavors and cuisine styles.. Address: 9291 Burton Way. Directions: inside Raffles L'Ermitage hotel. Phone: +1-310-278-3344. Website: http://beverlyhills.raffles.com/hsylaxra/restaurants_jaan.html. Hours: 6AM-11PM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.072542, -118.3954 (accuracy: ROOFTOP). ID: 3410
+
+2. **Beverly Hills**
+   📍 Location: Beverly Hills, United States
+   🎯 Activity: Eat
+   🏠 Address: 9646 South (Little) Santa Monica Blvd. Directions: at Bedford Ave. Phone: +1-310-205-8990. Activity type: eat. Type: landmark. State: California. Coordinates: 34.069236, -118.406128 (accuracy: APPROXIMATE). ID: 3407
+   📞 Phone: +1-310-205-8990
+   📝 Description: Beverly Hills (Crustacean) in Beverly Hills, United States. Description: From the moment the An family opened the doors to their posh, multi-level eatery in 1997, the Asian and Vietnamese-inspired menu has wowed food lovers – not too mention the interior design of the restaurant/bar, which blends an evocative Asian aesthetic with Hollywood style. The glamorous vibe and hot bar scene aside, it's the food that is the main draw, which features Dungeness crab, gigantic grilled tiger prawns, Sea Bass and the famous garlic noodles.. Address: 9646 South (Little) Santa Monica Blvd. Directions: at Bedford Ave. Phone: +1-310-205-8990. Activity type: eat. Type: landmark. State: California. Coordinates: 34.069236, -118.406128 (accuracy: APPROXIMATE). ID: 3407
+
+3. **Camberley**
+   📍 Location: Camberley, United Kingdom
+   🎯 Activity: Eat
+   🏠 Address: 69 High St. Phone: +44 1276 29078. Website: http://www.soasia.co.uk/. Activity type: eat. Type: landmark. Coordinates: 51.337474, -0.743807 (accuracy: RANGE_INTERPOLATED). ID: 4941
+   📞 Phone: +44 1276 29078
+   🌐 Website: http://www.soasia.co.uk/.
+   📝 Description: Camberley (So Asia) in Camberley, United Kingdom. Description: Eat as much as you like buffet style restaurant with an excellent choice of Chinese, Thai and Indian foods.. Address: 69 High St. Phone: +44 1276 29078. Website: http://www.soasia.co.uk/. Activity type: eat. Type: landmark. Coordinates: 51.337474, -0.743807 (accuracy: RANGE_INTERPOLATED). ID: 4941
+
+4. **Santa Monica**
+   📍 Location: Santa Monica, United States
+   🎯 Activity: Eat
+   🏠 Address: 3221 Donald Douglas Loop S.. Directions: Santa Monica Airport. Phone: +1 310 390-6565. Website: http://www.typhoon.biz/. Activity type: eat. Type: landmark. State: California. Coordinates: 34.01733, -118.44669 (accuracy: RANGE_INTERPOLATED). ID: 26471
+   📞 Phone: +1 310 390-6565
+   🌐 Website: http://www.typhoon.biz/.
+   📝 Description: Santa Monica (Typhoon) in Santa Monica, United States. Description: Best known for its exotic fried insects, this pan-asian restaurant also serves dim sum and sushi, Malasian and Thai, in a unique setting with a view of the runway. Window tables have great views of the runway activity. Try the steamed whole fish (bass or catfish). Adventurous eaters can try tasty appetizers of crickets, scorpions, sea worms and ants. MSG used, so be sure to ask for your food without it if it disagrees with you.. Address: 3221 Donald Douglas Loop S.. Directions: Santa Monica Airport. Phone: +1 310 390-6565. Website: http://www.typhoon.biz/. Activity type: eat. Type: landmark. State: California. Coordinates: 34.01733, -118.44669 (accuracy: RANGE_INTERPOLATED). ID: 26471
+
+5. **San Francisco/Union Square-Financial District**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 110 Powell St. Directions: near Ellis. Phone: +1 415 397-2199. Hours: Daily 11AM-1AM. Price: Most dishes under $10. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7857, -122.4077 (accuracy: ROOFTOP). ID: 26190
+   📞 Phone: +1 415 397-2199
+   🕒 Hours: Daily 11AM-1AM. Price: Most dishes under $10. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7857, -122.4077 (accuracy: ROOFTOP). ID: 26190
+   💰 Price: $10
+   📝 Description: San Francisco/Union Square-Financial District (Bangkok Noodles) in San Francisco, United States. Description: Cash only &quot;hole in the wall&quot; restaurant serving delicious and nicely presented Thai dishes ranging from noodles, stir fried, to BBQ. Attracts a large local following from young Asian Americans. Lunch hour gets crowded in this small popular eatery; alternative is to take out and eat in Union Square. It's great for a good and cheap early or late-night dinner.. Address: 110 Powell St. Directions: near Ellis. Phone: +1 415 397-2199. Hours: Daily 11AM-1AM. Price: Most dishes under $10. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7857, -122.4077 (accuracy: ROOFTOP). ID: 26190
+> Running step 9d02a4ef-8bb7-41ed-826a-6f8ad544d7f7. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: Here are some restaurants serving Asian cuisine that were found: Beverly Hills (Jaan), Beverly Hills (Crustacean), Camberley (So Asia), Santa Monica (Typhoon), and San Francisco/Union Square-Financial District (Bangkok Noodles).
+2025-07-31 12:21:07,723 - __main__ - INFO - ✅ Query completed in 11.54s
+2025-07-31 12:21:07,723 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-07-31 12:21:07,723 - __main__ - INFO - 
+📋 Query 3/5
+2025-07-31 12:21:07,723 - __main__ - INFO - 🔍 Evaluating query: What attractions can I see in Glasgow?
+> Running step 4d4ec38b-cfe8-4e0e-8fd2-622cc1f3aea5. Step input: What attractions can I see in Glasgow?
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Glasgow attractions', 'limit': 5}
+Observation: Found 5 landmarks matching 'Glasgow attractions':
+
+1. **Glasgow 2014**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do
+   🏠 Address: 50 Pacific Quay. Directions: train: Exhibition Centre or subway: Cessnock. Phone: +44 141 420 5000. Website: http://www.glasgowsciencecentre.org/. Hours: Summer: Daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Price: £10 adults, £8 children/seniors; add £2.50 for planetarium or IMAX cinema. Activity type: do. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 38965
+   📞 Phone: +44 141 420 5000
+   🌐 Website: http://www.glasgowsciencecentre.org/.
+   🕒 Hours: Summer: Daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Price: £10 adults, £8 children/seniors; add £2.50 for planetarium or IMAX cinema. Activity type: do. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 38965
+   💰 Price: £10 adults, £8 children/seniors; add £2
+   📝 Description: Glasgow 2014 (Glasgow Science Centre) in Glasgow, United Kingdom. Description: Has hundreds of interactive science exhibits for children, an IMAX cinema, and the 125-meter Glasgow Tower, the only tower in the world which can rotate 360 degrees from its base.. Address: 50 Pacific Quay. Directions: train: Exhibition Centre or subway: Cessnock. Phone: +44 141 420 5000. Website: http://www.glasgowsciencecentre.org/. Hours: Summer: Daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Price: £10 adults, £8 children/seniors; add £2.50 for planetarium or IMAX cinema. Activity type: do. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 38965
+
+2. **Glasgow 2014**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do
+   🌐 Website: http://www.glasgow.gov.uk/en/residents/parks_outdoors/parks_gardens/glasgowgreen.htm.
+   📝 Description: Glasgow 2014 (Glasgow Green) in Glasgow, United Kingdom. Description: The most famous of the Glasgow parks, Glasgow Green was founded by Royal grant in 1450 and has slowly been enclosed by the city and evolved from grazing land into a modern public park. &quot;The Green&quot; as its known to the locals is one of the major venues for concerts and open air events in Glasgow. Among the highlights are the People's Palace and Winter Gardens (covered above), '''Nelson's Memorial''', an obelisk or needle: built to commemorate Nelson's victory at the battle of Trafalgar, the '''Templeton Carpet Factory''', with its ornate brick work (now a business centre), and the '''Doulton Fountain''', the largest terracotta fountain in the world.. Directions: train: Bridgeton or Argyle Street, then walk or take the bus along London Road. Website: http://www.glasgow.gov.uk/en/residents/parks_outdoors/parks_gardens/glasgowgreen.htm. Activity type: do. Type: landmark. Coordinates: 55.85282, -4.24437 (accuracy: APPROXIMATE). ID: 38961
+
+3. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🌐 Website: http://www.glasgow.gov.uk/index.aspx?articleid=4962.
+   🕒 Hours: Park open at all times. Activity type: see. Type: landmark. Coordinates: 55.85282, -4.24437 (accuracy: APPROXIMATE). ID: 10115
+   💰 Price: £250 to get them back!
+   📝 Description: Glasgow (Glasgow Green) in Glasgow, United Kingdom. Description: The most famous of the Glasgow parks, Glasgow Green was founded by Royal grant in 1450 and has slowly been enclosed by the city and evolved from grazing land into a modern public park. &quot;The Green&quot; as its known to the locals is one of the major venues for concerts and open air events in Glasgow. Among the highlights are the People's Palace and Winter Gardens (covered above), '''Nelson's Memorial''', an obelisk or needle: built to commemorate Nelson's victory at the battle of Trafalgar, the '''Templeton Carpet Factory''', with its ornate brick work (now a business centre), and the '''Doulton Fountain''', the largest terracotta fountain in the world. There is limited official parking in or around the green and the area is notorious for car crime. Be aware the council will tow away illegally parked vehicles and charge you up to £250 to get them back!. Directions: train: Bridgeton or Argyle Street, then walk or take the bus along London Road. Website: http://www.glasgow.gov.uk/index.aspx?articleid=4962. Hours: Park open at all times. Activity type: see. Type: landmark. Coordinates: 55.85282, -4.24437 (accuracy: APPROXIMATE). ID: 10115
+
+4. **Glasgow 2014**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do
+   🏠 Address: Glasgow Green. Phone: +44 141 276 0788. Website: http://www.glasgowlife.org.uk/museums/peoples-palace/. Hours: People's Palace Tu-Th, Sa 10AM–5PM, F, Su 11AM–5PM, closed M; Winter Gardens Daily 10AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.85122, -4.2374 (accuracy: APPROXIMATE). ID: 38960
+   📞 Phone: +44 141 276 0788
+   🌐 Website: http://www.glasgowlife.org.uk/museums/peoples-palace/.
+   🕒 Hours: People's Palace Tu-Th, Sa 10AM–5PM, F, Su 11AM–5PM, closed M; Winter Gardens Daily 10AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.85122, -4.2374 (accuracy: APPROXIMATE). ID: 38960
+   📝 Description: Glasgow 2014 (People's Palace and Winter Gardens) in Glasgow, United Kingdom. Description: Near the Glasgow Green Hockey Centre, the People's Palace is a great folk museum, telling the history of Glasgow and its people, from various perspectives, displaying details of Glasgow life. The Winter Gardens, adjacent, is a pleasant greenhouse with a reasonable cafe.. Address: Glasgow Green. Phone: +44 141 276 0788. Website: http://www.glasgowlife.org.uk/museums/peoples-palace/. Hours: People's Palace Tu-Th, Sa 10AM–5PM, F, Su 11AM–5PM, closed M; Winter Gardens Daily 10AM-5PM. Price: Free. Activity type: do. Type: landmark. Coordinates: 55.85122, -4.2374 (accuracy: APPROXIMATE). ID: 38960
+
+5. **Glasgow**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 50 Pacific Quay. Directions: train: Exhibition Centre or subway: Cessnock. Phone: +44 141 420 5000. Website: http://www.glasgowsciencecentre.org/. Hours: Summer: daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Glasgow Tower is closed in winter. Price: £10.50 adults, £8.50 children/seniors; add £2.50 for planetarium or IMAX cinema each, £4.95 for the tower. Activity type: see. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 10102
+   📞 Phone: +44 141 420 5000
+   🌐 Website: http://www.glasgowsciencecentre.org/.
+   🕒 Hours: Summer: daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Glasgow Tower is closed in winter. Price: £10.50 adults, £8.50 children/seniors; add £2.50 for planetarium or IMAX cinema each, £4.95 for the tower. Activity type: see. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 10102
+   💰 Price: £10
+   📝 Description: Glasgow (Glasgow Science Centre) in Glasgow, United Kingdom. Description: Has hundreds of interactive science exhibits for children, an IMAX cinema, and the 125-meter '''Glasgow Tower''', the only tower in the world which can rotate 360 degrees from its base.. Address: 50 Pacific Quay. Directions: train: Exhibition Centre or subway: Cessnock. Phone: +44 141 420 5000. Website: http://www.glasgowsciencecentre.org/. Hours: Summer: daily 10AM-5PM; Winter: W-F 10AM-3PM, Sa-Su 10AM-5PM, closed M-Tu. Glasgow Tower is closed in winter. Price: £10.50 adults, £8.50 children/seniors; add £2.50 for planetarium or IMAX cinema each, £4.95 for the tower. Activity type: see. Type: landmark. Coordinates: 55.85886, -4.29528 (accuracy: RANGE_INTERPOLATED). ID: 10102
+> Running step 269a27bf-0973-45a3-9e87-1303adcb64a4. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: There are several attractions you can see in Glasgow, including the Glasgow Science Centre, the People's Palace and Winter Gardens, and Glasgow Green. The Glasgow Science Centre has hundreds of interactive science exhibits for children, an IMAX cinema, and the 125-meter Glasgow Tower, which can rotate 360 degrees from its base. The People's Palace is a great folk museum that tells the history of Glasgow and its people, and the Winter Gardens is a pleasant greenhouse with a reasonable cafe. Glasgow Green is a public park that was founded by Royal grant in 1450 and has slowly been enclosed by the city and evolved from grazing land into a modern public park. It's one of the major venues for concerts and open air events in Glasgow, and it's home to several notable landmarks, including Nelson's Memorial, the Templeton Carpet Factory, and the Doulton Fountain.
+2025-07-31 12:21:20,037 - __main__ - INFO - ✅ Query completed in 12.31s
+2025-07-31 12:21:20,037 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-07-31 12:21:20,037 - __main__ - INFO - 
+📋 Query 4/5
+2025-07-31 12:21:20,037 - __main__ - INFO - 🔍 Evaluating query: Tell me about Monet's House
+> Running step 1b744115-bd6d-459c-b80d-061a95873176. Step input: Tell me about Monet's House
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': "Monet's House", 'limit': 5}
+Observation: Found 5 landmarks matching 'Monet's House':
+
+1. **Giverny**
+   📍 Location: Giverny, France
+   🎯 Activity: See
+   🏠 Address: 84 rue Claude Monet. Phone: +33 232512821. Website: http://www.fondation-monet.com/. Hours: open April-October Mo-Su 9:30-18:00. Price: €9, $5 students, €4 4.00 disabled, under-7s free. Activity type: see. Type: landmark. State: Haute-Normandie. Alternative name: Fondation Claude Monet. Coordinates: 49.0753489, 1.5337884 (accuracy: ROOFTOP). ID: 10061
+   📞 Phone: +33 232512821
+   🌐 Website: http://www.intermonet.com/japan/
+   🕒 Hours: open April-October Mo-Su 9:30-18:00. Price: €9, $5 students, €4 4.00 disabled, under-7s free. Activity type: see. Type: landmark. State: Haute-Normandie. Alternative name: Fondation Claude Monet. Coordinates: 49.0753489, 1.5337884 (accuracy: ROOFTOP). ID: 10061
+   💰 Price: €9, $5 students, €4 4
+   📝 Description: Giverny (Monet's House) in Giverny, France. Description: the house is quietly eccentric and highly interesting in an Orient-influenced style, and includes Monet's collection of [http://www.intermonet.com/japan/ Japanese prints]. There are no original Monet paintings on the site - the real drawcard, is the gardens around the house - the [http://giverny-impression.com/category/water-garden/ water garden] with the [http://www.intermonet.com/oeuvre/pontjapo.htm Japanese bridge], [http://giverny-impression.com/tag/weeping-willow/ weeping willows] and [http://giverny-impression.com/tag/water-lily/ waterlilies] is now somewhat iconic. Monet's house has the obligatory gift-store attached, designed to help you part with your money in exchange for all manner of things Impressionist. [http://giverny.org/gardens/fcm/ticket/ e-tickets] can now be purchased online to avoid queuing. wheelchair access available. Address: 84 rue Claude Monet. Phone: +33 232512821. Website: http://www.fondation-monet.com/. Hours: open April-October Mo-Su 9:30-18:00. Price: €9, $5 students, €4 4.00 disabled, under-7s free. Activity type: see. Type: landmark. State: Haute-Normandie. Alternative name: Fondation Claude Monet. Coordinates: 49.0753489, 1.5337884 (accuracy: ROOFTOP). ID: 10061
+
+2. **Paris/8th arrondissement**
+   📍 Location: Paris-8E-Arrondissement, France
+   🎯 Activity: See
+   📝 Description: Paris/8th arrondissement (Parc Monceau) in Paris-8E-Arrondissement, France. Description: One of Paris's best kept secrets, painted by Monet numerous times. It is a very elegant centre of green in the middle of cosmopolitan Paris. Make sure you check out the statues, entrance rotunda and the surrounding mansions. Thanks to Haussmann himself this precious slice of parkland was reserved for the enjoyment and leisure of the people of Paris. It is unusual in France due to its casual, informal &quot;English&quot; style planning, and is a contrast to other Parisian parks such as the classically laid out and formal Luxemburg Gardens and the Tuileries. Randomly placed throughout the park are scaled-down architectural replicas including an Egyptian pyramid, Dutch windmill, and a Chinese fort. Free Wi-Fi in the park.. Activity type: see. Type: landmark. State: Île-de-France. Coordinates: 48.87937, 2.30888 (accuracy: ROOFTOP). ID: 21818
+
+3. **Paris/16th arrondissement**
+   📍 Location: Paris, France
+   🎯 Activity: See
+   🏠 Address: 2 rue Louis-Boilly, 16th. Directions: Metro: La Muette. Phone: +33 1 44 96 50 33. Website: http://www.marmottan.com. Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing. Activity type: see. Type: landmark. State: Île-de-France. Coordinates: 48.85939, 2.26727 (accuracy: RANGE_INTERPOLATED). ID: 21659
+   📞 Phone: +33 1 44 96 50 33
+   🌐 Website: http://www.marmottan.com.
+   🕒 Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing. Activity type: see. Type: landmark. State: Île-de-France. Coordinates: 48.85939, 2.26727 (accuracy: RANGE_INTERPOLATED). ID: 21659
+   📝 Description: Paris/16th arrondissement (Musée Marmottan) in Paris, France. Description: Monet's best works are in this charming museum, which contains the largest Monet collection in the world as well as works by Renoir, Manet, Berthe, Caillebotte and Gauguin.. Address: 2 rue Louis-Boilly, 16th. Directions: Metro: La Muette. Phone: +33 1 44 96 50 33. Website: http://www.marmottan.com. Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing. Activity type: see. Type: landmark. State: Île-de-France. Coordinates: 48.85939, 2.26727 (accuracy: RANGE_INTERPOLATED). ID: 21659
+
+4. **Paris/1st arrondissement**
+   📍 Location: Paris, France
+   🎯 Activity: See
+   📞 Phone: +33 1 44 77 80 07
+   🌐 Website: http://www.musee-orangerie.fr/.
+   🕒 Hours: Daily, except Tu, Christmas Day and 1 May; individuals 12:30-19:00, Th till 21:00; groups, 09:30-12:30;. Price: Adults, €7.50; concessions, €5; special exhibitions, + €1.20; audio guides available in several languages €4.50/€3. Activity type: see. Type: landmark. State: Île-de-France. Alternative name: Musée de la Orangerie. Coordinates: 48.86375, 2.32267 (accuracy: RANGE_INTERPOLATED). ID: 21693
+   💰 Price: €7
+   📝 Description: Paris/1st arrondissement (L'Orangerie) in Paris, France. Description: Recently reopened after extensive renovations, this small museum near the Louvre houses the ''Jean Walter and Paul Guillaume Collection'', sold to the French Republic on very generous terms and numbering 143 paintings from the late 19th century and the first half of the 20th century (15 Cézannes, 24 Renoirs, 10 Matisses, 12 Picassos, 28 Derains, 22 Soutines… ). The collection joined the eight immense ''Water Lilies'' that Monet gave France in 1922 and which have been displayed since 1927 in two huge oval rooms purpose-built on the artist's instructions.. Phone: +33 1 44 77 80 07. Website: http://www.musee-orangerie.fr/. Hours: Daily, except Tu, Christmas Day and 1 May; individuals 12:30-19:00, Th till 21:00; groups, 09:30-12:30;. Price: Adults, €7.50; concessions, €5; special exhibitions, + €1.20; audio guides available in several languages €4.50/€3. Activity type: see. Type: landmark. State: Île-de-France. Alternative name: Musée de la Orangerie. Coordinates: 48.86375, 2.32267 (accuracy: RANGE_INTERPOLATED). ID: 21693
+
+5. **San Francisco/Chinatown-North Beach**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 1230 Grant Ave. Directions: at Columbus Ave. Phone: +1 415 986-8612. Website: http://www.thehse.com/. Hours: M-Th 11AM-3PM, 5:30PM-10PM, F-Sa 11AM-3PM, 5:30PM-11PM, Su 5PM-10PM. Price: $17-$30. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7985, -122.407 (accuracy: APPROXIMATE). ID: 25467
+   📞 Phone: +1 415 986-8612
+   🌐 Website: http://www.thehse.com/.
+   🕒 Hours: M-Th 11AM-3PM, 5:30PM-10PM, F-Sa 11AM-3PM, 5:30PM-11PM, Su 5PM-10PM. Price: $17-$30. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7985, -122.407 (accuracy: APPROXIMATE). ID: 25467
+   💰 Price: $17-$30
+   📝 Description: San Francisco/Chinatown-North Beach (The House) in San Francisco, United States. Description: Reservations recommended. The home of Asian fusion cuisine. The dining space is tiny, but the possible ensuing wait is worth it. Don't miss the scallop-topped Caesar salad or the often-imitated seared Ahi tuna.. Address: 1230 Grant Ave. Directions: at Columbus Ave. Phone: +1 415 986-8612. Website: http://www.thehse.com/. Hours: M-Th 11AM-3PM, 5:30PM-10PM, F-Sa 11AM-3PM, 5:30PM-11PM, Su 5PM-10PM. Price: $17-$30. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7985, -122.407 (accuracy: APPROXIMATE). ID: 25467
+> Running step 0385800f-9310-4649-861b-e267a7fe515b. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: Monet's House is a famous landmark located in Giverny, France. It is the former home and studio of the famous Impressionist painter Claude Monet, and it is now a museum that showcases his life and work. The house is known for its beautiful gardens, which were a major inspiration for Monet's paintings, particularly his famous water lily series. Visitors can tour the house and gardens, and see many of Monet's original paintings and belongings on display.
+2025-07-31 12:21:32,318 - __main__ - INFO - ✅ Query completed in 12.28s
+2025-07-31 12:21:32,318 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-07-31 12:21:32,318 - __main__ - INFO - 
+📋 Query 5/5
+2025-07-31 12:21:32,318 - __main__ - INFO - 🔍 Evaluating query: Find places to eat in Gillingham
+> Running step 40bb09dc-2673-4252-89bf-07da1daa9435. Step input: Find places to eat in Gillingham
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'places to eat in Gillingham', 'limit': 5}
+Observation: Found 5 landmarks matching 'places to eat in Gillingham':
+
+1. **Landmark**
+   📍 Location: Unknown City, Unknown Country
+   🎯 Activity: Eat
+   🏠 Address: 56-58 Balmoral Road. Phone: +44 1634 850150. Website: http://www.spicecourt.net. Activity type: eat. Type: landmark. Coordinates: 51.38633, 0.54952 (accuracy: APPROXIMATE). ID: 10022
+   📞 Phone: +44 1634 850150
+   🌐 Website: http://www.spicecourt.net.
+   💰 Price: £8
+   📝 Description: Gillingham (Kent) (Spice Court) in Gillingham, United Kingdom. Description: Indian restaurant opposite the railway station. Good value and quality of food. An award winning up market restaurant. Sunday Buffet for only £8.50 and you can eat as much as you like. Very popular with the locals and beyond.. Address: 56-58 Balmoral Road. Phone: +44 1634 850150. Website: http://www.spicecourt.net. Activity type: eat. Type: landmark. Coordinates: 51.38633, 0.54952 (accuracy: APPROXIMATE). ID: 10022
+
+2. **Landmark**
+   📍 Location: Unknown City, Unknown Country
+   🎯 Activity: Eat
+   🏠 Address: 4 High Street, ME7 1BB. Website: http://www.thehollywoodbowl.co.uk. Activity type: eat. Type: landmark. Coordinates: 51.38937, 0.5427 (accuracy: RANGE_INTERPOLATED). ID: 10020
+   🌐 Website: http://www.thehollywoodbowl.co.uk.
+   📝 Description: Gillingham (Kent) (Hollywood Bowl) in Gillingham, United Kingdom. Description: A newly extended lively restaurant located in the high street, an American Hollywood style restaurant beautifully decorated with old photos and a great menu including burgers and ribs.. Address: 4 High Street, ME7 1BB. Website: http://www.thehollywoodbowl.co.uk. Activity type: eat. Type: landmark. Coordinates: 51.38937, 0.5427 (accuracy: RANGE_INTERPOLATED). ID: 10020
+
+3. **Landmark**
+   📍 Location: Unknown City, Unknown Country
+   🎯 Activity: Eat
+   🏠 Address: 59-61 High Street, ME7 1BJ. Phone: +44 1634 856128. Activity type: eat. Type: landmark. Coordinates: 51.38753, 0.54423 (accuracy: ROOFTOP). ID: 10021
+   📞 Phone: +44 1634 856128
+   📝 Description: Gillingham (Kent) (Thai Won Mien) in Gillingham, United Kingdom. Description: Really popular oriental restaurant with a mixture foods including noodles, duck and other oriental staples.. Address: 59-61 High Street, ME7 1BJ. Phone: +44 1634 856128. Activity type: eat. Type: landmark. Coordinates: 51.38753, 0.54423 (accuracy: ROOFTOP). ID: 10021
+
+4. **Landmark**
+   📍 Location: Unknown City, Unknown Country
+   🎯 Activity: Eat
+   🏠 Address: 3 King Street, ME6 1EY. Website: http://beijinginn.co.uk/div/. Activity type: eat. Type: landmark. Coordinates: 51.38697, 0.54852 (accuracy: RANGE_INTERPOLATED). ID: 10023
+   🌐 Website: http://beijinginn.co.uk/div/.
+   📝 Description: Gillingham (Kent) (Beijing Inn) in Gillingham, United Kingdom. Description: Chinese restaurant just off the High Street.. Address: 3 King Street, ME6 1EY. Website: http://beijinginn.co.uk/div/. Activity type: eat. Type: landmark. Coordinates: 51.38697, 0.54852 (accuracy: RANGE_INTERPOLATED). ID: 10023
+
+5. **Landmark**
+   📍 Location: Unknown City, Unknown Country
+   🎯 Activity: Eat
+   🏠 Address: 75 Richmond Road, ME7 1LS. Directions: On Richmond Road (continuation of James Street) about 1/2 mile north of the High Street.. Phone: +44 1634 582000. Activity type: eat. Type: landmark. Coordinates: 51.39243, 0.54977 (accuracy: RANGE_INTERPOLATED). ID: 10024
+   📞 Phone: +44 1634 582000
+   📝 Description: Gillingham (Kent) (Ossie's Fish and Chips) in Gillingham, United Kingdom. Description: Best fish and chips in the area.. Address: 75 Richmond Road, ME7 1LS. Directions: On Richmond Road (continuation of James Street) about 1/2 mile north of the High Street.. Phone: +44 1634 582000. Activity type: eat. Type: landmark. Coordinates: 51.39243, 0.54977 (accuracy: RANGE_INTERPOLATED). ID: 10024
+> Running step ed1c5cb6-9224-4950-a553-302fe51d674d. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: Based on the search results, here are some places to eat in Gillingham:
+
+1. Spice Court - an Indian restaurant with a Sunday buffet for £8.50.
+2. Hollywood Bowl - an American-style restaurant with a lively atmosphere and a great menu.
+3. Thai Won Mien - a popular oriental restaurant with a mixture of foods including noodles and duck.
+4. Beijing Inn - a Chinese restaurant just off the High Street.
+5. Ossie's Fish and Chips - a fish and chip shop with great reviews.
+
+Please note that the addresses and phone numbers are provided in the search results, so you can visit their websites or call them directly for more information.
+2025-07-31 12:21:44,608 - __main__ - INFO - ✅ Query completed in 12.29s
+2025-07-31 12:21:44,609 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-07-31 12:21:44,611 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
+2025-07-31 12:21:44,611 - __main__ - INFO - 📋 Evaluation criteria:
+2025-07-31 12:21:44,611 - __main__ - INFO -    🔍 Relevance: Does the response address the landmark search query?
+2025-07-31 12:21:44,611 - __main__ - INFO -    🎯 QA Correctness: Is the landmark information accurate?
+2025-07-31 12:21:44,611 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
+2025-07-31 12:21:44,611 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
+2025-07-31 12:21:44,612 - __main__ - INFO -    📊 Running relevance evaluation...
+llm_classify |                                                                                                                                                                                                      | 0/5 (0.0%) | ⏳ 00:00<? | ?it/sI0000 00:00:1753944704.949880 4473853 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944704.967619 4473855 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944704.976166 4473856 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944704.981170 4473891 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944704.987444 4473854 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944705.018906 4473891 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944705.027317 4473854 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944705.033373 4473856 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944705.040525 4473853 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1753944705.048031 4473855 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+llm_classify |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:07<00:00 |  1.59s/it
+2025-07-31 12:21:52,577 - __main__ - INFO -    ✅ relevance evaluation completed
+2025-07-31 12:21:52,578 - __main__ - INFO -    📊 Running qa_correctness evaluation...
+llm_classify |                                                                                                                                                                                                      | 0/5 (0.0%) | ⏳ 00:00<? | ?it/s2025-07-31 12:21:56,162 - asyncio - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-99044' coro=<AsyncClient.aclose() done, defined at /Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')>
+Traceback (most recent call last):
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1985, in aclose
+    await self._transport.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 406, in aclose
+    await self._pool.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 353, in aclose
+    await self._close_connections(closing_connections)
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 345, in _close_connections
+    await connection.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection.py", line 173, in aclose
+    await self._connection.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/http11.py", line 258, in aclose
+    await self._network_stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 53, in aclose
+    await self._stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/anyio/streams/tls.py", line 216, in aclose
+    await self.transport_stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1314, in aclose
+    self._transport.close()
+  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/selector_events.py", line 1210, in close
+    super().close()
+  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/selector_events.py", line 875, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 794, in call_soon
+    self._check_closed()
+  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 540, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+llm_classify |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:10<00:00 |  2.05s/it
+2025-07-31 12:22:02,872 - __main__ - INFO -    ✅ qa_correctness evaluation completed
+2025-07-31 12:22:02,872 - __main__ - INFO -    📊 Running hallucination evaluation...
+llm_classify |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:09<00:00 |  1.94s/it
+2025-07-31 12:22:12,604 - __main__ - INFO -    ✅ hallucination evaluation completed
+2025-07-31 12:22:12,605 - __main__ - INFO -    📊 Running toxicity evaluation...
+llm_classify |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:08<00:00 |  1.66s/it
+2025-07-31 12:22:20,944 - __main__ - INFO -    ✅ toxicity evaluation completed
+2025-07-31 12:22:20,944 - __main__ - INFO - ✅ Phoenix evaluations completed
+2025-07-31 12:22:20,944 - __main__ - INFO - 
+📊 Evaluation Summary:
+2025-07-31 12:22:20,944 - __main__ - INFO -   Total queries: 5
+2025-07-31 12:22:20,944 - __main__ - INFO -   Successful executions: 5
+2025-07-31 12:22:20,944 - __main__ - INFO -   Failed executions: 0
+2025-07-31 12:22:20,945 - __main__ - INFO -   Average execution time: 11.92s
+2025-07-31 12:22:20,945 - __main__ - INFO -   Average sources per query: 0.0
+
+==================================================
+🏛️ LANDMARK SEARCH EVALUATION RESULTS
+==================================================
+
+🔍 Relevance: Does the response address the landmark query?
+----------------------------------------
+  ✅ Relevant: 5/5 (100.0%)
+
+🎯 QA Correctness: Is the landmark information accurate?
+----------------------------------------
+  ⚠️ Incorrect: 3/5 (60.0%)
+  ✅ Correct: 2/5 (40.0%)
+
+🚨 Hallucination: Does the response contain fabricated info?
+----------------------------------------
+  ⚠️ Hallucinated: 4/5 (80.0%)
+  ✅ Factual: 1/5 (20.0%)
+
+☠️ Toxicity: Is the response harmful or inappropriate?
+----------------------------------------
+  ✅ Non-Toxic: 5/5 (100.0%)
+
+==================================================
+
+⚡ Performance: 5/5 queries successful
+📊 Average response time: 11.92s
+🔗 Average sources retrieved: 0.0
+==================================================
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
+2025-07-31 12:22:20,948 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+🔍 QUERY 1: Find museums and galleries in Glasgow
+2025-07-31 12:22:20,948 - __main__ - INFO - ------------------------------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 📄 RESPONSE: There are several museums and galleries in Glasgow, including the Kelvingrove Art Gallery and Museum, the Gallery of Modern Art, the St. Mungo's Museum of Religious Life and Art, and the Hunterian Mus...
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - The question asks for museums and galleries located in Glasgow. The reference text provides a list of several museums and galleries in Glasgow, including the Gallery of Modern Art, Kelvingrove Art Gallery and Museum, Hunterian Museum and Art Gallery, and the Riverside Museum. It also provides additional details about the collections and locations of these institutions. Therefore, the reference text contains information that directly answers the question.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - To determine if the answer is correct, we need to compare the list of museums and galleries mentioned in the answer with those listed in the reference text.
+
+1. The reference text lists the following museums and galleries in Glasgow:
+   - Gallery of Modern Art
+   - Kelvingrove Art Gallery and Museum
+   - Hunterian Museum and Art Gallery
+   - Riverside Museum
+
+2. The answer lists the following museums and galleries:
+   - Kelvingrove Art Gallery and Museum
+   - Gallery of Modern Art
+   - St. Mungo's Museum of Religious Life and Art
+   - Hunterian Museum and Art Gallery
+
+3. Comparing the two lists:
+   - The "Kelvingrove Art Gallery and Museum" and "Gallery of Modern Art" are mentioned in both the reference and the answer.
+   - The "Hunterian Museum and Art Gallery" is also mentioned in both.
+   - The "Riverside Museum" is mentioned in the reference but not in the answer.
+   - The "St. Mungo's Museum of Religious Life and Art" is mentioned in the answer but not in the reference.
+
+4. The answer includes a museum (St. Mungo's Museum of Religious Life and Art) that is not mentioned in the reference text and omits a museum (Riverside Museum) that is mentioned in the reference text.
+
+Therefore, the answer is not fully aligned with the reference text, making it incorrect.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - To determine if the answer is factual or hallucinated, we need to compare the list of museums and galleries mentioned in the answer with those in the reference text. The reference text lists the following museums and galleries in Glasgow: the Gallery of Modern Art, the Kelvingrove Art Gallery and Museum, the Hunterian Museum and Art Gallery, and the Riverside Museum. The answer correctly mentions the Gallery of Modern Art, the Kelvingrove Art Gallery and Museum, and the Hunterian Museum and Art Gallery, which are all present in the reference text. However, the answer also includes "St. Mungo's Museum of Religious Life and Art," which is not mentioned in the reference text. Since this museum is not listed in the reference text, its inclusion in the answer is not supported by the provided information, making the answer partially hallucinated.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - To determine whether the text is toxic, we need to evaluate it against the criteria for toxicity: hateful statements, demeaning or disparaging language, inappropriate language, or threats of violence. 
+
+1. The text is a simple query: "Find museums and galleries in Glasgow."
+2. It does not contain any language that is hateful or demeaning towards any individual or group.
+3. There is no use of inappropriate language or profanity.
+4. There are no threats of physical or emotional violence.
+5. The text is neutral and purely informational, seeking information about cultural locations in Glasgow.
+
+Given these points, the text does not meet any of the criteria for toxicity. It is a straightforward request for information without any negative or harmful language.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+🔍 QUERY 2: Show me restaurants serving Asian cuisine
+2025-07-31 12:22:20,948 - __main__ - INFO - ------------------------------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 📄 RESPONSE: Here are some restaurants serving Asian cuisine that were found: Beverly Hills (Jaan), Beverly Hills (Crustacean), Camberley (So Asia), Santa Monica (Typhoon), and San Francisco/Union Square-Financial...
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - The question asks for restaurants serving Asian cuisine. The reference text provides a list of several Asian restaurants, including their names and locations, such as Shangri-la Chinese Restaurant, Taiwan Restaurant, Hong Kong Seafood Restaurant, Cheung Hing Chinese Restaurant, and Vietnam Restaurant. These establishments offer various Asian dishes, including Chinese, Cantonese, and Vietnamese cuisines. Therefore, the reference text contains information that directly answers the question by listing restaurants that serve Asian cuisine.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - 1. **Understanding the Question**: The question asks for restaurants serving Asian cuisine. This implies that the answer should list restaurants that specifically serve Asian food.
+
+2. **Analyzing the Reference Text**: The reference text provides a list of Asian restaurants, including Shangri-la Chinese Restaurant, Taiwan Restaurant, Hong Kong Seafood Restaurant, Cheung Hing Chinese Restaurant, and Vietnam Restaurant, all located in San Francisco or Birmingham. These restaurants are noted for serving various Asian dishes such as Chinese, Cantonese, and Vietnamese cuisine.
+
+3. **Evaluating the Answer**: The answer lists restaurants in Beverly Hills, Camberley, Santa Monica, and San Francisco, with names like Jaan, Crustacean, So Asia, Typhoon, and Bangkok Noodles. However, none of these restaurants are mentioned in the reference text.
+
+4. **Comparison**: The answer does not match any of the restaurants listed in the reference text. The reference text provides specific names and locations of Asian restaurants, none of which are included in the answer.
+
+5. **Conclusion**: Since the answer does not include any of the restaurants mentioned in the reference text, it does not correctly answer the question based on the provided information.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - The query asks for restaurants serving Asian cuisine. The reference text provides a list of Asian restaurants, including Shangri-la Chinese Restaurant in Birmingham, Taiwan Restaurant, Hong Kong Seafood Restaurant, Cheung Hing Chinese Restaurant, and Vietnam Restaurant, all located in San Francisco or Birmingham. The answer, however, lists restaurants such as Beverly Hills (Jaan), Beverly Hills (Crustacean), Camberley (So Asia), Santa Monica (Typhoon), and San Francisco/Union Square-Financial District (Bangkok Noodles), which are not mentioned in the reference text. Therefore, the answer includes information that is not supported by the reference text, indicating that it is a hallucination.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-07-31 12:22:20,948 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,948 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Show me restaurants serving Asian cuisine."
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group. It is a neutral request for information about restaurants.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any person or group. It simply asks for information about a type of cuisine.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a straightforward request.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats of any kind in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any criteria for being considered toxic. It is a neutral and non-offensive request for information.
+2025-07-31 12:22:20,948 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,948 - __main__ - INFO - 
+🔍 QUERY 3: What attractions can I see in Glasgow?
+2025-07-31 12:22:20,948 - __main__ - INFO - ------------------------------------------------------------
+2025-07-31 12:22:20,948 - __main__ - INFO - 📄 RESPONSE: There are several attractions you can see in Glasgow, including the Glasgow Science Centre, the People's Palace and Winter Gardens, and Glasgow Green. The Glasgow Science Centre has hundreds of intera...
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - The question asks about attractions that can be seen in Glasgow. The reference text provides a list of attractions in Glasgow, including Glasgow Green, Glasgow University, Glasgow Cathedral, the City Chambers, Glasgow Central Station, and Kelvingrove Park. These are all specific attractions located in Glasgow, which directly answers the question about what attractions can be seen in the city.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - To determine if the answer is correct, we need to compare the attractions mentioned in the answer with those listed in the reference text.
+
+1. The reference text lists the following attractions in Glasgow:
+   - Glasgow Green
+   - Nelson's Memorial
+   - Doulton Fountain
+   - Glasgow University
+   - Glasgow Cathedral
+   - City Chambers in George Square
+   - Glasgow Central Station
+   - Kelvingrove Park
+   - Art Gallery and Museum
+
+2. The answer mentions the following attractions:
+   - Glasgow Science Centre
+   - People's Palace and Winter Gardens
+   - Glasgow Green
+   - Nelson's Memorial
+   - Templeton Carpet Factory
+   - Doulton Fountain
+
+3. Comparing the two lists, we see that "Glasgow Green," "Nelson's Memorial," and "Doulton Fountain" are mentioned in both the reference and the answer.
+
+4. However, the answer includes attractions not mentioned in the reference text, such as "Glasgow Science Centre," "People's Palace and Winter Gardens," and "Templeton Carpet Factory."
+
+5. The reference text also includes attractions not mentioned in the answer, such as "Glasgow University," "Glasgow Cathedral," "City Chambers in George Square," "Glasgow Central Station," "Kelvingrove Park," and "Art Gallery and Museum."
+
+6. Since the answer does not fully align with the reference text and includes attractions not listed in the reference, it does not fully or correctly answer the question based on the provided reference.
+
+Therefore, the answer is "incorrect."
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - The answer mentions several attractions in Glasgow, some of which are not listed in the reference text. The reference text lists Glasgow Green, Glasgow University, Glasgow Cathedral, the City Chambers, Glasgow Central Station, and Kelvingrove Park as attractions. However, the answer includes the Glasgow Science Centre and the People's Palace and Winter Gardens, which are not mentioned in the reference text. Additionally, the answer provides specific details about the Glasgow Science Centre, such as interactive exhibits, an IMAX cinema, and the Glasgow Tower, which are not supported by the reference text. The reference text does confirm the existence of Glasgow Green and some of its features, but the inclusion of attractions not mentioned in the reference text and additional unsupported details indicates that the answer contains hallucinated information.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hate speech, demeaning language, inappropriate language, or threats of violence. The text in question is: "What attractions can I see in Glasgow?" 
+
+1. **Content Analysis**: The text is a simple question asking about attractions in Glasgow. It does not contain any language that could be considered hateful, demeaning, or inappropriate.
+
+2. **Language**: The language used is neutral and polite. There are no offensive words or phrases present.
+
+3. **Intent**: The intent of the text is to seek information about tourist attractions, which is a non-toxic intent.
+
+4. **Context**: There is no context provided that suggests any underlying toxic meaning.
+
+Based on this analysis, the text does not meet any criteria for toxicity. It is a straightforward, non-offensive question about tourism.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+🔍 QUERY 4: Tell me about Monet's House
+2025-07-31 12:22:20,949 - __main__ - INFO - ------------------------------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 📄 RESPONSE: Monet's House is a famous landmark located in Giverny, France. It is the former home and studio of the famous Impressionist painter Claude Monet, and it is now a museum that showcases his life and wor...
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - The question asks for information about Monet's House. The reference text provides detailed information about Monet's House, including its location in Giverny, France, its architectural style, the Japanese prints collection, and the gardens which are a main attraction. It also includes practical information such as opening times, admission prices, and accessibility options. All of this information is directly relevant to answering the question about Monet's House.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - 1. **Location and Description**: The answer correctly states that Monet's House is located in Giverny, France, which matches the reference text.
+
+2. **Historical Significance**: The answer mentions that it was the former home and studio of Claude Monet, which aligns with the reference text's implication of its historical significance.
+
+3. **Current Use**: The answer describes the house as a museum showcasing Monet's life and work. The reference text does not explicitly state that it is a museum, but it does mention that the house is open to visitors, which implies a museum-like function.
+
+4. **Gardens**: The answer highlights the gardens as a major attraction and inspiration for Monet's paintings, particularly the water lily series. This is consistent with the reference text, which emphasizes the gardens, including the water garden with the Japanese bridge and waterlilies.
+
+5. **Visitor Experience**: The answer states that visitors can tour the house and gardens and see Monet's original paintings and belongings. The reference text does not explicitly mention the display of Monet's paintings and belongings, but it does mention the house's opening hours and ticket prices, indicating that it is a place for visitors to explore.
+
+Overall, the answer provides a comprehensive overview of Monet's House, covering its location, historical significance, current use, and main attractions, which are consistent with the reference text. The minor omission regarding the explicit mention of Monet's paintings and belongings on display does not significantly detract from the correctness of the answer.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - The answer states that Monet's House is a famous landmark located in Giverny, France, which is consistent with the reference text. It also mentions that it was the former home and studio of Claude Monet, which aligns with the context of the house being associated with Monet. However, the answer claims that the house is now a museum showcasing Monet's life and work, including many of his original paintings and belongings on display. The reference text does not mention that the house is a museum or that it contains Monet's original paintings and belongings. It only describes the house's style, its gardens, and visitor information. Therefore, the claim about the house being a museum with Monet's paintings and belongings is not supported by the reference text, making this part of the answer a hallucination.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Tell me about Monet's House".
+
+1. **Hateful Statements**: The text does not contain any language that could be interpreted as hateful towards any individual or group.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is a simple request for information about Monet's House.
+
+3. **Inappropriate Language**: The text does not include any inappropriate language. It is a straightforward question.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats of any kind present in the text.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a neutral request for information and does not contain any elements that could be interpreted as toxic by a reasonable audience.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+🔍 QUERY 5: Find places to eat in Gillingham
+2025-07-31 12:22:20,949 - __main__ - INFO - ------------------------------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 📄 RESPONSE: Based on the search results, here are some places to eat in Gillingham:
+
+1. Spice Court - an Indian restaurant with a Sunday buffet for £8.50.
+2. Hollywood Bowl - an American-style restaurant with a l...
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - The question asks for places to eat in Gillingham. The reference text provides a list of dining options in Gillingham, including specific restaurants and their types of cuisine, such as Beijing Inn, Spice Court, Hollywood Bowl, Ossie's Fish and Chips, and Thai Won Mien. This information directly answers the question by listing places to eat in Gillingham, making the reference text relevant to the question.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - 1. The question asks for places to eat in Gillingham.
+2. The reference text provides a list of dining options in Gillingham, including their names and some details about each.
+3. The answer lists five places to eat in Gillingham: Spice Court, Hollywood Bowl, Thai Won Mien, Beijing Inn, and Ossie's Fish and Chips.
+4. Comparing the answer to the reference text:
+   - Spice Court is mentioned in both the answer and the reference text, with details about the Sunday buffet.
+   - Hollywood Bowl is mentioned in both, with a description of it being an American-style restaurant.
+   - Thai Won Mien is mentioned in both, with details about the type of food offered.
+   - Beijing Inn is mentioned in both, with a note about its location.
+   - Ossie's Fish and Chips is mentioned in both, with a note about its reputation.
+5. The answer does not provide specific addresses, but it mentions that addresses and phone numbers are available in the search results, which aligns with the reference text providing addresses.
+6. The answer accurately reflects the information in the reference text regarding the dining options in Gillingham.
+
+Based on this analysis, the answer correctly answers the question by listing the places to eat in Gillingham as provided in the reference text.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - To determine if the answer is factual or hallucinated, we need to compare each piece of information in the answer with the reference text:
+
+1. Spice Court: The answer states it is an Indian restaurant with a Sunday buffet for £8.50. The reference text confirms this information, mentioning it is located at 56-58 Balmoral Road opposite the railway station and is award-winning.
+
+2. Hollywood Bowl: The answer describes it as an American-style restaurant with a lively atmosphere and a great menu. The reference text confirms it is an American-style restaurant at 4 High Street with burgers and ribs in a Hollywood-themed setting, which aligns with the description of a lively atmosphere.
+
+3. Thai Won Mien: The answer describes it as a popular oriental restaurant with a mixture of foods including noodles and duck. The reference text confirms it is an oriental restaurant at 59-61 High Street with noodles, duck, and other oriental dishes.
+
+4. Beijing Inn: The answer states it is a Chinese restaurant just off the High Street. The reference text confirms it is a Chinese restaurant at 3 King Street, which is consistent with being near the High Street.
+
+5. Ossie's Fish and Chips: The answer describes it as a fish and chip shop with great reviews. The reference text confirms it is located at 75 Richmond Road and is known for the best fish and chips in the area, which implies positive reviews.
+
+The answer does not provide any addresses or phone numbers, but it does not claim to do so. It only mentions that such information is available in the search results, which is not contradicted by the reference text.
+
+Overall, the answer accurately reflects the information provided in the reference text without introducing any false information or assumptions.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-07-31 12:22:20,949 - __main__ - INFO - 💭 FULL REASONING:
+2025-07-31 12:22:20,949 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Find places to eat in Gillingham".
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group. It is a neutral request for information.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is simply asking for recommendations on places to eat.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is straightforward and polite.
+
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a non-toxic request for information about dining options in a specific location.
+2025-07-31 12:22:20,949 - __main__ - INFO - ----------------------------------------
+2025-07-31 12:22:20,949 - __main__ - INFO - ================================================================================
+2025-07-31 12:22:20,950 - __main__ - INFO - 📊 Creating Arize dataset...
+2025-07-31 12:22:21,723 - __main__ - INFO - ✅ Arize dataset created: landmark-search-evaluation-20250731_122220 (ID: RGF0YXNldDozMDIzNzE6UGtvdw==)
+2025-07-31 12:22:21,723 - __main__ - INFO - 
+✅ Landmark search evaluation complete!
+2025-07-31 12:22:21,723 - __main__ - INFO - 🔒 Phoenix cleanup completed
+ kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex   refactor/shared-utils ±  

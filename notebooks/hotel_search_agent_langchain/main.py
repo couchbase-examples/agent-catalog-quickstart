@@ -163,6 +163,7 @@ def setup_hotel_support_agent():
         couchbase_client.setup_collection(
             os.getenv("CB_SCOPE", DEFAULT_SCOPE),
             os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
+            clear_existing_data=False,  # Let data loader decide based on count check
         )
 
         # Setup vector index

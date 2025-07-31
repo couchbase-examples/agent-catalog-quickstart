@@ -608,7 +608,9 @@ def setup_flight_search_agent():
 
         # Setup everything in one call - bucket, scope, collection
         client.setup_collection(
-            scope_name=os.environ["CB_SCOPE"], collection_name=os.environ["CB_COLLECTION"]
+            scope_name=os.environ["CB_SCOPE"], 
+            collection_name=os.environ["CB_COLLECTION"],
+            clear_existing_data=False  # Let data loader decide based on count check
         )
 
         # Setup vector search index
