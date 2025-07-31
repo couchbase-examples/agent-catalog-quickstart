@@ -28,7 +28,7 @@ from pydantic import Field
 logger = logging.getLogger(__name__)
 
 
-class CapellaEmbeddings(Embeddings):
+class CapellaLangChainEmbeddings(Embeddings):
     """
     Custom Capella AI embeddings class that properly handles input_type parameter and token limits.
     
@@ -240,7 +240,7 @@ class CapellaEmbeddings(Embeddings):
             return fallback.embed_query(text)
 
 
-class CapellaChatLLM(BaseChatModel):
+class CapellaLangChainLLM(BaseChatModel):
     """
     Custom Capella AI chat LLM class that properly handles API calls.
     
@@ -417,7 +417,7 @@ def create_capella_embeddings(
     password: Optional[str] = None,
     input_type_for_query: str = "query",
     input_type_for_passage: str = "passage"
-) -> CapellaEmbeddings:
+) -> CapellaLangChainEmbeddings:
     """
     Factory function to create Capella embeddings with proper configuration.
     
@@ -431,7 +431,7 @@ def create_capella_embeddings(
         input_type_for_passage: Input type for passage embeddings (default: "passage")
     
     Returns:
-        CapellaEmbeddings instance configured for the environment
+        CapellaLangChainEmbeddings instance configured for the environment
     """
     
     # Get configuration from environment
@@ -461,7 +461,7 @@ def create_capella_embeddings(
         auth_key = base64.b64encode(f"{username}:{password}".encode()).decode()
         logger.info("✅ Generated Capella embeddings API key from username:password")
     
-    return CapellaEmbeddings(
+    return CapellaLangChainEmbeddings(
         model=model,
         api_key=auth_key,
         base_url=base_url,
@@ -479,7 +479,7 @@ def create_capella_chat_llm(
     temperature: float = 0.0,
     max_tokens: Optional[int] = None,
     callbacks: Optional[List] = None
-) -> CapellaChatLLM:
+) -> CapellaLangChainLLM:
     """
     Factory function to create Capella chat LLM with proper configuration.
     
@@ -494,7 +494,7 @@ def create_capella_chat_llm(
         callbacks: Callbacks for LangChain integration (default: None)
     
     Returns:
-        CapellaChatLLM instance configured for the environment
+        CapellaLangChainLLM instance configured for the environment
     """
     
     # Get configuration from environment
@@ -524,7 +524,7 @@ def create_capella_chat_llm(
         auth_key = base64.b64encode(f"{username}:{password}".encode()).decode()
         logger.info("✅ Generated Capella LLM API key from username:password")
     
-    return CapellaChatLLM(
+    return CapellaLangChainLLM(
         model=model,
         api_key=auth_key,
         base_url=base_url,
