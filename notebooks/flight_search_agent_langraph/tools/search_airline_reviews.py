@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 from datetime import timedelta
 
 import agentc
@@ -10,24 +9,19 @@ import couchbase.exceptions
 import couchbase.options
 import dotenv
 
-# Import shared AI services module using robust project root discovery
-def find_project_root():
-    """Find the project root by looking for the shared directory."""
-    current = os.path.dirname(os.path.abspath(__file__))
-    while current != os.path.dirname(current):  # Stop at filesystem root
-        # Look for the shared directory as the definitive marker
-        shared_path = os.path.join(current, 'shared')
-        if os.path.exists(shared_path) and os.path.isdir(shared_path):
-            return current
-        current = os.path.dirname(current)
-    return None
-
-# Add project root to Python path
-project_root = find_project_root()
-if project_root and project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-from shared.agent_setup import setup_ai_services
+# Simple import - agent_setup should be accessible via shared module
+try:
+    from shared.agent_setup import setup_ai_services
+except ImportError:
+    # Fallback: Add parent directories to path to find shared module
+    import sys
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dirs = [os.path.join(current_dir, '..', '..', '..'), os.path.join(current_dir, '..', '..')]
+    for parent_dir in parent_dirs:
+        if parent_dir not in sys.path and os.path.exists(os.path.join(parent_dir, 'shared')):
+            sys.path.insert(0, parent_dir)
+            break
+    from shared.agent_setup import setup_ai_services
 
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 
@@ -54,22 +48,14 @@ except couchbase.exceptions.CouchbaseException as e:
     error_msg = f"Could not connect to Couchbase cluster: {e!s}"
 
 
-# Cache vector store instance to avoid repeated AI service setup
-_vector_store_cache = None
-
-def _get_vector_store():
-    """Get vector store instance for searching airline reviews with caching."""
-    global _vector_store_cache
-    
-    if _vector_store_cache is not None:
-        return _vector_store_cache
-    
+def create_vector_store():
+    """Create vector store instance for searching airline reviews."""
     try:
-        # Setup embeddings using shared module (only once)
+        # Setup embeddings using shared module
         embeddings, _ = setup_ai_services(framework="langgraph")
 
-        # Create and cache vector store
-        _vector_store_cache = CouchbaseVectorStore(
+        # Create vector store
+        return CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
@@ -78,13 +64,44 @@ def _get_vector_store():
             index_name=os.getenv("CB_INDEX", "airline_reviews_index"),
         )
         
-        logger.info("✅ Vector store initialized and cached")
-        return _vector_store_cache
-        
     except Exception as e:
-        msg = f"Failed to create vector store: {e!s}"
+        msg = f"Failed to create vector store: {e}"
         logger.error(msg)
         raise RuntimeError(msg)
+
+
+def format_review_results(results: list, query: str) -> str:
+    """Format search results for display."""
+    if not results:
+        return "No relevant airline reviews found for your query. Please try different search terms like 'food', 'seats', 'service', 'delays', 'check-in', or 'baggage'."
+
+    formatted_results = []
+    for i, doc in enumerate(results, 1):
+        content = doc.page_content
+        
+        # Simple metadata formatting
+        metadata_info = ""
+        if hasattr(doc, "metadata") and doc.metadata:
+            meta_parts = []
+            for key in ["airline", "rating", "route", "seat_type"]:
+                if key in doc.metadata:
+                    value = doc.metadata[key]
+                    if key == "rating":
+                        meta_parts.append(f"Rating: {value}/5")
+                    else:
+                        meta_parts.append(f"{key.title()}: {value}")
+            
+            if meta_parts:
+                metadata_info = f"[{' | '.join(meta_parts)}]\n"
+
+        # Limit content length for readability
+        if len(content) > 300:
+            content = content[:300] + "..."
+
+        formatted_results.append(f"Review {i}:\n{metadata_info}{content}")
+
+    summary = f"Found {len(results)} relevant airline reviews for '{query}':\n\n"
+    return summary + "\n\n".join(formatted_results)
 
 
 @agentc.catalog.tool
@@ -104,67 +121,20 @@ def search_airline_reviews(query: str) -> str:
         if not query or not query.strip():
             return "Please provide a search query for airline reviews (e.g., 'food quality', 'seat comfort', 'service experience', 'delays')."
 
-        # Get vector store
-        vector_store = _get_vector_store()
-
-        # Perform vector similarity search for airline reviews
-        try:
-            logger.info(f"Searching for airline reviews with query: '{query.strip()}'")
-            results = vector_store.similarity_search(
-                query=query.strip(),
-                k=5,  # Return top 5 most similar reviews for better coverage
-            )
-            logger.info(f"Found {len(results)} results for query: '{query.strip()}'")
-        except Exception as search_error:
-            logger.exception(f"Search failed: {search_error}")
-            return f"Search error: {search_error}. Please try again or contact customer service."
-
-        if not results:
-            return "No relevant airline reviews found for your query. Please try different search terms (e.g., 'food', 'seats', 'service', 'delays', 'check-in', 'baggage') or be more specific about the airline or service aspect you're interested in."
-
-        # Format results for display
-        formatted_results = []
-        for i, doc in enumerate(results, 1):
-            # Extract review information from document content
-            content = doc.page_content
-
-            # Include metadata if available
-            metadata_info = ""
-            if hasattr(doc, "metadata") and doc.metadata:
-                parts = []
-                if "airline" in doc.metadata:
-                    parts.append(f"Airline: {doc.metadata['airline']}")
-                if "rating" in doc.metadata:
-                    parts.append(f"Rating: {doc.metadata['rating']}/5")
-                if "travel_date" in doc.metadata:
-                    parts.append(f"Travel Date: {doc.metadata['travel_date']}")
-                if "aircraft" in doc.metadata:
-                    parts.append(f"Aircraft: {doc.metadata['aircraft']}")
-                if "seat_type" in doc.metadata:
-                    parts.append(f"Class: {doc.metadata['seat_type']}")
-                if "route" in doc.metadata:
-                    parts.append(f"Route: {doc.metadata['route']}")
-
-                if parts:
-                    metadata_info = f"[{' | '.join(parts)}]\n"
-
-            # Limit content length for readability
-            if len(content) > 400:
-                content = content[:400] + "..."
-
-            formatted_results.append(f"Review {i}:\n{metadata_info}{content}")
-
-        # Add helpful summary
-        total_reviews = len(results)
-        summary = f"Found {total_reviews} relevant airline reviews for '{query.strip()}':\n\n"
-
-        return summary + "\n\n".join(formatted_results)
+        query = query.strip()
+        
+        # Create vector store and search
+        vector_store = create_vector_store()
+        
+        logger.info(f"Searching for airline reviews with query: '{query}'")
+        results = vector_store.similarity_search(query=query, k=5)
+        logger.info(f"Found {len(results)} results for query: '{query}'")
+        
+        return format_review_results(results, query)
 
     except couchbase.exceptions.CouchbaseException as e:
-        error_msg = f"Database error while searching reviews: {e!s}"
         logger.exception("Database error in search_airline_reviews")
         return "Unable to search airline reviews due to a database error. Please try again later."
     except Exception as e:
-        error_msg = f"Error searching airline reviews: {e!s}"
         logger.exception("Unexpected error in search_airline_reviews")
-        return f"Error searching airline reviews: {error_msg}. Please try again or contact customer service."
+        return f"Error searching airline reviews: {str(e)}. Please try again."

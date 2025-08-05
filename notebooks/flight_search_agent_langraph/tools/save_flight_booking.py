@@ -74,6 +74,240 @@ def _ensure_collection_exists(bucket_name: str, scope_name: str, collection_name
         pass
 
 
+def parse_booking_input(booking_input: str) -> tuple[str, str, str, str]:
+    """Parse and normalize booking input from natural language or structured format."""
+    if not booking_input or not isinstance(booking_input, str):
+        raise ValueError("Input must be a string in format 'source_airport,destination_airport,date'")
+    
+    original_input = booking_input.strip()
+    
+    # If already in correct format, use as-is
+    if re.match(r"^[A-Z]{3},[A-Z]{3},\d{4}-\d{2}-\d{2}$", original_input):
+        return original_input, original_input, "", ""
+    
+    # Extract airport codes from natural language
+    airport_codes = re.findall(r'\b[A-Z]{3}\b', original_input.upper())
+    
+    # Extract or calculate date
+    date_str = _parse_date_from_text(original_input)
+    
+    # Reconstruct input if we found airport codes
+    if len(airport_codes) >= 2 and date_str:
+        structured_input = f"{airport_codes[0]},{airport_codes[1]},{date_str}"
+        return structured_input, original_input, airport_codes[0], airport_codes[1]
+    
+    # Try comma-separated format
+    parts = original_input.split(",")
+    if len(parts) >= 2:
+        return original_input, original_input, "", ""
+    
+    raise ValueError(f"Could not parse booking request. Please use format 'JFK,LAX,2025-12-25' or specify clear airport codes and date. Input was: {original_input}")
+
+
+def _parse_date_from_text(text: str) -> str:
+    """Extract or calculate date from natural language text."""
+    if re.search(r'\btomorrow\b', text, re.I):
+        return (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    if re.search(r'\bnext week\b', text, re.I):
+        return (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    # Look for explicit date
+    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', text)
+    if date_match:
+        return date_match.group(1)
+    
+    # Default to tomorrow if no date specified
+    return (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def validate_booking_parts(booking_input: str) -> tuple[str, str, str]:
+    """Validate and extract booking components from structured input."""
+    parts = booking_input.strip().split(",")
+    if len(parts) != 3:
+        raise ValueError("Input must be in format 'source_airport,destination_airport,date'. Example: 'JFK,LAX,2024-12-25'")
+    
+    source_airport, destination_airport, departure_date = [part.strip() for part in parts]
+    
+    if not source_airport or not destination_airport or not departure_date:
+        raise ValueError("All fields are required: source_airport, destination_airport, date")
+    
+    return source_airport, destination_airport, departure_date
+
+
+def validate_airport_codes(source: str, destination: str) -> tuple[str, str]:
+    """Validate and normalize airport codes."""
+    source = source.upper()
+    destination = destination.upper()
+    
+    if len(source) != 3 or len(destination) != 3:
+        raise ValueError(f"Airport codes must be 3 letters (e.g., JFK, LAX). Got: {source}, {destination}")
+    
+    if not source.isalpha() or not destination.isalpha():
+        raise ValueError(f"Airport codes must be letters only. Got: {source}, {destination}")
+    
+    return source, destination
+
+
+def parse_and_validate_date(departure_date: str) -> tuple[datetime.date, str]:
+    """Parse and validate departure date, handling relative dates."""
+    try:
+        # Handle relative dates
+        if departure_date.lower() == "tomorrow":
+            dep_date = datetime.date.today() + datetime.timedelta(days=1)
+            departure_date = dep_date.strftime("%Y-%m-%d")
+        elif departure_date.lower() == "today":
+            dep_date = datetime.date.today()
+            departure_date = dep_date.strftime("%Y-%m-%d")
+        elif departure_date.lower() == "next week":
+            dep_date = datetime.date.today() + datetime.timedelta(days=7)
+            departure_date = dep_date.strftime("%Y-%m-%d")
+        else:
+            # Validate date format
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", departure_date):
+                raise ValueError("Date must be in YYYY-MM-DD format. Example: 2024-12-25")
+            dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
+        
+        # Check if date is in the future (allow today for demo purposes)
+        if dep_date < datetime.date.today():
+            today = datetime.date.today().strftime('%Y-%m-%d')
+            tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+            raise ValueError(f"Departure date must be in the future. Today is {today}. Please use a date like {tomorrow}")
+        
+        return dep_date, departure_date
+    
+    except ValueError as e:
+        if "time data" in str(e):
+            raise ValueError("Invalid date format. Please use YYYY-MM-DD format. Example: 2024-12-25")
+        raise
+
+
+def parse_passenger_details(original_input: str) -> tuple[int, str]:
+    """Extract passenger count and class from natural language input."""
+    passengers = 1
+    flight_class = "economy"
+    
+    # Parse passenger count - check multiple patterns
+    # Pattern 1: "2 passengers" or "2 passenger"
+    passenger_match = re.search(r'(\d+)\s*passengers?', original_input, re.I)
+    if passenger_match:
+        passengers = int(passenger_match.group(1))
+    else:
+        # Pattern 2: Comma-separated format like "LAX,JFK,2025-08-06,2,business"
+        parts = original_input.split(',')
+        if len(parts) >= 4:  # source,dest,date,passengers,...
+            try:
+                passengers = int(parts[3].strip())
+            except (ValueError, IndexError):
+                pass
+        else:
+            # Pattern 3: Just a number followed by class "2 business class"
+            number_match = re.search(r'\b(\d+)\b', original_input)
+            if number_match:
+                passengers = int(number_match.group(1))
+    
+    # Parse class - runs independently of passenger parsing
+    if re.search(r'\bbusiness\b', original_input, re.I):
+        flight_class = "business"
+    elif re.search(r'\bfirst\b', original_input, re.I):
+        flight_class = "first"
+    elif re.search(r'\beconomy\b|\bbasic\b', original_input, re.I):
+        flight_class = "economy"
+    
+    return passengers, flight_class
+
+
+def calculate_price(flight_class: str, passengers: int) -> float:
+    """Calculate total price based on class and passenger count."""
+    base_prices = {"economy": 250, "business": 750, "first": 1200}
+    base_price = base_prices.get(flight_class, 250)
+    return base_price * passengers
+
+
+def check_duplicate_booking(source_airport: str, destination_airport: str, departure_date: str,
+                          bucket_name: str, scope_name: str, collection_name: str) -> str | None:
+    """Check for existing duplicate bookings. Returns error message if found, None otherwise."""
+    duplicate_check_query = f"""
+    SELECT booking_id, total_price
+    FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`
+    WHERE source_airport = $source_airport
+    AND destination_airport = $destination_airport
+    AND departure_date = $departure_date
+    AND status = 'confirmed'
+    """
+    
+    try:
+        duplicate_result = cluster.query(
+            duplicate_check_query,
+            source_airport=source_airport, 
+            destination_airport=destination_airport, 
+            departure_date=departure_date
+        )
+        
+        existing_bookings = list(duplicate_result.rows())
+        
+        if existing_bookings:
+            existing_booking = existing_bookings[0]
+            return f"""Duplicate booking found! You already have a confirmed booking:
+- Booking ID: {existing_booking['booking_id']}
+- Route: {source_airport} → {destination_airport}
+- Date: {departure_date}
+- Total: ${existing_booking['total_price']:.2f}
+
+No new booking was created. Use the existing booking ID for reference."""
+    
+    except Exception as e:
+        logger.warning(f"Duplicate check failed: {e}")
+    
+    return None
+
+
+def create_booking_record(booking_id: str, source_airport: str, destination_airport: str,
+                         departure_date: str, passengers: int, flight_class: str, total_price: float) -> dict:
+    """Create booking data structure."""
+    return {
+        "booking_id": booking_id,
+        "source_airport": source_airport,
+        "destination_airport": destination_airport,
+        "departure_date": departure_date,
+        "passengers": passengers,
+        "flight_class": flight_class,
+        "total_price": total_price,
+        "booking_time": datetime.datetime.now().isoformat(),
+        "status": "confirmed",
+    }
+
+
+def save_booking_to_db(booking_data: dict, bucket_name: str, scope_name: str, collection_name: str) -> None:
+    """Save booking record to Couchbase database."""
+    insert_query = f"""
+    INSERT INTO `{bucket_name}`.`{scope_name}`.`{collection_name}` (KEY, VALUE)
+    VALUES ($booking_id, $booking_data)
+    """
+    
+    cluster.query(insert_query, 
+                booking_id=booking_data["booking_id"], 
+                booking_data=booking_data).execute()
+
+
+def format_booking_confirmation(booking_data: dict) -> str:
+    """Format booking confirmation message."""
+    return f"""Flight Booking Confirmed!
+
+Booking ID: {booking_data['booking_id']}
+Route: {booking_data['source_airport']} → {booking_data['destination_airport']}
+Departure Date: {booking_data['departure_date']}
+Passengers: {booking_data['passengers']}
+Class: {booking_data['flight_class']}
+Total Price: ${booking_data['total_price']:.2f}
+
+Next Steps:
+1. Check-in opens 24 hours before departure
+2. Arrive at airport 2 hours early for domestic flights
+3. Bring valid government-issued photo ID
+
+Thank you for choosing our airline!"""
+
+
 @agentc.catalog.tool
 def save_flight_booking(booking_input: str) -> str:
     """
@@ -89,181 +323,40 @@ def save_flight_booking(booking_input: str) -> str:
     Checks for duplicate bookings before creating new ones.
     """
     try:
-        # Parse input string
-        if not booking_input or not isinstance(booking_input, str):
-            return "Error: Input must be a string in format 'source_airport,destination_airport,date'"
-
-        # Handle natural language parsing
-        import re
-        original_input = booking_input.strip()
+        # Parse and validate input
+        structured_input, original_input, _, _ = parse_booking_input(booking_input)
+        source_airport, destination_airport, departure_date = validate_booking_parts(structured_input)
+        source_airport, destination_airport = validate_airport_codes(source_airport, destination_airport)
+        dep_date, departure_date = parse_and_validate_date(departure_date)
         
-        # Try to extract airport codes and date from natural language
-        if not re.match(r"^[A-Z]{3},[A-Z]{3},\d{4}-\d{2}-\d{2}$", original_input):
-            # Extract airport codes (3 letter codes)
-            airport_codes = re.findall(r'\b[A-Z]{3}\b', original_input.upper())
-            
-            # Extract or calculate date
-            date_str = None
-            if re.search(r'\btomorrow\b', original_input, re.I):
-                date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-            elif re.search(r'\bnext week\b', original_input, re.I):
-                date_str = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
-            else:
-                # Look for explicit date
-                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', original_input)
-                if date_match:
-                    date_str = date_match.group(1)
-                else:
-                    # Default to tomorrow if no date specified
-                    date_str = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-            
-            # Reconstruct input if we found airport codes
-            if len(airport_codes) >= 2 and date_str:
-                booking_input = f"{airport_codes[0]},{airport_codes[1]},{date_str}"
-            else:
-                # Try comma-separated format
-                parts = original_input.split(",")
-                if len(parts) >= 2:
-                    booking_input = original_input
-                else:
-                    return f"Error: Could not parse booking request. Please use format 'JFK,LAX,2025-12-25' or specify clear airport codes and date. Input was: {original_input}"
-
-        # Split and validate input
-        parts = booking_input.strip().split(",")
-        if len(parts) != 3:
-            return "Error: Input must be in format 'source_airport,destination_airport,date'. Example: 'JFK,LAX,2024-12-25'"
-
-        source_airport, destination_airport, departure_date = [part.strip() for part in parts]
-
-        # Validate required fields
-        if not source_airport or not destination_airport or not departure_date:
-            return "Error: All fields are required: source_airport, destination_airport, date"
-
-        # Validate and normalize airport codes
-        source_airport = source_airport.upper()
-        destination_airport = destination_airport.upper()
-
-        if len(source_airport) != 3 or len(destination_airport) != 3:
-            return f"Error: Airport codes must be 3 letters (e.g., JFK, LAX). Got: {source_airport}, {destination_airport}"
-
-        if not source_airport.isalpha() or not destination_airport.isalpha():
-            return f"Error: Airport codes must be letters only. Got: {source_airport}, {destination_airport}"
-
-        # Validate and parse date
-        try:
-            # Handle relative dates
-            if departure_date.lower() == "tomorrow":
-                dep_date = datetime.date.today() + datetime.timedelta(days=1)
-                departure_date = dep_date.strftime("%Y-%m-%d")
-            elif departure_date.lower() == "today":
-                dep_date = datetime.date.today()
-                departure_date = dep_date.strftime("%Y-%m-%d")
-            elif departure_date.lower() == "next week":
-                dep_date = datetime.date.today() + datetime.timedelta(days=7)
-                departure_date = dep_date.strftime("%Y-%m-%d")
-            else:
-                # Validate date format
-                if not re.match(r"^\d{4}-\d{2}-\d{2}$", departure_date):
-                    return "Error: Date must be in YYYY-MM-DD format. Example: 2024-12-25"
-                dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
-
-            # Check if date is in the future (allow today for demo purposes)
-            if dep_date < datetime.date.today():
-                return f"Error: Departure date must be in the future. Today is {datetime.date.today().strftime('%Y-%m-%d')}. Please use a date like {(datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')}"
-        except ValueError:
-            return "Error: Invalid date format. Please use YYYY-MM-DD format. Example: 2024-12-25"
-
-        # Setup collection info
+        # Setup database collection
         bucket_name = os.getenv("CB_BUCKET", "travel-sample")
         scope_name = "agentc_bookings"
         collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
-
-        # Ensure collection exists
         _ensure_collection_exists(bucket_name, scope_name, collection_name)
-
-        # Check for duplicate bookings using Couchbase SDK
-        duplicate_check_query = f"""
-        SELECT booking_id, total_price
-        FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`
-        WHERE source_airport = $source_airport
-        AND destination_airport = $destination_airport
-        AND departure_date = $departure_date
-        AND status = 'confirmed'
-        """
-
-        try:
-            duplicate_result = cluster.query(
-                duplicate_check_query,
-                source_airport=source_airport, 
-                destination_airport=destination_airport, 
-                departure_date=departure_date
-            )
-
-            existing_bookings = list(duplicate_result.rows())
-
-            if existing_bookings:
-                existing_booking = existing_bookings[0]
-                return f"""Duplicate booking found! You already have a confirmed booking:
-- Booking ID: {existing_booking['booking_id']}
-- Route: {source_airport} → {destination_airport}
-- Date: {departure_date}
-- Total: ${existing_booking['total_price']:.2f}
-
-No new booking was created. Use the existing booking ID for reference."""
-
-        except Exception as e:
-            # Continue with booking creation if duplicate check fails
-            logger.warning(f"Duplicate check failed: {e}")
-
-        # Generate booking ID
+        
+        # Check for duplicates
+        duplicate_error = check_duplicate_booking(
+            source_airport, destination_airport, departure_date,
+            bucket_name, scope_name, collection_name)
+        if duplicate_error:
+            return duplicate_error
+        
+        # Parse passenger details and calculate pricing
+        passengers, flight_class = parse_passenger_details(original_input)
+        total_price = calculate_price(flight_class, passengers)
+        
+        # Create and save booking
         booking_id = f"FL{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:8].upper()}"
-
-        # Default booking values
-        passengers = 1
-        flight_class = "economy"
-        base_price = 250  # Base price for economy
-        total_price = base_price * passengers
-
-        # Prepare booking data
-        booking_data = {
-            "booking_id": booking_id,
-            "source_airport": source_airport,
-            "destination_airport": destination_airport,
-            "departure_date": departure_date,
-            "passengers": passengers,
-            "flight_class": flight_class,
-            "total_price": total_price,
-            "booking_time": datetime.datetime.now().isoformat(),
-            "status": "confirmed",
-        }
-
-        # Insert booking into Couchbase
-        insert_query = f"""
-        INSERT INTO `{bucket_name}`.`{scope_name}`.`{collection_name}` (KEY, VALUE)
-        VALUES ($booking_id, $booking_data)
-        """
-
-        cluster.query(insert_query, booking_id=booking_id, booking_data=booking_data).execute()
-
-        # Create booking confirmation
-        booking_summary = f"""Flight Booking Confirmed!
-
-Booking ID: {booking_id}
-Route: {source_airport} → {destination_airport}
-Departure Date: {departure_date}
-Passengers: {passengers}
-Class: {flight_class}
-Total Price: ${total_price:.2f}
-
-Next Steps:
-1. Check-in opens 24 hours before departure
-2. Arrive at airport 2 hours early for domestic flights
-3. Bring valid government-issued photo ID
-
-Thank you for choosing our airline!"""
-
-        return booking_summary
-
+        booking_data = create_booking_record(
+            booking_id, source_airport, destination_airport,
+            departure_date, passengers, flight_class, total_price)
+        save_booking_to_db(booking_data, bucket_name, scope_name, collection_name)
+        
+        return format_booking_confirmation(booking_data)
+    
+    except ValueError as e:
+        return f"Error: {str(e)}"
     except Exception as e:
         logger.exception(f"Booking processing error: {e}")
         return "Booking could not be processed. Please try again with format: 'source_airport,destination_airport,date' (e.g., 'JFK,LAX,2024-12-25')"

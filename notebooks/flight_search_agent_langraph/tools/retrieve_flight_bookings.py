@@ -30,6 +30,63 @@ except couchbase.exceptions.CouchbaseException as e:
     error_msg = f"Could not connect to Couchbase cluster: {e!s}"
 
 
+def parse_booking_query(booking_query: str) -> dict:
+    """Parse booking query input and return search parameters."""
+    if not booking_query or booking_query.strip().lower() in ["", "all", "none"]:
+        return {"type": "all"}
+    
+    parts = booking_query.strip().split(",")
+    if len(parts) != 3:
+        raise ValueError("For specific booking search, use format 'source_airport,destination_airport,date'. Example: 'JFK,LAX,2024-12-25'. Or use empty string for all bookings.")
+    
+    source_airport, destination_airport, date = [part.strip().upper() for part in parts]
+    
+    # Validate airport codes
+    if len(source_airport) != 3 or len(destination_airport) != 3:
+        raise ValueError("Airport codes must be 3 letters. Example: 'JFK,LAX,2024-12-25'")
+    
+    if not source_airport.isalpha() or not destination_airport.isalpha():
+        raise ValueError("Airport codes must be letters only. Example: 'JFK,LAX,2024-12-25'")
+    
+    # Validate date format
+    try:
+        datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise ValueError("Date must be in YYYY-MM-DD format. Example: 'JFK,LAX,2024-12-25'")
+    
+    return {
+        "type": "specific",
+        "source_airport": source_airport,
+        "destination_airport": destination_airport,
+        "date": date
+    }
+
+
+def get_current_collection_name() -> str:
+    """Get today's booking collection name."""
+    return f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
+
+
+def format_booking_display(bookings: list) -> str:
+    """Format bookings for display."""
+    if not bookings:
+        return "No bookings found."
+    
+    result = f"Your Current Bookings ({len(bookings)} found):\n\n"
+    for i, booking in enumerate(bookings, 1):
+        result += f"Booking {i}:\n"
+        result += f"  Booking ID: {booking['booking_id']}\n"
+        result += f"  Route: {booking['source_airport']} → {booking['destination_airport']}\n"
+        result += f"  Date: {booking['departure_date']}\n"
+        result += f"  Passengers: {booking['passengers']}\n"
+        result += f"  Class: {booking['flight_class']}\n"
+        result += f"  Total: ${booking['total_price']:.2f}\n"
+        result += f"  Status: {booking.get('status', 'Confirmed')}\n"
+        result += f"  Booked: {booking['booking_time'][:10]}\n\n"
+    
+    return result.strip()
+
+
 @agentc.catalog.tool
 def retrieve_flight_bookings(booking_query: str = "") -> str:
     """
@@ -44,141 +101,57 @@ def retrieve_flight_bookings(booking_query: str = "") -> str:
     - "JFK,LAX,2024-12-25" - Show booking for specific flight
     """
     try:
+        # Parse and validate input
+        search_params = parse_booking_query(booking_query)
+        
+        # Database configuration
         bucket_name = os.getenv("CB_BUCKET", "travel-sample")
         scope_name = "agentc_bookings"
-
-        # Parse input
-        if not booking_query or booking_query.strip().lower() in ["", "all", "none"]:
-            # Retrieve all bookings
-            return _retrieve_all_bookings(bucket_name, scope_name)
-        # Parse specific booking query
-        parts = booking_query.strip().split(",")
-        if len(parts) != 3:
-            return "Error: For specific booking search, use format 'source_airport,destination_airport,date'. Example: 'JFK,LAX,2024-12-25'. Or use empty string for all bookings."
-
-        source_airport, destination_airport, date = [part.strip().upper() for part in parts]
-
-        # Validate inputs
-        if len(source_airport) != 3 or len(destination_airport) != 3:
-            return "Error: Airport codes must be 3 letters. Example: 'JFK,LAX,2024-12-25'"
-
-        if not source_airport.isalpha() or not destination_airport.isalpha():
-            return "Error: Airport codes must be letters only. Example: 'JFK,LAX,2024-12-25'"
-
-        # Validate date format
-        try:
-            datetime.datetime.strptime(date, "%Y-%m-%d")
-        except ValueError:
-            return "Error: Date must be in YYYY-MM-DD format. Example: 'JFK,LAX,2024-12-25'"
-
-        return _retrieve_specific_booking(bucket_name, scope_name, source_airport, destination_airport, date)
-
+        collection_name = get_current_collection_name()
+        
+        if search_params["type"] == "all":
+            # Retrieve all bookings from current collection (simplified approach)
+            query = f"""
+            SELECT VALUE booking
+            FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` booking
+            WHERE booking.status = $status
+            ORDER BY booking.booking_time DESC
+            """
+            
+            result = cluster.query(query, status="confirmed")
+            
+        else:
+            # Retrieve specific booking using parameterized query (secure)
+            query = f"""
+            SELECT VALUE booking
+            FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` booking
+            WHERE booking.source_airport = $source_airport
+            AND booking.destination_airport = $destination_airport
+            AND booking.departure_date = $date
+            AND booking.status = $status
+            """
+            
+            result = cluster.query(
+                query,
+                source_airport=search_params["source_airport"],
+                destination_airport=search_params["destination_airport"],
+                date=search_params["date"],
+                status="confirmed"
+            )
+        
+        bookings = list(result.rows())
+        
+        # Special message for specific booking search
+        if search_params["type"] == "specific" and not bookings:
+            return f"No bookings found for {search_params['source_airport']} → {search_params['destination_airport']} on {search_params['date']}."
+        
+        return format_booking_display(bookings)
+        
+    except ValueError as e:
+        return f"Error: {str(e)}"
+    except couchbase.exceptions.CouchbaseException as e:
+        logger.exception(f"Database error: {e}")
+        return "Database error: Unable to retrieve bookings. Please try again later."
     except Exception as e:
         logger.exception(f"Error retrieving bookings: {e}")
         return "Error retrieving bookings. Please try again."
-
-
-def _retrieve_all_bookings(bucket_name: str, scope_name: str) -> str:
-    """Retrieve all bookings from the last 30 days."""
-    try:
-        all_bookings = []
-        today = datetime.date.today()
-
-        # Search across the last 30 days of booking collections
-        for days_back in range(30):
-            check_date = today - datetime.timedelta(days=days_back)
-            collection_name = f"user_bookings_{check_date.strftime('%Y%m%d')}"
-
-            try:
-                # Query this collection
-                query = f"""
-                SELECT VALUE booking
-                FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` booking
-                WHERE booking.status = 'confirmed'
-                """
-
-                result = cluster.query(query)
-                rows = list(result.rows())
-                all_bookings.extend(rows)
-
-            except couchbase.exceptions.CouchbaseException:
-                # Collection doesn't exist or is empty, continue
-                continue
-
-        if not all_bookings:
-            return "No bookings found."
-
-        # Sort bookings by booking time (most recent first)
-        all_bookings.sort(key=lambda x: x.get("booking_time", ""), reverse=True)
-
-        # Format bookings for display
-        result = f"Your Current Bookings ({len(all_bookings)} found):\n\n"
-        for i, booking in enumerate(all_bookings, 1):
-            result += f"Booking {i}:\n"
-            result += f"  Booking ID: {booking['booking_id']}\n"
-            result += f"  Route: {booking['source_airport']} → {booking['destination_airport']}\n"
-            result += f"  Date: {booking['departure_date']}\n"
-            result += f"  Passengers: {booking['passengers']}\n"
-            result += f"  Class: {booking['flight_class']}\n"
-            result += f"  Total: ${booking['total_price']:.2f}\n"
-            result += f"  Status: {booking.get('status', 'Confirmed')}\n"
-            result += f"  Booked: {booking['booking_time'][:10]}\n\n"
-
-        return result.strip()
-
-    except Exception as e:
-        logger.exception(f"Error retrieving all bookings: {e}")
-        return "Unable to retrieve bookings. Please try again."
-
-
-def _retrieve_specific_booking(bucket_name: str, scope_name: str, source_airport: str, destination_airport: str, date: str) -> str:
-    """Retrieve bookings for a specific route and date."""
-    try:
-        # Try to find the booking in collections from the last 30 days
-        today = datetime.date.today()
-        found_bookings = []
-
-        for days_back in range(30):
-            check_date = today - datetime.timedelta(days=days_back)
-            collection_name = f"user_bookings_{check_date.strftime('%Y%m%d')}"
-
-            try:
-                # Query for specific booking
-                query = f"""
-                SELECT VALUE booking
-                FROM `{bucket_name}`.`{scope_name}`.`{collection_name}` booking
-                WHERE booking.source_airport = '{source_airport}'
-                AND booking.destination_airport = '{destination_airport}'
-                AND booking.departure_date = '{date}'
-                AND booking.status = 'confirmed'
-                """
-
-                result = cluster.query(query)
-                rows = list(result.rows())
-                found_bookings.extend(rows)
-
-            except couchbase.exceptions.CouchbaseException:
-                # Collection doesn't exist, continue
-                continue
-
-        if not found_bookings:
-            return f"No bookings found for {source_airport} → {destination_airport} on {date}."
-
-        # Format found bookings
-        result = f"Found {len(found_bookings)} booking(s) for {source_airport} → {destination_airport} on {date}:\n\n"
-        for i, booking in enumerate(found_bookings, 1):
-            result += f"Booking {i}:\n"
-            result += f"  Booking ID: {booking['booking_id']}\n"
-            result += f"  Route: {booking['source_airport']} → {booking['destination_airport']}\n"
-            result += f"  Date: {booking['departure_date']}\n"
-            result += f"  Passengers: {booking['passengers']}\n"
-            result += f"  Class: {booking['flight_class']}\n"
-            result += f"  Total: ${booking['total_price']:.2f}\n"
-            result += f"  Status: {booking.get('status', 'Confirmed')}\n"
-            result += f"  Booked: {booking['booking_time'][:10]}\n\n"
-
-        return result.strip()
-
-    except Exception as e:
-        logger.exception(f"Error retrieving specific booking: {e}")
-        return f"Error retrieving booking for {source_airport} → {destination_airport} on {date}. Please try again."

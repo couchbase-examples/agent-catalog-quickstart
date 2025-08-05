@@ -249,24 +249,26 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Create ReAct agent with tools and prompt
         agent = create_react_agent(self.chat_model, tools, react_prompt)
 
-        # Custom parsing error handler
+        # Custom parsing error handler - force stopping on parsing errors
         def handle_parsing_errors(error):
-            """Custom handler for parsing errors to provide better guidance."""
+            """Custom handler for parsing errors - force early termination."""
             error_msg = str(error)
-            if "Missing 'Action:'" in error_msg:
+            if "both a final answer and a parse-able action" in error_msg:
+                # Force early termination - return a reasonable response
+                return "Final Answer: I encountered a parsing error. Please reformulate your request."
+            elif "Missing 'Action:'" in error_msg:
                 return "I need to use the correct format with Action: and Action Input:"
-            elif "both a final answer and a parse-able action" in error_msg:
-                return "I should provide either an Action OR Final Answer, not both."
             else:
-                return f"Let me correct the format and try again."
+                return f"Final Answer: I encountered an error processing your request. Please try again."
 
-        # Create agent executor
+        # Create agent executor - very strict: only 2 iterations max
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
             verbose=True,
             handle_parsing_errors=handle_parsing_errors,
-            max_iterations=5,
+            max_iterations=2,  # STRICT: 1 tool call + 1 Final Answer only
+            early_stopping_method="force",  # Force stop
             return_intermediate_steps=True,
         )
 

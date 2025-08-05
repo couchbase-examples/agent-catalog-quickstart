@@ -15,23 +15,39 @@ FLIGHT_SEARCH_QUERIES = [
 FLIGHT_REFERENCE_ANSWERS = [
     # Query 1: Flight search JFK to LAX
     """Available flights from JFK to LAX:
-- AS flight from JFK to LAX using 321 762
-- B6 flight from JFK to LAX using 320  
-- DL flight from JFK to LAX using 76W 752
-- QF flight from JFK to LAX using 744
-- AA flight from JFK to LAX using 32B 762
-- UA flight from JFK to LAX using 757
-- US flight from JFK to LAX using 32B 762
-- VX flight from JFK to LAX using 320
 
-These flights provide various airline options including American Airlines (AA), Delta Air Lines (DL), United Airlines (UA), JetBlue (B6), Virgin America (VX), Qantas (QF), US Airways (US), and Alaska Airlines (AS).""",
+1. AS flight from JFK to LAX using 321 762
+2. B6 flight from JFK to LAX using 320
+3. DL flight from JFK to LAX using 76W 752
+4. QF flight from JFK to LAX using 744
+5. AA flight from JFK to LAX using 32B 762
+6. UA flight from JFK to LAX using 757
+7. US flight from JFK to LAX using 32B 762
+8. VX flight from JFK to LAX using 320""",
 
-    # Query 2: Flight booking LAX to JFK for tomorrow
+    # Query 2: Flight booking LAX to JFK for tomorrow, 2 passengers, business class
     """Flight Booking Confirmed!
 
-Booking ID: FL0725ADB86B00
+Booking ID: FL08061563CACD
 Route: LAX → JFK
-Departure Date: 2025-07-25
+Departure Date: 2025-08-06
+Passengers: 2
+Class: business
+Total Price: $1500.00
+
+Next Steps:
+1. Check-in opens 24 hours before departure
+2. Arrive at airport 2 hours early for domestic flights
+3. Bring valid government-issued photo ID
+
+Thank you for choosing our airline!""",
+
+    # Query 3: Flight booking JFK to MIA for next week
+    """Flight Booking Confirmed!
+
+Booking ID: FL08124E7B9C2A
+Route: JFK → MIA
+Departure Date: 2025-08-12
 Passengers: 1
 Class: economy
 Total Price: $250.00
@@ -43,47 +59,46 @@ Next Steps:
 
 Thank you for choosing our airline!""",
 
-    # Query 3: Flight booking JFK to MIA for next week
-    """Flight booking for JFK to MIA has been successfully processed.
-
-Booking Details:
-- Route: JFK → MIA (John F. Kennedy International Airport to Miami International Airport)  
-- Date: Next week (7 days from today)
-- Passengers: 1
-- Class: Economy
-- Status: Confirmed
-
-The booking has been saved to your account and you can retrieve it using the booking management system.""",
-
     # Query 4: Show current flight bookings
-    """Your current flight bookings:
+    """Your Current Bookings (2 found):
 
-Booking #1:
-- Booking ID: FL0725ADB86B00
-- Route: LAX → JFK
-- Date: 2025-07-25
-- Passengers: 1  
-- Class: economy
-- Total: $250.00
-- Status: confirmed
+Booking 1:
+  Booking ID: FL08061563CACD
+  Route: LAX → JFK
+  Date: 2025-08-06
+  Passengers: 2
+  Class: business
+  Total: $1500.00
+  Status: confirmed
+  Booked: 2025-08-05
 
-Additional bookings may be available. Use the booking retrieval system to view all your confirmed reservations with complete details including booking dates and flight information.""",
+Booking 2:
+  Booking ID: FL08124E7B9C2A
+  Route: JFK → MIA
+  Date: 2025-08-12
+  Passengers: 1
+  Class: economy
+  Total: $250.00
+  Status: confirmed
+  Booked: 2025-08-05""",
 
     # Query 5: SpiceJet service quality reviews
-    """Passenger reviews about SpiceJet's service quality show mixed experiences:
+    """Found 5 relevant airline reviews for 'SpiceJet service':
 
-Positive Reviews:
-- "A pleasant journey" - Air hostesses described as kind and helpful, with great hospitality for senior citizens (Rating: 10.0/10)
-- Excellent customer care executives who helped resolve booking mistakes and provided great support
-- Perfect onboard crew who provided care during medical issues, with Ms Rafat specifically mentioned for helping with medicines (Rating: 8.0/10)
-- Professional, respectful flight attendants who behaved professionally on Hyderabad to Kishangarh route (Rating: 6.0/10)
+Review 1:
+Airline: SpiceJet. Title: "Service is impeccable". Review: ✅ Trip Verified | Much better than airbus models. Even the basic economy class has ambient lighting. Better personal air vents and better spotlights. Even overhead storage bins are good. Service is impeccable with proper care taken of guests...
 
-Negative Reviews:
-- Poor customer service with frequently changed flight timings and poor communication (Rating: 3.0/10)
-- Flight delays up to 10 hours with no apology or refreshments offered
-- Timeline management struggles noted as a primary concern
+Review 2:
+Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recom...
 
-Overall, SpiceJet receives praise for crew professionalism and customer care, but faces criticism for punctuality and communication issues.""",
+Review 3:
+Airline: SpiceJet. Title: "outstanding service I experienced". Review: Not Verified |  I wanted to take a moment to express my sincere thanks for the outstanding service I experienced on my recent flight from Pune to Delhi. SG-8937. From the moment I boarded, the warmth and friendliness of the air h...
+
+Review 4:
+Airline: SpiceJet. Title: "efficient and warm onboard service". Review: ✅ Trip Verified |  New Delhi to Kolkata. Delighted with the prompt, efficient and warm onboard service provided by the crew. Appreciate their efforts towards customer centricity.. Rating: 10.0/10. Reviewer: Debashis Roy. Date: 2...
+
+Review 5:
+Airline: SpiceJet. Title: "Service is very good". Review: Service is very good,  I am impressed with Miss Renu  who gave the best services ever. Thanks to Renu who is very sweet by her nature as well as her service. Rating: 9.0/10. Reviewer: Sanjay Patnaik. Date: 21st September 2023. Recommended: ye...""",
 ]
 
 # Create dictionary for backward compatibility

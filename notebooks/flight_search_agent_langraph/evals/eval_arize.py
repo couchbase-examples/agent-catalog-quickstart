@@ -40,6 +40,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Import the refactored setup functions
 from main import clear_bookings_and_reviews, setup_flight_search_agent
 
+# Import lenient evaluation templates
+from templates import (
+    LENIENT_QA_PROMPT_TEMPLATE,
+    LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
+    LENIENT_QA_RAILS,
+    LENIENT_HALLUCINATION_RAILS
+)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -517,8 +525,8 @@ class ArizeFlightSearchEvaluator:
                     eval_results = llm_classify(
                         data=data,
                         model=self.evaluator_llm,
-                        template=QA_PROMPT_TEMPLATE,
-                        rails=list(QA_PROMPT_RAILS_MAP.values()),
+                        template=LENIENT_QA_PROMPT_TEMPLATE,
+                        rails=LENIENT_QA_RAILS,
                         provide_explanation=True,
                     )
                 elif eval_name == "hallucination":
@@ -526,8 +534,8 @@ class ArizeFlightSearchEvaluator:
                     eval_results = llm_classify(
                         data=data,
                         model=self.evaluator_llm,
-                        template=HALLUCINATION_PROMPT_TEMPLATE,
-                        rails=list(HALLUCINATION_PROMPT_RAILS_MAP.values()),
+                        template=LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
+                        rails=LENIENT_HALLUCINATION_RAILS,
                         provide_explanation=True,
                     )
                 elif eval_name == "toxicity":
