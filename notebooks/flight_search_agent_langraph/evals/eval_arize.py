@@ -28,12 +28,17 @@ from dataclasses import dataclass
 
 import agentc
 import pandas as pd
+import nest_asyncio
+
+# Apply the patch to allow nested asyncio event loops
+nest_asyncio.apply()
+
 
 # Add parent directory to path to import main.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import the refactored setup functions
-from main import setup_flight_search_agent
+from main import clear_bookings_and_reviews, setup_flight_search_agent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -600,6 +605,9 @@ class ArizeFlightSearchEvaluator:
 
     def run_evaluation(self, queries: List[str]) -> pd.DataFrame:
         """Run complete evaluation pipeline using only Phoenix evaluators."""
+        # Clear existing bookings for a clean test run
+        clear_bookings_and_reviews()
+        
         if not self.setup_agent():
             raise RuntimeError("Failed to setup agent")
 
