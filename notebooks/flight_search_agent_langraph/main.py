@@ -6,13 +6,10 @@ A streamlined flight search agent demonstrating Agent Catalog integration
 with LangGraph and Couchbase vector search for flight booking assistance.
 """
 
-import base64
-import getpass
 import json
 import logging
 import os
 import sys
-import time
 from datetime import timedelta
 
 import agentc
@@ -23,18 +20,14 @@ import langchain_core.messages
 import langchain_core.runnables
 import langchain_openai.chat_models
 import langgraph.graph
-import requests
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.management.buckets import BucketType, CreateBucketSettings
-from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
+
 
 # Import shared modules using robust project root discovery
 def find_project_root():
@@ -42,11 +35,12 @@ def find_project_root():
     current = os.path.dirname(os.path.abspath(__file__))
     while current != os.path.dirname(current):  # Stop at filesystem root
         # Look for the shared directory as the definitive marker
-        shared_path = os.path.join(current, 'shared')
+        shared_path = os.path.join(current, "shared")
         if os.path.exists(shared_path) and os.path.isdir(shared_path):
             return current
         current = os.path.dirname(current)
     return None
+
 
 # Add project root to Python path
 project_root = find_project_root()
@@ -73,127 +67,6 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 
 # Load environment variables
 dotenv.load_dotenv(override=True)
-
-
-def setup_capella_ai_config():
-    """Setup Capella AI configuration - requires environment variables to be set."""
-    # Verify required environment variables are set (no defaults)
-    required_capella_vars = [
-        "CB_USERNAME",
-        "CB_PASSWORD",
-        "CAPELLA_API_ENDPOINT",
-        "CAPELLA_API_EMBEDDING_MODEL",
-        "CAPELLA_API_LLM_MODEL",
-    ]
-    missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
-    if missing_vars:
-        raise ValueError(f"Missing required Capella AI environment variables: {missing_vars}")
-
-    return {
-        "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
-        "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-        "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
-    }
-
-
-def test_capella_connectivity():
-    """Test connectivity to Capella AI services."""
-    try:
-        endpoint = os.getenv("CAPELLA_API_ENDPOINT")
-        if not endpoint:
-            logger.warning("CAPELLA_API_ENDPOINT not configured")
-            return False
-
-        # Test embedding model (requires API key)
-        if os.getenv("CB_USERNAME") and os.getenv("CB_PASSWORD"):
-            api_key = base64.b64encode(
-                f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode()
-            ).decode()
-
-            headers = {
-                "Authorization": f"Basic {api_key}",
-                "Content-Type": "application/json",
-            }
-
-            # Test embedding
-            logger.info("Testing Capella AI connectivity...")
-            embedding_data = {
-                "model": os.getenv(
-                    "CAPELLA_API_EMBEDDING_MODEL", "intfloat/e5-mistral-7b-instruct"
-                ),
-                "input": "test connectivity",
-            }
-
-            response = requests.post(f"{endpoint}/embeddings", json=embedding_data, headers=headers)
-            if response.status_code == 200:
-                logger.info("✅ Capella AI embedding test successful")
-                return True
-            else:
-                logger.warning(f"❌ Capella AI embedding test failed: {response.text}")
-                return False
-        else:
-            logger.warning("Capella AI credentials not available")
-            return False
-    except Exception as e:
-        logger.warning(f"❌ Capella AI connectivity test failed: {e}")
-        return False
-
-
-def _set_if_undefined(env_var: str, default_value: str = None):
-    """Set environment variable if not already defined."""
-    if not os.getenv(env_var):
-        if default_value is None:
-            value = getpass.getpass(f"Enter {env_var}: ")
-        else:
-            value = default_value
-        os.environ[env_var] = value
-
-
-def setup_environment():
-    """Setup required environment variables with defaults."""
-    logger.info("Setting up environment variables...")
-
-    required_vars = [
-        "CB_CONN_STRING",
-        "CB_USERNAME",
-        "CB_PASSWORD",
-        "CB_BUCKET",
-        "AGENT_CATALOG_CONN_STRING",
-        "AGENT_CATALOG_USERNAME",
-        "AGENT_CATALOG_PASSWORD",
-        "AGENT_CATALOG_BUCKET",
-    ]
-    for var in required_vars:
-        _set_if_undefined(var)
-
-    # Set non-sensitive defaults for bucket names and Agent Catalog local development
-    non_sensitive_defaults = {
-        "CB_BUCKET": "travel-sample",
-        "AGENT_CATALOG_CONN_STRING": "couchbase://127.0.0.1",
-        "AGENT_CATALOG_USERNAME": "Administrator",
-        "AGENT_CATALOG_PASSWORD": "password",
-        "AGENT_CATALOG_BUCKET": "travel-sample",
-    }
-
-    for key, default_value in non_sensitive_defaults.items():
-        if not os.environ.get(key):
-            os.environ[key] = input(f"Enter {key} (default: {default_value}): ") or default_value
-
-    os.environ["CB_INDEX"] = os.getenv("CB_INDEX", "airline_reviews_index")
-    os.environ["CB_SCOPE"] = os.getenv("CB_SCOPE", "agentc_data")
-    os.environ["CB_COLLECTION"] = os.getenv("CB_COLLECTION", "airline_reviews")
-
-    # Optional Capella AI configuration
-    if os.getenv("CAPELLA_API_ENDPOINT"):
-        # Ensure endpoint has /v1 suffix for OpenAI compatibility
-        if not os.getenv("CAPELLA_API_ENDPOINT").endswith("/v1"):
-            os.environ["CAPELLA_API_ENDPOINT"] = (
-                os.getenv("CAPELLA_API_ENDPOINT").rstrip("/") + "/v1"
-            )
-            logger.info(f"Added /v1 suffix to endpoint: {os.getenv('CAPELLA_API_ENDPOINT')}")
-
-    # Test Capella AI connectivity
-    test_capella_connectivity()
 
 
 class FlightSearchState(agentc_langgraph.agent.State):
@@ -405,7 +278,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             tools=tools,
             verbose=True,
             handle_parsing_errors=handle_parsing_errors,
-            max_iterations=10,
+            max_iterations=5,
             return_intermediate_steps=True,
         )
 
@@ -608,9 +481,9 @@ def setup_flight_search_agent():
 
         # Setup everything in one call - bucket, scope, collection
         client.setup_collection(
-            scope_name=os.environ["CB_SCOPE"], 
+            scope_name=os.environ["CB_SCOPE"],
             collection_name=os.environ["CB_COLLECTION"],
-            clear_existing_data=False  # Let data loader decide based on count check
+            clear_existing_data=False,  # Let data loader decide based on count check
         )
 
         # Setup vector search index
@@ -628,7 +501,7 @@ def setup_flight_search_agent():
 
         # Import data loader function
         from data.airline_reviews_data import load_airline_reviews_to_couchbase
-        
+
         # Setup vector store with airline reviews data
         vector_store = client.setup_vector_store_langchain(
             scope_name=os.environ["CB_SCOPE"],
