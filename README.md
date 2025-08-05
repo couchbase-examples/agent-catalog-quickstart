@@ -18,6 +18,12 @@ This repository provides a quickstart guide for using the Agent Catalog with Cap
 # Install Agent Catalog packages
 pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
 
+# Install Arize Phoenix and evaluation dependencies
+pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentation-langchain openinference-instrumentation-openai openinference-instrumentation-llama-index
+
+# Fix OpenTelemetry version conflicts (if needed)
+pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http
+
 # Install root dependencies
 poetry install
 
@@ -67,6 +73,12 @@ The easiest approach using published packages:
 ```bash
 # Install Agent Catalog packages from PyPI
 pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
+
+# Install Arize Phoenix and evaluation dependencies
+pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentation-langchain openinference-instrumentation-openai openinference-instrumentation-llama-index
+
+# Fix OpenTelemetry version conflicts (if needed)
+pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http
 
 # Install root dependencies
 poetry install
@@ -210,6 +222,8 @@ Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING
 ### Quick Fixes
 
 - **"No module named 'agentc'"**: Run `pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex`
+- **"No module named 'phoenix'" or evaluation errors**: Run `pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentation-langchain openinference-instrumentation-openai openinference-instrumentation-llama-index`
+- **OpenTelemetry version conflicts**: Run `pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http`
 - **Poetry issues**: Delete `poetry.lock` and run `poetry install --no-root` again  
 - **Environment errors**: Copy `.env.sample` to `.env` and edit with your credentials
 - **CLI not found**: Try the fallback setup script: `bash scripts/setup.sh`

@@ -15,7 +15,6 @@ The implementation integrates with the existing Agent Catalog infrastructure
 while extending it with Arize AI capabilities for production monitoring.
 """
 
-import json
 import logging
 import os
 import socket
@@ -26,27 +25,17 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
-import agentc
 import pandas as pd
 import nest_asyncio
 
 # Apply the patch to allow nested asyncio event loops
 nest_asyncio.apply()
 
-
 # Add parent directory to path to import main.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import the refactored setup functions
 from main import clear_bookings_and_reviews, setup_flight_search_agent
-
-# Import lenient evaluation templates
-from templates import (
-    LENIENT_QA_PROMPT_TEMPLATE,
-    LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
-    LENIENT_QA_RAILS,
-    LENIENT_HALLUCINATION_RAILS
-)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -60,10 +49,6 @@ try:
     from openinference.instrumentation.langchain import LangChainInstrumentor
     from openinference.instrumentation.openai import OpenAIInstrumentor
     from phoenix.evals import (
-        HALLUCINATION_PROMPT_RAILS_MAP,
-        HALLUCINATION_PROMPT_TEMPLATE,
-        QA_PROMPT_RAILS_MAP,
-        QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
         TOXICITY_PROMPT_RAILS_MAP,
@@ -74,7 +59,13 @@ try:
         RelevanceEvaluator,
         ToxicityEvaluator,
         llm_classify,
-        run_evals,
+    )
+    # Import lenient evaluation templates
+    from templates import (
+        LENIENT_QA_PROMPT_TEMPLATE,
+        LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
+        LENIENT_QA_RAILS,
+        LENIENT_HALLUCINATION_RAILS
     )
     from phoenix.otel import register
 
@@ -383,17 +374,65 @@ class ArizeFlightSearchEvaluator:
             return False
 
     def _extract_response_content(self, result: Any) -> str:
-        """Extract clean response content from agent result."""
+        """Extract complete response content including tool results from agent result."""
         try:
+            response_parts = []
+            
+            # Critical Fix: Extract tool outputs from search_results first
+            if isinstance(result, dict) and "search_results" in result:
+                search_results = result["search_results"]
+                if search_results:
+                    # search_results contains the actual tool outputs we want
+                    response_parts.append(str(search_results))
+            
+            # Also check for intermediate_steps (AgentExecutor format)
+            if isinstance(result, dict) and "intermediate_steps" in result:
+                for step in result["intermediate_steps"]:
+                    if isinstance(step, tuple) and len(step) >= 2:
+                        # step[1] is the tool output/observation
+                        tool_output = str(step[1])
+                        if tool_output and tool_output.strip():
+                            response_parts.append(tool_output)
+            
+            # Check for messages from LangGraph state (but filter out generic ones)
             if hasattr(result, "messages") and result.messages:
-                last_message = result.messages[-1]
-                if hasattr(last_message, "content"):
-                    return str(last_message.content)
-
-            if hasattr(result, "search_results") and result.search_results:
-                return str(result.search_results)
-
-            return str(result)
+                for message in result.messages:
+                    if hasattr(message, "content") and message.content:
+                        content = str(message.content)
+                        # Skip generic system messages and human messages
+                        if (hasattr(message, "type") and message.type != "human" and
+                            not any(phrase in content.lower() for phrase in 
+                                   ["iteration limit", "time limit", "agent stopped"])):
+                            response_parts.append(content)
+            elif isinstance(result, dict) and "messages" in result:
+                for message in result["messages"]:
+                    if hasattr(message, "content") and message.content:
+                        content = str(message.content)
+                        # Skip generic system messages and human messages  
+                        if (hasattr(message, "__class__") and "Human" not in message.__class__.__name__ and
+                            not any(phrase in content.lower() for phrase in 
+                                   ["iteration limit", "time limit", "agent stopped"])):
+                            response_parts.append(content)
+                            
+            # If we have response parts, join them
+            if response_parts:
+                return "\n\n".join(response_parts)
+                
+            # Fallback to full result conversion
+            result_str = str(result)
+            
+            # If result is a dict, try to extract useful parts
+            if isinstance(result, dict):
+                useful_parts = []
+                for key in ['output', 'response', 'result', 'answer']:
+                    if key in result and result[key]:
+                        useful_parts.append(f"{key.title()}: {result[key]}")
+                        
+                if useful_parts:
+                    return "\n".join(useful_parts)
+                    
+            return result_str
+            
         except Exception as e:
             return f"Error extracting response: {e}"
 

@@ -275,6 +275,17 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Execute the agent
         response = agent_executor.invoke({"input": state["query"]})
 
+        # Extract tool outputs from intermediate_steps and store in search_results
+        if "intermediate_steps" in response and response["intermediate_steps"]:
+            tool_outputs = []
+            for step in response["intermediate_steps"]:
+                if isinstance(step, tuple) and len(step) >= 2:
+                    # step[0] is the action, step[1] is the tool output/observation
+                    tool_output = str(step[1])
+                    if tool_output and tool_output.strip():
+                        tool_outputs.append(tool_output)
+            state["search_results"] = tool_outputs
+
         # Add response to conversation
         assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
         state["messages"].append(assistant_msg)
@@ -347,10 +358,7 @@ def clear_bookings_and_reviews():
         # Check if airline reviews collection needs clearing by comparing expected vs actual document count
         try:
             # Import to get expected document count without loading all data
-            import sys
-
-            sys.path.append(os.path.join(os.path.dirname(__file__), "data"))
-            from airline_reviews_data import _data_manager
+            from data.airline_reviews_data import _data_manager
 
             # Get expected document count (this uses cached data if available)
             expected_docs = _data_manager.process_to_texts()
