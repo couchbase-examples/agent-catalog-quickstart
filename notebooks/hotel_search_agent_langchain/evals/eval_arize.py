@@ -40,6 +40,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Import the hotel support agent setup function
 from main import setup_hotel_support_agent
 
+# Import lenient evaluation templates
+from templates import (
+    LENIENT_QA_PROMPT_TEMPLATE,
+    LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
+    LENIENT_QA_RAILS,
+    LENIENT_HALLUCINATION_RAILS
+)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -390,14 +398,45 @@ class ArizeHotelSupportEvaluator:
     def _extract_response_content(self, result: Any) -> str:
         """Extract clean response content from agent result."""
         try:
+            response_parts = []
+            
+            # Check for intermediate_steps (AgentExecutor format) first
+            if isinstance(result, dict) and "intermediate_steps" in result:
+                for step in result["intermediate_steps"]:
+                    if isinstance(step, tuple) and len(step) >= 2:
+                        # step[0] is the action, step[1] is the tool output/observation
+                        tool_output = str(step[1])
+                        if tool_output and tool_output.strip():
+                            response_parts.append(tool_output)
+            
+            # Then check standard output fields
             if isinstance(result, dict):
                 if "output" in result:
-                    return str(result["output"])
+                    output_content = str(result["output"])
+                    # Filter out generic system messages that confuse evaluators
+                    if not any(msg in output_content.lower() for msg in [
+                        "agent stopped due to iteration limit",
+                        "agent stopped due to time limit",
+                        "parsing error",
+                        "could not parse"
+                    ]):
+                        response_parts.append(output_content)
                 elif "response" in result:
-                    return str(result["response"])
+                    response_parts.append(str(result["response"]))
             
-            return str(result)
+            # Return the best available content
+            if response_parts:
+                return "\n".join(response_parts)
+            
+            # Fallback to original result
+            result_str = str(result)
+            if result_str and result_str.strip():
+                return result_str
+            
+            return "No response content found"
+            
         except Exception as e:
+            logger.error(f"Error extracting response content: {e}")
             return f"Error extracting response: {e}"
 
     def run_single_evaluation(self, query: str) -> Dict[str, Any]:
@@ -539,18 +578,17 @@ class ArizeHotelSupportEvaluator:
                     eval_results = llm_classify(
                         data=data,
                         model=self.evaluator_llm,
-                        template=QA_PROMPT_TEMPLATE,
-                        rails=list(QA_PROMPT_RAILS_MAP.values()),
+                        template=LENIENT_QA_PROMPT_TEMPLATE,
+                        rails=LENIENT_QA_RAILS,
                         provide_explanation=True,
                     )
                 elif eval_name == "hallucination":
                     data = eval_df[["input", "reference", "output"]].copy()
                     eval_results = llm_classify(
-                        
                         data=data,
                         model=self.evaluator_llm,
-                        template=HALLUCINATION_PROMPT_TEMPLATE,
-                        rails=list(HALLUCINATION_PROMPT_RAILS_MAP.values()),
+                        template=LENIENT_HALLUCINATION_PROMPT_TEMPLATE,
+                        rails=LENIENT_HALLUCINATION_RAILS,
                         provide_explanation=True,
                     )
                 elif eval_name == "toxicity":

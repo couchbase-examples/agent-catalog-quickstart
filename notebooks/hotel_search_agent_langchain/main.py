@@ -250,9 +250,8 @@ Action Input: """
             tools=tools,
             verbose=True,
             handle_parsing_errors=handle_parsing_error,  # Use custom error handler
-            max_iterations=8,  # Increased from 5
-            max_execution_time=120,  # Increased from 60
-            early_stopping_method="force",  # Changed from "generate" to "force"
+            max_iterations=2,  # STRICT: 1 tool call + 1 Final Answer only
+            early_stopping_method="force",  # Force stop
             return_intermediate_steps=True,  # For better debugging
         )
 
