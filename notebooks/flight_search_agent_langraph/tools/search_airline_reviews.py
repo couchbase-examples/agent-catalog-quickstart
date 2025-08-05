@@ -54,14 +54,22 @@ except couchbase.exceptions.CouchbaseException as e:
     error_msg = f"Could not connect to Couchbase cluster: {e!s}"
 
 
+# Cache vector store instance to avoid repeated AI service setup
+_vector_store_cache = None
+
 def _get_vector_store():
-    """Get vector store instance for searching airline reviews using shared 4-case priority ladder."""
+    """Get vector store instance for searching airline reviews with caching."""
+    global _vector_store_cache
+    
+    if _vector_store_cache is not None:
+        return _vector_store_cache
+    
     try:
-        # Setup embeddings using shared module
+        # Setup embeddings using shared module (only once)
         embeddings, _ = setup_ai_services(framework="langgraph")
 
-        # Updated to use airline reviews collection
-        return CouchbaseVectorStore(
+        # Create and cache vector store
+        _vector_store_cache = CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
@@ -69,8 +77,13 @@ def _get_vector_store():
             embedding=embeddings,
             index_name=os.getenv("CB_INDEX", "airline_reviews_index"),
         )
+        
+        logger.info("✅ Vector store initialized and cached")
+        return _vector_store_cache
+        
     except Exception as e:
         msg = f"Failed to create vector store: {e!s}"
+        logger.error(msg)
         raise RuntimeError(msg)
 
 

@@ -109,133 +109,121 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         # Get prompt resource first - we'll need it for the ReAct agent
         prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
 
-        # Get tools from Agent Catalog - primary method: find by name, fallback: find through prompt
+        # Get tools from Agent Catalog with simplified discovery
         tools = []
         tool_names = [
             "lookup_flight_info",
-            "save_flight_booking",
+            "save_flight_booking", 
             "retrieve_flight_bookings",
             "search_airline_reviews",
         ]
 
         for tool_name in tool_names:
-            catalog_tool = None
             try:
-                # Primary method: Find tool by name using agentc.find("tool")
+                # Find tool using Agent Catalog
                 catalog_tool = self.catalog.find("tool", name=tool_name)
                 if catalog_tool:
-                    logger.info(f"✅ Found tool by name: {tool_name}")
+                    logger.info(f"✅ Found tool: {tool_name}")
                 else:
-                    logger.warning(
-                        f"⚠️  Tool not found by name: {tool_name}, trying prompt fallback"
-                    )
+                    logger.error(f"❌ Tool not found: {tool_name}")
+                    continue
 
             except Exception as e:
-                logger.warning(f"❌ Failed to find tool by name {tool_name}: {e}")
-
-            # If tool not found by name, try fallback through prompt
-            if not catalog_tool:
-                try:
-                    logger.info(f"🔄 Trying prompt fallback for tool: {tool_name}")
-                    # Use the prompt resource we already found and extract tools from it
-                    if prompt_resource:
-                        prompt_tools = getattr(prompt_resource, "tools", [])
-                        for prompt_tool in prompt_tools:
-                            # Check if this is the tool we're looking for
-                            tool_meta_name = (
-                                getattr(prompt_tool.meta, "name", "")
-                                if hasattr(prompt_tool, "meta")
-                                else ""
-                            )
-                            if tool_meta_name == tool_name:
-                                catalog_tool = prompt_tool
-                                logger.info(f"✅ Found tool through prompt: {tool_name}")
-                                break
-
-                    if not catalog_tool:
-                        logger.error(f"❌ Tool {tool_name} not found by name or through prompt")
-                        continue
-
-                except Exception as e:
-                    logger.error(f"❌ Prompt fallback failed for tool {tool_name}: {e}")
-                    continue
+                logger.error(f"❌ Failed to find tool {tool_name}: {e}")
+                continue
 
             # Create wrapper function to handle proper parameter parsing
             def create_tool_wrapper(original_tool, name):
-                """Create a wrapper for Agent Catalog tools with improved input handling."""
+                """Create a wrapper for Agent Catalog tools with robust input handling."""
 
                 def wrapper_func(tool_input: str) -> str:
                     """Wrapper function that handles input parsing and error handling."""
                     try:
-                        logger.info(f"🔧 Tool {name} called with input: {repr(tool_input)}")
+                        logger.info(f"🔧 Tool {name} called with raw input: {repr(tool_input)}")
 
-                        # Sanitize input - remove quotes, newlines, and extra whitespace
+                        # Robust input sanitization to handle ReAct format artifacts
                         if isinstance(tool_input, str):
-                            tool_input = tool_input.strip().strip("\"'").strip()
-                            # Remove any trailing/leading newlines and quotes that might come from LLM
-                            tool_input = tool_input.replace("\n", " ").replace("\r", " ")
-                            # Clean up multiple spaces
-                            tool_input = " ".join(tool_input.split())
+                            # Remove ReAct format artifacts that get mixed into input
+                            clean_input = tool_input.strip()
+                            
+                            # Remove common ReAct artifacts
+                            artifacts_to_remove = [
+                                '\nObservation', 'Observation', '\nThought:', 'Thought:', 
+                                '\nAction:', 'Action:', '\nAction Input:', 'Action Input:',
+                                '\nFinal Answer:', 'Final Answer:'
+                            ]
+                            
+                            for artifact in artifacts_to_remove:
+                                if artifact in clean_input:
+                                    clean_input = clean_input.split(artifact)[0]
+                            
+                            # Clean up quotes and whitespace
+                            clean_input = clean_input.strip().strip("\"'").strip()
+                            # Normalize whitespace
+                            clean_input = " ".join(clean_input.split())
+                            
+                            tool_input = clean_input
 
-                        # Simplified input handling - let tools handle their own validation
+                        logger.info(f"🧹 Tool {name} cleaned input: {repr(tool_input)}")
+
+                        # Call appropriate tool with proper parameter handling
                         if name == "lookup_flight_info":
-                            # Handle various input formats and normalize to SOURCE,DESTINATION
-                            clean_input = (
-                                tool_input.replace(" to ", ",")
-                                .replace("from ", "")
-                                .replace(" ", "")
-                            )
-                            parts = clean_input.split(",")
-                            if len(parts) >= 2:
-                                source_airport = parts[0].strip().upper()
-                                destination_airport = parts[1].strip().upper()
-                                result = original_tool.func(
-                                    source_airport=source_airport,
-                                    destination_airport=destination_airport,
-                                )
+                            # Parse airport codes from input
+                            if ',' in tool_input:
+                                parts = tool_input.split(',')
+                                source = parts[0].strip().upper()
+                                dest = parts[1].strip().upper()
                             else:
-                                result = original_tool.func(
-                                    source_airport=tool_input.split()[0]
-                                    if tool_input.split()
-                                    else "",
-                                    destination_airport=tool_input.split()[-1]
-                                    if tool_input.split()
-                                    else "",
-                                )
+                                # Try to extract from natural language
+                                words = tool_input.upper().split()
+                                airport_codes = [w for w in words if len(w) == 3 and w.isalpha()]
+                                if len(airport_codes) >= 2:
+                                    source, dest = airport_codes[0], airport_codes[1]
+                                else:
+                                    return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
+                            
+                            result = original_tool.func(source_airport=source, destination_airport=dest)
 
                         elif name == "save_flight_booking":
-                            # Pass input directly to tool - let tool handle parsing
                             result = original_tool.func(booking_input=tool_input)
 
                         elif name == "retrieve_flight_bookings":
-                            # Handle empty string properly
-                            if tool_input.lower() in ["(empty string)", "empty", "", "none", "all"]:
+                            # Handle empty input for "all bookings"
+                            if not tool_input or tool_input.lower() in ["", "all", "none"]:
                                 result = original_tool.func(booking_query="")
                             else:
                                 result = original_tool.func(booking_query=tool_input)
 
                         elif name == "search_airline_reviews":
-                            # Pass input directly
+                            if not tool_input:
+                                return "Error: Please provide a search query for airline reviews"
                             result = original_tool.func(query=tool_input)
 
                         else:
-                            # Generic fallback
+                            # Generic fallback - pass as first positional argument
                             result = original_tool.func(tool_input)
 
                         logger.info(f"✅ Tool {name} executed successfully")
-                        return str(result)
+                        return str(result) if result is not None else "No results found"
 
                     except Exception as e:
-                        error_msg = f"Error calling {name}: {e!s}"
-                        logger.error(error_msg)
+                        error_msg = f"Error in tool {name}: {str(e)}"
+                        logger.error(f"❌ {error_msg}")
                         return error_msg
 
                 return wrapper_func
 
-            # Create LangChain tool with wrapper
+            # Create LangChain tool with descriptive information
+            tool_descriptions = {
+                "lookup_flight_info": "Find available flights between airports. Input: 'JFK,LAX' or 'JFK to LAX'. Returns flight options with airlines and aircraft.",
+                "save_flight_booking": "Create a flight booking. Input: 'JFK,LAX,2025-12-25' or natural language. Handles passenger count and class automatically.",
+                "retrieve_flight_bookings": "View existing bookings. Input: empty string for all bookings, or 'JFK,LAX,2025-12-25' for specific booking.",
+                "search_airline_reviews": "Search airline customer reviews. Input: 'SpiceJet service' or 'food quality'. Returns passenger reviews and ratings."
+            }
+            
             langchain_tool = Tool(
                 name=tool_name,
-                description=f"Tool for {tool_name.replace('_', ' ')}",
+                description=tool_descriptions.get(tool_name, f"Tool for {tool_name.replace('_', ' ')}"),
                 func=create_tool_wrapper(catalog_tool, tool_name),
             )
             tools.append(langchain_tool)
