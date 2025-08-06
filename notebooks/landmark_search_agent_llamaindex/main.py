@@ -172,7 +172,7 @@ def create_llamaindex_agent(catalog, span):
             llm=Settings.llm,
             verbose=True,  # Keep on for debugging
             system_prompt=system_prompt,
-            max_iterations=3,  # Allow one tool call and a final answer step
+            max_iterations=4,  # Allow one tool call and finalization without warnings
         )
 
         logger.info("LlamaIndex ReAct agent created successfully")

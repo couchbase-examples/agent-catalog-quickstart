@@ -210,6 +210,7 @@ def search_landmarks(query: str, limit: int = 5) -> str:
         results = []
         seen = set()  # for deduplication by name+city
         MAX_DESC_LEN = 800  # soft cap for description length
+        sources_payload = []
         for i, node in enumerate(nodes, 1):
             metadata = node.metadata or {}
             content = node.text or ""
@@ -277,7 +278,25 @@ def search_landmarks(query: str, limit: int = 5) -> str:
 
             results.append("\n".join(result_lines))
 
-        return f"Found {len(results)} landmarks matching '{raw_query}':\n\n" + "\n\n".join(results)
+            # Append structured source for evaluator/observability
+            doc_id = metadata.get("landmark_id") or metadata.get("doc_id") or getattr(node, "id_", None)
+            sources_payload.append({
+                "name": name,
+                "city": city,
+                "country": country,
+                "state": state,
+                "activity": activity,
+                "address": address,
+                "url": url,
+                "hours": hours,
+                "price": price,
+                "doc_id": doc_id,
+            })
+
+        display_text = f"Found {len(results)} landmarks matching '{raw_query}':\n\n" + "\n\n".join(results)
+
+        # Always return pretty-printed text for agent Observation/Final Answer
+        return display_text
 
     except Exception as e:
         logger.error(f"Error searching landmarks: {e}")
