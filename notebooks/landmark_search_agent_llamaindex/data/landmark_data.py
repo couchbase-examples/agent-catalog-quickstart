@@ -210,7 +210,7 @@ def load_landmark_data_to_couchbase(
         # Use IngestionPipeline to process documents with embeddings
         logger.info(f"Processing documents with ingestion pipeline...")
         pipeline = IngestionPipeline(
-            transformations=[SentenceSplitter(), embeddings],
+            transformations=[SentenceSplitter(chunk_size=800, chunk_overlap=100), embeddings],
             vector_store=vector_store,
         )
 

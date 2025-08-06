@@ -22,6 +22,7 @@ dependencies = [
     # Core dependencies
     "pydantic>=2.0.0,<3.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
+    "nest-asyncio>=1.6.0,<2.0.0",
     
     # Data processing and utilities
     "datasets>=2.0.0,<3.0.0",
@@ -31,7 +32,7 @@ dependencies = [
     "pandas>=2.0.0,<3.0.0",
     
     # Agent Catalog dependencies
-    "agentc-core @ ../../agent-catalog/libs/agentc_core",
+    "agentc @ ../../agent-catalog/libs/agentc",
     "agentc-llamaindex @ ../../agent-catalog/libs/agentc_integrations/llamaindex",
     
     # Arize and evaluation dependencies
@@ -42,8 +43,6 @@ dependencies = [
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",
     "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
     "openinference-instrumentation-llama-index>=4.0.0,<5.0.0",
-    "pysocks (>=1.7.1,<2.0.0)",
-    "click-extra (>=5.0.2,<6.0.0)",
 ]
 
 [project.optional-dependencies]

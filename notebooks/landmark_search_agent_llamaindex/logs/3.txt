@@ -1,0 +1,784 @@
+2025-08-06 03:32:18,908 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-08-06 03:32:18,918 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_770a70c8-0e17-4470-a054-68411b3e6534 initialized
+2025-08-06 03:32:21,558 - __main__ - INFO - ✅ Phoenix evaluators initialized
+2025-08-06 03:32:21,558 - __main__ - INFO - 🔧 Setting up Phoenix observability...
+2025-08-06 03:32:21,558 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-08-06 03:32:21,607 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
+2025-08-06 03:32:21,607 - alembic.runtime.migration - INFO - Will assume transactional DDL.
+2025-08-06 03:32:21,642 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
+2025-08-06 03:32:22,203 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+2025-08-06 03:32:22,212 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+2025-08-06 03:32:22,214 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+2025-08-06 03:32:22,219 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+2025-08-06 03:32:22,227 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+2025-08-06 03:32:22,233 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+  next(self.gen)
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+  next(self.gen)
+2025-08-06 03:32:22,401 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+2025-08-06 03:32:22,408 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+2025-08-06 03:32:22,418 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+2025-08-06 03:32:22,426 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+2025-08-06 03:32:22,458 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+2025-08-06 03:32:22,742 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
+🔭 OpenTelemetry Tracing Details 🔭
+|  Phoenix Project: landmark-search-agent-evaluation
+|  Span Processor: SimpleSpanProcessor
+|  Collector Endpoint: http://localhost:6006/v1/traces
+|  Transport: HTTP + protobuf
+|  Transport Headers: {}
+|  
+|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.
+|  
+|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.
+|  
+|  `register` has set this TracerProvider as the global OpenTelemetry default.
+|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
+
+2025-08-06 03:32:23,541 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-08-06 03:32:23,541 - __main__ - INFO - ✅ Phoenix instrumentation enabled for LlamaIndex
+2025-08-06 03:32:23,542 - __main__ - INFO - 🔧 Setting up landmark search agent...
+2025-08-06 03:32:23,882 - main - INFO - Setting up environment variables...
+2025-08-06 03:32:23,882 - main - INFO - Using Capella AI endpoint for embeddings: https://fohewfvgttrg6872.ai.sandbox.nonprod-project-avengers.com
+2025-08-06 03:32:23,882 - main - INFO - Using NVIDIA NIMs for LLM with API key: nvapi-pLiP...
+2025-08-06 03:32:23,882 - main - INFO - ✅ Configuration loaded:
+2025-08-06 03:32:23,882 - main - INFO -    Bucket: travel-sample
+2025-08-06 03:32:23,882 - main - INFO -    Scope: agentc_data
+2025-08-06 03:32:23,883 - main - INFO -    Collection: landmark_data
+2025-08-06 03:32:23,883 - main - INFO -    Index: landmark_data_index
+2025-08-06 03:32:23,883 - main - INFO - ✅ Configuration loaded:
+2025-08-06 03:32:23,883 - main - INFO -    Bucket: travel-sample
+2025-08-06 03:32:23,883 - main - INFO -    Scope: agentc_data
+2025-08-06 03:32:23,883 - main - INFO -    Collection: landmark_data
+2025-08-06 03:32:23,883 - main - INFO -    Index: landmark_data_index
+2025-08-06 03:32:23,949 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.
+2025-08-06 03:32:23,949 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.
+2025-08-06 03:32:23,989 - agentc_core.activity.span - INFO - Using both a local auditor and a remote auditor.
+2025-08-06 03:32:26,000 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-08-06 03:32:26,000 - shared.agent_setup - INFO - 🔧 Setting up AI services for llamaindex framework...
+2025-08-06 03:32:26,014 - shared.capella_model_services_llamaindex - INFO - ✅ Using direct Capella embeddings API key
+2025-08-06 03:32:26,014 - shared.capella_model_services_llamaindex - INFO - ✅ Using Capella direct API for model: nvidia/nv-embedqa-e5-v5
+2025-08-06 03:32:26,014 - shared.agent_setup - INFO - ✅ Using new Capella AI embeddings (direct API key)
+2025-08-06 03:32:26,014 - shared.capella_model_services_llamaindex - INFO - ✅ Using direct Capella LLM API key
+2025-08-06 03:32:26,014 - shared.capella_model_services_llamaindex - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+2025-08-06 03:32:27,358 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (direct API key)
+2025-08-06 03:32:27,358 - shared.agent_setup - INFO - ✅ AI services setup completed for llamaindex
+2025-08-06 03:32:28,589 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-08-06 03:32:30,607 - shared.couchbase_client - INFO - ℹ️ Collection 'landmark_data' exists, keeping existing data
+2025-08-06 03:32:34,806 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-08-06 03:32:34,806 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.landmark_data
+2025-08-06 03:32:34,806 - shared.couchbase_client - INFO - ✅ Loaded vector search index definition from agentcatalog_index.json
+2025-08-06 03:32:35,869 - shared.couchbase_client - INFO - ℹ️ Vector search index 'landmark_data_index' already exists
+2025-08-06 03:32:39,414 - shared.couchbase_client - INFO - ✅ LlamaIndex vector store setup complete: travel-sample.agentc_data.landmark_data
+2025-08-06 03:32:40,643 - data.landmark_data - INFO - Found 25 existing documents in collection, skipping data load
+2025-08-06 03:32:40,664 - main - INFO - Loaded search_landmarks tool from AgentC
+2025-08-06 03:32:40,664 - main - INFO - Loaded 1 tools from Agent Catalog
+2025-08-06 03:32:40,682 - main - INFO - Loaded system prompt from Agent Catalog
+/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/base.py:154: DeprecationWarning: Call to deprecated class ReActAgent. (ReActAgent has been rewritten and replaced by llama_index.core.agent.workflow.ReActAgent.
+
+This implementation will be removed in a v0.13.0 and the new implementation will be promoted to the `from llama_index.core.agent import ReActAgent` path.
+
+See the docs for more information: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return cls(
+/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/deprecated/classic.py:184: DeprecationWarning: Call to deprecated class AgentRunner. (AgentRunner has been deprecated and is not maintained.
+
+This implementation will be removed in a v0.13.0.
+
+See the docs for more information on updated agent usage: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return old_new1(cls, *args, **kwargs)
+2025-08-06 03:32:40,798 - main - INFO - LlamaIndex ReAct agent created successfully
+2025-08-06 03:32:40,802 - __main__ - INFO - ✅ Landmark search agent setup completed successfully
+2025-08-06 03:32:40,802 - __main__ - INFO - 🚀 Starting LlamaIndex landmark search evaluation with 5 queries
+2025-08-06 03:32:40,802 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-08-06 03:32:40,802 - __main__ - INFO -    🤖 Agent: Landmark Search Agent (LlamaIndex)
+2025-08-06 03:32:40,802 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-08-06 03:32:40,802 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-08-06 03:32:40,802 - __main__ - INFO - 
+📋 Query 1/5
+2025-08-06 03:32:40,802 - __main__ - INFO - 🔍 Evaluating query: Find museums and galleries in Glasgow
+> Running step 563cf215-6069-4417-a40a-396c0233d1a2. Step input: Find museums and galleries in Glasgow
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'museums and galleries in Glasgow', 'limit': 5}
+Observation: Found 5 landmarks matching 'museums and galleries in Glasgow':
+
+1. **North Uist**
+   📍 Location: Na h-Eileanan an Iar, United Kingdom
+   🎯 Activity: Do
+   📝 Description: North Uist ('Visit the Hut of the Shadows and other End of the Road sculptures) in Na h-Eileanan an Iar, United Kingdom. Description: Completed around Easter 1997 with the help of local people by English-based artist Chris Drury on behalf of the Taigh Chearsabhagh. This is well worth a visit and you may be able to spot otters in the vicinity if you are patient.. Directions: In Lochmaddy, Leave your vehicle in the parking space just before the road turns left to the Uist Outdoor Centre. Take the track next to the house on the right which leads towards the sea on the right. Continue following the track past the high fences. It leads you to the small suspension bridge, and over the bridge, take the track down to the right towards the sea and you will reach the stone-built chamber.. Activity type: do. Type: landmark. Coordinates: 57.6104, -7.1532 (accuracy: APPROXIMATE). ID: 20736
+
+2. **Lochmaddy**
+   📍 Location: Na h-Eileanan an Iar, United Kingdom
+   🎯 Activity: Do
+   📝 Description: Lochmaddy ('Visit the Hut of the Shadows and other End of the Road sculptures) in Na h-Eileanan an Iar, United Kingdom. Description: Completed around Easter 1997 with the help of local people by English-based artist Chris Drury on behalf of the Taigh Chearsabhagh. This is well worth a visit and you may be able to spot otters in the vicinity if you are patient.. Directions: In Lochmaddy, Leave your vehicle in the parking space just before the road turns left to the Uist Outdoor Centre. Take the track next to the house on the right which leads towards the sea on the right. Continue following the track past the high fences. It leads you to the small suspension bridge, and over the bridge, take the track down to the right towards the sea and you will reach the stone-built chamber.. Activity type: do. Type: landmark. Coordinates: 57.6104, -7.1532 (accuracy: RANGE_INTERPOLATED). ID: 15970
+
+3. **Bunessan**
+   📍 Location: Argyll and Bute, United Kingdom
+   🎯 Activity: Eat
+   📝 Description: Bunessan ('The Argyll Arms Hotel) in Argyll and Bute, United Kingdom. Description: serves fresh food at very reasonable prices - view of stoney beach with herons. Activity type: eat. Type: landmark. Coordinates: 56.31552, -6.23594 (accuracy: APPROXIMATE). ID: 4428
+
+4. **Walk the London Wall**
+   📍 Location: London, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+   🌐 Website: http://www.30stmaryaxe.com/.
+   📝 Description: Walk the London Wall (30 St. Mary Axe) in London, United Kingdom. Description: Designed by one of Britain's leading architects, Sir Norman Foster, and recipient in 2004 of the Stirling Architectural Prize for Best Building.. Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+
+5. **San Francisco/The Avenues**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Buy
+   🏠 Address: 425 Clement Street. Directions: at 6th Ave. Phone: +1 415 668-7190. Website: http://www.6thaveaquarium.net. Hours: M-F 11AM-10PM, Sa-Su 10AM-10PM. Activity type: buy. Type: landmark. State: California. Coordinates: 37.7828, -122.4639 (accuracy: RANGE_INTERPOLATED). ID: 26077
+   📞 Phone: +1 415 668-7190
+   🌐 Website: http://www.6thaveaquarium.net.
+   🕒 Hours: M-F 11AM-10PM, Sa-Su 10AM-10PM. Activity type: buy. Type: landmark. State: California. Coordinates: 37.7828, -122.4639 (accuracy: RANGE_INTERPOLATED). ID: 26077
+   📝 Description: San Francisco/The Avenues (6th Avenue Aquarium) in San Francisco, United States. Description: Small store selling aquarium supplies and fishes, but its small scale beats many public exhibits for fun and colorful fish.. Address: 425 Clement Street. Directions: at 6th Ave. Phone: +1 415 668-7190. Website: http://www.6thaveaquarium.net. Hours: M-F 11AM-10PM, Sa-Su 10AM-10PM. Activity type: buy. Type: landmark. State: California. Coordinates: 37.7828, -122.4639 (accuracy: RANGE_INTERPOLATED). ID: 26077
+2025-08-06 03:32:50,815 - __main__ - ERROR - ❌ Query failed: Reached max iterations.
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 250, in run_single_evaluation
+    result = self.agent.chat(query, chat_history=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 708, in chat
+    chat_response = self._chat(
+                    ^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 640, in _chat
+    cur_step_output = self._run_step(
+                      ^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 436, in _run_step
+    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 828, in run_step
+    return self._run_step(step, task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 586, in _run_step
+    agent_response = self._get_response(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 439, in _get_response
+    raise ValueError("Reached max iterations.")
+ValueError: Reached max iterations.
+2025-08-06 03:32:50,816 - __main__ - INFO - 
+📋 Query 2/5
+2025-08-06 03:32:50,816 - __main__ - INFO - 🔍 Evaluating query: Show me restaurants serving Asian cuisine
+> Running step 03f79574-d688-4c35-818e-d391bda8062b. Step input: Show me restaurants serving Asian cuisine
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Asian cuisine restaurants', 'limit': 5}
+Observation: Found 5 landmarks matching 'Asian cuisine restaurants':
+
+1. **San Francisco/The Avenues**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 3931 Geary Blvd. Directions: at 4th. Phone: +1 415 831-1067. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7809, -122.4619 (accuracy: APPROXIMATE). ID: 26121
+   📞 Phone: +1 415 831-1067
+   📝 Description: San Francisco/The Avenues (4th and Geary Farmer's Market) in San Francisco, United States. Description: Inexpensive fresh fruits and vegetables, and a decent selection of your basic grocery needs which might not be covered as well by the local Asian groceries. Only takes cash and check.. Address: 3931 Geary Blvd. Directions: at 4th. Phone: +1 415 831-1067. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7809, -122.4619 (accuracy: APPROXIMATE). ID: 26121
+
+2. **Paris/7th arrondissement**
+   📍 Location: Paris, France
+   🎯 Activity: Eat
+   🏠 Address: Tour Eiffel 1st floor. Directions: Metro Ecole Militaire. Phone: +33 1 76 64 14 64. Website: http://www.restaurants-toureiffel.com/. Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+   📞 Phone: +33 1 76 64 14 64
+   🌐 Website: http://www.restaurants-toureiffel.com/.
+   🕒 Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+   📝 Description: Paris/7th arrondissement (58 Tour Eiffel) in Paris, France. Description: The restaurant in the first floor of the Eiffel Tower. One pays of course for the view, not so much for the food.. Address: Tour Eiffel 1st floor. Directions: Metro Ecole Militaire. Phone: +33 1 76 64 14 64. Website: http://www.restaurants-toureiffel.com/. Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+
+3. **Hollywood**
+   📍 Location: Los Angeles, United States
+   🎯 Activity: Eat
+   🏠 Address: 6145 Franklin Ave. Directions: at Vista Del Mar Ave. Phone: +1 323 467-1175. Website: https://www.facebook.com/101coffeeshop. Hours: 7AM-3AM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.105411, -118.323841 (accuracy: APPROXIMATE). ID: 11769
+   📞 Phone: +1 323 467-1175
+   🌐 Website: https://www.facebook.com/101coffeeshop.
+   🕒 Hours: 7AM-3AM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.105411, -118.323841 (accuracy: APPROXIMATE). ID: 11769
+   📝 Description: Hollywood (101 Coffee Shop) in Los Angeles, United States. Description: Previously known as the Hollywood Hills Coffee Shop, this place has been popular for years, and the new owners have only improved it. Great selection of sandwiches, burgers, sweet potato French fries, coffee and tea. It's not unheard of to spot celebs here.. Address: 6145 Franklin Ave. Directions: at Vista Del Mar Ave. Phone: +1 323 467-1175. Website: https://www.facebook.com/101coffeeshop. Hours: 7AM-3AM daily. Activity type: eat. Type: landmark. State: California. Coordinates: 34.105411, -118.323841 (accuracy: APPROXIMATE). ID: 11769
+
+4. **Bunessan**
+   📍 Location: Argyll and Bute, United Kingdom
+   🎯 Activity: Eat
+   📝 Description: Bunessan ('The Argyll Arms Hotel) in Argyll and Bute, United Kingdom. Description: serves fresh food at very reasonable prices - view of stoney beach with herons. Activity type: eat. Type: landmark. Coordinates: 56.31552, -6.23594 (accuracy: APPROXIMATE). ID: 4428
+
+5. **San Francisco/SoMa**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 563 2nd St. Directions: between Bryant and Brannan. Phone: +1 415 369-0900. Website: http://www.21st-amendment.com. Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+   📞 Phone: +1 415 369-0900
+   🌐 Website: http://www.21st-amendment.com.
+   🕒 Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+   📝 Description: San Francisco/SoMa (21st Amendment) in San Francisco, United States. Description: Good &quot;California-style microbrew&quot; beers. Classic brew pub-grub - burgers, fish, some salads. The Jerk Chicken is excellent. Full menu and images are online. Great place to have drinks before or after a Giants game.. Address: 563 2nd St. Directions: between Bryant and Brannan. Phone: +1 415 369-0900. Website: http://www.21st-amendment.com. Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+2025-08-06 03:33:00,123 - __main__ - ERROR - ❌ Query failed: Reached max iterations.
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 250, in run_single_evaluation
+    result = self.agent.chat(query, chat_history=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 708, in chat
+    chat_response = self._chat(
+                    ^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 640, in _chat
+    cur_step_output = self._run_step(
+                      ^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 436, in _run_step
+    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 828, in run_step
+    return self._run_step(step, task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 586, in _run_step
+    agent_response = self._get_response(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 439, in _get_response
+    raise ValueError("Reached max iterations.")
+ValueError: Reached max iterations.
+2025-08-06 03:33:00,124 - __main__ - INFO - 
+📋 Query 3/5
+2025-08-06 03:33:00,124 - __main__ - INFO - 🔍 Evaluating query: What attractions can I see in Glasgow?
+> Running step fd743e42-910a-4dd5-bfb7-f2eba4dea67a. Step input: What attractions can I see in Glasgow?
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Glasgow attractions', 'limit': 5}
+Observation: Found 5 landmarks matching 'Glasgow attractions':
+
+1. **Bunessan**
+   📍 Location: Argyll and Bute, United Kingdom
+   🎯 Activity: Eat
+   📝 Description: Bunessan ('The Argyll Arms Hotel) in Argyll and Bute, United Kingdom. Description: serves fresh food at very reasonable prices - view of stoney beach with herons. Activity type: eat. Type: landmark. Coordinates: 56.31552, -6.23594 (accuracy: APPROXIMATE). ID: 4428
+
+2. **Lochmaddy**
+   📍 Location: Na h-Eileanan an Iar, United Kingdom
+   🎯 Activity: Do
+   📝 Description: Lochmaddy ('Visit the Hut of the Shadows and other End of the Road sculptures) in Na h-Eileanan an Iar, United Kingdom. Description: Completed around Easter 1997 with the help of local people by English-based artist Chris Drury on behalf of the Taigh Chearsabhagh. This is well worth a visit and you may be able to spot otters in the vicinity if you are patient.. Directions: In Lochmaddy, Leave your vehicle in the parking space just before the road turns left to the Uist Outdoor Centre. Take the track next to the house on the right which leads towards the sea on the right. Continue following the track past the high fences. It leads you to the small suspension bridge, and over the bridge, take the track down to the right towards the sea and you will reach the stone-built chamber.. Activity type: do. Type: landmark. Coordinates: 57.6104, -7.1532 (accuracy: RANGE_INTERPOLATED). ID: 15970
+
+3. **North Uist**
+   📍 Location: Na h-Eileanan an Iar, United Kingdom
+   🎯 Activity: Do
+   📝 Description: North Uist ('Visit the Hut of the Shadows and other End of the Road sculptures) in Na h-Eileanan an Iar, United Kingdom. Description: Completed around Easter 1997 with the help of local people by English-based artist Chris Drury on behalf of the Taigh Chearsabhagh. This is well worth a visit and you may be able to spot otters in the vicinity if you are patient.. Directions: In Lochmaddy, Leave your vehicle in the parking space just before the road turns left to the Uist Outdoor Centre. Take the track next to the house on the right which leads towards the sea on the right. Continue following the track past the high fences. It leads you to the small suspension bridge, and over the bridge, take the track down to the right towards the sea and you will reach the stone-built chamber.. Activity type: do. Type: landmark. Coordinates: 57.6104, -7.1532 (accuracy: APPROXIMATE). ID: 20736
+
+4. **Walk the London Wall**
+   📍 Location: London, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+   🌐 Website: http://www.30stmaryaxe.com/.
+   📝 Description: Walk the London Wall (30 St. Mary Axe) in London, United Kingdom. Description: Designed by one of Britain's leading architects, Sir Norman Foster, and recipient in 2004 of the Stirling Architectural Prize for Best Building.. Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+
+5. **San Francisco/Chinatown-North Beach**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Drink
+   🏠 Address: 15 Romolo Pl. Directions: at Broadway St, half block in from Columbus Ave intersection. Phone: +1 415 398-1359. Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+   📞 Phone: +1 415 398-1359
+   🕒 Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+   📝 Description: San Francisco/Chinatown-North Beach (15 Romolo) in San Francisco, United States. Description: The hidden bar has a lovely dark red decor. Formerly the &quot;Basque Hotel&quot; this historic hotel and bar becomes quite crowded on one of the busiest blocks during a Friday and Saturday night in North Beach. It's also positioned on a steep street, with a side entrance that seems furtive and secret.. Address: 15 Romolo Pl. Directions: at Broadway St, half block in from Columbus Ave intersection. Phone: +1 415 398-1359. Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+2025-08-06 03:33:09,590 - __main__ - ERROR - ❌ Query failed: Reached max iterations.
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 250, in run_single_evaluation
+    result = self.agent.chat(query, chat_history=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 708, in chat
+    chat_response = self._chat(
+                    ^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 640, in _chat
+    cur_step_output = self._run_step(
+                      ^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 436, in _run_step
+    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 828, in run_step
+    return self._run_step(step, task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 586, in _run_step
+    agent_response = self._get_response(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 439, in _get_response
+    raise ValueError("Reached max iterations.")
+ValueError: Reached max iterations.
+2025-08-06 03:33:09,590 - __main__ - INFO - 
+📋 Query 4/5
+2025-08-06 03:33:09,590 - __main__ - INFO - 🔍 Evaluating query: Tell me about Monet's House
+> Running step c65fe4a9-0063-4333-a938-a283eff2b163. Step input: Tell me about Monet's House
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': "Monet's House", 'limit': 5}
+Observation: Found 5 landmarks matching 'Monet's House':
+
+1. **San Francisco/Southeast**
+   📍 Location: Brisbane, United States
+   🎯 Activity: Eat
+   🏠 Address: 2800 Bayshore Blvd. Directions: at Geneva. Phone: +1 415 467-2343. Website: http://www.historic7milehouse.com. Hours: M-Th 11:30AM-10PM, F-Sa 11:30AM-2AM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7044, -122.4074 (accuracy: APPROXIMATE). ID: 26049
+   📞 Phone: +1 415 467-2343
+   🌐 Website: http://www.historic7milehouse.com.
+   🕒 Hours: M-Th 11:30AM-10PM, F-Sa 11:30AM-2AM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7044, -122.4074 (accuracy: APPROXIMATE). ID: 26049
+   📝 Description: San Francisco/Southeast (7-Mile House) in Brisbane, United States. Description: The 7-Mile House is a historic landmark and a great place to get some food. During the days of the gold rush, the 7-mile house served as a resting post for horse coaches travelling from San Francisco (Embarcadero) to San Jose. This was a place to rest your horses, get some beer and share stories of finding gold. Today, the place boasts an authentic gold rush decor, great beer and burgers and live music most days of the week.. Address: 2800 Bayshore Blvd. Directions: at Geneva. Phone: +1 415 467-2343. Website: http://www.historic7milehouse.com. Hours: M-Th 11:30AM-10PM, F-Sa 11:30AM-2AM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7044, -122.4074 (accuracy: APPROXIMATE). ID: 26049
+
+2. **London/Hampstead**
+   📍 Location: London, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 2 Willow Rd, NW3 1TH. Directions: tube: Hampstead. Phone: +44 20 7435-6166. Email: 2willowroad@nationaltrust.org.uk. Website: http://www.nationaltrust.org.uk/2-willow-road/. Hours: Th F noon-17:00. Price: £2.80-5.30. Activity type: see. Type: landmark. Coordinates: 51.557499, -0.16861 (accuracy: ROOFTOP). ID: 16181
+   📞 Phone: +44 20 7435-6166
+   🌐 Website: http://www.nationaltrust.org.uk/2-willow-road/.
+   🕒 Hours: Th F noon-17:00. Price: £2.80-5.30. Activity type: see. Type: landmark. Coordinates: 51.557499, -0.16861 (accuracy: ROOFTOP). ID: 16181
+   💰 Price: £2
+   📝 Description: London/Hampstead (2 Willow Road) in London, United Kingdom. Description: A house designed by Erno Goldfinger in 1939 and regarded as an icon of modernist architecture. The contents are just as impressive as the house and include original works by Henry Moore and Max Ernst. Local lore has it that Hampstead resident of the time Ian Fleming, objected so strongly to Goldfinger's modernist design, that he named his famous Bond villain after him.. Address: 2 Willow Rd, NW3 1TH. Directions: tube: Hampstead. Phone: +44 20 7435-6166. Email: 2willowroad@nationaltrust.org.uk. Website: http://www.nationaltrust.org.uk/2-willow-road/. Hours: Th F noon-17:00. Price: £2.80-5.30. Activity type: see. Type: landmark. Coordinates: 51.557499, -0.16861 (accuracy: ROOFTOP). ID: 16181
+
+3. **San Francisco/Chinatown-North Beach**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Drink
+   🏠 Address: 15 Romolo Pl. Directions: at Broadway St, half block in from Columbus Ave intersection. Phone: +1 415 398-1359. Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+   📞 Phone: +1 415 398-1359
+   🕒 Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+   📝 Description: San Francisco/Chinatown-North Beach (15 Romolo) in San Francisco, United States. Description: The hidden bar has a lovely dark red decor. Formerly the &quot;Basque Hotel&quot; this historic hotel and bar becomes quite crowded on one of the busiest blocks during a Friday and Saturday night in North Beach. It's also positioned on a steep street, with a side entrance that seems furtive and secret.. Address: 15 Romolo Pl. Directions: at Broadway St, half block in from Columbus Ave intersection. Phone: +1 415 398-1359. Hours: 5:30PM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7981, -122.4064 (accuracy: RANGE_INTERPOLATED). ID: 25476
+
+4. **San Francisco/Haight**
+   📍 Location: San Francisco, United States
+   🎯 Activity: See
+   🏠 Address: 1550 Page St. Activity type: see. Type: landmark. State: California. Coordinates: 37.7711, -122.447 (accuracy: APPROXIMATE). ID: 25816
+   📝 Description: San Francisco/Haight (&quot;Hippie Temptation&quot; house) in San Francisco, United States. Description: Site of the CBS documentary.. Address: 1550 Page St. Activity type: see. Type: landmark. State: California. Coordinates: 37.7711, -122.447 (accuracy: APPROXIMATE). ID: 25816
+
+5. **San Francisco/Civic Center-Tenderloin**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Drink
+   🏠 Address: 98 Turk St. Directions: at Taylor St. Phone: +1 415 771-9655. Hours: 10AM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7834, -122.4106 (accuracy: RANGE_INTERPOLATED). ID: 25563
+   📞 Phone: +1 415 771-9655
+   🕒 Hours: 10AM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7834, -122.4106 (accuracy: RANGE_INTERPOLATED). ID: 25563
+   📝 Description: San Francisco/Civic Center-Tenderloin (21 Club) in San Francisco, United States. Description: Old time dive bar that has been around since the time the neighborhood was full of sailors. They have a ''HUGE'' window that overlooks the Turk/Taylor intersection, and it probably delivers more entertainment than any TV you'll ever buy, showing all kinds of Tenderloin action going down; like prostitutes milling about, ambulances flying around, and Vietnam Vets just looking for a break. They serve cheap drinks and the patrons range from surly full time alcoholics, to friendlier neighborhood personalities... but hey, that's the 'Loin!. Address: 98 Turk St. Directions: at Taylor St. Phone: +1 415 771-9655. Hours: 10AM-2AM daily. Activity type: drink. Type: landmark. State: California. Coordinates: 37.7834, -122.4106 (accuracy: RANGE_INTERPOLATED). ID: 25563
+2025-08-06 03:33:19,094 - __main__ - ERROR - ❌ Query failed: Reached max iterations.
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 250, in run_single_evaluation
+    result = self.agent.chat(query, chat_history=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 708, in chat
+    chat_response = self._chat(
+                    ^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 640, in _chat
+    cur_step_output = self._run_step(
+                      ^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 436, in _run_step
+    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 828, in run_step
+    return self._run_step(step, task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 586, in _run_step
+    agent_response = self._get_response(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 439, in _get_response
+    raise ValueError("Reached max iterations.")
+ValueError: Reached max iterations.
+2025-08-06 03:33:19,094 - __main__ - INFO - 
+📋 Query 5/5
+2025-08-06 03:33:19,094 - __main__ - INFO - 🔍 Evaluating query: Find places to eat in Gillingham
+> Running step d5d324be-2126-4894-b57e-761001e481b9. Step input: Find places to eat in Gillingham
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'places to eat in Gillingham', 'limit': 5}
+Observation: Found 5 landmarks matching 'places to eat in Gillingham':
+
+1. **San Francisco/SoMa**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 563 2nd St. Directions: between Bryant and Brannan. Phone: +1 415 369-0900. Website: http://www.21st-amendment.com. Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+   📞 Phone: +1 415 369-0900
+   🌐 Website: http://www.21st-amendment.com.
+   🕒 Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+   📝 Description: San Francisco/SoMa (21st Amendment) in San Francisco, United States. Description: Good &quot;California-style microbrew&quot; beers. Classic brew pub-grub - burgers, fish, some salads. The Jerk Chicken is excellent. Full menu and images are online. Great place to have drinks before or after a Giants game.. Address: 563 2nd St. Directions: between Bryant and Brannan. Phone: +1 415 369-0900. Website: http://www.21st-amendment.com. Hours: M-Tu 11:30AM-9:30PM, W-Sa 11:30AM-10PM, Su 10AM-9:30PM. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7825, -122.3926 (accuracy: RANGE_INTERPOLATED). ID: 25997
+
+2. **Bunessan**
+   📍 Location: Argyll and Bute, United Kingdom
+   🎯 Activity: Eat
+   📝 Description: Bunessan ('The Argyll Arms Hotel) in Argyll and Bute, United Kingdom. Description: serves fresh food at very reasonable prices - view of stoney beach with herons. Activity type: eat. Type: landmark. Coordinates: 56.31552, -6.23594 (accuracy: APPROXIMATE). ID: 4428
+
+3. **San Francisco/The Avenues**
+   📍 Location: San Francisco, United States
+   🎯 Activity: Eat
+   🏠 Address: 3931 Geary Blvd. Directions: at 4th. Phone: +1 415 831-1067. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7809, -122.4619 (accuracy: APPROXIMATE). ID: 26121
+   📞 Phone: +1 415 831-1067
+   📝 Description: San Francisco/The Avenues (4th and Geary Farmer's Market) in San Francisco, United States. Description: Inexpensive fresh fruits and vegetables, and a decent selection of your basic grocery needs which might not be covered as well by the local Asian groceries. Only takes cash and check.. Address: 3931 Geary Blvd. Directions: at 4th. Phone: +1 415 831-1067. Activity type: eat. Type: landmark. State: California. Coordinates: 37.7809, -122.4619 (accuracy: APPROXIMATE). ID: 26121
+
+4. **Paris/7th arrondissement**
+   📍 Location: Paris, France
+   🎯 Activity: Eat
+   🏠 Address: Tour Eiffel 1st floor. Directions: Metro Ecole Militaire. Phone: +33 1 76 64 14 64. Website: http://www.restaurants-toureiffel.com/. Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+   📞 Phone: +33 1 76 64 14 64
+   🌐 Website: http://www.restaurants-toureiffel.com/.
+   🕒 Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+   📝 Description: Paris/7th arrondissement (58 Tour Eiffel) in Paris, France. Description: The restaurant in the first floor of the Eiffel Tower. One pays of course for the view, not so much for the food.. Address: Tour Eiffel 1st floor. Directions: Metro Ecole Militaire. Phone: +33 1 76 64 14 64. Website: http://www.restaurants-toureiffel.com/. Hours: 11:30–15:30, 18:30–23:00. Activity type: eat. Type: landmark. State: Île-de-France. Coordinates: 48.85804, 2.2945 (accuracy: ROOFTOP). ID: 21809
+
+5. **Walk the London Wall**
+   📍 Location: London, United Kingdom
+   🎯 Activity: See
+   🏠 Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+   🌐 Website: http://www.30stmaryaxe.com/.
+   📝 Description: Walk the London Wall (30 St. Mary Axe) in London, United Kingdom. Description: Designed by one of Britain's leading architects, Sir Norman Foster, and recipient in 2004 of the Stirling Architectural Prize for Best Building.. Address: 30 St. Mary Axe. Website: http://www.30stmaryaxe.com/. Activity type: see. Type: landmark. Alternative name: The Gherkin. Coordinates: 51.5143, -0.0804 (accuracy: APPROXIMATE). ID: 40437
+2025-08-06 03:33:29,713 - __main__ - ERROR - ❌ Query failed: Reached max iterations.
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 250, in run_single_evaluation
+    result = self.agent.chat(query, chat_history=[])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 708, in chat
+    chat_response = self._chat(
+                    ^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 640, in _chat
+    cur_step_output = self._run_step(
+                      ^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py", line 436, in _run_step
+    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py", line 317, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py", line 42, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 828, in run_step
+    return self._run_step(step, task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 586, in _run_step
+    agent_response = self._get_response(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py", line 439, in _get_response
+    raise ValueError("Reached max iterations.")
+ValueError: Reached max iterations.
+2025-08-06 03:33:29,724 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
+2025-08-06 03:33:29,724 - __main__ - INFO - 📋 Evaluation criteria:
+2025-08-06 03:33:29,724 - __main__ - INFO -    🔍 Relevance: Does the response address the landmark search query?
+2025-08-06 03:33:29,725 - __main__ - INFO -    🎯 QA Correctness: Is the landmark information accurate?
+2025-08-06 03:33:29,725 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
+2025-08-06 03:33:29,725 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
+2025-08-06 03:33:29,726 - __main__ - INFO - ✅ Using lenient evaluation templates
+2025-08-06 03:33:29,726 - __main__ - INFO -    📊 Running relevance evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.15it/s
+2025-08-06 03:33:34,099 - __main__ - INFO -    ✅ relevance evaluation completed
+2025-08-06 03:33:34,099 - __main__ - INFO -    📊 Running qa_correctness evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:02<00:00 |  1.71it/s
+2025-08-06 03:33:37,053 - __main__ - INFO -    ✅ qa_correctness evaluation completed
+2025-08-06 03:33:37,054 - __main__ - INFO -    📊 Running hallucination evaluation...
+llm_classify |                                                                                                                                                                                               | 0/5 (0.0%) | ⏳ 00:00<? | ?it/s2025-08-06 03:33:37,085 - asyncio - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-4992' coro=<AsyncClient.aclose() done, defined at /home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')>
+Traceback (most recent call last):
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpx/_client.py", line 1985, in aclose
+    await self._transport.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpx/_transports/default.py", line 406, in aclose
+    await self._pool.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 353, in aclose
+    await self._close_connections(closing_connections)
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 345, in _close_connections
+    await connection.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpcore/_async/connection.py", line 173, in aclose
+    await self._connection.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpcore/_async/http11.py", line 258, in aclose
+    await self._network_stream.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 53, in aclose
+    await self._stream.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/anyio/streams/tls.py", line 234, in aclose
+    await self.transport_stream.aclose()
+  File "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1314, in aclose
+    self._transport.close()
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 1211, in close
+    super().close()
+  File "/usr/lib/python3.12/asyncio/selector_events.py", line 875, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 795, in call_soon
+    self._check_closed()
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 541, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  1.37it/s
+2025-08-06 03:33:40,736 - __main__ - INFO -    ✅ hallucination evaluation completed
+2025-08-06 03:33:40,736 - __main__ - INFO -    📊 Running toxicity evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:13<00:00 |  2.70s/it
+2025-08-06 03:33:54,259 - __main__ - INFO -    ✅ toxicity evaluation completed
+2025-08-06 03:33:54,259 - __main__ - INFO - ✅ Phoenix evaluations completed
+2025-08-06 03:33:54,259 - __main__ - INFO - 
+📊 Evaluation Summary:
+2025-08-06 03:33:54,259 - __main__ - INFO -   Total queries: 5
+2025-08-06 03:33:54,259 - __main__ - INFO -   Successful executions: 0
+2025-08-06 03:33:54,259 - __main__ - INFO -   Failed executions: 5
+2025-08-06 03:33:54,259 - __main__ - INFO -   Average execution time: 9.78s
+2025-08-06 03:33:54,259 - __main__ - INFO -   Average sources per query: 0.0
+
+==================================================
+🏛️ LANDMARK SEARCH EVALUATION RESULTS
+==================================================
+
+🔍 Relevance: Does the response address the landmark query?
+----------------------------------------
+  ✅ Relevant: 5/5 (100.0%)
+
+🎯 QA Correctness: Is the landmark information accurate?
+----------------------------------------
+  ⚠️ Incorrect: 5/5 (100.0%)
+
+🚨 Hallucination: Does the response contain fabricated info?
+----------------------------------------
+  ✅ Factual: 5/5 (100.0%)
+
+☠️ Toxicity: Is the response harmful or inappropriate?
+----------------------------------------
+  ✅ Non-Toxic: 5/5 (100.0%)
+
+==================================================
+
+⚡ Performance: 0/5 queries successful
+📊 Average response time: 9.78s
+🔗 Average sources retrieved: 0.0
+==================================================
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
+2025-08-06 03:33:54,260 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+🔍 QUERY 1: Find museums and galleries in Glasgow
+2025-08-06 03:33:54,260 - __main__ - INFO - ------------------------------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 📄 RESPONSE: Error: Reached max iterations....
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The question asks for museums and galleries located in Glasgow. The reference text provides a list of several museums and galleries in Glasgow, including the Gallery of Modern Art, the Kelvingrove Art Gallery and Museum, the Hunterian Museum and Art Gallery, and the Riverside Museum. It also provides additional details about the collections and locations of these institutions. Therefore, the reference text contains information that directly answers the question.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The AI response did not provide any information about museums and galleries in Glasgow. Instead, it returned an error message indicating a failure in the process. Therefore, it did not meet the user's request for landmark information.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The response contains 'Error: Reached max iterations,' which is a system issue and not a hallucination. It does not provide any fabricated information about landmarks, nor does it contradict any fundamental facts about landmark search. Therefore, it should be marked as factual.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Find museums and galleries in Glasgow".
+
+1. **Hateful Statements**: The text does not contain any language that could be interpreted as hateful towards any individual or group. It is a neutral request for information.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any person or group. It is simply asking for locations of museums and galleries.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is straightforward and polite.
+
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a neutral and non-offensive request for information about museums and galleries in a specific location.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+🔍 QUERY 2: Show me restaurants serving Asian cuisine
+2025-08-06 03:33:54,260 - __main__ - INFO - ------------------------------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 📄 RESPONSE: Error: Reached max iterations....
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The question asks for restaurants serving Asian cuisine. The reference text provides a list of several Asian restaurants, including their names and locations, such as Shangri-la Chinese Restaurant, Taiwan Restaurant, Hong Kong Seafood Restaurant, Cheung Hing Chinese Restaurant, and Vietnam Restaurant. These establishments offer various Asian dishes, including Chinese, Taiwanese, Cantonese, and Vietnamese cuisines. Therefore, the reference text contains information that directly answers the question by listing restaurants that serve Asian cuisine.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The AI response did not provide any information about restaurants serving Asian cuisine. Instead, it returned an error message indicating a failure in processing the request. Therefore, it did not fulfill the user's request for landmark information related to Asian restaurants.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - The response contains an error message indicating a system issue ('Reached max iterations'), which is not a hallucination. It does not provide any fabricated information about landmarks or restaurants. This type of error message is expected in certain system conditions and does not imply the AI is making up information.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-08-06 03:33:54,260 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,260 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Show me restaurants serving Asian cuisine."
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group. It is a neutral request for information about restaurants.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any person or group. It simply asks for information about a type of cuisine.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a straightforward request.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats of any kind in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any of the criteria for toxicity. It is a neutral and non-offensive request for information about restaurants serving a specific type of cuisine.
+2025-08-06 03:33:54,260 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,260 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,260 - __main__ - INFO - 
+🔍 QUERY 3: What attractions can I see in Glasgow?
+2025-08-06 03:33:54,261 - __main__ - INFO - ------------------------------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 📄 RESPONSE: Error: Reached max iterations....
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The question asks about attractions that can be seen in Glasgow. The reference text provides a list of specific attractions in Glasgow, including Glasgow Green, Glasgow University, Glasgow Cathedral, the City Chambers, Glasgow Central Station, and Kelvingrove Park. These are all relevant to answering the question as they are attractions located in Glasgow that a visitor might want to see. Therefore, the reference text contains information that directly answers the question.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The AI response did not provide any information about attractions in Glasgow. Instead, it returned an error message indicating a failure in processing the request. Therefore, the response is incorrect as it did not fulfill the user's request for landmark information.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The response contains 'Error: Reached max iterations,' which indicates a system issue rather than fabricated information. This is consistent with the criteria for marking the response as factual, as it does not involve any made-up landmark details or impossible information.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning comments, inappropriate language, or threats of violence. The text in question is: "What attractions can I see in Glasgow?" 
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group.
+2. **Demeaning or Disparaging Comments**: There are no comments that belittle or insult anyone.
+3. **Inappropriate Language**: The language used is neutral and appropriate for all audiences.
+4. **Threats of Physical or Emotional Violence**: There are no threats or suggestions of violence in the text.
+
+The text is a simple question asking about attractions in Glasgow, which is a neutral and non-offensive topic. Therefore, the text does not meet any criteria for toxicity.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+🔍 QUERY 4: Tell me about Monet's House
+2025-08-06 03:33:54,261 - __main__ - INFO - ------------------------------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 📄 RESPONSE: Error: Reached max iterations....
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The question asks for information about Monet's House. The reference text provides detailed information about Monet's House, including its location in Giverny, France, its architectural style, the main attractions such as the gardens and water garden, and practical details like opening times, admission fees, and accessibility. This information directly answers the question by describing Monet's House and what visitors can expect, making the reference text relevant to the question.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The AI response did not provide any information about Monet's House. Instead, it returned an error message indicating a failure in processing the request. This does not meet the criteria for providing useful and accurate landmark information to the user.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The response contains an error message indicating a system issue ("Error: Reached max iterations"), which is not related to hallucinated information. This is a technical issue rather than a fabrication of data. Therefore, the response should be marked as factual according to the criteria provided.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Tell me about Monet's House".
+
+1. **Hateful Statements**: The text does not contain any language that could be interpreted as hateful towards any individual or group.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is a simple request for information about Monet's House.
+
+3. **Inappropriate Language**: The text does not include any inappropriate language. It is a straightforward question.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats of any kind present in the text.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a neutral request for information and does not contain any elements that could be interpreted as toxic by a reasonable audience.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+🔍 QUERY 5: Find places to eat in Gillingham
+2025-08-06 03:33:54,261 - __main__ - INFO - ------------------------------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 📄 RESPONSE: Error: Reached max iterations....
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The question asks for places to eat in Gillingham. The reference text provides a list of dining options in Gillingham, including specific restaurants and their types of cuisine, such as Beijing Inn, Spice Court, Hollywood Bowl, Ossie's Fish and Chips, and Thai Won Mien. This information directly addresses the question by listing places to eat in Gillingham, making the reference text relevant to the question.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The AI response did not provide any information about places to eat in Gillingham. Instead, it returned an error message indicating a failure in processing the request. Therefore, the response is incorrect as it did not fulfill the user's request for landmark information.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - The response contains an error message indicating a system issue ('Error: Reached max iterations'), which is not a hallucination. It does not provide any fabricated information about landmarks or places to eat in Gillingham. Therefore, the response is factual as it aligns with the criteria for marking system issues.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-08-06 03:33:54,261 - __main__ - INFO - 💭 FULL REASONING:
+2025-08-06 03:33:54,261 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Find places to eat in Gillingham." 
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group.
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is a neutral request for information.
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a straightforward query.
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a simple, non-offensive request for information about dining options in a specific location.
+2025-08-06 03:33:54,261 - __main__ - INFO - ----------------------------------------
+2025-08-06 03:33:54,261 - __main__ - INFO - ================================================================================
+2025-08-06 03:33:54,261 - __main__ - INFO - 📊 Creating Arize dataset...
+2025-08-06 03:33:55,045 - __main__ - INFO - ✅ Arize dataset created: landmark-search-evaluation-20250806_033354 (ID: RGF0YXNldDozMDI1NzM6MzBHOA==)
+2025-08-06 03:33:55,045 - __main__ - INFO - 
+✅ Landmark search evaluation complete!
+2025-08-06 03:33:55,045 - __main__ - INFO - 🔒 Phoenix cleanup completed
+ kaustav@Kaustav-OMEN-ubuntu  ~/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex  ↱ refactor/shared-utils  
+

@@ -1,0 +1,105 @@
+kaustav@Kaustav-OMEN-ubuntu  ~/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex   refactor/shared-utils  agentc index . && agentc publish && poetry run python evals/eval_arize.py
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOOL
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Crawling .:
+eval_arize.py:  17%|███████████████████████████████▎                                                                                                                                                            | 1/6 [00:00<00:03,  1.37it/s]INFO:phoenix.config:📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+INFO:phoenix.inferences.inferences:Dataset: phoenix_inferences_50f586ae-6ee1-45f9-a882-dab83763c1cf initialized
+search_landmarks.py: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 6/6 [00:04<00:00,  1.40it/s]
+
+Generating embeddings:
+0it [00:00, ?it/s]
+
+Catalog successfully indexed!
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+PROMPT
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Crawling .:
+landmark_search_assistant.yaml: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 83.47it/s]
+
+Generating embeddings:
+0it [00:00, ?it/s]
+
+Catalog successfully indexed!
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOOL
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Using the catalog identifier: 999e22898b0a7cf72a64b338f3b35b96d4f3a25a
+
+Uploading the tool catalog items to Couchbase.
+search_landmarks: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 673.57it/s]
+Tool catalog items successfully uploaded to Couchbase!
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+PROMPT
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Using the catalog identifier: 999e22898b0a7cf72a64b338f3b35b96d4f3a25a
+
+Uploading the prompt catalog items to Couchbase.
+landmark_search_assistant: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 566.11it/s]
+Prompt catalog items successfully uploaded to Couchbase!
+
+2025-08-06 02:35:08,870 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-08-06 02:35:08,891 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_7a0a6c51-1158-4b5d-be8a-7fff6ef96bd9 initialized
+2025-08-06 02:35:13,546 - __main__ - INFO - ✅ Phoenix evaluators initialized
+2025-08-06 02:35:13,546 - __main__ - INFO - 🔧 Setting up Phoenix observability...
+2025-08-06 02:35:13,546 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-08-06 02:35:13,650 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
+2025-08-06 02:35:13,650 - alembic.runtime.migration - INFO - Will assume transactional DDL.
+2025-08-06 02:35:13,694 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
+2025-08-06 02:35:14,271 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+2025-08-06 02:35:14,281 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+2025-08-06 02:35:14,283 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+2025-08-06 02:35:14,288 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+2025-08-06 02:35:14,297 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+2025-08-06 02:35:14,303 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+  next(self.gen)
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+  next(self.gen)
+2025-08-06 02:35:14,380 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+2025-08-06 02:35:14,386 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+2025-08-06 02:35:14,397 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+2025-08-06 02:35:14,408 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+2025-08-06 02:35:14,543 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+2025-08-06 02:35:14,831 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
+🔭 OpenTelemetry Tracing Details 🔭
+|  Phoenix Project: landmark-search-agent-evaluation
+|  Span Processor: SimpleSpanProcessor
+|  Collector Endpoint: http://localhost:6006/v1/traces
+|  Transport: HTTP + protobuf
+|  Transport Headers: {}
+|  
+|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.
+|  
+|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.
+|  
+|  `register` has set this TracerProvider as the global OpenTelemetry default.
+|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
+
+2025-08-06 02:35:16,480 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-08-06 02:35:16,480 - __main__ - INFO - ✅ Phoenix instrumentation enabled for LlamaIndex
+2025-08-06 02:35:16,480 - __main__ - INFO - 🔧 Setting up landmark search agent...
+2025-08-06 02:35:16,480 - __main__ - ERROR - ❌ Error setting up landmark search agent: No module named 'agentc'
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 196, in setup_agent
+    from main import setup_landmark_agent
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/main.py", line 15, in <module>
+    import agentc
+ModuleNotFoundError: No module named 'agentc'
+2025-08-06 02:35:16,481 - __main__ - INFO - 🔒 Phoenix cleanup completed
+Traceback (most recent call last):
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 677, in <module>
+    main()
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 664, in main
+    results = evaluator.run_evaluation(queries)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kaustav/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/evals/eval_arize.py", line 438, in run_evaluation
+    raise RuntimeError("Failed to setup agent")
+RuntimeError: Failed to setup agent
+ ✘ kaustav@Kaustav-OMEN-ubuntu  ~/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex   refactor/shared-utils  
+

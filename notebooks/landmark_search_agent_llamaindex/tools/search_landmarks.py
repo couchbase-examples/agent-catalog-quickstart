@@ -9,10 +9,30 @@ This tool demonstrates:
 
 import logging
 import os
+import sys
 from datetime import timedelta
 
-import agentc
 import dotenv
+
+# Import shared modules using project root discovery
+def find_project_root():
+    """Find the project root by looking for the shared directory."""
+    current = os.path.dirname(os.path.abspath(__file__))
+    while current != os.path.dirname(current):  # Stop at filesystem root
+        # Look for the shared directory as the definitive marker
+        shared_path = os.path.join(current, 'shared')
+        if os.path.exists(shared_path) and os.path.isdir(shared_path):
+            return current
+        current = os.path.dirname(current)
+    return None
+
+# Add project root to Python path
+project_root = find_project_root()
+if project_root and project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Now import agentc after path is set
+import agentc
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.options import ClusterOptions
@@ -67,6 +87,7 @@ def search_landmarks(query: str, limit: int = 5) -> str:
         # Ensure limit is an integer (in case agent passes it as string)
         limit = int(limit) if isinstance(limit, str) else limit
         limit = max(1, min(limit, 20))  # Clamp between 1 and 20
+
         # Get cluster connection
         cluster = get_cluster_connection()
 
@@ -84,21 +105,116 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             vector_store=vector_store, embed_model=Settings.embed_model
         )
 
-        # Perform semantic search using retriever (more reliable than query engine)
+        # Perform pure semantic search using the raw query
         retriever = index.as_retriever(similarity_top_k=limit)
-        nodes = retriever.retrieve(query)
+        raw_query = (query or "").strip()
+        nodes = retriever.retrieve(raw_query)
 
-        # Format results
+        # Log search info
+        logger.info(f"Search query: '{raw_query}' found {len(nodes)} results")
+
+        # Format results (minimal, straightforward)
         if not nodes:
-            return f"No landmarks found matching your query: '{query}'"
+            return f"No landmarks found matching your query: '{raw_query}'"
+
+        import re
+
+        # Precompile regex patterns for robust keyed-field extraction (non-greedy until next key or end)
+        FIELD_KEYS = [
+            "Address:", "Directions:", "Phone:", "Website:", "Hours:", "Price:",
+            "Activity type:", "Type:", "State:", "Coordinates:", "ID:"
+        ]
+        NEXT_KEY_PATTERN = r"\s+(?=" + r"|".join([re.escape(k) for k in FIELD_KEYS]) + r"|$)"
+
+        PAT_FIRSTLINE_1 = re.compile(
+            r"^(?P<title>.+?)\s*\((?P<name>[^)]+)\)\s+in\s+(?P<city>[^,]+),\s*(?P<country>[^.]+)\.",
+            re.IGNORECASE | re.DOTALL,
+        )
+        PAT_FIRSTLINE_2 = re.compile(
+            r"^(?P<city1>[^/]+)/(?P<area>[^ ]+)\s*\((?P<name2>[^)]+)\)\s+in\s+(?P<city2>[^,]+),\s*(?P<country2>[^.]+)\.",
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        def extract_field(pattern_label: str, text: str) -> str:
+            pat = re.compile(rf"{pattern_label}\s*(.*?){NEXT_KEY_PATTERN}", re.IGNORECASE | re.DOTALL)
+            m = pat.search(text)
+            return m.group(1).strip() if m else ""
+
+        def parse_text_content(content: str) -> dict:
+            data = {
+                "name": "",
+                "city": "",
+                "country": "",
+                "address": "",
+                "directions": "",
+                "phone": "",
+                "url": "",
+                "hours": "",
+                "price": "",
+                "activity": "",
+                "state": "",
+                "lat": "",
+                "lon": "",
+                "doc_id": "",
+                "description": "",
+            }
+            if not content:
+                return data
+
+            # Normalize whitespace but keep full content
+            txt = re.sub(r"\s+", " ", content.strip())
+
+            # First line extraction
+            m1 = PAT_FIRSTLINE_1.search(txt)
+            if m1:
+                data["name"] = m1.group("name").strip()
+                data["city"] = m1.group("city").strip()
+                data["country"] = m1.group("country").strip()
+            else:
+                m2 = PAT_FIRSTLINE_2.search(txt)
+                if m2:
+                    data["name"] = m2.group("name2").strip()
+                    data["city"] = m2.group("city2").strip()
+                    data["country"] = m2.group("country2").strip()
+                else:
+                    # Fallback: first line as name
+                    first_line = content.split('\n')[0].strip()
+                    if first_line and len(first_line) < 200:
+                        data["name"] = first_line
+
+            # Keyed fields
+            data["description"] = extract_field("Description:", txt)
+            data["address"] = extract_field("Address:", txt)
+            data["directions"] = extract_field("Directions:", txt)
+            data["phone"] = extract_field("Phone:", txt)
+            data["url"] = extract_field("Website:", txt)
+            data["hours"] = extract_field("Hours:", txt)
+            data["price"] = extract_field("Price:", txt)
+            data["activity"] = extract_field("Activity type:", txt)
+            data["state"] = extract_field("State:", txt)
+
+            # Coordinates
+            mcoord = re.search(r"Coordinates:\s*(?P<lat>-?\d+(?:\.\d+)?),\s*(?P<lon>-?\d+(?:\.\d+)?)(?:\s*\(accuracy:[^)]+\))?",
+                               txt, re.IGNORECASE)
+            if mcoord:
+                data["lat"] = mcoord.group("lat")
+                data["lon"] = mcoord.group("lon")
+
+            # ID
+            mid = re.search(r"ID:\s*(?P<docid>\d+)", txt, re.IGNORECASE)
+            if mid:
+                data["doc_id"] = mid.group("docid")
+
+            return data
 
         results = []
+        seen = set()  # for deduplication by name+city
+        MAX_DESC_LEN = 800  # soft cap for description length
         for i, node in enumerate(nodes, 1):
-            # Extract metadata - with fallback to text parsing
             metadata = node.metadata or {}
             content = node.text or ""
 
-            # Try to extract information from metadata first, then from text content
+            # Prefer metadata; then parse from content
             name = metadata.get("name", "")
             city = metadata.get("city", "")
             country = metadata.get("country", "")
@@ -110,68 +226,19 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             hours = metadata.get("hours", "")
             price = metadata.get("price", "")
 
-            # If metadata is missing key info, try to parse from text content
-            if not name or name == "Unknown":
-                # Extract name from text patterns - more flexible
-                import re
-
-                # Pattern 1: "Name (Alternative) in City, Country"
-                name_match = re.search(
-                    r"^([^(]+?)(?:\s*\([^)]+\))?\s+in\s+([^,]+),\s*(.+?)(?:\.|$)", content
-                )
-                if name_match:
-                    name = name_match.group(1).strip()
-                    if not city or city == "Unknown":
-                        city = name_match.group(2).strip()
-                    if not country or country == "Unknown":
-                        country = name_match.group(3).strip()
-                
-                # Pattern 2: Extract from first line if no "in" pattern
-                elif not name_match and content:
-                    first_line = content.split('\n')[0].strip()
-                    if first_line and len(first_line) < 100:  # Reasonable name length
-                        name = first_line
-
-            # Extract additional info from text - simplified and robust
-            if not address and "Address:" in content:
-                addr_match = re.search(r"Address:\s*([^.\n]+(?:\.[^.\n]*)*?)(?:\s+Phone:|\s+Website:|\s+Hours:|$)", content, re.IGNORECASE)
-                if addr_match:
-                    address = addr_match.group(1).strip()
-
-            if not phone and "Phone:" in content:
-                phone_match = re.search(r"Phone:\s*([+\d\s\-()]+)", content, re.IGNORECASE)
-                if phone_match:
-                    phone = phone_match.group(1).strip()
-
-            if not url and ("Website:" in content or "http" in content):
-                url_match = re.search(r'(?:Website:\s*)?(https?://[^\s<>"]+)', content, re.IGNORECASE)
-                if url_match:
-                    url = url_match.group(1).strip()
-
-            if not hours and "Hours:" in content:
-                hours_match = re.search(r"Hours:\s*([^.\n]+(?:\.[^.\n]*)*?)(?:\s+Price:|\s+Phone:|\s+Website:|$)", content, re.IGNORECASE)
-                if hours_match:
-                    hours = hours_match.group(1).strip()
-
-            if not price and ("Price:" in content or "€" in content or "$" in content or "£" in content):
-                price_match = re.search(r"(?:Price:\s*)?([€$£]\d+[^.\n]*)", content, re.IGNORECASE)
-                if price_match:
-                    price = price_match.group(1).strip()
-
-            if not activity or activity == "General":
-                if "Activity type:" in content:
-                    activity_match = re.search(r"Activity type:\s*([^\n.]+)", content, re.IGNORECASE)
-                    if activity_match:
-                        activity = activity_match.group(1).strip()
-                else:
-                    # Infer activity from content
-                    content_lower = content.lower()
-                    if any(word in content_lower for word in ["museum", "gallery", "art", "cathedral", "monument", "attraction"]):
-                        activity = "See"
-                    elif any(word in content_lower for word in ["restaurant", "dining", "food", "cuisine", "eat", "cafe"]):
-                        activity = "Eat"
-                    elif any(word in content_lower for word in ["trail", "hiking", "park", "sport", "recreation", "activity"]):
-                        activity = "Do"
+            parsed = parse_text_content(content)
+            # Fill blanks from parsed content
+            name = name or parsed["name"]
+            city = city or parsed["city"]
+            country = country or parsed["country"]
+            address = address or parsed["address"]
+            phone = phone or parsed["phone"]
+            url = url or parsed["url"]
+            hours = hours or parsed["hours"]
+            price = price or parsed["price"]
+            activity = activity or parsed["activity"]
+            state = state or parsed["state"]
+            description = parsed["description"] or content.strip()
 
             # Use fallbacks for essential fields
             name = name or "Landmark"
@@ -179,17 +246,18 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             country = country or "Unknown Country"
             activity = activity or "see"
 
+            # Deduplicate by normalized name + city
+            dedupe_key = f"{name.strip().lower()}|{city.strip().lower()}"
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+
             # Build result with robust formatting
             result_lines = [f"{i}. **{name}**"]
             result_lines.append(f"   📍 Location: {city}, {country}")
-
-            # Add state if available
-            if state and state.strip() and state != "Unknown":
+            if state and state.strip() and state.lower() != "unknown":
                 result_lines.append(f"   🗺️ State: {state}")
-
             result_lines.append(f"   🎯 Activity: {activity.title()}")
-
-            # Only show fields that have actual meaningful data
             if address and address.strip() and address.lower() not in ["unknown", "none"]:
                 result_lines.append(f"   🏠 Address: {address}")
             if phone and phone.strip() and phone.lower() not in ["unknown", "none", "null"]:
@@ -200,21 +268,16 @@ def search_landmarks(query: str, limit: int = 5) -> str:
                 result_lines.append(f"   🕒 Hours: {hours}")
             if price and price.strip() and price.lower() not in ["unknown", "none", "null"]:
                 result_lines.append(f"   💰 Price: {price}")
-
-            if content:
-                # Use full content as description - no fragile regex parsing
-                description = content.strip()
-                
-                # Basic cleanup only - preserve all content
-                description = re.sub(r'\s+', ' ', description)  # Normalize whitespace
-                description = re.sub(r'^\s*Landmark\s*[:.]?\s*', '', description, flags=re.IGNORECASE)  # Remove "Landmark:" prefix
-                
-                if description:
-                    result_lines.append(f"   📝 Description: {description}")
+            if description:
+                # Keep full description, normalized
+                description = re.sub(r"\s+", " ", description).strip()
+                if len(description) > MAX_DESC_LEN:
+                    description = description[:MAX_DESC_LEN].rstrip() + ".."
+                result_lines.append(f"   📝 Description: {description}")
 
             results.append("\n".join(result_lines))
 
-        return f"Found {len(results)} landmarks matching '{query}':\n\n" + "\n\n".join(results)
+        return f"Found {len(results)} landmarks matching '{raw_query}':\n\n" + "\n\n".join(results)
 
     except Exception as e:
         logger.error(f"Error searching landmarks: {e}")

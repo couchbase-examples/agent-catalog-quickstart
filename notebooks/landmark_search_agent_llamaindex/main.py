@@ -12,12 +12,8 @@ import logging
 import os
 import sys
 
-import agentc
 import dotenv
 from llama_index.core import Settings
-
-# Import landmark data from the data module
-from data.landmark_data import load_landmark_data_to_couchbase
 
 # Import shared modules using robust project root discovery
 def find_project_root():
@@ -36,8 +32,13 @@ project_root = find_project_root()
 if project_root and project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+# Now import agentc and other modules after path is set
+import agentc
 from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
 from shared.couchbase_client import create_couchbase_client
+
+# Import landmark data from the data module
+from data.landmark_data import load_landmark_data_to_couchbase
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -119,13 +120,6 @@ def setup_environment():
     logger.info(f"   Collection: {os.environ['CB_COLLECTION']}")
     logger.info(f"   Index: {os.environ['CB_INDEX']}")
 
-    # Validate configuration consistency
-    logger.info(f"✅ Configuration loaded:")
-    logger.info(f"   Bucket: {os.environ['CB_BUCKET']}")
-    logger.info(f"   Scope: {os.environ['CB_SCOPE']}")
-    logger.info(f"   Collection: {os.environ['CB_COLLECTION']}")
-    logger.info(f"   Index: {os.environ['CB_INDEX']}")
-
 
 def create_llamaindex_agent(catalog, span):
     """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
@@ -172,13 +166,13 @@ def create_llamaindex_agent(catalog, span):
 
         logger.info("Loaded system prompt from Agent Catalog")
 
-        # Create ReAct agent with limits to prevent excessive iterations
+        # Create ReAct agent with reasonable iteration limit
         agent = ReActAgent.from_tools(
             tools=tools,
             llm=Settings.llm,
-            verbose=True,  # Turn back on for debugging
+            verbose=True,  # Keep on for debugging
             system_prompt=system_prompt,
-            max_iterations=12,  # Medium level - enough for complex queries, not too much
+            max_iterations=3,  # Allow one tool call and a final answer step
         )
 
         logger.info("LlamaIndex ReAct agent created successfully")
@@ -201,7 +195,7 @@ def setup_landmark_agent():
     client.connect()
 
     # Setup LLM and embeddings using shared module
-    embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1)
+    embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1, application_span=span)
 
     # Set global LlamaIndex settings
     Settings.llm = llm
