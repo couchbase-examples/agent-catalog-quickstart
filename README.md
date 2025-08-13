@@ -10,9 +10,38 @@ This repository provides a quickstart guide for using the Agent Catalog with Cap
 - An OpenAI API Key (or other LLM provider)
 - Couchbase Capella account (or local Couchbase installation)
 
-## 🚀 Quick Setup (Recommended)
+## Quick Start
 
-**The simplest way to get started** with any individual agent:
+Two ways to get running fast. Choose one.
+
+### 1) Full repo setup (script)
+
+```bash
+git clone https://github.com/couchbaselabs/agent-catalog-quickstart.git
+cd agent-catalog-quickstart
+bash scripts/setup.sh --yes               # add --skip-testing to speed up
+
+# pick an agent and configure env
+cd notebooks/hotel_search_agent_langchain
+cp .env.sample .env && $EDITOR .env
+
+# run
+poetry run python main.py
+```
+
+### 2) Per-agent setup (fastest)
+
+```bash
+# from repo root
+poetry -C notebooks/flight_search_agent_langraph install --no-root
+cp notebooks/flight_search_agent_langraph/.env.sample notebooks/flight_search_agent_langraph/.env
+$EDITOR notebooks/flight_search_agent_langraph/.env
+poetry -C notebooks/flight_search_agent_langraph run python main.py
+```
+
+### Fallback: Global pip installs (PyPI)
+
+If Poetry or local installs give you trouble, you can install the core packages globally and proceed with per-agent setup:
 
 ```bash
 # Install Agent Catalog packages
@@ -23,104 +52,30 @@ pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentati
 
 # Fix OpenTelemetry version conflicts (if needed)
 pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http
-
-# Install root dependencies
-poetry install
-
-# Choose an agent project and install its dependencies
-cd notebooks/hotel_search_agent_langchain
-# OR cd notebooks/flight_search_agent_langraph  
-# OR cd notebooks/landmark_search_agent_llamaindex
-
-# Install notebook-specific dependencies
-poetry install --no-root
-
-# Set up your environment (see Environment Configuration below)
-cp .env.sample .env
-# Edit .env with your credentials
-
-# Run the agent
-poetry run python main.py
 ```
 
-That's it! 🎯 The `pip3 install` handles all Agent Catalog packages, and Poetry manages the project-specific dependencies.
+Then run the per-agent commands under "2) Per-agent setup (fastest)" above.
 
-## Alternative: Automated Setup Script (Fallback)
+ 
 
-If you encounter issues with the pip installation or prefer an automated approach:
+## Per-Agent Details
 
-```bash
-# Clone the repository
-git clone https://github.com/couchbaselabs/agent-catalog-quickstart.git
-cd agent-catalog-quickstart
+Each example is independent and includes code, prompts, tools, and evals.
 
-# Run the automated setup script
-bash scripts/setup.sh
-```
+### 🛩️ Flight Search Agent (`notebooks/flight_search_agent_langraph/`)
+- Framework: LangGraph
+- Install: `poetry -C notebooks/flight_search_agent_langraph install --no-root`
+- Run: `poetry -C notebooks/flight_search_agent_langraph run python main.py`
 
-This fallback script will:
-- Install all Agent Catalog libraries from local source
-- Set up all three agent environments
-- Install the global `agentc` CLI command
-- Verify the installation
+### 🏨 Hotel Support Agent (`notebooks/hotel_search_agent_langchain/`)
+- Framework: LangChain
+- Install: `poetry -C notebooks/hotel_search_agent_langchain install --no-root`
+- Run: `poetry -C notebooks/hotel_search_agent_langchain run python main.py`
 
-## Manual Setup (Step-by-Step)
-
-### Option 1: Simple Installation (Recommended)
-
-The easiest approach using published packages:
-
-```bash
-# Install Agent Catalog packages from PyPI
-pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
-
-# Install Arize Phoenix and evaluation dependencies
-pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentation-langchain openinference-instrumentation-openai openinference-instrumentation-llama-index
-
-# Fix OpenTelemetry version conflicts (if needed)
-pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http
-
-# Install root dependencies
-poetry install
-
-# Navigate to any agent directory
-cd notebooks/hotel_search_agent_langchain
-
-# Install notebook-specific dependencies
-poetry install --no-root
-
-# Set up environment
-cp .env.sample .env
-# Edit .env with your credentials
-
-# Test the installation
-poetry run python -c "import agentc; print('✅ Agent Catalog ready!')"
-```
-
-### Option 2: Local Development Installation
-
-If you need to modify the Agent Catalog source code:
-
-```bash
-# Install Agent Catalog libraries from local source
-pip install -e agent-catalog/libs/agentc_core
-pip install -e agent-catalog/libs/agentc_cli  
-pip install -e agent-catalog/libs/agentc
-pip install -e agent-catalog/libs/agentc_integrations/langchain
-pip install -e agent-catalog/libs/agentc_integrations/langgraph
-pip install -e agent-catalog/libs/agentc_integrations/llamaindex
-
-# Install root dependencies
-poetry install
-
-# Install each agent's dependencies
-cd notebooks/flight_search_agent_langraph && poetry install --no-root && cd ../..
-cd notebooks/hotel_search_agent_langchain && poetry install --no-root && cd ../..
-cd notebooks/landmark_search_agent_llamaindex && poetry install --no-root && cd ../..
-
-# Verify installation
-agentc --help
-```
+### 🗺️ Landmark Search Agent (`notebooks/landmark_search_agent_llamaindex/`)
+- Framework: LlamaIndex
+- Install: `poetry -C notebooks/landmark_search_agent_llamaindex install --no-root`
+- Run: `poetry -C notebooks/landmark_search_agent_llamaindex run python main.py`
 
 ## Environment Configuration
 
@@ -141,21 +96,12 @@ For complete environment configuration examples (Capella vs Local), see **[TROUB
 
 ## Usage
 
-### Running Agents (Simple Approach)
-
-If you used the recommended individual setup:
-
 ```bash
-cd notebooks/hotel_search_agent_langchain
+# run with a query
+poetry -C notebooks/hotel_search_agent_langchain run python main.py "Find hotels in Paris with free breakfast"
 
-# Run the agent
-poetry run python main.py
-
-# Run with specific queries  
-poetry run python main.py "Find hotels in Paris with free breakfast"
-
-# Run evaluations
-poetry run python evals/eval_arize.py
+# run evaluations (Arize)
+poetry -C notebooks/hotel_search_agent_langchain run python evals/eval_arize.py
 ```
 
 ### Using Global CLI (After Full Setup)
@@ -179,31 +125,7 @@ agentc publish
 python main.py "Find hotels in Paris with free breakfast"
 ```
 
-## Available Examples
-
-This quickstart includes three self-contained example agents:
-
-### 🛩️ Flight Search Agent (`notebooks/flight_search_agent_langraph/`)
-- **Framework**: LangGraph
-- **Setup**: `poetry install --no-root`
-- **Run**: `poetry run python main.py`
-
-### 🏨 Hotel Search Agent (`notebooks/hotel_search_agent_langchain/`) 
-- **Framework**: LangChain
-- **Setup**: `poetry install --no-root`
-- **Run**: `poetry run python main.py`
-
-### 🗺️ Landmark Search Agent (`notebooks/landmark_search_agent_llamaindex/`)
-- **Framework**: LlamaIndex  
-- **Setup**: `poetry install --no-root`
-- **Run**: `poetry run python main.py`
-
-Each example is **completely independent** and includes:
-- Complete source code with all dependencies
-- Configuration files (`pyproject.toml`, `.env.sample`)
-- Test cases and evaluation scripts
-- Documentation and prompts
-- **One-command setup** with Poetry
+ 
 
 ## Agent Catalog CLI Commands
 
@@ -221,12 +143,11 @@ Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING
 
 ### Quick Fixes
 
-- **"No module named 'agentc'"**: Run `pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex`
-- **"No module named 'phoenix'" or evaluation errors**: Run `pip3 install "arize-phoenix[evals]" arize arize-otel openinference-instrumentation-langchain openinference-instrumentation-openai openinference-instrumentation-llama-index`
-- **OpenTelemetry version conflicts**: Run `pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrumentation-fastapi opentelemetry-util-http`
-- **Poetry issues**: Delete `poetry.lock` and run `poetry install --no-root` again  
-- **Environment errors**: Copy `.env.sample` to `.env` and edit with your credentials
-- **CLI not found**: Try the fallback setup script: `bash scripts/setup.sh`
+- "No module named 'agentc'": ensure you ran `poetry -C notebooks/<agent> install --no-root` and are executing with Poetry (`poetry run ...`).
+- Evaluation deps missing: run the agent-specific Poetry install again; eval deps are included per agent.
+- Poetry issues: delete the agent’s `poetry.lock` and run `poetry -C notebooks/<agent> install --no-root`.
+- Environment errors: copy `.env.sample` to `.env` in the agent folder and fill in credentials.
+- CLI not found after script: restart your shell or run `export PATH="$PATH:$HOME/.local/bin"`; rerun `bash scripts/setup.sh --yes` if needed.
 
 For detailed solutions, environment configuration examples, and debugging commands, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**.
 
