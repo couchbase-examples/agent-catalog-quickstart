@@ -1,6 +1,3 @@
-# The repo itself
-agent-catalog/
-couchbase/
 
 # Certificates
 *.pem
@@ -22,6 +19,24 @@ debug_*.py
 .agent-catalog/
 .agent-activity/
 .model-cache/
+
+# AI tools
+.cursor/
+.claude/
+.qodo/
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore
+.cursor/
+
+
+# The submodules themselves
+agent-catalog/
+couchbase/
 
 # Arize
 *.csv
@@ -221,10 +236,3 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-.cursor/
