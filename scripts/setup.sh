@@ -68,9 +68,25 @@ fi
 
 echo "✅ Poetry found"
 
+# Initialize git submodules if not already done
+echo "🔄 Checking git submodules..."
+if [[ ! -f "./agent-catalog/.git" ]] && [[ ! -d "./agent-catalog/.git" ]]; then
+    echo "📦 Initializing agent-catalog submodule..."
+    git submodule update --init --recursive
+    if [[ $? -ne 0 ]]; then
+        echo "❌ Failed to initialize git submodules. Please run:"
+        echo "   git submodule update --init --recursive"
+        exit 1
+    fi
+    echo "✅ Agent-catalog submodule initialized"
+else
+    echo "✅ Agent-catalog submodule already initialized"
+fi
+
 # Verify agent-catalog libs directory exists
 if [[ ! -d "./agent-catalog/libs" ]]; then
-    echo "❌ ./agent-catalog/libs not found. Ensure the 'agent-catalog' folder exists at repo root."
+    echo "❌ ./agent-catalog/libs not found. The agent-catalog submodule may not be properly initialized."
+    echo "Please run: git submodule update --init --recursive"
     exit 1
 fi
 

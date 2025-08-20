@@ -17,7 +17,7 @@ Two ways to get running fast. Choose one.
 ### 1) Full repo setup (script)
 
 ```bash
-git clone https://github.com/couchbaselabs/agent-catalog-quickstart.git
+git clone --recursive https://github.com/couchbaselabs/agent-catalog-quickstart.git
 cd agent-catalog-quickstart
 bash scripts/setup.sh --yes               # add --skip-testing to speed up
 
@@ -55,6 +55,23 @@ pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrume
 ```
 
 Then run the per-agent commands under "2) Per-agent setup (fastest)" above.
+
+### Working with Git Submodules
+
+This repository uses git submodules to manage the Agent Catalog dependency. If you encounter issues:
+
+```bash
+# If you cloned without --recursive, initialize submodules manually:
+git submodule update --init --recursive
+
+# Update submodules to latest versions:
+git submodule update --remote
+
+# Verify submodules are properly initialized:
+git submodule status
+```
+
+**Note**: The `agent-catalog` directory is managed as a submodule and should not be manually edited.
 
  
 
@@ -148,6 +165,7 @@ Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING
 - Poetry issues: delete the agent’s `poetry.lock` and run `poetry -C notebooks/<agent> install --no-root`.
 - Environment errors: copy `.env.sample` to `.env` in the agent folder and fill in credentials.
 - CLI not found after script: restart your shell or run `export PATH="$PATH:$HOME/.local/bin"`; rerun `bash scripts/setup.sh --yes` if needed.
+- Submodule issues: run `git submodule update --init --recursive` to initialize the agent-catalog dependency.
 
 For detailed solutions, environment configuration examples, and debugging commands, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**.
 
