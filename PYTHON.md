@@ -19,11 +19,11 @@ Python 3.12.11 ('.venv': Poetry) - Use this for agent-catalog project
 
 ### 🛠️ **Available Python Versions**
 
-| Version | Location | Purpose | When to Use |
-|---------|----------|---------|-------------|
-| **Python 3.12.11** | `/opt/homebrew/bin/python3.12` | Main development | New projects, daily coding |
-| **Python 3.13.5** | `/opt/homebrew/bin/python3.13` | Latest features | Testing newest Python features |
-| **Python 3.9.6** | `/usr/bin/python3` | System Python | Leave alone (macOS needs this) |
+| Version            | Location                       | Purpose          | When to Use                    |
+| ------------------ | ------------------------------ | ---------------- | ------------------------------ |
+| **Python 3.12.11** | `/opt/homebrew/bin/python3.12` | Main development | New projects, daily coding     |
+| **Python 3.13.5**  | `/opt/homebrew/bin/python3.13` | Latest features  | Testing newest Python features |
+| **Python 3.9.6**   | `/usr/bin/python3`             | System Python    | Leave alone (macOS needs this) |
 
 ## Understanding the System Python (3.9.6)
 
@@ -32,6 +32,7 @@ Python 3.12.11 ('.venv': Poetry) - Use this for agent-catalog project
 **Short Answer:** macOS (your operating system) uses it internally.
 
 **Longer Explanation:**
+
 - Apple includes Python 3.9.6 as part of macOS
 - Some macOS tools and scripts expect to find Python at `/usr/bin/python3`
 - If we remove or change it, we might break macOS functionality
@@ -42,16 +43,19 @@ Python 3.12.11 ('.venv': Poetry) - Use this for agent-catalog project
 **Yes, we can and should!** Here's how:
 
 #### Current Situation:
+
 ```bash
 python3 --version  # Shows Python 3.9.6 (old!)
 ```
 
 #### After Optimization:
+
 ```bash
 python3 --version  # Would show Python 3.13.5 (modern!)
 ```
 
 #### How It Works:
+
 - **System Python stays safe** at `/usr/bin/python3` (macOS happy)
 - **Your terminal uses modern Python** when you type `python3` (You happy)
 - **Best of both worlds!**
@@ -61,6 +65,7 @@ python3 --version  # Would show Python 3.13.5 (modern!)
 ### What is a Virtual Environment?
 
 Think of virtual environments like separate apartments:
+
 - Each project gets its own "apartment" (environment)
 - Each apartment has its own Python version and packages
 - Changes in one apartment don't affect others
@@ -142,21 +147,21 @@ poetry run python script.py
 
 ### ❌ **Removed (Problematic/Outdated)**
 
-| What | Why Removed |
-|------|-------------|
-| Python 3.11.x | Outdated, not needed for current project |
-| Python 3.12.8 | Older patch version (3.12.11 is newer) |
-| Broken symlinks | Pointing to deleted Python installations |
-| Old .python-version | Referencing removed Python version |
+| What                | Why Removed                              |
+| ------------------- | ---------------------------------------- |
+| Python 3.11.x       | Outdated, not needed for current project |
+| Python 3.12.8       | Older patch version (3.12.11 is newer)   |
+| Broken symlinks     | Pointing to deleted Python installations |
+| Old .python-version | Referencing removed Python version       |
 
 ### ✅ **Kept (Useful/Essential)**
 
-| What | Why Kept |
-|------|----------|
-| Python 3.9.6 (system) | Required by macOS |
-| Python 3.12.11 | Project requirement, stable |
-| Python 3.13.5 | Latest features, future-proofing |
-| Poetry virtual env | Project dependencies |
+| What                  | Why Kept                         |
+| --------------------- | -------------------------------- |
+| Python 3.9.6 (system) | Required by macOS                |
+| Python 3.12.11        | Project requirement, stable      |
+| Python 3.13.5         | Latest features, future-proofing |
+| Poetry virtual env    | Project dependencies             |
 
 ## The Complete Cleanup Process 🧹
 
@@ -192,7 +197,8 @@ pyenv global system
 # ✅ Result: No longer forcing old Python version
 ```
 
-**Why this step?** 
+**Why this step?**
+
 - Python 3.12.8 was an older patch version
 - Python 3.12.11 (Homebrew) is newer and better maintained
 - Prevents version conflicts
@@ -206,6 +212,7 @@ sudo rm -f /usr/local/bin/python /usr/local/bin/python3
 ```
 
 **Why this step?**
+
 - These symlinks pointed to Python 3.11 framework we were going to remove
 - Broken symlinks cause confusion and errors
 - Better to have no link than a broken link
@@ -219,6 +226,7 @@ sudo rm -rf /Library/Frameworks/Python.framework/Versions/3.11
 ```
 
 **Why this step?**
+
 - Python 3.11 was outdated (your project needs 3.12+)
 - Framework installations can conflict with Homebrew versions
 - This was taking up unnecessary disk space
@@ -232,6 +240,7 @@ rm .python-version
 ```
 
 **Why this step?**
+
 - The file was telling pyenv to use Python 3.12.8 (which we removed)
 - This was causing "version not installed" errors
 - Better to use default system behavior
@@ -245,6 +254,7 @@ brew cleanup
 ```
 
 **Why this step?**
+
 - Removes cached files from deleted installations
 - Frees up disk space
 - Keeps Homebrew installation clean
@@ -258,6 +268,7 @@ curl -sSL https://install.python-poetry.org | /opt/homebrew/bin/python3.12 -
 ```
 
 **Why this step?**
+
 - Poetry wasn't found in PATH after cleanup
 - Installing with Python 3.12 ensures compatibility
 - Poetry is essential for this project's dependency management
@@ -275,6 +286,7 @@ source ~/.zshrc
 ```
 
 **Why this step?**
+
 - Makes Python 3.13.5 your daily default instead of 3.9.6
 - Keeps system Python completely safe and untouched
 - Provides modern Python features for development
@@ -295,6 +307,7 @@ poetry env info                     # ✅ Project env using Python 3.12.11
 ### 📊 **Before vs After Comparison**
 
 #### **Before Cleanup:**
+
 ```
 ❌ Python 3.9.6 (system) - outdated default
 ❌ Python 3.11.x (framework) - outdated, conflicting
@@ -306,6 +319,7 @@ poetry env info                     # ✅ Project env using Python 3.12.11
 ```
 
 #### **After Cleanup & Optimization:**
+
 ```
 ✅ Python 3.13.5 (homebrew) - NEW DEFAULT for daily use
 ✅ Python 3.12.11 (homebrew) - project standard
@@ -369,23 +383,25 @@ export PATH="/opt/homebrew/bin:$PATH"
 ```
 
 ### 🛡️ **Safety Guaranteed:**
+
 - ✅ **System Python untouched** - macOS functionality preserved
-- ✅ **Modern Python as default** - better development experience  
+- ✅ **Modern Python as default** - better development experience
 - ✅ **Project environment intact** - agent-catalog works perfectly
 - ✅ **Reversible change** - can be undone if needed
 
 ### 🎯 **What This Means for You:**
 
-| When You Type | You Get | Purpose |
-|---------------|---------|---------|
-| `python3` | **Python 3.13.5** | Daily development work |
-| `python3.12` | **Python 3.12.11** | Specific version if needed |
-| `/usr/bin/python3` | **Python 3.9.6** | System Python (unchanged) |
+| When You Type       | You Get            | Purpose                     |
+| ------------------- | ------------------ | --------------------------- |
+| `python3`           | **Python 3.13.5**  | Daily development work      |
+| `python3.12`        | **Python 3.12.11** | Specific version if needed  |
+| `/usr/bin/python3`  | **Python 3.9.6**   | System Python (unchanged)   |
 | `poetry run python` | **Python 3.12.11** | Your project's requirements |
 
 ## Best Practices 📝
 
 ### ✅ **Do This:**
+
 - Always use virtual environments for projects
 - Use Poetry for this agent-catalog project
 - Keep system Python untouched
@@ -393,6 +409,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 - Update packages regularly in virtual environments
 
 ### ❌ **Don't Do This:**
+
 - Don't modify `/usr/bin/python3` (system Python)
 - Don't install packages globally with pip
 - Don't delete system Python
@@ -403,12 +420,14 @@ export PATH="/opt/homebrew/bin:$PATH"
 ### Common Issues:
 
 1. **"Command not found: poetry"**
+
    ```bash
    # Poetry is in ~/.local/bin, add to PATH:
    export PATH="$HOME/.local/bin:$PATH"
    ```
 
 2. **"Wrong Python version in project"**
+
    ```bash
    poetry env use /opt/homebrew/bin/python3.12
    ```
@@ -433,27 +452,28 @@ poetry run python --version     # Should show: Python 3.12.11 (project)
 
 ### 🏆 **Achievement Unlocked:**
 
-| ✅ What You Have | 📝 Description |
-|------------------|----------------|
-| **Modern Default** | Python 3.13.5 when you type `python3` |
+| ✅ What You Have        | 📝 Description                                   |
+| ----------------------- | ------------------------------------------------ |
+| **Modern Default**      | Python 3.13.5 when you type `python3`            |
 | **Project Environment** | Python 3.12.11 in your agent-catalog virtual env |
-| **System Safety** | Python 3.9.6 preserved for macOS |
-| **Clean Setup** | No conflicting installations |
-| **Professional Tools** | Poetry working perfectly |
-| **Best Practices** | Virtual environments for isolation |
+| **System Safety**       | Python 3.9.6 preserved for macOS                 |
+| **Clean Setup**         | No conflicting installations                     |
+| **Professional Tools**  | Poetry working perfectly                         |
+| **Best Practices**      | Virtual environments for isolation               |
 
 ## Summary 🎯
 
 You now have the **IDEAL Python development setup**:
 
 - ✅ **Modern Python 3.13.5** as your daily default
-- ✅ **Project-specific Python 3.12.11** for agent-catalog 
+- ✅ **Project-specific Python 3.12.11** for agent-catalog
 - ✅ **System Python 3.9.6** safely preserved for macOS
 - ✅ **Clean virtual environment** with all dependencies
 - ✅ **Poetry** for professional dependency management
 - ✅ **Zero conflicts** between different Python versions
 
 ### 🚀 **Ready for Development:**
+
 - **Daily coding:** Just type `python3` (gets 3.13.5)
 - **Agent-catalog project:** Use `poetry shell` or `poetry run`
 - **New projects:** Create with `/opt/homebrew/bin/python3.12 -m venv`
@@ -463,4 +483,4 @@ You now have the **IDEAL Python development setup**:
 
 ---
 
-*This is a professional-grade Python environment that many senior developers would be proud to have.*
+_This is a professional-grade Python environment that many senior developers would be proud to have._

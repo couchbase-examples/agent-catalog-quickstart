@@ -39,12 +39,33 @@ $EDITOR notebooks/flight_search_agent_langraph/.env
 poetry -C notebooks/flight_search_agent_langraph run python main.py
 ```
 
-### Fallback: Global pip installs (PyPI)
+### 3) Installation Methods & Package Management
 
-If Poetry or local installs give you trouble, you can install the core packages globally and proceed with per-agent setup:
+#### **Recommended: pipx for CLI (Isolated)**
+
+For the cleanest installation that avoids system conflicts:
 
 ```bash
-# Install Agent Catalog packages
+# Install pipx if not available
+brew install pipx  # macOS
+# or: python3 -m pip install --user pipx
+
+# Use the proper pipx setup script
+bash scripts/setup_pipx.sh
+```
+
+**Benefits:**
+
+- Isolated environments prevent conflicts
+- Clean separation between CLI tools and project dependencies
+- Works with externally managed Python environments (Homebrew, system Python)
+
+#### **Alternative: Global pip installs (PyPI)**
+
+⚠️ **Note**: This method may conflict with externally managed environments. Use only if pipx fails.
+
+```bash
+# Install Agent Catalog packages (add --break-system-packages if needed)
 pip3 install agentc agentc-core agentc-cli agentc-langchain agentc-langgraph agentc-llamaindex
 
 # Install Arize Phoenix and evaluation dependencies
@@ -55,6 +76,10 @@ pip3 install --upgrade opentelemetry-instrumentation-asgi opentelemetry-instrume
 ```
 
 Then run the per-agent commands under "2) Per-agent setup (fastest)" above.
+
+#### **Development Note**
+
+These packages are currently installed from source during development. Once agentc packages are available on PyPI, the installation will be simplified to standard pip/pipx commands.
 
 ### Working with Git Submodules
 
@@ -73,23 +98,24 @@ git submodule status
 
 **Note**: The `agent-catalog` directory is managed as a submodule and should not be manually edited.
 
- 
-
 ## Per-Agent Details
 
 Each example is independent and includes code, prompts, tools, and evals.
 
 ### 🛩️ Flight Search Agent (`notebooks/flight_search_agent_langraph/`)
+
 - Framework: LangGraph
 - Install: `poetry -C notebooks/flight_search_agent_langraph install --no-root`
 - Run: `poetry -C notebooks/flight_search_agent_langraph run python main.py`
 
 ### 🏨 Hotel Support Agent (`notebooks/hotel_search_agent_langchain/`)
+
 - Framework: LangChain
 - Install: `poetry -C notebooks/hotel_search_agent_langchain install --no-root`
 - Run: `poetry -C notebooks/hotel_search_agent_langchain run python main.py`
 
 ### 🗺️ Landmark Search Agent (`notebooks/landmark_search_agent_llamaindex/`)
+
 - Framework: LlamaIndex
 - Install: `poetry -C notebooks/landmark_search_agent_llamaindex install --no-root`
 - Run: `poetry -C notebooks/landmark_search_agent_llamaindex run python main.py`
@@ -105,6 +131,7 @@ cp .env.sample .env
 ```
 
 **Required files:**
+
 - `notebooks/flight_search_agent_langraph/.env`
 - `notebooks/hotel_search_agent_langchain/.env`
 - `notebooks/landmark_search_agent_llamaindex/.env`
@@ -142,17 +169,15 @@ agentc publish
 python main.py "Find hotels in Paris with free breakfast"
 ```
 
- 
-
 ## Agent Catalog CLI Commands
 
-| Command | Description |
-|---------|-------------|
-| `agentc init` | Initialize agent catalog in current directory |
-| `agentc index .` | Index the current agent directory |
+| Command          | Description                                          |
+| ---------------- | ---------------------------------------------------- |
+| `agentc init`    | Initialize agent catalog in current directory        |
+| `agentc index .` | Index the current agent directory                    |
 | `agentc publish` | Publish agent to catalog (requires clean git status) |
-| `agentc --help` | Show all available commands |
-| `agentc env` | Show environment configuration |
+| `agentc --help`  | Show all available commands                          |
+| `agentc env`     | Show environment configuration                       |
 
 ## Troubleshooting
 
@@ -192,6 +217,7 @@ poetry run python evals/eval_arize.py
 ## Architecture
 
 Each example agent follows this structure:
+
 ```
 notebooks/agent_name/
 ├── main.py              # Main agent implementation
@@ -217,4 +243,3 @@ This is a quickstart repository. For contributing to the main Agent Catalog:
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
