@@ -34,8 +34,7 @@ debug_*.py
 .cursor/
 
 
-# The submodules themselves
-agent-catalog/
+# The submodules themselves  
 couchbase/
 
 # Arize

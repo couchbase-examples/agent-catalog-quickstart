@@ -1,0 +1,3 @@
+[submodule "agent-catalog"]
+	path = agent-catalog
+	url = https://github.com/couchbaselabs/agent-catalog.git
