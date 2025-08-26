@@ -372,6 +372,7 @@ def setup_environment():
         "CB_INDEX": "hotel_data_index",
         "CAPELLA_API_EMBEDDING_MODEL": "nvidia/nv-embedqa-e5-v5",
         "CAPELLA_API_LLM_MODEL": "meta-llama/Llama-3.1-8B-Instruct",
+        "CAPELLA_API_EMBEDDING_MAX_TOKENS": "512",
         "NVIDIA_API_EMBEDDING_MODEL": "nvidia/nv-embedqa-e5-v5",
         "NVIDIA_API_LLM_MODEL": "meta/llama-3.1-70b-instruct",
     }

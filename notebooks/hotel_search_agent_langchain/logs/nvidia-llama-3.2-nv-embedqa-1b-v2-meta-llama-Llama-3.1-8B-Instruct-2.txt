@@ -1,0 +1,423 @@
+kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain   main ±  poetry run python evals/eval_arize.py
+INFO:main:Using direct Capella API keys from environment
+INFO:phoenix.config:📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix
+INFO:phoenix.inferences.inferences:Dataset: phoenix_inferences_db62713f-ed61-4b70-b99f-5c7c91233ef1 initialized
+INFO:__main__:✅ Arize datasets client initialized
+INFO:__main__:✅ Phoenix evaluators initialized
+INFO:__main__:🔧 Setting up Phoenix observability...
+INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+INFO:alembic.runtime.migration:Will assume transactional DDL.
+INFO:alembic.runtime.migration:Running upgrade  -> cf03bd6bae1d, init
+INFO:alembic.runtime.migration:Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+INFO:alembic.runtime.migration:Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+INFO:alembic.runtime.migration:Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+INFO:alembic.runtime.migration:Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+INFO:alembic.runtime.migration:Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+INFO:alembic.runtime.migration:Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+INFO:alembic.runtime.migration:Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+INFO:alembic.runtime.migration:Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+INFO:alembic.runtime.migration:Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+INFO:alembic.runtime.migration:Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+INFO:__main__:🌐 Phoenix UI: http://localhost:6006/
+🔭 OpenTelemetry Tracing Details 🔭
+|  Phoenix Project: hotel-support-agent-evaluation
+|  Span Processor: SimpleSpanProcessor
+|  Collector Endpoint: http://localhost:6006/v1/traces
+|  Transport: HTTP + protobuf
+|  Transport Headers: {}
+|  
+|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.
+|  
+|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.
+|  
+|  `register` has set this TracerProvider as the global OpenTelemetry default.
+|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
+
+INFO:__main__:✅ Phoenix setup completed successfully
+INFO:__main__:✅ LangChain instrumentation enabled
+INFO:__main__:✅ OpenAI instrumentation enabled
+INFO:__main__:🔧 Setting up hotel support agent...
+INFO:shared.agent_setup:✅ Environment variables configured
+INFO:shared.couchbase_client:✅ Successfully connected to Couchbase
+INFO:shared.couchbase_client:✅ Connected to existing bucket 'travel-sample'
+INFO:shared.couchbase_client:ℹ️ Collection 'hotel_data' exists, keeping existing data
+INFO:shared.couchbase_client:✅ Primary index created successfully
+INFO:shared.couchbase_client:✅ Collection setup complete: agentc_data.hotel_data
+INFO:main:Loaded vector search index definition from agentcatalog_index.json
+INFO:shared.couchbase_client:ℹ️ Vector search index 'hotel_data_index' already exists
+INFO:main:✅ Vector search index setup completed
+INFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+INFO:shared.couchbase_client:🔄 Loading data into vector store...
+INFO:data.hotel_data:Loading hotel data from travel-sample.inventory.hotel...
+INFO:data.hotel_data:Loaded 917 hotels from travel-sample.inventory.hotel
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1756207014.443925 10826637 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+Processing hotels: 100%|█████████████████████████████████████████████████████████████████████████████| 917/917 [00:00<00:00, 129833.13it/s]
+INFO:data.hotel_data:Generated 917 hotel text embeddings
+INFO:data.hotel_data:Loading 917 hotel embeddings to travel-sample.agentc_data.hotel_data
+Loading hotel embeddings: 100%|██████████████████████████████████████████████████████████████████████████| 917/917 [04:15<00:00,  3.59it/s]
+INFO:data.hotel_data:Successfully loaded 917 hotel embeddings to vector store
+INFO:shared.couchbase_client:✅ Data loaded into vector store successfully
+INFO:shared.couchbase_client:✅ LangChain vector store setup complete: travel-sample.agentc_data.hotel_data
+INFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+INFO:__main__:✅ Hotel support agent setup completed successfully
+INFO:__main__:🚀 Starting Phoenix-only evaluation with 3 queries
+INFO:__main__:
+📋 Query 1/3
+INFO:__main__:🔍 Evaluating query: Find hotels in Giverny with free breakfast
+
+
+> Entering new AgentExecutor chain...
+Question: Find hotels in Giverny with free breakfast
+Thought:  Action: search_vector_database
+Action Input: query: "hotels in Giverny with free breakfast"
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: Le Clos Fleuri in Giverny, France. Address: 5 rue de la Dîme. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity. Danielle speaks fluent English having spent many years in Australia.. Type: hotel. Title: Giverny. Phone: +33 2 32 21 36 51. Vacancy: Yes. Coordinates: 49.0763077, 1.5234464. Reviews: 3 customer reviews available. Review 1: Very basic place to stay with adjoining buildings still run down from Katrina. If you have a car and looking for good value this is perfect. Complimentary Breakfast is adequate for what you pay. Overa.... Review 2: the bed were never cleaned, the same linens were on the bed. i would like a refund of $265.36. the office people who checked you in were not the friendly people either. they did not tell me just what .... Public likes: 7 likes (Score: 0.501)
+
+HOTEL_2: The Robins in Giverny, France. Address: 6 rue aux Juifs. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round.. Type: hotel. Title: Giverny. Price: 60 / 70 euros. Vacancy: Yes. Also known as: Les Rouges Gorges. Coordinates: 49.078069, 1.520866. Reviews: 5 customer reviews available. Review 1: Staff need a bit of a refresher in customer service...we couldn't get a safe and there were 6 of us - "sorry, none left" and not too helpful, the location was terrific but the staff let us down...no w.... Review 2: We ended up choosing the Holiday Inn because it had a combination of a low price and a really convenient location. It's close to some great restaurants and just far enough from Bourbon street so that ... (Score: 0.494)
+
+HOTEL_3: Le Bas Manoir in Bretteville-sur-Odon, France. Address: 1 Route de Verson. State: Basse-Normandie. Directions: On the west side of the perifirique.. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: High quality B&B with two rooms. Ensuite bathrooms, Free WiFi,access to garden, deliciuos breakfast. 18th century estate.. Type: hotel. Title: Caen. Price: €110. Phone: +33 6 07 86 65 25. Email: lebas.manoir@hotmail.fr. Coordinates: 49.16096, -0.42509. Reviews: 3 customer reviews available. Review 1: New York City: Comfort Inn Midtown Date: Sept. 26 - 30, 2006 Reviewer: Trip Advisor Member, Burlington,Canada This hotel provides very good value for the money. The room was $162 per night. The staff .... Review 2: Just came back from a long week-end in NYC. I agree with everybody. Almost everything was perfect about this hotel (location, cleanliness, friendly staff, small but workable room, decent breakfast, st... (Score: 0.406)
+
+HOTEL_4: Auberge-Camping Bagatelle in Avignon, France. Address: Île de la Barthelasse. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: This Hotel/ Hostel and Camp Site is situated on Ile de la Bathelasse in the centre of the Rhone . This is perhaps the best place to stay on a budget. It has great facilities and offers perhaps the best view of the center of Avignon. Carries a basic menu restaurant. Another benefit is that is placed directly between Avignon and the opposite town Villeneuve-les-Avignon, both begin within 10 minutes walk.. Type: hotel. Title: Avignon. Price: €16.56 with complimentary breakfast. Coordinates: 43.95310204393943, 4.799374084977899. Reviews: 1 customer reviews available. Review 1: I've been to Venice many times and this is by far the best hotel I have ever stayed in. As an American you are used to nicer hotels, but european hotels are....more like a bad Motel 6 experience to sa.... Public likes: 7 likes (Score: 0.404)
+
+HOTEL_5: Gounod in Nice, France. Address: Rue Gounod 3. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Free use of pool and whirldpool in next door hotel Splendid.. Type: hotel. Title: Nice. Price: €150. Phone: +33 4 93164200. Coordinates: 43.69913, 7.26021. Reviews: 7 customer reviews available. Review 1: Having lived in Germany for three years and extensively traveling to various countries in Europe, the Hotel Lumen would be a typical 3 star hotel. The rooms have the decor, and simplistic layout tradi.... Review 2: The walls are very thin, so when the neighbors next door came back at midnight and talked until 2 am, I heard every word (even though I put earplugs in and had a pillow over my head). Also, my room wa.... Public likes: 5 likes (Score: 0.401)
+
+HOTEL_6: Hostellerie du Beffroi in Vaison-la-Romaine, France. Address: rue de l'Evéché. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: 3-star hotel. Themed stays are available in history or oenology. Languages ​​spoken: English, German, Italian.. Type: hotel. Title: Vaison-la-Romaine. Price: from to 76-160 €, half board,+ € 39, breakfast € 12. Phone: +33 4 90 36 04 71. Email: hotel@le-beffroi.com. Coordinates: 44.2385499, 5.072163000000046. Reviews: 3 customer reviews available. Review 1: We just got back from a week at Tamarindo Estates and had one of the best vacations ever! The villa was spotless, the staff helpful, friendly and charming, the jeep was perfect for our needs and the i.... Review 2: Great choice of hotel. My sister had a wedding and her and fiancÃ© checked out few places to suggest. 5 or 6 couples / singles stayed here. We had 6 nights, greeted by Suzanna and shown around, so we .... Public likes: 3 likes (Score: 0.401)Question: Find hotels in Giverny with free breakfast
+Thought: Action: search_vector_database
+Action Input: query: "hotels in Giverny with free breakfast"
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: Le Clos Fleuri in Giverny, France. Address: 5 rue de la Dîme. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity. Danielle speaks fluent English having spent many years in Australia.. Type: hotel. Title: Giverny. Phone: +33 2 32 21 36 51. Vacancy: Yes. Coordinates: 49.0763077, 1.5234464. Reviews: 3 customer reviews available. Review 1: Very basic place to stay with adjoining buildings still run down from Katrina. If you have a car and looking for good value this is perfect. Complimentary Breakfast is adequate for what you pay. Overa.... Review 2: the bed were never cleaned, the same linens were on the bed. i would like a refund of $265.36. the office people who checked you in were not the friendly people either. they did not tell me just what .... Public likes: 7 likes (Score: 0.501)
+
+HOTEL_2: The Robins in Giverny, France. Address: 6 rue aux Juifs. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round.. Type: hotel. Title: Giverny. Price: 60 / 70 euros. Vacancy: Yes. Also known as: Les Rouges Gorges. Coordinates: 49.078069, 1.520866. Reviews: 5 customer reviews available. Review 1: Staff need a bit of a refresher in customer service...we couldn't get a safe and there were 6 of us - "sorry, none left" and not too helpful, the location was terrific but the staff let us down...no w.... Review 2: We ended up choosing the Holiday Inn because it had a combination of a low price and a really convenient location. It's close to some great restaurants and just far enough from Bourbon street so that ... (Score: 0.494)
+
+HOTEL_3: Le Bas Manoir in Bretteville-sur-Odon, France. Address: 1 Route de Verson. State: Basse-Normandie. Directions: On the west side of the perifirique.. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: High quality B&B with two rooms. Ensuite bathrooms, Free WiFi,access to garden, deliciuos breakfast. 18th century estate.. Type: hotel. Title: Caen. Price: €110. Phone: +33 6 07 86 65 25. Email: lebas.manoir@hotmail.fr. Coordinates: 49.16096, -0.42509. Reviews: 3 customer reviews available. Review 1: New York City: Comfort Inn Midtown Date: Sept. 26 - 30, 2006 Reviewer: Trip Advisor Member, Burlington,Canada This hotel provides very good value for the money. The room was $162 per night. The staff .... Review 2: Just came back from a long week-end in NYC. I agree with everybody. Almost everything was perfect about this hotel (location, cleanliness, friendly staff, small but workable room, decent breakfast, st... (Score: 0.406)
+
+HOTEL_4: Auberge-Camping Bagatelle in Avignon, France. Address: Île de la Barthelasse. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: This Hotel/ Hostel and Camp Site is situated on Ile de la Bathelasse in the centre of the Rhone . This is perhaps the best place to stay on a budget. It has great facilities and offers perhaps the best view of the center of Avignon. Carries a basic menu restaurant. Another benefit is that is placed directly between Avignon and the opposite town Villeneuve-les-Avignon, both begin within 10 minutes walk.. Type: hotel. Title: Avignon. Price: €16.56 with complimentary breakfast. Coordinates: 43.95310204393943, 4.799374084977899. Reviews: 1 customer reviews available. Review 1: I've been to Venice many times and this is by far the best hotel I have ever stayed in. As an American you are used to nicer hotels, but european hotels are....more like a bad Motel 6 experience to sa.... Public likes: 7 likes (Score: 0.404)
+
+HOTEL_5: Gounod in Nice, France. Address: Rue Gounod 3. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Free use of pool and whirldpool in next door hotel Splendid.. Type: hotel. Title: Nice. Price: €150. Phone: +33 4 93164200. Coordinates: 43.69913, 7.26021. Reviews: 7 customer reviews available. Review 1: Having lived in Germany for three years and extensively traveling to various countries in Europe, the Hotel Lumen would be a typical 3 star hotel. The rooms have the decor, and simplistic layout tradi.... Review 2: The walls are very thin, so when the neighbors next door came back at midnight and talked until 2 am, I heard every word (even though I put earplugs in and had a pillow over my head). Also, my room wa.... Public likes: 5 likes (Score: 0.401)
+
+HOTEL_6: Hostellerie du Beffroi in Vaison-la-Romaine, France. Address: rue de l'Evéché. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: 3-star hotel. Themed stays are available in history or oenology. Languages ​​spoken: English, German, Italian.. Type: hotel. Title: Vaison-la-Romaine. Price: from to 76-160 €, half board,+ € 39, breakfast € 12. Phone: +33 4 90 36 04 71. Email: hotel@le-beffroi.com. Coordinates: 44.2385499, 5.072163000000046. Reviews: 3 customer reviews available. Review 1: We just got back from a week at Tamarindo Estates and had one of the best vacations ever! The villa was spotless, the staff helpful, friendly and charming, the jeep was perfect for our needs and the i.... Review 2: Great choice of hotel. My sister had a wedding and her and fiancÃ© checked out few places to suggest. 5 or 6 couples / singles stayed here. We had 6 nights, greeted by Suzanna and shown around, so we .... Public likes: 3 likes (Score: 0.401)
+
+> Finished chain.
+INFO:__main__:✅ Query completed in 59.48s
+INFO:__main__:
+📋 Query 2/3
+INFO:__main__:🔍 Evaluating query: I need a hotel in Glossop with free internet access
+
+
+> Entering new AgentExecutor chain...
+Question: I need a hotel in Glossop with free internet access 
+Action: search_vector_database 
+Action Input: "Glossop hotel" 
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: The George Hotel in Glossop, United Kingdom. Address: Norfolk Street. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area.. Type: hotel. Title: Glossop. Price: From £35.00 (single) or £60.00 (double). Phone: +44 1457 855449. Vacancy: Yes. Coordinates: 53.444331, -1.948299. Reviews: 6 customer reviews available. Review 1: Everyone I met at the hotel made me feel very welcome and comfortable from the moment I arrived. This was my second trip to New Orleans and the best expierence ever. The room I had was a little crampe.... Review 2: 4 of us stayed here for the Cardinalâ€™s/Saintâ€™s game. As frequent visitors to NOLA, we decided to try something other than the 'Quarter. We recalled this gem from a stay last year. It is located in.... Public likes: 3 likes (Score: 0.381)
+
+HOTEL_2: Avondale Guest House in Glossop, United Kingdom. Address: 28 Woodhead Road. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Mobile: +44 7784 764969. Type: hotel. Title: Glossop. Phone: +44 1457 853132. Vacancy: Yes. Coordinates: 53.449979, -1.945284. Reviews: 7 customer reviews available. Review 1: I tagged along on my husband's work trip (not expensed) and had a great time. I think we made the perfect choice. PROS: 1. Location is fantastic. If you head out the back entrance you are a block from.... Review 2: I lived in New Orleans while completing my residency at Ochsner, but this was prior to The Ritz coming into existence there. A very close friend recommended that I stay there several years ago. Now I .... Public likes: 5 likes (Score: 0.356)
+
+HOTEL_3: The Bulls Head in Glossop, United Kingdom. Address: 102 Church Street, Old Glossop. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Public House, Restaurant & Guest House. Mobile: +44 7876 744061. Restaurant and bar. Tel: +44 1457 853291.. Type: hotel. Title: Glossop. Phone: +44 1457 866957. Coordinates: 53.450704, -1.939014. Reviews: 1 customer reviews available. Review 1: Very nice facility - the room was gorgeous, as was the center courtyard and main lobby. The concierge and doorman were a great help too. Bourban was just around the corner and we could walk or catch t.... Public likes: 8 likes (Score: 0.330)
+
+HOTEL_4: Windy Harbour Farm Hotel in Padfield, United Kingdom. Address: Woodhead Road. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Woodhead Rd, Glossop. Type: hotel. Title: Glossop. Phone: +44 1457 853107. Coordinates: 53.46327, -1.943125. Reviews: 8 customer reviews available. Review 1: We just got back from staying in New Orleans at the Avenue Garden Hotel. We were very impressed with the hotel. With paying such a cheap rate ($59/night), I was a little nervous about what we'd get be.... Review 2: This is one of the nicest hotels that i have stayed in. It is idealy located on St. Charles and the staff is great. The room was very nice, clean, and spacious. I will definatly be back. i have been v.... Public likes: 9 likes (Score: 0.315)
+
+HOTEL_5: Hallmark Hotel Derby in Derby, United Kingdom. Address: Midland Road. Free breakfast: Yes. Free internet: No. Free parking: No. Pets allowed: No. Description: Part of the Best Western chain of hotels. Sits opposite the Derby Mainline station.. Type: hotel. Title: Derby. Phone: +44 1332 345894. Vacancy: Yes. Also known as: Midland Hotel. Coordinates: 52.915715, -1.464273. Reviews: 6 customer reviews available. Review 1: My partner and myself stayed in Chancellor Hotel for a week during our summer holiday in the States recently and I've only good things to say about this boutique hotel. I picked this hotel from the fa.... Review 2: With just a few hiccups (room request not fufilled right away and initially unfriendly front desk worker - but we think she was new b/c she didn't know much ...) everything turned out great. The rooms.... Public likes: 5 likes (Score: 0.286)
+
+HOTEL_6: Greyhound Hotel Cromford in Cromford, United Kingdom. Address: Market Place. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: Yes. Description: Built in 1778 by Sir Richard Arkwright.. Type: hotel. Title: Cromford. Phone: +44 1629 822551. Coordinates: 53.108608, -1.560513. Reviews: 7 customer reviews available. Review 1: I have stayed at Harrah's seven out of my last eight trips to Vegas. I will continue to stay there. Their service is unmatched! We always get a great room, good food, and lots of fun! Some say the cas.... Review 2: This was our 4th visit to Las Vegas and we have stayed in the Stratosphere every time, we really like it here. The 'select' rooms are wonderful, really comfortable, spotlessly clean and at under $40 a.... Public likes: 2 likes (Score: 0.284)Question: I need a hotel in Glossop with free internet access 
+Action: search_vector_database 
+Action Input: "Glossop hotel free internet"
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: The George Hotel in Glossop, United Kingdom. Address: Norfolk Street. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area.. Type: hotel. Title: Glossop. Price: From £35.00 (single) or £60.00 (double). Phone: +44 1457 855449. Vacancy: Yes. Coordinates: 53.444331, -1.948299. Reviews: 6 customer reviews available. Review 1: Everyone I met at the hotel made me feel very welcome and comfortable from the moment I arrived. This was my second trip to New Orleans and the best expierence ever. The room I had was a little crampe.... Review 2: 4 of us stayed here for the Cardinalâ€™s/Saintâ€™s game. As frequent visitors to NOLA, we decided to try something other than the 'Quarter. We recalled this gem from a stay last year. It is located in.... Public likes: 3 likes (Score: 0.406)
+
+HOTEL_2: Avondale Guest House in Glossop, United Kingdom. Address: 28 Woodhead Road. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Mobile: +44 7784 764969. Type: hotel. Title: Glossop. Phone: +44 1457 853132. Vacancy: Yes. Coordinates: 53.449979, -1.945284. Reviews: 7 customer reviews available. Review 1: I tagged along on my husband's work trip (not expensed) and had a great time. I think we made the perfect choice. PROS: 1. Location is fantastic. If you head out the back entrance you are a block from.... Review 2: I lived in New Orleans while completing my residency at Ochsner, but this was prior to The Ritz coming into existence there. A very close friend recommended that I stay there several years ago. Now I .... Public likes: 5 likes (Score: 0.403)
+
+HOTEL_3: Windy Harbour Farm Hotel in Padfield, United Kingdom. Address: Woodhead Road. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Woodhead Rd, Glossop. Type: hotel. Title: Glossop. Phone: +44 1457 853107. Coordinates: 53.46327, -1.943125. Reviews: 8 customer reviews available. Review 1: We just got back from staying in New Orleans at the Avenue Garden Hotel. We were very impressed with the hotel. With paying such a cheap rate ($59/night), I was a little nervous about what we'd get be.... Review 2: This is one of the nicest hotels that i have stayed in. It is idealy located on St. Charles and the staff is great. The room was very nice, clean, and spacious. I will definatly be back. i have been v.... Public likes: 9 likes (Score: 0.387)
+
+HOTEL_4: The Bulls Head in Glossop, United Kingdom. Address: 102 Church Street, Old Glossop. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Public House, Restaurant & Guest House. Mobile: +44 7876 744061. Restaurant and bar. Tel: +44 1457 853291.. Type: hotel. Title: Glossop. Phone: +44 1457 866957. Coordinates: 53.450704, -1.939014. Reviews: 1 customer reviews available. Review 1: Very nice facility - the room was gorgeous, as was the center courtyard and main lobby. The concierge and doorman were a great help too. Bourban was just around the corner and we could walk or catch t.... Public likes: 8 likes (Score: 0.361)
+
+HOTEL_5: Hallmark Hotel Derby in Derby, United Kingdom. Address: Midland Road. Free breakfast: Yes. Free internet: No. Free parking: No. Pets allowed: No. Description: Part of the Best Western chain of hotels. Sits opposite the Derby Mainline station.. Type: hotel. Title: Derby. Phone: +44 1332 345894. Vacancy: Yes. Also known as: Midland Hotel. Coordinates: 52.915715, -1.464273. Reviews: 6 customer reviews available. Review 1: My partner and myself stayed in Chancellor Hotel for a week during our summer holiday in the States recently and I've only good things to say about this boutique hotel. I picked this hotel from the fa.... Review 2: With just a few hiccups (room request not fufilled right away and initially unfriendly front desk worker - but we think she was new b/c she didn't know much ...) everything turned out great. The rooms.... Public likes: 5 likes (Score: 0.358)
+
+HOTEL_6: Copthorne Hotel in Birmingham, United Kingdom. Address: Paradies Circus. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: One of the hotels serving the ICC and a monument to the era in hospitality mercifully gone by.. Type: hotel. Title: Birmingham (England). Coordinates: 52.4802, -1.9064. Reviews: 1 customer reviews available. Review 1: only office type chair in our room ask for extra chair in room when booking. quiet room with no view, but very good senior rate. palmer house lobby outstanding, hotel restaurant fairly reasonable for .... Public likes: 8 likes (Score: 0.355)
+
+> Finished chain.
+INFO:__main__:✅ Query completed in 51.22s
+INFO:__main__:
+📋 Query 3/3
+INFO:__main__:🔍 Evaluating query: Show me hotels in Helensburgh with free breakfast
+
+
+> Entering new AgentExecutor chain...
+Question: Show me hotels in Helensburgh with free breakfast
+Thought:  Action: search_vector_database
+Action Input: query: "helensburgh free breakfast"
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: Imperial Hotel in Helensburgh, United Kingdom. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: In the centre of town on the sea front.. Type: hotel. Title: Helensburgh. Phone: +44 1436 672320. Coordinates: 56.00308, -4.73468. Reviews: 2 customer reviews available. Review 1: we stated at this hotel for only one nite and wished we had stayed here on a previous trip. The staff at check in are fantastic, the hotel is modern, clean, comfortable, and has a fantastic free inter.... Review 2: Ibis on Bencoolen street would steal your heart (and not your money) and leave memories to cherish no sooner you enter the Hotel. The staff at reception very courteous at the reception was real quick ... (Score: 0.437)
+
+HOTEL_2: Commodore Hotel in Helensburgh, United Kingdom. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre.. Type: hotel. Title: Helensburgh. Phone: +44 1436 676924. Coordinates: 56.00481, -4.74472. Reviews: 2 customer reviews available. Review 1: this is my second time to stay in ibis hotel bencoolen. the first time i was with my husband and young daughter, and i hardly noticed the lack of space. but this time my second daughter tagged along, .... Review 2: We found the hotel Ibis to be a very clean modern hotel, the facilities and room we had were very clean and roomy enough, the food was excellent along with the service, we found the staff to be very f... (Score: 0.404)
+
+HOTEL_3: County Lodge Hotel in Helensburgh, United Kingdom. Address: Old Luss Road, Helensburgh, G84 7BH.. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Nearly 1 mile east of the town centre, near Colgrain Station.. Type: hotel. Title: Helensburgh. Price: Rooms £40-£55. Phone: +44 1436 672034. Coordinates: 55.99884, -4.71354. Public likes: 1 likes (Score: 0.398)
+
+HOTEL_4: Columba Hotel in None, United Kingdom. Address: The Esplanade, Oban, PA34 5QD. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: Yes. Description: As it is on the North Pier, rooms on three sides have sea views, some rooms at the back can be noisy from the pubs below.. Type: hotel. Title: Oban. Price: Rooms generally £50-80 per room.. Phone: +44 1631 562183. Coordinates: 56.4149, -5.47393. Reviews: 3 customer reviews available. Review 1: This inn was wonderful, beautiful and spacious rooms and bathroom. Our room had a great view of the harbor, I really cannot say enough good things. The breakfast had a large selection of fresh fruit, .... Review 2: We have four children and stayed in two rooms next to one another during the gap between Christmas and New Years Day. Extremely happy with the rooms; very comfortable beds, towels and very much liked .... Public likes: 8 likes (Score: 0.329)
+
+HOTEL_5: Oban Backpackers in Oban, United Kingdom. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Private hostel, relaxed, fun, clean and cosy. Landrover day tours of 'hidden Argyll' available leaving daily.. Type: hotel. Title: Oban. Price: from £16. Vacancy: Yes. Coordinates: 56.4177, -5.4727. Reviews: 4 customer reviews available. Review 1: Spent a weekend at the Henderson Wharf Inn located in the Fells Point section of Baltimore. I had a great time. Its directly on the water and has a boardwalk that stretches almost all the way down to .... Review 2: Will come again in spite of a couple of small things... We requested a room close to the lobby as walking is a problem, but that request was ignored and we had to wait over a half hour for another roo.... Public likes: 6 likes (Score: 0.323)
+
+HOTEL_6: Seal View in Na h-Eileanan an Iar, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Offers 1 family room, sleeping up to four (with private bath). Panoramic views of sea, mountains and basking seals.. Type: hotel. Title: Berneray. Price: £35 for one person, £50 for two, £10 for additional guests. Phone: +44 1876 540209. Vacancy: Yes. Coordinates: 57.7188, -7.17334. Public likes: 9 likes (Score: 0.316)Question: Show me hotels in Helensburgh with free breakfast
+Thought:  Action: search_vector_database
+Action Input: query: "helensburgh free breakfast"
+ObservationINFO:shared.agent_setup:🔧 Setting up AI services for langchain framework...
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella embeddings API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for model: nvidia/llama-3.2-nv-embedqa-1b-v2
+INFO:shared.agent_setup:✅ Using new Capella AI embeddings (custom class with direct API key)
+INFO:shared.capella_model_services_langchain:✅ Using direct Capella LLM API key
+INFO:shared.capella_model_services_langchain:✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct
+INFO:shared.agent_setup:✅ Using new Capella AI LLM (custom class with direct API key)
+INFO:shared.agent_setup:✅ AI services setup completed for langchain
+FOUND_6_HOTELS:
+HOTEL_1: Imperial Hotel in Helensburgh, United Kingdom. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: In the centre of town on the sea front.. Type: hotel. Title: Helensburgh. Phone: +44 1436 672320. Coordinates: 56.00308, -4.73468. Reviews: 2 customer reviews available. Review 1: we stated at this hotel for only one nite and wished we had stayed here on a previous trip. The staff at check in are fantastic, the hotel is modern, clean, comfortable, and has a fantastic free inter.... Review 2: Ibis on Bencoolen street would steal your heart (and not your money) and leave memories to cherish no sooner you enter the Hotel. The staff at reception very courteous at the reception was real quick ... (Score: 0.437)
+
+HOTEL_2: Commodore Hotel in Helensburgh, United Kingdom. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre.. Type: hotel. Title: Helensburgh. Phone: +44 1436 676924. Coordinates: 56.00481, -4.74472. Reviews: 2 customer reviews available. Review 1: this is my second time to stay in ibis hotel bencoolen. the first time i was with my husband and young daughter, and i hardly noticed the lack of space. but this time my second daughter tagged along, .... Review 2: We found the hotel Ibis to be a very clean modern hotel, the facilities and room we had were very clean and roomy enough, the food was excellent along with the service, we found the staff to be very f... (Score: 0.404)
+
+HOTEL_3: County Lodge Hotel in Helensburgh, United Kingdom. Address: Old Luss Road, Helensburgh, G84 7BH.. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Nearly 1 mile east of the town centre, near Colgrain Station.. Type: hotel. Title: Helensburgh. Price: Rooms £40-£55. Phone: +44 1436 672034. Coordinates: 55.99884, -4.71354. Public likes: 1 likes (Score: 0.398)
+
+HOTEL_4: Columba Hotel in None, United Kingdom. Address: The Esplanade, Oban, PA34 5QD. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: Yes. Description: As it is on the North Pier, rooms on three sides have sea views, some rooms at the back can be noisy from the pubs below.. Type: hotel. Title: Oban. Price: Rooms generally £50-80 per room.. Phone: +44 1631 562183. Coordinates: 56.4149, -5.47393. Reviews: 3 customer reviews available. Review 1: This inn was wonderful, beautiful and spacious rooms and bathroom. Our room had a great view of the harbor, I really cannot say enough good things. The breakfast had a large selection of fresh fruit, .... Review 2: We have four children and stayed in two rooms next to one another during the gap between Christmas and New Years Day. Extremely happy with the rooms; very comfortable beds, towels and very much liked .... Public likes: 8 likes (Score: 0.329)
+
+HOTEL_5: Oban Backpackers in Oban, United Kingdom. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Private hostel, relaxed, fun, clean and cosy. Landrover day tours of 'hidden Argyll' available leaving daily.. Type: hotel. Title: Oban. Price: from £16. Vacancy: Yes. Coordinates: 56.4177, -5.4727. Reviews: 4 customer reviews available. Review 1: Spent a weekend at the Henderson Wharf Inn located in the Fells Point section of Baltimore. I had a great time. Its directly on the water and has a boardwalk that stretches almost all the way down to .... Review 2: Will come again in spite of a couple of small things... We requested a room close to the lobby as walking is a problem, but that request was ignored and we had to wait over a half hour for another roo.... Public likes: 6 likes (Score: 0.323)
+
+HOTEL_6: Seal View in Na h-Eileanan an Iar, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Offers 1 family room, sleeping up to four (with private bath). Panoramic views of sea, mountains and basking seals.. Type: hotel. Title: Berneray. Price: £35 for one person, £50 for two, £10 for additional guests. Phone: +44 1876 540209. Vacancy: Yes. Coordinates: 57.7188, -7.17334. Public likes: 9 likes (Score: 0.316)
+
+> Finished chain.
+INFO:__main__:✅ Query completed in 49.41s
+INFO:__main__:🧠 Running Phoenix evaluations on 3 responses...
+INFO:__main__:📋 Evaluation criteria:
+INFO:__main__:   🔍 Relevance: Does the response address the hotel search query?
+INFO:__main__:   🎯 QA Correctness: Is the hotel information accurate and helpful?
+INFO:__main__:   🚨 Hallucination: Does the response contain fabricated information?
+INFO:__main__:   ☠️ Toxicity: Is the response harmful or inappropriate?
+INFO:__main__:   📊 Running relevance evaluation...
+llm_classify |                                                                                            | 0/3 (0.0%) | ⏳ 00:00<? | ?it/sI0000 00:00:1756207439.362947 10835251 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1756207439.371297 10835252 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1756207439.375432 10835253 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1756207439.391481 10835251 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1756207439.396721 10835252 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1756207439.400237 10835253 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+llm_classify |██████████████████████████████████████████████████████████████████████████████████| 3/3 (100.0%) | ⏳ 00:04<00:00 |  1.53s/it
+INFO:__main__:   ✅ relevance evaluation completed
+INFO:__main__:   📊 Running qa_correctness evaluation...
+llm_classify |                                                                                            | 0/3 (0.0%) | ⏳ 00:00<? | ?it/sERROR:asyncio:Task exception was never retrieved
+future: <Task finished name='Task-28985' coro=<AsyncClient.aclose() done, defined at /Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')>
+Traceback (most recent call last):
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1985, in aclose
+    await self._transport.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 406, in aclose
+    await self._pool.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 353, in aclose
+    await self._close_connections(closing_connections)
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 345, in _close_connections
+    await connection.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpcore/_async/connection.py", line 173, in aclose
+    await self._connection.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpcore/_async/http11.py", line 258, in aclose
+    await self._network_stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 53, in aclose
+    await self._stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/anyio/streams/tls.py", line 216, in aclose
+    await self.transport_stream.aclose()
+  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1314, in aclose
+    self._transport.close()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/selector_events.py", line 1213, in close
+    super().close()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/selector_events.py", line 875, in close
+    self._loop.call_soon(self._call_connection_lost, None)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+llm_classify |██████████████████████████████████████████████████████████████████████████████████| 3/3 (100.0%) | ⏳ 00:06<00:00 |  2.03s/it
+INFO:__main__:   ✅ qa_correctness evaluation completed
+INFO:__main__:   📊 Running hallucination evaluation...
+llm_classify |██████████████████████████████████████████████████████████████████████████████████| 3/3 (100.0%) | ⏳ 00:08<00:00 |  2.73s/it
+INFO:__main__:   ✅ hallucination evaluation completed
+INFO:__main__:   📊 Running toxicity evaluation...
+llm_classify |██████████████████████████████████████████████████████████████████████████████████| 3/3 (100.0%) | ⏳ 00:05<00:00 |  1.73s/it
+INFO:__main__:   ✅ toxicity evaluation completed
+INFO:__main__:✅ Phoenix evaluations completed
+INFO:__main__:
+📊 Phoenix Evaluation Summary:
+INFO:__main__:  Total queries: 3
+INFO:__main__:  Successful executions: 3
+INFO:__main__:  Failed executions: 0
+INFO:__main__:  Average execution time: 53.37s
+
+==================================================
+📊 EVALUATION RESULTS SUMMARY
+==================================================
+
+🔍 Relevance: Does the response address the user query?
+----------------------------------------
+  ✅ Relevant: 3/3 (100.0%)
+
+🎯 QA Correctness: Is the response factually correct?
+----------------------------------------
+  ✅ Correct: 3/3 (100.0%)
+
+🚨 Hallucination: Does the response contain fabricated info?
+----------------------------------------
+  ✅ Factual: 2/3 (66.7%)
+  ❌ Hallucinated: 1/3 (33.3%)
+
+☠️ Toxicity: Is the response harmful or inappropriate?
+----------------------------------------
+  ✅ Non-Toxic: 3/3 (100.0%)
+
+==================================================
+💡 RECOMMENDATIONS
+==================================================
+⚠️ 1 responses contained hallucinations
+   → Review reference data completeness
+   → Check if search results are being properly used
+
+✅ All responses were non-toxic - great job!
+==================================================
+INFO:__main__:
+📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
+INFO:__main__:================================================================================
+INFO:__main__:
+🔍 QUERY 1: Find hotels in Giverny with free breakfast
+INFO:__main__:------------------------------------------------------------
+INFO:__main__:
+📊 RELEVANCE: relevant
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The question asks for hotels in Giverny that offer free breakfast. The reference text provides information about a specific hotel in Giverny, named Le Clos Fleuri, which offers free breakfast as one of its amenities. This directly addresses the question by identifying a hotel that meets the specified criterion of having free breakfast. Therefore, the reference text contains relevant information that answers the question.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 QA_CORRECTNESS: correct
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response successfully identified a hotel in Giverny that offers free breakfast, which is 'Le Clos Fleuri'. This matches the user's request for hotels in Giverny with free breakfast. The additional hotels listed are not in Giverny or do not offer free breakfast, but the primary request was fulfilled with accurate and relevant information about 'Le Clos Fleuri'.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 HALLUCINATION: factual
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response provides information about several hotels, including 'Le Clos Fleuri' in Giverny, which matches the reference answer. The details about 'Le Clos Fleuri' are consistent with the reference, including the address, amenities, and description. The presence of other hotels in the response is expected due to dynamic search results, and they are not in Giverny, which aligns with the request for hotels in Giverny with free breakfast. The AI correctly identifies 'Le Clos Fleuri' as offering free breakfast, which is the main requirement. Therefore, the response is factual.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 TOXICITY: non-toxic
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text in question is: "Find hotels in Giverny with free breakfast." This statement is a straightforward request for information about hotels in a specific location that offer a particular amenity (free breakfast). There are no words or phrases in this text that could be interpreted as hateful, demeaning, inappropriate, or threatening. The language is neutral and focused solely on the topic of finding hotels. Therefore, the text does not meet any criteria for toxicity.
+INFO:__main__:----------------------------------------
+INFO:__main__:================================================================================
+INFO:__main__:
+🔍 QUERY 2: I need a hotel in Glossop with free internet access
+INFO:__main__:------------------------------------------------------------
+INFO:__main__:
+📊 RELEVANCE: relevant
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The question asks for a hotel in Glossop with free internet access. The reference text provides a list of hotels in Glossop that offer free internet access, including details such as addresses, phone numbers, and other amenities. This directly answers the question by providing specific options that meet the criteria of having free internet access in Glossop.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 QA_CORRECTNESS: correct
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response successfully provided information about hotels in Glossop that offer free internet access, which was the user's request. The response included details about several hotels, such as The George Hotel, Avondale Guest House, The Bulls Head, and Windy Harbour Farm Hotel, all of which are located in or near Glossop and offer free internet. The core information is accurate and relevant to the user's query, fulfilling the functional requirement of the task.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 HALLUCINATION: factual
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response provides plausible hotel data from search results, including names, addresses, and amenities that align with typical hotel search functionality. The hotels listed in Glossop, such as The George Hotel, Avondale Guest House, The Bulls Head, and Windy Harbour Farm Hotel, match the reference answer. The additional hotels listed (Hallmark Hotel Derby and Copthorne Hotel in Birmingham) are outside of Glossop but do not contain fabricated information. The presence of these additional hotels is likely due to dynamic search results, which is expected behavior. Therefore, the response is factual.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 TOXICITY: non-toxic
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text in question is a simple request for a hotel in Glossop with free internet access. It does not contain any language that could be considered hateful or demeaning. There are no inappropriate words or phrases, nor are there any threats of physical or emotional violence. The text is straightforward and neutral, focusing solely on the request for a specific type of accommodation. Therefore, the text does not meet any criteria for toxicity.
+INFO:__main__:----------------------------------------
+INFO:__main__:================================================================================
+INFO:__main__:
+🔍 QUERY 3: Show me hotels in Helensburgh with free breakfast
+INFO:__main__:------------------------------------------------------------
+INFO:__main__:
+📊 RELEVANCE: relevant
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The question asks for hotels in Helensburgh that offer free breakfast. The reference text provides a list of two hotels in Helensburgh, namely County Lodge Hotel and Commodore Hotel, both of which offer free breakfast. The text includes additional details about each hotel, such as location, amenities, and pricing, which are relevant to the question. Therefore, the reference text contains information that directly answers the question.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 QA_CORRECTNESS: correct
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response provided information on hotels in Helensburgh, specifically mentioning the Commodore Hotel and County Lodge Hotel, both of which offer free breakfast. These hotels match the user's request for hotels in Helensburgh with free breakfast. Although additional hotels were listed, the core request was fulfilled with accurate and relevant information about the two hotels that meet the criteria. Therefore, the response is functionally successful.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 HALLUCINATION: hallucinated
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:The AI response includes hotels that are not relevant to the query, such as those located in Oban and Na h-Eileanan an Iar, which are not in Helensburgh. Additionally, the Imperial Hotel is listed but does not offer free breakfast, which contradicts the query requirement. The response also includes repeated information, which suggests a system error. However, the Commodore Hotel and County Lodge Hotel are correctly identified as offering free breakfast in Helensburgh. The presence of irrelevant hotels and incorrect information about the Imperial Hotel indicates hallucination.
+INFO:__main__:----------------------------------------
+INFO:__main__:
+📊 TOXICITY: non-toxic
+INFO:__main__:💭 FULL REASONING:
+INFO:__main__:To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. 
+
+1. The text is a request for information about hotels in Helensburgh that offer free breakfast. 
+2. There are no words or phrases in the text that are hateful or demeaning towards any individual or group.
+3. The language used is neutral and polite, simply asking for information.
+4. There are no threats, either physical or emotional, present in the text.
+5. The text does not contain any inappropriate language or sentiments.
+
+Based on this analysis, the text does not meet any criteria for toxicity. It is a straightforward request for information without any negative or harmful language.
+INFO:__main__:----------------------------------------
+INFO:__main__:================================================================================
+INFO:__main__:✅ Arize dataset created: hotel-search-evaluation-20250826_165423 (ID: RGF0YXNldDozMDM2NDM6TlFVVQ==)
+INFO:__main__:📊 Arize dataset created: RGF0YXNldDozMDM2NDM6TlFVVQ==
+INFO:__main__:
+✅ Phoenix evaluation complete!
+INFO:__main__:🔒 Phoenix cleanup completed
+ kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain   main ±  

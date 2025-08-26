@@ -11,6 +11,7 @@ Custom implementations for Capella AI embeddings and LLM that handle:
 
 import logging
 import math
+import os
 from typing import List, Optional, Any
 
 import httpx
@@ -44,7 +45,7 @@ class CapellaLlamaIndexEmbeddings(BaseEmbedding):
         model: str,
         input_type_for_query: str = "query",
         input_type_for_passage: str = "passage",
-        max_tokens: int = 512,
+        max_tokens: Optional[int] = None,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -54,7 +55,8 @@ class CapellaLlamaIndexEmbeddings(BaseEmbedding):
         self._model = model
         self._input_type_for_query = input_type_for_query
         self._input_type_for_passage = input_type_for_passage
-        self._max_tokens = max_tokens
+        # Use environment variable with 512 as fallback
+        self._max_tokens = max_tokens or int(os.getenv("CAPELLA_API_EMBEDDING_MAX_TOKENS", "512"))
         
         # Check if this model needs input_type (nv-embedqa models)
         self._needs_input_type = "nv-embedqa" in model.lower()
