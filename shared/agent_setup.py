@@ -2,11 +2,12 @@
 """
 Universal Agent Setup Module
 
-Provides consistent 4-case priority AI service setup for all agent frameworks:
-1. New Capella (direct API keys) - Custom classes
-2. Old Capella (base64 encoding) - OpenAI wrappers  
-3. NVIDIA NIM API - Native clients
-4. OpenAI fallback - Native clients
+Provides consistent 5-case priority AI service setup for all agent frameworks:
+1. Latest Capella (direct API keys) - OpenAI wrappers (simple & fast)
+2. New Capella (direct API keys) - Custom classes (advanced features)
+3. Old Capella (base64 encoding) - OpenAI wrappers (legacy support)
+4. NVIDIA NIM API - Native clients
+5. OpenAI fallback - Native clients
 
 Supports: LangChain, LlamaIndex, LangGraph
 """
@@ -26,7 +27,7 @@ def setup_ai_services(
     application_span: Optional[Any] = None
 ) -> Tuple[Any, Any]:
     """
-    Universal AI service setup with 4-case priority ladder.
+    Universal AI service setup with 5-case priority ladder.
     
     Args:
         framework: "langchain", "llamaindex", or "langgraph" 
@@ -43,7 +44,76 @@ def setup_ai_services(
     logger.info(f"🔧 Setting up AI services for {framework} framework...")
     
     # ====================================================================
-    # 1. NEW CAPELLA MODEL SERVICES (with direct API key) - PRIORITY 1
+    # 1. LATEST CAPELLA (OpenAI wrappers with direct API keys) - PRIORITY 1
+    # ====================================================================
+    # if (
+    #     not embeddings 
+    #     and os.getenv("CAPELLA_API_ENDPOINT") 
+    #     and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
+    # ):
+    #     try:
+    #         if framework == "llamaindex":
+    #             from llama_index.embeddings.openai import OpenAIEmbedding
+    #             embeddings = OpenAIEmbedding(
+    #                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+    #                 api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+    #                 model_name=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+    #                 embed_batch_size=30,
+    #             )
+    #         else:  # langchain, langgraph
+    #             from langchain_openai import OpenAIEmbeddings
+    #             embeddings = OpenAIEmbeddings(
+    #                 model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+    #                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+    #                 base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+    #             )
+    #         logger.info("✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)")
+    #     except Exception as e:
+    #         logger.warning(f"⚠️ Latest Capella AI embeddings failed: {e}")
+
+    # if (
+    #     not llm 
+    #     and os.getenv("CAPELLA_API_ENDPOINT") 
+    #     and os.getenv("CAPELLA_API_LLM_KEY")
+    # ):
+    #     try:
+    #         if framework == "llamaindex":
+    #             from llama_index.llms.openai_like import OpenAILike
+    #             llm = OpenAILike(
+    #                 model=os.getenv("CAPELLA_API_LLM_MODEL"),
+    #                 api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+    #                 api_key=os.getenv("CAPELLA_API_LLM_KEY"),
+    #                 is_chat_model=True,
+    #                 temperature=temperature,
+    #             )
+    #         else:  # langchain, langgraph
+    #             from langchain_openai import ChatOpenAI
+                
+    #             # Add callbacks for LangChain/LangGraph
+    #             chat_kwargs = {
+    #                 "api_key": os.getenv("CAPELLA_API_LLM_KEY"),
+    #                 "base_url": f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+    #                 "model": os.getenv("CAPELLA_API_LLM_MODEL"),
+    #                 "temperature": temperature,
+    #             }
+    #             if callbacks:
+    #                 chat_kwargs["callbacks"] = callbacks
+                    
+    #             llm = ChatOpenAI(**chat_kwargs)
+                
+    #         # Test the LLM works
+    #         if framework == "llamaindex":
+    #             llm.complete("Hello")
+    #         else:
+    #             llm.invoke("Hello")
+                
+    #         logger.info("✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)")
+    #     except Exception as e:
+    #         logger.warning(f"⚠️ Latest Capella AI LLM failed: {e}")
+    #         llm = None
+
+    # ====================================================================
+    # 2. NEW CAPELLA MODEL SERVICES (custom classes with direct API key) - PRIORITY 2
     # ====================================================================
     if (
         not embeddings 
@@ -63,9 +133,9 @@ def setup_ai_services(
                 input_type_for_query="query",
                 input_type_for_passage="passage"
             )
-            logger.info("✅ Using new Capella AI embeddings (direct API key)")
+            logger.info("✅ Using new Capella AI embeddings (custom class with direct API key)")
         except Exception as e:
-            logger.warning(f"⚠️ New Capella AI embeddings failed: {e}")
+            logger.warning(f"⚠️ New Capella AI embeddings (custom class) failed: {e}")
 
     if (
         not llm 
@@ -98,13 +168,13 @@ def setup_ai_services(
             else:
                 llm.invoke("Hello")
                 
-            logger.info("✅ Using new Capella AI LLM (direct API key)")
+            logger.info("✅ Using new Capella AI LLM (custom class with direct API key)")
         except Exception as e:
-            logger.warning(f"⚠️ New Capella AI LLM failed: {e}")
+            logger.warning(f"⚠️ New Capella AI LLM (custom class) failed: {e}")
             llm = None
 
     # ====================================================================
-    # 2. OLD CAPELLA MODEL SERVICES (with base64 encoding) - PRIORITY 2  
+    # 3. OLD CAPELLA MODEL SERVICES (with base64 encoding) - PRIORITY 3  
     # ====================================================================
     if (
         not embeddings 
@@ -183,7 +253,7 @@ def setup_ai_services(
             llm = None
 
     # ====================================================================
-    # 3. NVIDIA NIM API - PRIORITY 3
+    # 4. NVIDIA NIM API - PRIORITY 4
     # ====================================================================
     if not embeddings and os.getenv("NVIDIA_API_KEY"):
         try:
@@ -232,7 +302,7 @@ def setup_ai_services(
             logger.warning(f"⚠️ NVIDIA NIM LLM failed: {e}")
 
     # ====================================================================
-    # 4. OPENAI FALLBACK - PRIORITY 4
+    # 5. OPENAI FALLBACK - PRIORITY 5
     # ====================================================================
     if not embeddings and os.getenv("OPENAI_API_KEY"):
         try:
