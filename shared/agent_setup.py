@@ -46,71 +46,72 @@ def setup_ai_services(
     # ====================================================================
     # 1. LATEST CAPELLA (OpenAI wrappers with direct API keys) - PRIORITY 1
     # ====================================================================
-    # if (
-    #     not embeddings 
-    #     and os.getenv("CAPELLA_API_ENDPOINT") 
-    #     and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
-    # ):
-    #     try:
-    #         if framework == "llamaindex":
-    #             from llama_index.embeddings.openai import OpenAIEmbedding
-    #             embeddings = OpenAIEmbedding(
-    #                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
-    #                 api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-    #                 model_name=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-    #                 embed_batch_size=30,
-    #             )
-    #         else:  # langchain, langgraph
-    #             from langchain_openai import OpenAIEmbeddings
-    #             embeddings = OpenAIEmbeddings(
-    #                 model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-    #                 api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
-    #                 base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-    #             )
-    #         logger.info("✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)")
-    #     except Exception as e:
-    #         logger.warning(f"⚠️ Latest Capella AI embeddings failed: {e}")
+    if (
+        not embeddings 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
+    ):
+        try:
+            if framework == "llamaindex":
+                from llama_index.embeddings.openai import OpenAIEmbedding
+                embeddings = OpenAIEmbedding(
+                    api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+                    api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    model_name=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                    embed_batch_size=30,
+                )
+            else:  # langchain, langgraph
+                from langchain_openai import OpenAIEmbeddings
+                embeddings = OpenAIEmbeddings(
+                    model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
+                    api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+                    base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    check_embedding_ctx_length=False,  # Fix for asymmetric models
+                )
+            logger.info("✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)")
+        except Exception as e:
+            logger.warning(f"⚠️ Latest Capella AI embeddings failed: {e}")
 
-    # if (
-    #     not llm 
-    #     and os.getenv("CAPELLA_API_ENDPOINT") 
-    #     and os.getenv("CAPELLA_API_LLM_KEY")
-    # ):
-    #     try:
-    #         if framework == "llamaindex":
-    #             from llama_index.llms.openai_like import OpenAILike
-    #             llm = OpenAILike(
-    #                 model=os.getenv("CAPELLA_API_LLM_MODEL"),
-    #                 api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-    #                 api_key=os.getenv("CAPELLA_API_LLM_KEY"),
-    #                 is_chat_model=True,
-    #                 temperature=temperature,
-    #             )
-    #         else:  # langchain, langgraph
-    #             from langchain_openai import ChatOpenAI
+    if (
+        not llm 
+        and os.getenv("CAPELLA_API_ENDPOINT") 
+        and os.getenv("CAPELLA_API_LLM_KEY")
+    ):
+        try:
+            if framework == "llamaindex":
+                from llama_index.llms.openai_like import OpenAILike
+                llm = OpenAILike(
+                    model=os.getenv("CAPELLA_API_LLM_MODEL"),
+                    api_base=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    api_key=os.getenv("CAPELLA_API_LLM_KEY"),
+                    is_chat_model=True,
+                    temperature=temperature,
+                )
+            else:  # langchain, langgraph
+                from langchain_openai import ChatOpenAI
                 
-    #             # Add callbacks for LangChain/LangGraph
-    #             chat_kwargs = {
-    #                 "api_key": os.getenv("CAPELLA_API_LLM_KEY"),
-    #                 "base_url": f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
-    #                 "model": os.getenv("CAPELLA_API_LLM_MODEL"),
-    #                 "temperature": temperature,
-    #             }
-    #             if callbacks:
-    #                 chat_kwargs["callbacks"] = callbacks
+                # Add callbacks for LangChain/LangGraph
+                chat_kwargs = {
+                    "api_key": os.getenv("CAPELLA_API_LLM_KEY"),
+                    "base_url": f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+                    "model": os.getenv("CAPELLA_API_LLM_MODEL"),
+                    "temperature": temperature,
+                }
+                if callbacks:
+                    chat_kwargs["callbacks"] = callbacks
                     
-    #             llm = ChatOpenAI(**chat_kwargs)
+                llm = ChatOpenAI(**chat_kwargs)
                 
-    #         # Test the LLM works
-    #         if framework == "llamaindex":
-    #             llm.complete("Hello")
-    #         else:
-    #             llm.invoke("Hello")
+            # Test the LLM works
+            if framework == "llamaindex":
+                llm.complete("Hello")
+            else:
+                llm.invoke("Hello")
                 
-    #         logger.info("✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)")
-    #     except Exception as e:
-    #         logger.warning(f"⚠️ Latest Capella AI LLM failed: {e}")
-    #         llm = None
+            logger.info("✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)")
+        except Exception as e:
+            logger.warning(f"⚠️ Latest Capella AI LLM failed: {e}")
+            llm = None
 
     # ====================================================================
     # 2. NEW CAPELLA MODEL SERVICES (custom classes with direct API key) - PRIORITY 2
