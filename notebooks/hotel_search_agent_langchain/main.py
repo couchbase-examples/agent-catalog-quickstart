@@ -143,7 +143,7 @@ def setup_hotel_support_agent():
     try:
         # Initialize Agent Catalog with single application span
         catalog = agentc.catalog.Catalog()
-        application_span = catalog.Span(name="Hotel Support Agent")
+        application_span = catalog.Span(name="Hotel Support Agent", blacklist=set())
 
         # Setup environment
         setup_environment()

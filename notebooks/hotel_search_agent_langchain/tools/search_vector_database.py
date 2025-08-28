@@ -9,33 +9,50 @@ import couchbase.exceptions
 import couchbase.options
 import dotenv
 
-# Import shared AI services module using robust project root discovery
-def find_project_root():
-    """Find the project root by looking for the shared directory."""
-    current = os.path.dirname(os.path.abspath(__file__))
-    while current != os.path.dirname(current):  # Stop at filesystem root
-        # Look for the shared directory as the definitive marker
-        shared_path = os.path.join(current, 'shared')
-        if os.path.exists(shared_path) and os.path.isdir(shared_path):
-            return current
-        current = os.path.dirname(current)
-    return None
+# # Import shared AI services module using robust project root discovery
+# def find_project_root():
+#     """Find the project root by looking for the shared directory."""
+#     current = os.path.dirname(os.path.abspath(__file__))
+#     while current != os.path.dirname(current):  # Stop at filesystem root
+#         # Look for the shared directory as the definitive marker
+#         shared_path = os.path.join(current, 'shared')
+#         if os.path.exists(shared_path) and os.path.isdir(shared_path):
+#             return current
+#         current = os.path.dirname(current)
+#     return None
 
-# Add project root to Python path
-project_root = find_project_root()
-if project_root and project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# # Add project root to Python path
+# project_root = find_project_root()
+# if project_root and project_root not in sys.path:
+#     sys.path.insert(0, project_root)
 
-from shared.agent_setup import setup_ai_services
+# from shared.agent_setup import setup_ai_services
 
+# Use direct OpenAI embeddings approach - same as working notebook
+from langchain_openai import OpenAIEmbeddings
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 
 dotenv.load_dotenv()
 
 def setup_embeddings_service_for_tool():
-    """Setup embeddings service using shared 4-case priority ladder."""
-    embeddings, _ = setup_ai_services(framework="langchain")
-    return embeddings
+    """Setup embeddings service using the working notebook approach."""
+    try:
+        model = os.getenv("CAPELLA_API_EMBEDDING_MODEL")
+        api_key = os.getenv("CAPELLA_API_EMBEDDINGS_KEY")
+        endpoint = os.getenv("CAPELLA_API_ENDPOINT")
+
+        if endpoint and not endpoint.endswith("/v1"):
+            endpoint = endpoint.rstrip("/") + "/v1"        
+
+        return OpenAIEmbeddings(
+            model=model,
+            api_key=api_key,
+            base_url=endpoint,
+            check_embedding_ctx_length=False,  # KEY FIX for asymmetric models
+        )
+    except Exception as e:
+        print(f"Failed to setup embeddings: {e}")
+        return None
 
 
 def get_cluster_connection():

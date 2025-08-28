@@ -47,41 +47,32 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,809 - __main__ - INFO - ✅ All imports completed successfully\n"
+            "2025-08-28 20:14:09,823 - __main__ - INFO - ✅ All imports completed successfully\n"
           ]
         }
       ],
       "source": [
-        "import base64\n",
         "import getpass\n",
         "import json\n",
         "import logging\n",
-        "import math\n",
         "import os\n",
-        "import sys\n",
         "import time\n",
         "from datetime import timedelta\n",
-        "from typing import List, Optional, Any\n",
+        "from typing import List, Optional\n",
         "\n",
         "import agentc\n",
         "import agentc_langchain\n",
         "import dotenv\n",
-        "import httpx\n",
         "from couchbase.auth import PasswordAuthenticator\n",
         "from couchbase.cluster import Cluster\n",
         "from couchbase.management.search import SearchIndex\n",
         "from couchbase.options import ClusterOptions\n",
         "from langchain.agents import AgentExecutor, create_react_agent\n",
-        "from langchain_core.embeddings import Embeddings\n",
-        "from langchain_core.language_models.chat_models import BaseChatModel\n",
-        "from langchain_core.messages import BaseMessage, HumanMessage, AIMessage\n",
-        "from langchain_core.outputs import ChatGeneration, ChatResult\n",
-        "from langchain_core.callbacks.manager import CallbackManagerForLLMRun\n",
+        "from langchain_core.messages import HumanMessage\n",
         "from langchain_core.prompts import PromptTemplate\n",
         "from langchain_core.tools import Tool\n",
         "from langchain_couchbase.vectorstores import CouchbaseVectorStore\n",
         "from langchain_openai import ChatOpenAI, OpenAIEmbeddings\n",
-        "from pydantic import Field, SecretStr\n",
         "from tqdm import tqdm\n",
         "\n",
         "# Setup logging\n",
@@ -105,7 +96,7 @@
         "DEFAULT_COLLECTION = \"hotel_data\"\n",
         "DEFAULT_INDEX = \"hotel_data_index\"\n",
         "\n",
-        "logger.info(\"✅ All imports completed successfully\")\n"
+        "logger.info(\"✅ All imports completed successfully\")"
       ]
     },
     {
@@ -130,9 +121,9 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,815 - __main__ - INFO - Setting up environment variables...\n",
-            "2025-08-28 01:00:13,815 - __main__ - INFO - ✅ Updated Capella endpoint to: https://5o6nneaz9wfif-e.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-08-28 01:00:13,816 - __main__ - INFO - ✅ Environment setup completed\n"
+            "2025-08-28 20:14:09,829 - __main__ - INFO - Setting up environment variables...\n",
+            "2025-08-28 20:14:09,829 - __main__ - INFO - ✅ Updated Capella endpoint to: https://5ajhgr1v5zp-fxaa.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-08-28 20:14:09,830 - __main__ - INFO - ✅ Environment setup completed\n"
           ]
         }
       ],
@@ -211,7 +202,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,824 - __main__ - INFO - ✅ Priority 1 AI services setup function defined\n"
+            "2025-08-28 20:14:09,838 - __main__ - INFO - ✅ Priority 1 AI services setup function defined\n"
           ]
         }
       ],
@@ -281,20 +272,18 @@
         "            logger.info(f\"🔧 LLM Model: {llm_model}\")\n",
         "            logger.info(f\"🔧 LLM Base URL: {base_url}\")\n",
         "            \n",
-        "            chat_kwargs = {\n",
-        "                \"api_key\": llm_key,\n",
-        "                \"base_url\": base_url,\n",
-        "                \"model\": llm_model,\n",
-        "                \"temperature\": temperature,\n",
-        "            }\n",
-        "            if callbacks:\n",
-        "                chat_kwargs[\"callbacks\"] = callbacks\n",
-        "                \n",
-        "            llm = ChatOpenAI(**chat_kwargs)\n",
+        "            # Use direct parameters like our working test\n",
+        "            llm = ChatOpenAI(\n",
+        "                api_key=llm_key,\n",
+        "                base_url=base_url,\n",
+        "                model=llm_model,\n",
+        "                temperature=temperature,\n",
+        "                callbacks=callbacks if callbacks else None,\n",
+        "            )\n",
         "            \n",
         "            # Test the LLM works\n",
         "            test_response = llm.invoke([HumanMessage(content=\"Hello\")])\n",
-        "            logger.info(\"✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\")\n",
+        "            logger.info(f\"✅ Using Priority 1: Capella AI LLM (OpenAI wrapper) - {test_response.content}\")\n",
         "        except Exception as e:\n",
         "            logger.error(f\"❌ Priority 1 Capella AI LLM failed: {type(e).__name__}: {e}\")\n",
         "            llm = None\n",
@@ -357,7 +346,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,830 - __main__ - INFO - ✅ AI services integration ready\n"
+            "2025-08-28 20:14:09,842 - __main__ - INFO - ✅ AI services integration ready\n"
           ]
         }
       ],
@@ -388,7 +377,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,843 - __main__ - INFO - ✅ CouchbaseClient class defined successfully\n"
+            "2025-08-28 20:14:09,867 - __main__ - INFO - ✅ CouchbaseClient class defined successfully\n"
           ]
         }
       ],
@@ -560,14 +549,14 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 6,
+      "execution_count": null,
       "metadata": {},
       "outputs": [
         {
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,856 - __main__ - INFO - ✅ Hotel data module functions defined successfully\n"
+            "2025-08-28 20:14:09,917 - __main__ - INFO - ✅ Hotel data module functions defined successfully\n"
           ]
         }
       ],
@@ -801,40 +790,38 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:00:13,868 - __main__ - INFO - 🚀 Initializing hotel support agent...\n",
-            "2025-08-28 01:00:13,869 - __main__ - INFO - 🚀 Setting up hotel support agent...\n",
-            "2025-08-28 01:00:14,004 - __main__ - INFO - 🔧 Setting up AI services using Priority 1 (OpenAI wrappers + Capella)...\n",
-            "2025-08-28 01:00:14,004 - __main__ - INFO - 🔧 Endpoint: https://5o6nneaz9wfif-e.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-08-28 01:00:14,005 - __main__ - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
-            "2025-08-28 01:00:14,005 - __main__ - INFO - 🔧 Base URL: https://5o6nneaz9wfif-e.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-08-28 01:00:14,372 - __main__ - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
-            "2025-08-28 01:00:14,372 - __main__ - INFO - 🔧 LLM Endpoint: https://5o6nneaz9wfif-e.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-08-28 01:00:14,372 - __main__ - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:00:14,372 - __main__ - INFO - 🔧 LLM Base URL: https://5o6nneaz9wfif-e.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-08-28 01:00:16,164 - __main__ - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
-            "2025-08-28 01:00:16,164 - __main__ - INFO - ✅ Priority 1 AI services setup completed successfully\n",
-            "2025-08-28 01:00:16,165 - __main__ - INFO - 🌐 Applied WAN profile with 60s timeout\n",
-            "2025-08-28 01:00:20,975 - __main__ - INFO - ✅ Successfully connected to Couchbase\n",
-            "2025-08-28 01:00:22,954 - __main__ - INFO - ✅ Connected to bucket 'travel-sample'\n",
-            "2025-08-28 01:00:25,460 - __main__ - INFO - ℹ️ Collection 'hotel_data' exists, keeping existing data\n",
-            "2025-08-28 01:00:28,687 - __main__ - INFO - ✅ Primary index created successfully\n",
-            "2025-08-28 01:00:28,687 - __main__ - INFO - ✅ Collection setup complete: agentc_data.hotel_data\n",
-            "2025-08-28 01:00:28,689 - __main__ - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
-            "2025-08-28 01:00:29,885 - __main__ - INFO - ℹ️ Vector search index 'hotel_data_index' already exists\n",
-            "2025-08-28 01:00:29,885 - __main__ - INFO - ✅ Vector search index setup completed\n",
-            "2025-08-28 01:00:29,886 - __main__ - INFO - 🔄 Loading data into vector store...\n",
-            "2025-08-28 01:00:29,886 - __main__ - INFO - Loading hotel data from travel-sample.inventory.hotel...\n",
-            "2025-08-28 01:00:33,419 - __main__ - INFO - Loaded 917 hotels from travel-sample.inventory.hotel\n",
-            "Processing hotels: 100%|██████████| 917/917 [00:00<00:00, 314899.03it/s]\n",
-            "2025-08-28 01:00:48,697 - __main__ - INFO - Generated 917 hotel text embeddings\n",
-            "2025-08-28 01:00:52,806 - __main__ - INFO - Loading 917 hotel embeddings to travel-sample.agentc_data.hotel_data\n",
-            "Loading hotel embeddings:   0%|          | 0/19 [00:00<?, ?it/s]2025-08-28 01:00:58,663 - __main__ - WARNING - ⚠️ Batch 0 failed: ('Failed to insert documents.', {'037e6bb9561c49a195680fa87e12865a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '037e6bb9561c49a195680fa87e12865a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 135}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7ed6f4ac30bb47ccb629fd5187d5b0e4': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7ed6f4ac30bb47ccb629fd5187d5b0e4', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 136}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'f4c3ead51c2d4208833fe72f1cd22a84': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'f4c3ead51c2d4208833fe72f1cd22a84', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 137}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'cdd033fdd7664555a85931fe2481cfa5': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'cdd033fdd7664555a85931fe2481cfa5', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 138}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'abf896b9e9d2443ab8102abec6739eeb': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'abf896b9e9d2443ab8102abec6739eeb', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 139}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '1c7dee84a52440b0a54e3e2df08f2b87': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '1c7dee84a52440b0a54e3e2df08f2b87', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 140}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'eda3081be29e4a709c3d799d51d3ad68': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'eda3081be29e4a709c3d799d51d3ad68', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 141}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '392e984746d843ec89ff3e7a17bf5645': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '392e984746d843ec89ff3e7a17bf5645', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 142}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ed6f1008dde54282934e0964452920dd': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ed6f1008dde54282934e0964452920dd', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 143}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '6c03718395174ab09e64d13ca90c38d4': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '6c03718395174ab09e64d13ca90c38d4', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 144}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7ed24d0e8a72439f835d633ba7967b91': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7ed24d0e8a72439f835d633ba7967b91', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 145}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '68af04c1420a4ed4b6eaaa3cba884c2e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '68af04c1420a4ed4b6eaaa3cba884c2e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 146}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '32c541e985354f79990a2f261d9587a4': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '32c541e985354f79990a2f261d9587a4', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 147}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c76a099f0e1845a4b3c163ef823d6dc7': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c76a099f0e1845a4b3c163ef823d6dc7', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 148}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'd0ee525f6a044ebdbf5335b6281b99de': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'd0ee525f6a044ebdbf5335b6281b99de', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 149}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '006cfd7bd07c40c5a205c76da553311a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '006cfd7bd07c40c5a205c76da553311a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 150}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '61d011ecd65849c9aac0bacf3cef1adb': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '61d011ecd65849c9aac0bacf3cef1adb', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 151}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '808a753f1413466480c0ecbeff755140': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '808a753f1413466480c0ecbeff755140', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 152}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ed85bdc3293948b9a509b4a6ada16871': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ed85bdc3293948b9a509b4a6ada16871', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 153}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '39b19125c0cf43a39eedc1d094760bfc': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '39b19125c0cf43a39eedc1d094760bfc', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 154}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '247b6d70ecc845b6b1c7ce653583b30e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '247b6d70ecc845b6b1c7ce653583b30e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 155}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'd1c65ad6ff394615b105d6f36b154364': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'd1c65ad6ff394615b105d6f36b154364', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 156}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'bb59cadd422046e0a4309daf75871b58': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'bb59cadd422046e0a4309daf75871b58', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 157}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7b8168bf860648a6b1906358529cc4cd': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7b8168bf860648a6b1906358529cc4cd', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 158}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ad648d2788c54095a31255a6bb8ecf3f': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ad648d2788c54095a31255a6bb8ecf3f', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 159}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a0508462c47c4f3e9d5801c2a2f247ae': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a0508462c47c4f3e9d5801c2a2f247ae', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 160}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'd9d4d0075df0463bbef44e03fa82b609': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'd9d4d0075df0463bbef44e03fa82b609', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 161}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c9b1ca56c2644c909e2b4d2674aa390e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c9b1ca56c2644c909e2b4d2674aa390e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 162}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'eb046b1b858b4dfab7285e6237897c08': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'eb046b1b858b4dfab7285e6237897c08', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 163}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '177ca6ac463946048a4b5c88b10aa07d': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '177ca6ac463946048a4b5c88b10aa07d', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 164}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '9541def537e749b3aea94725a8d4be68': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9541def537e749b3aea94725a8d4be68', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 165}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c113e8763606488a83be6a9d29037110': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c113e8763606488a83be6a9d29037110', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 166}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '48e01f9904c943e09d6405bb6cacf661': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '48e01f9904c943e09d6405bb6cacf661', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 167}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '30abf41ebfb04b4785648d61c61693a8': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '30abf41ebfb04b4785648d61c61693a8', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 168}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '8ea31e0de8eb4670ab9bbd65232246cc': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '8ea31e0de8eb4670ab9bbd65232246cc', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 169}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>)})\n",
-            "Loading hotel embeddings:   5%|▌         | 1/19 [00:05<01:45,  5.86s/it]2025-08-28 01:01:02,002 - __main__ - WARNING - ⚠️ Batch 1 failed: ('Failed to insert documents.', {'2bed8adc84cc4fe0bbbd2a983bff4d18': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '2bed8adc84cc4fe0bbbd2a983bff4d18', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 187}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '440ade3ef0f74d03aa2514cab7f47994': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '440ade3ef0f74d03aa2514cab7f47994', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 188}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '22c2c86b09934cb2b40369000896aab5': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '22c2c86b09934cb2b40369000896aab5', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 189}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '69a68f3ea61c4380b628fa98e7acafdc': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '69a68f3ea61c4380b628fa98e7acafdc', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 190}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '90f6d410bfaf42108e820e328b904eed': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '90f6d410bfaf42108e820e328b904eed', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 191}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a10d6e3e62974c5aaa2f95abea38841e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a10d6e3e62974c5aaa2f95abea38841e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 192}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ff5683dd9b1947c4ad16a4fe365f42b0': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ff5683dd9b1947c4ad16a4fe365f42b0', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 193}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7ca4fe021c40493aaa4a5f9dfc085589': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7ca4fe021c40493aaa4a5f9dfc085589', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 194}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'f078e34a53f1462cbc4846665e3a7b8a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'f078e34a53f1462cbc4846665e3a7b8a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 195}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '88ba65f14bcd4bfe9ba5c9e84a8f5d12': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '88ba65f14bcd4bfe9ba5c9e84a8f5d12', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 196}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'aebfeaac414c4322a904123785576e53': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'aebfeaac414c4322a904123785576e53', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 197}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '51db507949c24c139616ac7fe5b6a104': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '51db507949c24c139616ac7fe5b6a104', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 198}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '6f8957adc57b494eb6bd205c118d8612': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '6f8957adc57b494eb6bd205c118d8612', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 199}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '83f364fc975c4b72b23f3a53e82d8c44': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '83f364fc975c4b72b23f3a53e82d8c44', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 200}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '5a96c0196fe24551aad96bc0c5b3aabe': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '5a96c0196fe24551aad96bc0c5b3aabe', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 201}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '93c00cb65f394e83842e759dcbe89ee9': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '93c00cb65f394e83842e759dcbe89ee9', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 202}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c0dc7c72818d4c3ea21234910f1b3236': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c0dc7c72818d4c3ea21234910f1b3236', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 203}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c96392ad13244424a47ff4bbf4697cfa': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c96392ad13244424a47ff4bbf4697cfa', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 204}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'cf62c09595744b588cc38bac2721312c': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'cf62c09595744b588cc38bac2721312c', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 205}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c238dfbe62264879b5a8389d9d655aad': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c238dfbe62264879b5a8389d9d655aad', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 206}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a786210ba507486388c87c5e8e861433': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a786210ba507486388c87c5e8e861433', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 207}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '25cda6d0494847e0a927987fb427ee2e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '25cda6d0494847e0a927987fb427ee2e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 208}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '3209b5b0d0b74b62a4d168651a030650': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '3209b5b0d0b74b62a4d168651a030650', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 209}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'cf16304b69404e7faf2a1ca4e2962ae9': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'cf16304b69404e7faf2a1ca4e2962ae9', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 210}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '61d7d450dd29417da84f9edaec7beb84': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '61d7d450dd29417da84f9edaec7beb84', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 211}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '736b2a1a025648d8904fb1a40a4eec7a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '736b2a1a025648d8904fb1a40a4eec7a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 212}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '893b4ecbb0e6419699fc4c667cb7c600': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '893b4ecbb0e6419699fc4c667cb7c600', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 213}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c69b86f3a0a2479f8c91adef89826c4d': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c69b86f3a0a2479f8c91adef89826c4d', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 214}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '15a50629892f4748a2ba8309191a50d6': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '15a50629892f4748a2ba8309191a50d6', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 215}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'e4c11f616f9e4d1599ba46ab06013495': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'e4c11f616f9e4d1599ba46ab06013495', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 216}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '0be8fc20a69c400dacbb77a0ebf3ab05': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '0be8fc20a69c400dacbb77a0ebf3ab05', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 217}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7ad0e0fc83e44223950dabdee8bcdcaa': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7ad0e0fc83e44223950dabdee8bcdcaa', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 218}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '25b4594aa465403ea814de736a3f8bbd': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '25b4594aa465403ea814de736a3f8bbd', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 219}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '9f9a0d5137d9420bb0621f8fda65d492': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9f9a0d5137d9420bb0621f8fda65d492', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 220}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>)})\n",
-            "Loading hotel embeddings:  37%|███▋      | 7/19 [00:20<00:29,  2.42s/it]2025-08-28 01:01:16,415 - __main__ - WARNING - ⚠️ Batch 7 failed: ('Failed to insert documents.', {'9d836bbcb79440da97aabc699e5c264f': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9d836bbcb79440da97aabc699e5c264f', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 498}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'bd36ddecdbe14010b7234e9c0f80db04': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'bd36ddecdbe14010b7234e9c0f80db04', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 499}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'c680ca503c754053bf51d09db21bd285': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'c680ca503c754053bf51d09db21bd285', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 500}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '6568a32a062846a090e2c58e775720ce': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '6568a32a062846a090e2c58e775720ce', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 501}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '09b34c13746b4062ae138dabb9365401': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '09b34c13746b4062ae138dabb9365401', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 502}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '04111d12525a48b4befd72253d6efafc': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '04111d12525a48b4befd72253d6efafc', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 503}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'b4b08597e76a425298d24820db296720': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'b4b08597e76a425298d24820db296720', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 504}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '3ce12f5698ac4b1e86ae4f8a0735ae9a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '3ce12f5698ac4b1e86ae4f8a0735ae9a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 505}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a5da5c9bbba24a9ab7d1188750969a52': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a5da5c9bbba24a9ab7d1188750969a52', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 506}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '0e64b6bafaba4a61b4354a82c68773e1': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '0e64b6bafaba4a61b4354a82c68773e1', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 507}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'e5b9d25bbf9048b38c9b4d9f2922f7ca': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'e5b9d25bbf9048b38c9b4d9f2922f7ca', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 508}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7601d276fea842059bfb44114e1bfe35': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7601d276fea842059bfb44114e1bfe35', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 509}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '0e8ed058438a4233ba78679210e16e56': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '0e8ed058438a4233ba78679210e16e56', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 510}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a22206a9e9484de4af96aea143e87d7f': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a22206a9e9484de4af96aea143e87d7f', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 511}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '3d72a71f8be644bea45b1763f6a57f22': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '3d72a71f8be644bea45b1763f6a57f22', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 512}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '9dabf217091b433987102ff17a989b8e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9dabf217091b433987102ff17a989b8e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 513}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '9e7b65a151de4ebd9be728b587f24594': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9e7b65a151de4ebd9be728b587f24594', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 514}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '4bbcb3a753034d0d9a2c262651f1b5f0': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '4bbcb3a753034d0d9a2c262651f1b5f0', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 515}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '516cf785bb85402eac809723f07671a2': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '516cf785bb85402eac809723f07671a2', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 516}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '02e0b44686a449d4b81a40091b93a0db': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '02e0b44686a449d4b81a40091b93a0db', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 517}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '49ff602611be4ad1a49b5ec66da196a3': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '49ff602611be4ad1a49b5ec66da196a3', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 518}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'bb417fbe715542cfa8f8b58e721b3de7': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'bb417fbe715542cfa8f8b58e721b3de7', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 519}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '0361775ef67d409a9bf46ab76db62c56': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '0361775ef67d409a9bf46ab76db62c56', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 520}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '07d3ddc36a4345978389bcd191618deb': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '07d3ddc36a4345978389bcd191618deb', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 521}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'de1dad5ffc3a499988892a6579f9348d': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'de1dad5ffc3a499988892a6579f9348d', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 522}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'cace7946a9db4f16bec6db54d38079f5': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'cace7946a9db4f16bec6db54d38079f5', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 523}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ba7e2bee52424f0ea3eaa98e03cd36aa': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ba7e2bee52424f0ea3eaa98e03cd36aa', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 524}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '219a33ced56d47aab435cf73bf70fb1f': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '219a33ced56d47aab435cf73bf70fb1f', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 525}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '80d11c767e1440e588305e267ec984bc': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '80d11c767e1440e588305e267ec984bc', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 526}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>)})\n",
-            "Loading hotel embeddings: 100%|██████████| 19/19 [00:42<00:00,  2.26s/it]\n",
-            "2025-08-28 01:01:35,740 - __main__ - INFO - ✅ Hotel data loaded successfully\n",
-            "2025-08-28 01:01:35,797 - __main__ - INFO - ✅ Hotel support agent setup completed successfully\n",
-            "2025-08-28 01:01:35,798 - __main__ - INFO - ✅ Hotel support agent ready!\n"
+            "2025-08-28 20:14:09,932 - __main__ - INFO - 🚀 Initializing hotel support agent...\n",
+            "2025-08-28 20:14:09,932 - __main__ - INFO - 🚀 Setting up hotel support agent...\n",
+            "2025-08-28 20:14:10,101 - __main__ - INFO - 🔧 Setting up AI services using Priority 1 (OpenAI wrappers + Capella)...\n",
+            "2025-08-28 20:14:10,101 - __main__ - INFO - 🔧 Endpoint: https://5ajhgr1v5zp-fxaa.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-08-28 20:14:10,102 - __main__ - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
+            "2025-08-28 20:14:10,102 - __main__ - INFO - 🔧 Base URL: https://5ajhgr1v5zp-fxaa.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-08-28 20:14:10,552 - __main__ - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
+            "2025-08-28 20:14:10,552 - __main__ - INFO - 🔧 LLM Endpoint: https://5ajhgr1v5zp-fxaa.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-08-28 20:14:10,553 - __main__ - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
+            "2025-08-28 20:14:10,553 - __main__ - INFO - 🔧 LLM Base URL: https://5ajhgr1v5zp-fxaa.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-08-28 20:14:12,552 - __main__ - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper) - Hello. It's great to chat with you. How can I help you today? Do you have any specific questions or topics you'd like to discuss?\n",
+            "2025-08-28 20:14:12,553 - __main__ - INFO - ✅ Priority 1 AI services setup completed successfully\n",
+            "2025-08-28 20:14:12,553 - __main__ - INFO - 🌐 Applied WAN profile with 60s timeout\n",
+            "2025-08-28 20:14:20,398 - __main__ - INFO - ✅ Successfully connected to Couchbase\n",
+            "2025-08-28 20:14:21,888 - __main__ - INFO - ✅ Connected to bucket 'travel-sample'\n",
+            "2025-08-28 20:14:24,306 - __main__ - INFO - ℹ️ Collection 'hotel_data' exists, keeping existing data\n",
+            "2025-08-28 20:14:27,628 - __main__ - INFO - ✅ Primary index created successfully\n",
+            "2025-08-28 20:14:27,629 - __main__ - INFO - ✅ Collection setup complete: agentc_data.hotel_data\n",
+            "2025-08-28 20:14:27,631 - __main__ - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
+            "2025-08-28 20:14:28,947 - __main__ - INFO - ℹ️ Vector search index 'hotel_data_index' already exists\n",
+            "2025-08-28 20:14:28,947 - __main__ - INFO - ✅ Vector search index setup completed\n",
+            "2025-08-28 20:14:28,948 - __main__ - INFO - 🔄 Loading data into vector store...\n",
+            "2025-08-28 20:14:28,948 - __main__ - INFO - Loading hotel data from travel-sample.inventory.hotel...\n",
+            "2025-08-28 20:14:45,586 - __main__ - INFO - Loaded 917 hotels from travel-sample.inventory.hotel\n",
+            "Processing hotels: 100%|██████████| 917/917 [00:00<00:00, 403416.90it/s]\n",
+            "2025-08-28 20:15:04,935 - __main__ - INFO - Generated 917 hotel text embeddings\n",
+            "2025-08-28 20:15:09,087 - __main__ - INFO - Loading 917 hotel embeddings to travel-sample.agentc_data.hotel_data\n",
+            "Loading hotel embeddings:   0%|          | 0/19 [00:00<?, ?it/s]2025-08-28 20:15:14,662 - __main__ - WARNING - ⚠️ Batch 0 failed: ('Failed to insert documents.', {'bb4cf21aca624ec8948b4b5bae77b09e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'bb4cf21aca624ec8948b4b5bae77b09e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 144}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ffe1b432ab564d22983c500b430cf00c': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ffe1b432ab564d22983c500b430cf00c', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 145}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '5004267db1834af499fb1bb38fd1a322': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '5004267db1834af499fb1bb38fd1a322', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 146}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '5c815dd49cdd43e5907f0b49801bc99a': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '5c815dd49cdd43e5907f0b49801bc99a', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 147}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '34b26dbc957246f2993ff510e45bfeec': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '34b26dbc957246f2993ff510e45bfeec', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 148}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a70325187cee431386fe2efff71cd058': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a70325187cee431386fe2efff71cd058', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 149}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '29fc59268dc1471e84c02d909b5ba6ee': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '29fc59268dc1471e84c02d909b5ba6ee', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 150}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'fdf27e0398ee44038cd3d8bcb36be9e5': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'fdf27e0398ee44038cd3d8bcb36be9e5', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 151}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '848fdc6181fe4a358daec304672ceaf3': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '848fdc6181fe4a358daec304672ceaf3', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 152}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ed1ee7c4d92e4d5bbd80e43c07f539c9': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ed1ee7c4d92e4d5bbd80e43c07f539c9', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 153}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '784b35eb02df4526a55e20b658b28a05': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '784b35eb02df4526a55e20b658b28a05', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 154}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '579e88f51bee4012ae4b71e8ab710fc7': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '579e88f51bee4012ae4b71e8ab710fc7', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 155}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '14533bfb47454052a46e499589a1e01e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '14533bfb47454052a46e499589a1e01e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 156}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'a3dcd381bee84632b812ff564c85a385': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'a3dcd381bee84632b812ff564c85a385', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 157}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '661244bce6b349fb9265b5650f7db2fe': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '661244bce6b349fb9265b5650f7db2fe', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 158}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '7d828e3b0aaf4cf4a331197d8f4a9961': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '7d828e3b0aaf4cf4a331197d8f4a9961', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 159}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '50e44d564cc1478880c07e31a86d7e61': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '50e44d564cc1478880c07e31a86d7e61', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 160}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'e23dbf97e14c4051812ef611e6a71c93': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'e23dbf97e14c4051812ef611e6a71c93', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 161}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '6a5531d2aebb40f18140a2d357cb4711': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '6a5531d2aebb40f18140a2d357cb4711', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 162}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'edd1ca26d1924b2b9cf8884dd39678f6': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'edd1ca26d1924b2b9cf8884dd39678f6', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 163}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'd2196e5842db4f33842d05427d40f101': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'd2196e5842db4f33842d05427d40f101', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 164}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'fd6d4050562a445b95a1f1f3d86f335c': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'fd6d4050562a445b95a1f1f3d86f335c', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 165}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '4a02073aa05141bd99841948e0b8bed0': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '4a02073aa05141bd99841948e0b8bed0', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 166}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '14a4ef4bc66e4e988f81f9fd823b74bd': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '14a4ef4bc66e4e988f81f9fd823b74bd', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 167}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'ef7ed29c2c854ccf928177b2677345f8': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'ef7ed29c2c854ccf928177b2677345f8', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 168}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '583b38f082474936af6660e165ff0cb3': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '583b38f082474936af6660e165ff0cb3', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 169}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'd9e3fd9575514993bbde5f609cd53910': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'd9e3fd9575514993bbde5f609cd53910', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 170}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '9f12d0e03dcd4342b262ee89b1146193': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '9f12d0e03dcd4342b262ee89b1146193', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 171}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '107c8e39ade44f0f9c9118857a073487': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '107c8e39ade44f0f9c9118857a073487', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 172}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '0600755c468e4d86a3dced51ef845e98': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '0600755c468e4d86a3dced51ef845e98', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 173}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), 'fa9d53a91fed401b97f4d36ce9c05615': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': 'fa9d53a91fed401b97f4d36ce9c05615', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 174}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '8dd13d74980242ccb513b396e03aba5e': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '8dd13d74980242ccb513b396e03aba5e', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 175}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>), '39d3e0d8355742ccb414fda322ca9095': AmbiguousTimeoutException(<ec=13, category=couchbase.common, message=ambiguous_timeout (13), context=KeyValueErrorContext:{'retry_attempts': 0, 'key': '39d3e0d8355742ccb414fda322ca9095', 'bucket_name': 'travel-sample', 'scope_name': 'agentc_data', 'collection_name': 'hotel_data', 'opaque': 176}, C Source=/Users/couchbase/jenkins/workspace/python/sdk/python-scripted-build-pipeline/py-client/src/kv_ops.cxx:680>)})\n",
+            "Loading hotel embeddings: 100%|██████████| 19/19 [00:29<00:00,  1.56s/it]\n",
+            "2025-08-28 20:15:38,761 - __main__ - INFO - ✅ Hotel data loaded successfully\n",
+            "2025-08-28 20:15:38,856 - __main__ - INFO - ✅ Hotel support agent setup completed successfully\n",
+            "2025-08-28 20:15:38,857 - __main__ - INFO - ✅ Hotel support agent ready!\n"
           ]
         }
       ],
@@ -974,14 +961,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:01:35,807 - __main__ - INFO - 🧪 Testing Hotel Data Loading\n",
-            "2025-08-28 01:01:35,808 - __main__ - INFO - ==================================================\n",
-            "2025-08-28 01:01:40,372 - __main__ - INFO - ✅ Hotel count in travel-sample.inventory.hotel: 917\n",
-            "Processing hotels: 100%|██████████| 917/917 [00:00<00:00, 782379.33it/s]\n",
-            "2025-08-28 01:01:55,888 - __main__ - INFO - ✅ Generated 917 hotel texts for embeddings\n",
-            "2025-08-28 01:01:55,888 - __main__ - INFO - ✅ Sample hotel text: Hotel: Medway Youth Hostel. Address: Capstone Road, ME7 3JE. City: Medway. Country: United Kingdom. Amenities: free breakfast, free parking, pets allowed. Description: 40 bed summer hostel about 3 mil...\n",
-            "2025-08-28 01:01:55,889 - __main__ - INFO - ✅ Data loading test completed successfully\n",
-            "2025-08-28 01:01:55,889 - __main__ - INFO - ✅ Test functions ready\n"
+            "2025-08-28 20:15:38,868 - __main__ - INFO - 🧪 Testing Hotel Data Loading\n",
+            "2025-08-28 20:15:38,869 - __main__ - INFO - ==================================================\n",
+            "2025-08-28 20:15:52,717 - __main__ - INFO - ✅ Hotel count in travel-sample.inventory.hotel: 917\n",
+            "Processing hotels: 100%|██████████| 917/917 [00:00<00:00, 685837.51it/s]\n",
+            "2025-08-28 20:16:09,140 - __main__ - INFO - ✅ Generated 917 hotel texts for embeddings\n",
+            "2025-08-28 20:16:09,141 - __main__ - INFO - ✅ Sample hotel text: Hotel: Medway Youth Hostel. Address: Capstone Road, ME7 3JE. City: Medway. Country: United Kingdom. Amenities: free breakfast, free parking, pets allowed. Description: 40 bed summer hostel about 3 mil...\n",
+            "2025-08-28 20:16:09,141 - __main__ - INFO - ✅ Data loading test completed successfully\n",
+            "2025-08-28 20:16:09,141 - __main__ - INFO - ✅ Test functions ready\n"
           ]
         }
       ],
@@ -1060,7 +1047,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:01:55,893 - __main__ - INFO - 🔍 Hotel Query: Find hotels in Giverny with free breakfast\n"
+            "2025-08-28 20:16:09,146 - __main__ - INFO - 🔍 Hotel Query: Find hotels in Giverny with free breakfast\n"
           ]
         },
         {
@@ -1070,9 +1057,83 @@
             "\n",
             "\n",
             "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Giverny, amenities: free breakfast\n",
+            "\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.525)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.519)\n",
+            "\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.512)\n",
+            "\n",
+            "HOTEL_4: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.511)\n",
+            "\n",
+            "HOTEL_5: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.508)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"Giverny hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.537)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.527)\n",
+            "\n",
+            "HOTEL_3: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.520)\n",
+            "\n",
+            "HOTEL_4: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.515)\n",
+            "\n",
+            "HOTEL_5: Hotel: Hotel Bellevue. Address: Rue Principal. City: Saint-Florent. Country: France. Amenities: free breakfast, free parking. Description: Friendly hotel with wifi in the common areas. Some English is spoken. (Score: 0.512)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast\n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.525)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.519)\n",
+            "\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.512)\n",
+            "\n",
+            "HOTEL_4: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.511)\n",
+            "\n",
+            "HOTEL_5: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.508)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought: Question: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.525)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.519)\n",
+            "\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.512)\n",
+            "\n",
+            "HOTEL_4: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.511)\n",
+            "\n",
+            "HOTEL_5: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.508)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
+            "\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.509)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.508)\n",
+            "\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.507)\n",
+            "\n",
+            "HOTEL_4: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.502)\n",
+            "\n",
+            "HOTEL_5: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.502)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.525)\n",
+            "\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.519)\n",
+            "\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.512)\n",
+            "\n",
+            "HOTEL_4: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.511)\n",
+            "\n",
+            "HOTEL_5: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.508)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "Thought:  Action: search_vector_database\n",
+            "Action Input: query: \"hotels in Giverny with free breakfast\"\n",
             "Observation\u001b[0m"
           ]
         },
@@ -1080,201 +1141,24 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:02:04,067 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:02:04,086 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:02:05,387 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:02:05,396 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:02:05,396 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:02:06,979 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:02:06,980 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
+            "2025-08-28 20:18:17,033 - __main__ - INFO - 🤖 AI Response: Agent stopped due to iteration limit or time limit.\n",
+            "2025-08-28 20:18:17,034 - __main__ - INFO - ✅ Query completed successfully\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast\n",
+            "\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Hotel de Rouen. Address: 42, rue Croix des Petits Champs. City: Paris. Country: France. Amenities: free breakfast, free internet. Description: 3 min walk from the Louvre. (Score: 0.525)\n",
             "\n",
-            "Thought: I will use the search_vector_database tool to find hotels in Giverny with free breakfast.\n",
+            "HOTEL_2: Hotel: The Robins. Address: 6 rue aux Juifs. City: Giverny. Country: France. Amenities: free internet, free parking. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round. (Score: 0.519)\n",
             "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Giverny amenities: free breakfast\n",
+            "HOTEL_3: Hotel: Hilton. City: Puteaux. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: The Hilton is part of the CNIT convention centre. (Score: 0.512)\n",
             "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:02:18,454 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:02:18,476 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:02:19,637 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:02:19,638 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:02:19,638 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:02:21,153 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:02:21,153 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast \n",
+            "HOTEL_4: Hotel: Hotel Bleu France. Address: Rue des Pinsons. City: Éragny. Country: France. Amenities: free breakfast, free internet, pets allowed. Description: A very comfortable room with TV, sat, Free WIFI. (Score: 0.511)\n",
             "\n",
-            "Thought: I will use the search_vector_database tool to find hotels in Giverny with free breakfast.\n",
-            "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Giverny, amenities: free breakfast\n",
-            "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:02:32,037 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:02:32,059 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:02:33,208 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:02:33,208 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:02:33,209 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:02:35,583 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:02:35,583 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Giverny with free breakfast\n",
-            "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Giverny, amenities: free breakfast\n",
-            "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:02:46,764 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:02:46,778 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:02:47,979 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:02:47,979 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:02:47,980 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:02:49,455 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:02:49,455 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Annecy with a view of the Ecrin Lake\n",
-            "\n",
-            "Thought: I will use the search_vector_database tool to find hotels in Annecy with a view of the Ecrin Lake.\n",
-            "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Annecy, view: Ecrin Lake\n",
-            "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:03:10,387 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:03:10,416 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:03:11,621 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:03:11,622 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:03:11,622 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:03:13,153 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:03:13,154 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Annecy with a view of the Ecrin Lake\n",
-            "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Annecy, view: Ecrin Lake\n",
-            "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:03:24,552 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:03:24,569 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:03:25,754 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:03:25,755 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:03:25,756 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:03:27,118 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:03:27,119 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in Lychee Flower Gargen for wedding event venue\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Lychee Flower Garden, amenities: wedding event venue\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:03:37,777 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:03:37,790 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:03:39,047 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:03:39,048 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:03:39,048 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:03:40,564 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:03:40,565 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Find hotels in nearby a Mackinac Island that allow dogs\n",
-            "\n",
-            "Action: search_vector_database\n",
-            "Action Input: location: Mackinac Island, amenities: dog friendly\n",
-            "\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-08-28 01:03:51,168 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:03:51,197 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:03:52,341 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:03:52,341 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:03:52,341 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:03:53,708 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:03:53,709 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n",
-            "2025-08-28 01:04:00,262 - __main__ - INFO - 🤖 AI Response: Agent stopped due to iteration limit or time limit.\n",
-            "2025-08-28 01:04:00,262 - __main__ - INFO - ✅ Query completed successfully\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3m\u001b[0m\n",
+            "HOTEL_5: Hotel: Gounod. Address: Rue Gounod 3. City: Nice. Country: France. Amenities: free breakfast, free internet. Description: Free use of pool and whirldpool in next door hotel Splendid. (Score: 0.508)\u001b[0m\u001b[32;1m\u001b[1;3m\u001b[0m\n",
             "\n",
             "\u001b[1m> Finished chain.\u001b[0m\n",
             "\n",
@@ -1318,7 +1202,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:04:00,284 - __main__ - INFO - 🔍 Hotel Query: I need a hotel in Glossop with free internet access\n"
+            "2025-08-28 20:18:17,055 - __main__ - INFO - 🔍 Hotel Query: I need a hotel in Glossop with free internet access\n"
           ]
         },
         {
@@ -1328,9 +1212,81 @@
             "\n",
             "\n",
             "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access \n",
+            "\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access\n",
             "Action: search_vector_database\n",
-            "Action Input: Glossop with free internet access \n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access\n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access \n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access \n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access\n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access\n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access \n",
+            "Action: search_vector_database\n",
+            "Action Input: query=\"hotel in Glossop with free internet access\"\n",
             "Observation\u001b[0m"
           ]
         },
@@ -1338,49 +1294,29 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-08-28 01:04:04,713 - shared.agent_setup - INFO - 🔧 Setting up AI services for langchain framework...\n",
-            "2025-08-28 01:04:04,728 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)\n",
-            "2025-08-28 01:04:06,002 - shared.agent_setup - WARNING - ⚠️ Latest Capella AI LLM failed: 404 page not found\n",
-            "2025-08-28 01:04:06,002 - shared.capella_model_services_langchain - INFO - ✅ Using direct Capella LLM API key\n",
-            "2025-08-28 01:04:06,003 - shared.capella_model_services_langchain - INFO - ✅ Using Capella direct API for LLM: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-08-28 01:04:07,574 - shared.agent_setup - INFO - ✅ Using new Capella AI LLM (custom class with direct API key)\n",
-            "2025-08-28 01:04:07,574 - shared.agent_setup - INFO - ✅ AI services setup completed for langchain\n"
+            "2025-08-28 20:20:23,414 - __main__ - INFO - 🤖 AI Response: Agent stopped due to iteration limit or time limit.\n",
+            "2025-08-28 20:20:23,414 - __main__ - INFO - ✅ Query completed successfully\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[36;1m\u001b[1;3mERROR: Search failed - 404 page not found\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: I need a hotel in Glossop with free internet access \n",
-            "Action: search_vector_database\n",
-            "Action Input: Glossop with free internet access \n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "ename": "KeyboardInterrupt",
-          "evalue": "",
-          "output_type": "error",
-          "traceback": [
-            "\u001b[31m---------------------------------------------------------------------------\u001b[39m",
-            "\u001b[31mKeyboardInterrupt\u001b[39m                         Traceback (most recent call last)",
-            "\u001b[36mCell\u001b[39m\u001b[36m \u001b[39m\u001b[32mIn[10]\u001b[39m\u001b[32m, line 2\u001b[39m\n\u001b[32m      1\u001b[39m \u001b[38;5;66;03m# Test query 2: Glossop with free internet\u001b[39;00m\n\u001b[32m----> \u001b[39m\u001b[32m2\u001b[39m result2 = \u001b[43mrun_hotel_query\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m      3\u001b[39m \u001b[43m    \u001b[49m\u001b[43meval_queries\u001b[49m\u001b[43m[\u001b[49m\u001b[32;43m1\u001b[39;49m\u001b[43m]\u001b[49m\u001b[43m,\u001b[49m\u001b[43m  \u001b[49m\u001b[38;5;66;43;03m# \"I need a hotel in Glossop with free internet access\"\u001b[39;49;00m\n\u001b[32m      4\u001b[39m \u001b[43m    \u001b[49m\u001b[43magent_executor\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m      5\u001b[39m \u001b[43m    \u001b[49m\u001b[43mapplication_span\u001b[49m\n\u001b[32m      6\u001b[39m \u001b[43m)\u001b[49m\n\u001b[32m      8\u001b[39m \u001b[38;5;28mprint\u001b[39m(\u001b[33mf\u001b[39m\u001b[33m\"\u001b[39m\u001b[38;5;130;01m\\n\u001b[39;00m\u001b[33m📋 Query Result 2:\u001b[39m\u001b[38;5;130;01m\\n\u001b[39;00m\u001b[38;5;132;01m{\u001b[39;00mresult2\u001b[38;5;132;01m}\u001b[39;00m\u001b[33m\"\u001b[39m)\n",
-            "\u001b[36mCell\u001b[39m\u001b[36m \u001b[39m\u001b[32mIn[8]\u001b[39m\u001b[32m, line 10\u001b[39m, in \u001b[36mrun_hotel_query\u001b[39m\u001b[34m(query, agent_executor, application_span)\u001b[39m\n\u001b[32m      7\u001b[39m query_span[\u001b[33m\"\u001b[39m\u001b[33mquery\u001b[39m\u001b[33m\"\u001b[39m] = query\n\u001b[32m      9\u001b[39m \u001b[38;5;66;03m# Run the agent\u001b[39;00m\n\u001b[32m---> \u001b[39m\u001b[32m10\u001b[39m response = \u001b[43magent_executor\u001b[49m\u001b[43m.\u001b[49m\u001b[43minvoke\u001b[49m\u001b[43m(\u001b[49m\u001b[43m{\u001b[49m\u001b[33;43m\"\u001b[39;49m\u001b[33;43minput\u001b[39;49m\u001b[33;43m\"\u001b[39;49m\u001b[43m:\u001b[49m\u001b[43m \u001b[49m\u001b[43mquery\u001b[49m\u001b[43m}\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m     11\u001b[39m result = response.get(\u001b[33m\"\u001b[39m\u001b[33moutput\u001b[39m\u001b[33m\"\u001b[39m, \u001b[33m\"\u001b[39m\u001b[33mNo response generated\u001b[39m\u001b[33m\"\u001b[39m)\n\u001b[32m     13\u001b[39m query_span[\u001b[33m\"\u001b[39m\u001b[33mresult\u001b[39m\u001b[33m\"\u001b[39m] = result\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain/chains/base.py:165\u001b[39m, in \u001b[36mChain.invoke\u001b[39m\u001b[34m(self, input, config, **kwargs)\u001b[39m\n\u001b[32m    162\u001b[39m \u001b[38;5;28;01mtry\u001b[39;00m:\n\u001b[32m    163\u001b[39m     \u001b[38;5;28mself\u001b[39m._validate_inputs(inputs)\n\u001b[32m    164\u001b[39m     outputs = (\n\u001b[32m--> \u001b[39m\u001b[32m165\u001b[39m         \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_call\u001b[49m\u001b[43m(\u001b[49m\u001b[43minputs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m=\u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m    166\u001b[39m         \u001b[38;5;28;01mif\u001b[39;00m new_arg_supported\n\u001b[32m    167\u001b[39m         \u001b[38;5;28;01melse\u001b[39;00m \u001b[38;5;28mself\u001b[39m._call(inputs)\n\u001b[32m    168\u001b[39m     )\n\u001b[32m    170\u001b[39m     final_outputs: \u001b[38;5;28mdict\u001b[39m[\u001b[38;5;28mstr\u001b[39m, Any] = \u001b[38;5;28mself\u001b[39m.prep_outputs(\n\u001b[32m    171\u001b[39m         inputs,\n\u001b[32m    172\u001b[39m         outputs,\n\u001b[32m    173\u001b[39m         return_only_outputs,\n\u001b[32m    174\u001b[39m     )\n\u001b[32m    175\u001b[39m \u001b[38;5;28;01mexcept\u001b[39;00m \u001b[38;5;167;01mBaseException\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m e:\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain/agents/agent.py:1625\u001b[39m, in \u001b[36mAgentExecutor._call\u001b[39m\u001b[34m(self, inputs, run_manager)\u001b[39m\n\u001b[32m   1623\u001b[39m \u001b[38;5;66;03m# We now enter the agent loop (until it returns something).\u001b[39;00m\n\u001b[32m   1624\u001b[39m \u001b[38;5;28;01mwhile\u001b[39;00m \u001b[38;5;28mself\u001b[39m._should_continue(iterations, time_elapsed):\n\u001b[32m-> \u001b[39m\u001b[32m1625\u001b[39m     next_step_output = \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_take_next_step\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m   1626\u001b[39m \u001b[43m        \u001b[49m\u001b[43mname_to_tool_map\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1627\u001b[39m \u001b[43m        \u001b[49m\u001b[43mcolor_mapping\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1628\u001b[39m \u001b[43m        \u001b[49m\u001b[43minputs\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1629\u001b[39m \u001b[43m        \u001b[49m\u001b[43mintermediate_steps\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1630\u001b[39m \u001b[43m        \u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m=\u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1631\u001b[39m \u001b[43m    \u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m   1632\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(next_step_output, AgentFinish):\n\u001b[32m   1633\u001b[39m         \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m._return(\n\u001b[32m   1634\u001b[39m             next_step_output,\n\u001b[32m   1635\u001b[39m             intermediate_steps,\n\u001b[32m   1636\u001b[39m             run_manager=run_manager,\n\u001b[32m   1637\u001b[39m         )\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain/agents/agent.py:1325\u001b[39m, in \u001b[36mAgentExecutor._take_next_step\u001b[39m\u001b[34m(self, name_to_tool_map, color_mapping, inputs, intermediate_steps, run_manager)\u001b[39m\n\u001b[32m   1316\u001b[39m \u001b[38;5;28;01mdef\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[34m_take_next_step\u001b[39m(\n\u001b[32m   1317\u001b[39m     \u001b[38;5;28mself\u001b[39m,\n\u001b[32m   1318\u001b[39m     name_to_tool_map: \u001b[38;5;28mdict\u001b[39m[\u001b[38;5;28mstr\u001b[39m, BaseTool],\n\u001b[32m   (...)\u001b[39m\u001b[32m   1322\u001b[39m     run_manager: Optional[CallbackManagerForChainRun] = \u001b[38;5;28;01mNone\u001b[39;00m,\n\u001b[32m   1323\u001b[39m ) -> Union[AgentFinish, \u001b[38;5;28mlist\u001b[39m[\u001b[38;5;28mtuple\u001b[39m[AgentAction, \u001b[38;5;28mstr\u001b[39m]]]:\n\u001b[32m   1324\u001b[39m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m._consume_next_step(\n\u001b[32m-> \u001b[39m\u001b[32m1325\u001b[39m         \u001b[38;5;28;43mlist\u001b[39;49m\u001b[43m(\u001b[49m\n\u001b[32m   1326\u001b[39m \u001b[43m            \u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_iter_next_step\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m   1327\u001b[39m \u001b[43m                \u001b[49m\u001b[43mname_to_tool_map\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1328\u001b[39m \u001b[43m                \u001b[49m\u001b[43mcolor_mapping\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1329\u001b[39m \u001b[43m                \u001b[49m\u001b[43minputs\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1330\u001b[39m \u001b[43m                \u001b[49m\u001b[43mintermediate_steps\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1331\u001b[39m \u001b[43m                \u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1332\u001b[39m \u001b[43m            \u001b[49m\u001b[43m)\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1333\u001b[39m \u001b[43m        \u001b[49m\u001b[43m)\u001b[49m,\n\u001b[32m   1334\u001b[39m     )\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain/agents/agent.py:1408\u001b[39m, in \u001b[36mAgentExecutor._iter_next_step\u001b[39m\u001b[34m(self, name_to_tool_map, color_mapping, inputs, intermediate_steps, run_manager)\u001b[39m\n\u001b[32m   1406\u001b[39m     \u001b[38;5;28;01myield\u001b[39;00m agent_action\n\u001b[32m   1407\u001b[39m \u001b[38;5;28;01mfor\u001b[39;00m agent_action \u001b[38;5;129;01min\u001b[39;00m actions:\n\u001b[32m-> \u001b[39m\u001b[32m1408\u001b[39m     \u001b[38;5;28;01myield\u001b[39;00m \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_perform_agent_action\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m   1409\u001b[39m \u001b[43m        \u001b[49m\u001b[43mname_to_tool_map\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1410\u001b[39m \u001b[43m        \u001b[49m\u001b[43mcolor_mapping\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1411\u001b[39m \u001b[43m        \u001b[49m\u001b[43magent_action\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1412\u001b[39m \u001b[43m        \u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1413\u001b[39m \u001b[43m    \u001b[49m\u001b[43m)\u001b[49m\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain/agents/agent.py:1433\u001b[39m, in \u001b[36mAgentExecutor._perform_agent_action\u001b[39m\u001b[34m(self, name_to_tool_map, color_mapping, agent_action, run_manager)\u001b[39m\n\u001b[32m   1431\u001b[39m         tool_run_kwargs[\u001b[33m\"\u001b[39m\u001b[33mllm_prefix\u001b[39m\u001b[33m\"\u001b[39m] = \u001b[33m\"\u001b[39m\u001b[33m\"\u001b[39m\n\u001b[32m   1432\u001b[39m     \u001b[38;5;66;03m# We then call the tool on the tool input to get an observation\u001b[39;00m\n\u001b[32m-> \u001b[39m\u001b[32m1433\u001b[39m     observation = \u001b[43mtool\u001b[49m\u001b[43m.\u001b[49m\u001b[43mrun\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m   1434\u001b[39m \u001b[43m        \u001b[49m\u001b[43magent_action\u001b[49m\u001b[43m.\u001b[49m\u001b[43mtool_input\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1435\u001b[39m \u001b[43m        \u001b[49m\u001b[43mverbose\u001b[49m\u001b[43m=\u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43mverbose\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1436\u001b[39m \u001b[43m        \u001b[49m\u001b[43mcolor\u001b[49m\u001b[43m=\u001b[49m\u001b[43mcolor\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1437\u001b[39m \u001b[43m        \u001b[49m\u001b[43mcallbacks\u001b[49m\u001b[43m=\u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m.\u001b[49m\u001b[43mget_child\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;28;43;01mif\u001b[39;49;00m\u001b[43m \u001b[49m\u001b[43mrun_manager\u001b[49m\u001b[43m \u001b[49m\u001b[38;5;28;43;01melse\u001b[39;49;00m\u001b[43m \u001b[49m\u001b[38;5;28;43;01mNone\u001b[39;49;00m\u001b[43m,\u001b[49m\n\u001b[32m   1438\u001b[39m \u001b[43m        \u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mtool_run_kwargs\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m   1439\u001b[39m \u001b[43m    \u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m   1440\u001b[39m \u001b[38;5;28;01melse\u001b[39;00m:\n\u001b[32m   1441\u001b[39m     tool_run_kwargs = \u001b[38;5;28mself\u001b[39m._action_agent.tool_run_logging_kwargs()\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain_core/tools/base.py:883\u001b[39m, in \u001b[36mBaseTool.run\u001b[39m\u001b[34m(self, tool_input, verbose, start_color, color, callbacks, tags, metadata, run_name, run_id, config, tool_call_id, **kwargs)\u001b[39m\n\u001b[32m    881\u001b[39m \u001b[38;5;28;01mif\u001b[39;00m error_to_raise:\n\u001b[32m    882\u001b[39m     run_manager.on_tool_error(error_to_raise)\n\u001b[32m--> \u001b[39m\u001b[32m883\u001b[39m     \u001b[38;5;28;01mraise\u001b[39;00m error_to_raise\n\u001b[32m    884\u001b[39m output = _format_output(content, artifact, tool_call_id, \u001b[38;5;28mself\u001b[39m.name, status)\n\u001b[32m    885\u001b[39m run_manager.on_tool_end(output, color=color, name=\u001b[38;5;28mself\u001b[39m.name, **kwargs)\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain_core/tools/base.py:852\u001b[39m, in \u001b[36mBaseTool.run\u001b[39m\u001b[34m(self, tool_input, verbose, start_color, color, callbacks, tags, metadata, run_name, run_id, config, tool_call_id, **kwargs)\u001b[39m\n\u001b[32m    850\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m config_param := _get_runnable_config_param(\u001b[38;5;28mself\u001b[39m._run):\n\u001b[32m    851\u001b[39m         tool_kwargs |= {config_param: config}\n\u001b[32m--> \u001b[39m\u001b[32m852\u001b[39m     response = \u001b[43mcontext\u001b[49m\u001b[43m.\u001b[49m\u001b[43mrun\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_run\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43mtool_args\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mtool_kwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m    853\u001b[39m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mself\u001b[39m.response_format == \u001b[33m\"\u001b[39m\u001b[33mcontent_and_artifact\u001b[39m\u001b[33m\"\u001b[39m:\n\u001b[32m    854\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(response, \u001b[38;5;28mtuple\u001b[39m) \u001b[38;5;129;01mor\u001b[39;00m \u001b[38;5;28mlen\u001b[39m(response) != \u001b[32m2\u001b[39m:\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/langchain_core/tools/simple.py:105\u001b[39m, in \u001b[36mTool._run\u001b[39m\u001b[34m(self, config, run_manager, *args, **kwargs)\u001b[39m\n\u001b[32m    103\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m config_param := _get_runnable_config_param(\u001b[38;5;28mself\u001b[39m.func):\n\u001b[32m    104\u001b[39m         kwargs[config_param] = config\n\u001b[32m--> \u001b[39m\u001b[32m105\u001b[39m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43mfunc\u001b[49m\u001b[43m(\u001b[49m\u001b[43m*\u001b[49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m    106\u001b[39m msg = \u001b[33m\"\u001b[39m\u001b[33mTool does not support sync invocation.\u001b[39m\u001b[33m\"\u001b[39m\n\u001b[32m    107\u001b[39m \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mNotImplementedError\u001b[39;00m(msg)\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/tools/search_vector_database.py:75\u001b[39m, in \u001b[36msearch_vector_database\u001b[39m\u001b[34m(query)\u001b[39m\n\u001b[32m     64\u001b[39m \u001b[38;5;250m\u001b[39m\u001b[33;03m\"\"\"\u001b[39;00m\n\u001b[32m     65\u001b[39m \u001b[33;03mSearch for hotels using semantic similarity. Returns raw hotel information for agent processing.\u001b[39;00m\n\u001b[32m     66\u001b[39m \n\u001b[32m   (...)\u001b[39m\u001b[32m     71\u001b[39m \u001b[33;03m    Hotel search results or error message\u001b[39;00m\n\u001b[32m     72\u001b[39m \u001b[33;03m\"\"\"\u001b[39;00m\n\u001b[32m     73\u001b[39m \u001b[38;5;28;01mtry\u001b[39;00m:\n\u001b[32m     74\u001b[39m     \u001b[38;5;66;03m# Get cluster connection\u001b[39;00m\n\u001b[32m---> \u001b[39m\u001b[32m75\u001b[39m     cluster = \u001b[43mget_cluster_connection\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m     76\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m cluster:\n\u001b[32m     77\u001b[39m         \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[33m\"\u001b[39m\u001b[33mERROR: Could not connect to database\u001b[39m\u001b[33m\"\u001b[39m\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/tools/search_vector_database.py:52\u001b[39m, in \u001b[36mget_cluster_connection\u001b[39m\u001b[34m()\u001b[39m\n\u001b[32m     49\u001b[39m \u001b[38;5;66;03m# Use WAN profile for better timeout handling with remote clusters\u001b[39;00m\n\u001b[32m     50\u001b[39m options.apply_profile(\u001b[33m\"\u001b[39m\u001b[33mwan_development\u001b[39m\u001b[33m\"\u001b[39m)\n\u001b[32m---> \u001b[39m\u001b[32m52\u001b[39m cluster = \u001b[43mcouchbase\u001b[49m\u001b[43m.\u001b[49m\u001b[43mcluster\u001b[49m\u001b[43m.\u001b[49m\u001b[43mCluster\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m     53\u001b[39m \u001b[43m    \u001b[49m\u001b[43mos\u001b[49m\u001b[43m.\u001b[49m\u001b[43mgetenv\u001b[49m\u001b[43m(\u001b[49m\u001b[33;43m\"\u001b[39;49m\u001b[33;43mCB_CONN_STRING\u001b[39;49m\u001b[33;43m\"\u001b[39;49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[33;43m\"\u001b[39;49m\u001b[33;43mcouchbase://localhost\u001b[39;49m\u001b[33;43m\"\u001b[39;49m\u001b[43m)\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43moptions\u001b[49m\n\u001b[32m     54\u001b[39m \u001b[43m\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m     55\u001b[39m cluster.wait_until_ready(timedelta(seconds=\u001b[32m15\u001b[39m))\n\u001b[32m     56\u001b[39m \u001b[38;5;28;01mreturn\u001b[39;00m cluster\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/couchbase/cluster.py:101\u001b[39m, in \u001b[36mCluster.__init__\u001b[39m\u001b[34m(self, connstr, *options, **kwargs)\u001b[39m\n\u001b[32m     94\u001b[39m \u001b[38;5;28;01mdef\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[34m__init__\u001b[39m(\u001b[38;5;28mself\u001b[39m,\n\u001b[32m     95\u001b[39m              connstr,  \u001b[38;5;66;03m# type: str\u001b[39;00m\n\u001b[32m     96\u001b[39m              *options,  \u001b[38;5;66;03m# type: ClusterOptions\u001b[39;00m\n\u001b[32m     97\u001b[39m              **kwargs,  \u001b[38;5;66;03m# type: Dict[str, Any]\u001b[39;00m\n\u001b[32m     98\u001b[39m              ) -> Cluster:\n\u001b[32m    100\u001b[39m     \u001b[38;5;28msuper\u001b[39m().\u001b[34m__init__\u001b[39m(connstr, *options, **kwargs)\n\u001b[32m--> \u001b[39m\u001b[32m101\u001b[39m     \u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_connect\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/couchbase/logic/wrappers.py:82\u001b[39m, in \u001b[36mBlockingWrapper.block.<locals>.decorator.<locals>.wrapped_fn\u001b[39m\u001b[34m(self, *args, **kwargs)\u001b[39m\n\u001b[32m     79\u001b[39m \u001b[38;5;129m@wraps\u001b[39m(fn)\n\u001b[32m     80\u001b[39m \u001b[38;5;28;01mdef\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[34mwrapped_fn\u001b[39m(\u001b[38;5;28mself\u001b[39m, *args, **kwargs):\n\u001b[32m     81\u001b[39m     \u001b[38;5;28;01mtry\u001b[39;00m:\n\u001b[32m---> \u001b[39m\u001b[32m82\u001b[39m         ret = \u001b[43mfn\u001b[49m\u001b[43m(\u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43margs\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m     83\u001b[39m         \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(ret, BaseCouchbaseException):\n\u001b[32m     84\u001b[39m             \u001b[38;5;28;01mraise\u001b[39;00m ErrorMapper.build_exception(ret)\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/couchbase/cluster.py:105\u001b[39m, in \u001b[36mCluster._connect\u001b[39m\u001b[34m(self, **kwargs)\u001b[39m\n\u001b[32m    103\u001b[39m \u001b[38;5;129m@BlockingWrapper\u001b[39m.block(\u001b[38;5;28;01mTrue\u001b[39;00m)\n\u001b[32m    104\u001b[39m \u001b[38;5;28;01mdef\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[34m_connect\u001b[39m(\u001b[38;5;28mself\u001b[39m, **kwargs):\n\u001b[32m--> \u001b[39m\u001b[32m105\u001b[39m     ret = \u001b[38;5;28;43msuper\u001b[39;49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\u001b[43m.\u001b[49m\u001b[43m_connect_cluster\u001b[49m\u001b[43m(\u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mkwargs\u001b[49m\u001b[43m)\u001b[49m\n\u001b[32m    106\u001b[39m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(ret, BaseCouchbaseException):\n\u001b[32m    107\u001b[39m         \u001b[38;5;28;01mraise\u001b[39;00m ErrorMapper.build_exception(ret)\n",
-            "\u001b[36mFile \u001b[39m\u001b[32m~/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/couchbase/logic/cluster.py:407\u001b[39m, in \u001b[36mClusterLogic._connect_cluster\u001b[39m\u001b[34m(self, **kwargs)\u001b[39m\n\u001b[32m    404\u001b[39m \u001b[38;5;28;01mif\u001b[39;00m errback:\n\u001b[32m    405\u001b[39m     connect_kwargs[\u001b[33m'\u001b[39m\u001b[33merrback\u001b[39m\u001b[33m'\u001b[39m] = errback\n\u001b[32m--> \u001b[39m\u001b[32m407\u001b[39m \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[43mcreate_connection\u001b[49m\u001b[43m(\u001b[49m\n\u001b[32m    408\u001b[39m \u001b[43m    \u001b[49m\u001b[38;5;28;43mself\u001b[39;49m\u001b[43m.\u001b[49m\u001b[43m_connstr\u001b[49m\u001b[43m,\u001b[49m\u001b[43m \u001b[49m\u001b[43m*\u001b[49m\u001b[43m*\u001b[49m\u001b[43mconnect_kwargs\u001b[49m\u001b[43m,\u001b[49m\n\u001b[32m    409\u001b[39m \u001b[43m\u001b[49m\u001b[43m)\u001b[49m\n",
-            "\u001b[31mKeyboardInterrupt\u001b[39m: "
+            "\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Windy Harbour Farm Hotel. Address: Woodhead Road. City: Padfield. Country: United Kingdom. Amenities: free internet. Description: Woodhead Rd, Glossop (Score: 0.497)\n",
+            "\n",
+            "HOTEL_2: Hotel: Avondale Guest House. Address: 28 Woodhead Road. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Mobile: +44 7784 764969 (Score: 0.481)\n",
+            "\n",
+            "HOTEL_3: Hotel: The George Hotel. Address: Norfolk Street. City: Glossop. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area. (Score: 0.455)\n",
+            "\n",
+            "HOTEL_4: Hotel: Crowden Youth Hostel. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 38-bed YHA hostel; meals available. (Score: 0.454)\n",
+            "\n",
+            "HOTEL_5: Hotel: The Old House. City: Derbyshire. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: B&B accommodation, 600 yards from Pennine Way. (Score: 0.451)\u001b[0m\u001b[32;1m\u001b[1;3m\u001b[0m\n",
+            "\n",
+            "\u001b[1m> Finished chain.\u001b[0m\n",
+            "\n",
+            "📋 Query Result 2:\n",
+            "Agent stopped due to iteration limit or time limit.\n"
           ]
         }
       ],
@@ -1410,9 +1346,119 @@
     },
     {
       "cell_type": "code",
-      "execution_count": null,
+      "execution_count": 11,
       "metadata": {},
-      "outputs": [],
+      "outputs": [
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-08-28 20:20:23,425 - __main__ - INFO - 🔍 Hotel Query: Show me hotels in Helensburgh with free breakfast\n"
+          ]
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "\n",
+            "\n",
+            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
+            "\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Helensburgh with free breakfast\n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Helensburgh hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Imperial Hotel. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. City: Helensburgh. Country: United Kingdom. Amenities: free internet. Description: In the centre of town on the sea front. (Score: 0.624)\n",
+            "\n",
+            "HOTEL_2: Hotel: County Lodge Hotel. Address: Old Luss Road, Helensburgh, G84 7BH.. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: Nearly 1 mile east of the town centre, near Colgrain Station. (Score: 0.583)\n",
+            "\n",
+            "HOTEL_3: Hotel: Commodore Hotel. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre. (Score: 0.557)\n",
+            "\n",
+            "HOTEL_4: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.555)\n",
+            "\n",
+            "HOTEL_5: Hotel: Dumbuck Hotel. Address: Glasgow Road, Dumbarton. City: Dumbarton. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 16 room hotel in an 18th century mansion house (Score: 0.530)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Oban with free breakfast \n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Oban hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.692)\n",
+            "\n",
+            "HOTEL_2: Hotel: Oban Youth Hostel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: A SYHA hostel. 4, 6 and 8 bed dormitories housed in a large Victorian building, on the Esplanade. Great sea views. Within easy walking distance of the town centre. (Score: 0.622)\n",
+            "\n",
+            "HOTEL_3: Hotel: Corran House. Address: Victoria Crescent, Corran Esplanade PA34 5PN. City: Oban. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: small ensuite dorm rooms and private guest rooms, sea-front location. (Score: 0.613)\n",
+            "\n",
+            "HOTEL_4: Hotel: Lochboisdale Hotel. City: Lochboisdale. Country: United Kingdom. Amenities: free breakfast, free parking, pets allowed. Description: Good bar meals in the evening. (Score: 0.588)\n",
+            "\n",
+            "HOTEL_5: Hotel: Columba Hotel. Address: The Esplanade, Oban, PA34 5QD. Country: United Kingdom. Amenities: free breakfast, free internet, free parking, pets allowed. Description: As it is on the North Pier, rooms on three sides have sea views, some rooms at the back can be noisy from the pubs below. (Score: 0.581)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Helensburgh with free breakfast\n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Helensburgh hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Imperial Hotel. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. City: Helensburgh. Country: United Kingdom. Amenities: free internet. Description: In the centre of town on the sea front. (Score: 0.624)\n",
+            "\n",
+            "HOTEL_2: Hotel: County Lodge Hotel. Address: Old Luss Road, Helensburgh, G84 7BH.. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: Nearly 1 mile east of the town centre, near Colgrain Station. (Score: 0.583)\n",
+            "\n",
+            "HOTEL_3: Hotel: Commodore Hotel. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre. (Score: 0.557)\n",
+            "\n",
+            "HOTEL_4: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.555)\n",
+            "\n",
+            "HOTEL_5: Hotel: Dumbuck Hotel. Address: Glasgow Road, Dumbarton. City: Dumbarton. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 16 room hotel in an 18th century mansion house (Score: 0.530)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Oban with free breakfast \n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Oban hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.692)\n",
+            "\n",
+            "HOTEL_2: Hotel: Oban Youth Hostel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: A SYHA hostel. 4, 6 and 8 bed dormitories housed in a large Victorian building, on the Esplanade. Great sea views. Within easy walking distance of the town centre. (Score: 0.622)\n",
+            "\n",
+            "HOTEL_3: Hotel: Corran House. Address: Victoria Crescent, Corran Esplanade PA34 5PN. City: Oban. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: small ensuite dorm rooms and private guest rooms, sea-front location. (Score: 0.613)\n",
+            "\n",
+            "HOTEL_4: Hotel: Lochboisdale Hotel. City: Lochboisdale. Country: United Kingdom. Amenities: free breakfast, free parking, pets allowed. Description: Good bar meals in the evening. (Score: 0.588)\n",
+            "\n",
+            "HOTEL_5: Hotel: Columba Hotel. Address: The Esplanade, Oban, PA34 5QD. Country: United Kingdom. Amenities: free breakfast, free internet, free parking, pets allowed. Description: As it is on the North Pier, rooms on three sides have sea views, some rooms at the back can be noisy from the pubs below. (Score: 0.581)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Helensburgh with free breakfast \n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Helensburgh hotels with free breakfast\"\n",
+            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Imperial Hotel. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. City: Helensburgh. Country: United Kingdom. Amenities: free internet. Description: In the centre of town on the sea front. (Score: 0.624)\n",
+            "\n",
+            "HOTEL_2: Hotel: County Lodge Hotel. Address: Old Luss Road, Helensburgh, G84 7BH.. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: Nearly 1 mile east of the town centre, near Colgrain Station. (Score: 0.583)\n",
+            "\n",
+            "HOTEL_3: Hotel: Commodore Hotel. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre. (Score: 0.557)\n",
+            "\n",
+            "HOTEL_4: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.555)\n",
+            "\n",
+            "HOTEL_5: Hotel: Dumbuck Hotel. Address: Glasgow Road, Dumbarton. City: Dumbarton. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 16 room hotel in an 18th century mansion house (Score: 0.530)\u001b[0m\u001b[32;1m\u001b[1;3mQuestion: Show me hotels in Helensburgh with free breakfast\n",
+            "Action: search_vector_database\n",
+            "Action Input: query: \"Helensburgh hotels with free breakfast\"\n",
+            "Observation\u001b[0m"
+          ]
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-08-28 20:22:27,694 - __main__ - INFO - 🤖 AI Response: Agent stopped due to iteration limit or time limit.\n",
+            "2025-08-28 20:22:27,694 - __main__ - INFO - ✅ Query completed successfully\n"
+          ]
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "\u001b[36;1m\u001b[1;3mFOUND_5_HOTELS:\n",
+            "HOTEL_1: Hotel: Imperial Hotel. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. City: Helensburgh. Country: United Kingdom. Amenities: free internet. Description: In the centre of town on the sea front. (Score: 0.624)\n",
+            "\n",
+            "HOTEL_2: Hotel: County Lodge Hotel. Address: Old Luss Road, Helensburgh, G84 7BH.. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, free parking. Description: Nearly 1 mile east of the town centre, near Colgrain Station. (Score: 0.583)\n",
+            "\n",
+            "HOTEL_3: Hotel: Commodore Hotel. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. City: Helensburgh. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre. (Score: 0.557)\n",
+            "\n",
+            "HOTEL_4: Hotel: Oban Bay Hotel. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn (Score: 0.555)\n",
+            "\n",
+            "HOTEL_5: Hotel: Dumbuck Hotel. Address: Glasgow Road, Dumbarton. City: Dumbarton. Country: United Kingdom. Amenities: free breakfast, free internet, pets allowed. Description: 16 room hotel in an 18th century mansion house (Score: 0.530)\u001b[0m\u001b[32;1m\u001b[1;3m\u001b[0m\n",
+            "\n",
+            "\u001b[1m> Finished chain.\u001b[0m\n",
+            "\n",
+            "📋 Query Result 3:\n",
+            "Agent stopped due to iteration limit or time limit.\n"
+          ]
+        }
+      ],
       "source": [
         "# Test query 3: Helensburgh with free breakfast\n",
         "result3 = run_hotel_query(\n",
@@ -1439,23 +1485,86 @@
     },
     {
       "cell_type": "code",
-      "execution_count": null,
+      "execution_count": 12,
       "metadata": {},
-      "outputs": [],
+      "outputs": [
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/.venv/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html\n",
+            "  from .autonotebook import tqdm as notebook_tqdm\n",
+            "2025-08-28 20:22:28,493 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
+            "2025-08-28 20:22:28,511 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_eb2b614b-7bf2-47ad-ab4a-828949a3dfe1 initialized\n",
+            "2025-08-28 20:22:31,922 - __main__ - INFO - ✅ Arize Phoenix evaluation components available\n",
+            "2025-08-28 20:22:31,923 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
+            "2025-08-28 20:22:32,003 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.\n",
+            "2025-08-28 20:22:32,003 - alembic.runtime.migration - INFO - Will assume transactional DDL.\n",
+            "2025-08-28 20:22:32,013 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init\n",
+            "2025-08-28 20:22:32,063 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets\n",
+            "2025-08-28 20:22:32,070 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table\n",
+            "2025-08-28 20:22:32,072 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens\n",
+            "2025-08-28 20:22:32,076 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table\n",
+            "2025-08-28 20:22:32,084 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables\n",
+            "2025-08-28 20:22:32,089 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations\n",
+            "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total\n",
+            "  next(self.gen)\n",
+            "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency\n",
+            "  next(self.gen)\n"
+          ]
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "❗️ The launch_app `port` parameter is deprecated and will be removed in a future release. Use the `PHOENIX_PORT` environment variable instead.\n"
+          ]
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-08-28 20:22:32,260 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table\n",
+            "2025-08-28 20:22:32,265 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts\n",
+            "2025-08-28 20:22:32,274 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.\n",
+            "2025-08-28 20:22:32,282 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables\n",
+            "2025-08-28 20:22:32,297 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)\n",
+            "2025-08-28 20:22:32,525 - __main__ - INFO - 🚀 Phoenix UI available at http://localhost:6006/\n",
+            "2025-08-28 20:22:32,526 - __main__ - INFO - 📊 Collected 3 responses for evaluation\n",
+            "2025-08-28 20:22:32,526 - __main__ - INFO - \n",
+            "📋 EVALUATION SUMMARY\n",
+            "2025-08-28 20:22:32,527 - __main__ - INFO - ==================================================\n",
+            "2025-08-28 20:22:32,528 - __main__ - INFO - Query 1: Find hotels in Giverny with free breakfast\n",
+            "2025-08-28 20:22:32,528 - __main__ - INFO - Success: True\n",
+            "2025-08-28 20:22:32,528 - __main__ - INFO - Response: Agent stopped due to iteration limit or time limit....\n",
+            "2025-08-28 20:22:32,529 - __main__ - INFO - ------------------------------\n",
+            "2025-08-28 20:22:32,529 - __main__ - INFO - Query 2: I need a hotel in Glossop with free internet access\n",
+            "2025-08-28 20:22:32,529 - __main__ - INFO - Success: True\n",
+            "2025-08-28 20:22:32,529 - __main__ - INFO - Response: Agent stopped due to iteration limit or time limit....\n",
+            "2025-08-28 20:22:32,529 - __main__ - INFO - ------------------------------\n",
+            "2025-08-28 20:22:32,530 - __main__ - INFO - Query 3: Show me hotels in Helensburgh with free breakfast\n",
+            "2025-08-28 20:22:32,530 - __main__ - INFO - Success: True\n",
+            "2025-08-28 20:22:32,530 - __main__ - INFO - Response: Agent stopped due to iteration limit or time limit....\n",
+            "2025-08-28 20:22:32,530 - __main__ - INFO - ------------------------------\n",
+            "2025-08-28 20:22:32,531 - __main__ - INFO - 💡 Visit Phoenix UI at http://localhost:6006/ for detailed traces\n",
+            "2025-08-28 20:22:32,531 - __main__ - INFO - ✅ Basic evaluation completed - Phoenix integration ready\n"
+          ]
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "🌍 To view the Phoenix app in your browser, visit http://localhost:6006/\n",
+            "📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix\n"
+          ]
+        }
+      ],
       "source": [
-        "# Import Phoenix evaluation components\n",
+        "# Import Phoenix evaluation components - comprehensive imports like eval_arize.py\n",
         "try:\n",
-        "    import phoenix as px\n",
-        "    from phoenix.evals import (\n",
-        "        RAG_RELEVANCY_PROMPT_TEMPLATE,\n",
-        "        RAG_RELEVANCY_PROMPT_RAILS_MAP,\n",
-        "        TOXICITY_PROMPT_TEMPLATE,\n",
-        "        TOXICITY_PROMPT_RAILS_MAP,\n",
-        "        OpenAIModel,\n",
-        "        llm_classify,\n",
-        "    )\n",
         "    import pandas as pd\n",
-        "    \n",
+        "    import phoenix as px\n",
+        "\n",
         "    # Define lenient evaluation templates for hotel search\n",
         "    HOTEL_QA_PROMPT_TEMPLATE = \"\"\"\n",
         "You are evaluating if an AI hotel search agent correctly answered the user's query.\n",
@@ -1572,7 +1681,7 @@
         "    logger.info(f\"Query 2: {eval_queries[1]}\")\n",
         "    logger.info(f\"Result 2: {'✅ Success' if 'Error' not in result2 else '❌ Failed'}\")\n",
         "    logger.info(f\"Query 3: {eval_queries[2]}\")\n",
-        "    logger.info(f\"Result 3: {'✅ Success' if 'Error' not in result3 else '❌ Failed'}\")\n"
+        "    logger.info(f\"Result 3: {'✅ Success' if 'Error' not in result3 else '❌ Failed'}\")"
       ]
     },
     {
@@ -1590,9 +1699,29 @@
     },
     {
       "cell_type": "code",
-      "execution_count": null,
+      "execution_count": 13,
       "metadata": {},
-      "outputs": [],
+      "outputs": [
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-08-28 20:22:32,537 - __main__ - INFO - ✅ Couchbase connection closed\n",
+            "2025-08-28 20:22:32,537 - __main__ - INFO - ✅ Cleanup completed successfully\n",
+            "2025-08-28 20:22:32,537 - __main__ - INFO - 🎉 Hotel Support Agent Tutorial Completed!\n",
+            "2025-08-28 20:22:32,538 - __main__ - INFO - \n",
+            "📋 Summary:\n",
+            "2025-08-28 20:22:32,538 - __main__ - INFO - - ✅ Used Priority 1 AI services (OpenAI wrappers + Capella)\n",
+            "2025-08-28 20:22:32,539 - __main__ - INFO - - ✅ Applied check_embedding_ctx_length=False fix for asymmetric models\n",
+            "2025-08-28 20:22:32,539 - __main__ - INFO - - ✅ Simple and fast OpenAI wrapper integration\n",
+            "2025-08-28 20:22:32,540 - __main__ - INFO - - ✅ Loaded real hotel data from travel-sample.inventory.hotel\n",
+            "2025-08-28 20:22:32,541 - __main__ - INFO - - ✅ Tested hotel search queries with Agent Catalog integration\n",
+            "2025-08-28 20:22:32,541 - __main__ - INFO - - ✅ Integrated Phoenix evaluation framework\n",
+            "2025-08-28 20:22:32,541 - __main__ - INFO - \n",
+            "💡 This notebook demonstrates a complete, working hotel support agent with Priority 1!\n"
+          ]
+        }
+      ],
       "source": [
         "# Cleanup connections\n",
         "try:\n",

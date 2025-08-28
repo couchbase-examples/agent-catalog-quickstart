@@ -19,6 +19,7 @@ debug_*.py
 .agent-catalog/
 .agent-activity/
 .model-cache/
+.DS_Store
 
 # AI tools
 .cursor/

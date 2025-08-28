@@ -1,7 +1,7 @@
 [project]
-name = "hotel-support-agent"
+name = "hotel-search-agent"
 version = "0.1.0"
-description = "A hotel support agent using Couchbase."
+description = "A hotel search agent using Couchbase."
 authors = [
     {name = "Agent Catalog Team"}
 ]
@@ -16,7 +16,7 @@ dependencies = [
     "tqdm>=4.64.0,<5.0.0",
 
     # Langchain and related integrations
-    "langchain-couchbase>=0.2.4,<0.3.0",
+    "langchain-couchbase>=0.4.0",
     "langchain-openai>=0.3.13,<0.4.0",
     "langchain-nvidia-ai-endpoints>=0.3.0,<0.4.0",
 
@@ -25,9 +25,9 @@ dependencies = [
     "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
 
     # Arize and related instrumentation
-    "arize-phoenix[evals]>=11.0.0",
     "arize>=5.0.0",
     "arize-otel>=0.7.0,<1.0.0",
+    "arize-phoenix[evals]>=11.0.0",
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",
     "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
 ]
