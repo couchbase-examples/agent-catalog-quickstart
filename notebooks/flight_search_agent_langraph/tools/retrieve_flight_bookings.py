@@ -15,19 +15,25 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
+cluster = None
 try:
     auth = couchbase.auth.PasswordAuthenticator(
         username=os.getenv("CB_USERNAME", "Administrator"),
         password=os.getenv("CB_PASSWORD", "password"),
     )
     options = couchbase.options.ClusterOptions(auth)
+    
+    # Use WAN profile for better timeout handling with remote clusters
+    options.apply_profile("wan_development")
+    
     cluster = couchbase.cluster.Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"),
         options
     )
-    cluster.wait_until_ready(timedelta(seconds=5))
+    cluster.wait_until_ready(timedelta(seconds=15))
 except couchbase.exceptions.CouchbaseException as e:
-    error_msg = f"Could not connect to Couchbase cluster: {e!s}"
+    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+    cluster = None
 
 
 def parse_booking_query(booking_query: str) -> dict:
@@ -101,6 +107,10 @@ def retrieve_flight_bookings(booking_query: str = "") -> str:
     - "JFK,LAX,2024-12-25" - Show booking for specific flight
     """
     try:
+        # Validate database connection
+        if cluster is None:
+            return "Database connection unavailable. Unable to retrieve bookings. Please try again later."
+        
         # Parse and validate input
         search_params = parse_booking_query(booking_query)
         

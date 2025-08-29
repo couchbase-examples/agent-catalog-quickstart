@@ -9,27 +9,15 @@ import couchbase.exceptions
 import couchbase.options
 import dotenv
 
-# Simple import - agent_setup should be accessible via shared module
-try:
-    from shared.agent_setup import setup_ai_services
-except ImportError:
-    # Fallback: Add parent directories to path to find shared module
-    import sys
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dirs = [os.path.join(current_dir, '..', '..', '..'), os.path.join(current_dir, '..', '..')]
-    for parent_dir in parent_dirs:
-        if parent_dir not in sys.path and os.path.exists(os.path.join(parent_dir, 'shared')):
-            sys.path.insert(0, parent_dir)
-            break
-    from shared.agent_setup import setup_ai_services
-
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv(override=True)
 
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
+cluster = None
 try:
     auth = couchbase.auth.PasswordAuthenticator(
         username=os.getenv("CB_USERNAME", "Administrator"),
@@ -45,17 +33,23 @@ try:
     )
     cluster.wait_until_ready(timedelta(seconds=20))
 except couchbase.exceptions.CouchbaseException as e:
-    error_msg = f"Could not connect to Couchbase cluster: {e!s}"
+    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+    cluster = None
 
 
 def create_vector_store():
     """Create vector store instance for searching airline reviews."""
     try:
-        # Setup embeddings using shared module
-        embeddings, _ = setup_ai_services(framework="langgraph")
+        # Setup embeddings directly - using Capella AI with OpenAI wrapper (priority 1)
+        embeddings = OpenAIEmbeddings(
+            model=os.getenv("CAPELLA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
+            api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
+            base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
+            check_embedding_ctx_length=False,  # Fix for asymmetric models
+        )
 
         # Create vector store
-        return CouchbaseVectorStore(
+        return CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
@@ -117,6 +111,10 @@ def search_airline_reviews(query: str) -> str:
         Formatted string with relevant airline reviews
     """
     try:
+        # Validate database connection
+        if cluster is None:
+            return "Database connection unavailable. Unable to search airline reviews. Please try again later."
+        
         # Validate query input
         if not query or not query.strip():
             return "Please provide a search query for airline reviews (e.g., 'food quality', 'seat comfort', 'service experience', 'delays')."

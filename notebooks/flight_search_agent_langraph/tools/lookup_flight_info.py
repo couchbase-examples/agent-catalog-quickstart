@@ -14,19 +14,25 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
+cluster = None
 try:
+    auth = couchbase.auth.PasswordAuthenticator(
+        username=os.getenv("CB_USERNAME", "Administrator"),
+        password=os.getenv("CB_PASSWORD", "password")
+    )
+    options = couchbase.options.ClusterOptions(auth)
+    
+    # Use WAN profile for better timeout handling with remote clusters
+    options.apply_profile("wan_development")
+    
     cluster = couchbase.cluster.Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        couchbase.options.ClusterOptions(
-            authenticator=couchbase.auth.PasswordAuthenticator(
-                username=os.getenv("CB_USERNAME", "Administrator"),
-                password=os.getenv("CB_PASSWORD", "password")
-            )
-        ),
+        options
     )
-    cluster.wait_until_ready(timedelta(seconds=5))
+    cluster.wait_until_ready(timedelta(seconds=15))
 except couchbase.exceptions.CouchbaseException as e:
-    error_msg = f"Could not connect to Couchbase cluster: {e!s}"
+    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+    cluster = None
 
 
 @agentc.catalog.tool  
@@ -41,6 +47,10 @@ def lookup_flight_info(source_airport: str, destination_airport: str) -> str:
         Formatted string with available flights
     """
     try:
+        # Validate database connection
+        if cluster is None:
+            return "Database connection unavailable. Please try again later."
+        
         # Validate input parameters
         if not source_airport or not destination_airport:
             return "Error: Both source and destination airports are required."

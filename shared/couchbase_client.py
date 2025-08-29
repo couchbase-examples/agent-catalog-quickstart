@@ -350,7 +350,7 @@ class CouchbaseClient:
             CouchbaseVectorStore instance
         """
         try:
-            from langchain_couchbase.vectorstores import CouchbaseVectorStore
+            from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 
             # Load data if loader function provided
             if data_loader_func:
@@ -367,7 +367,7 @@ class CouchbaseClient:
                 logger.info("✅ Data loaded into vector store successfully")
 
             # Create LangChain vector store instance
-            vector_store = CouchbaseVectorStore(
+            vector_store = CouchbaseSearchVectorStore(
                 cluster=self.cluster,
                 bucket_name=self.bucket_name,
                 scope_name=scope_name,
