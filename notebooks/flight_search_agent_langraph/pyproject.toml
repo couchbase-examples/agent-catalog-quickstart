@@ -29,7 +29,7 @@ dependencies = [
     "pandas>=2.0.0,<3.0.0",
     
     # LangChain ecosystem
-    "langchain-couchbase>=0.2.4,<0.3.0",
+    "langchain-couchbase>=0.4.0,<0.5.0",
     "langchain-openai>=0.3.11,<0.4.0",
     "langchain-nvidia-ai-endpoints>=0.3.13,<0.4.0",
     "langgraph>=0.5.1,<0.6.0",

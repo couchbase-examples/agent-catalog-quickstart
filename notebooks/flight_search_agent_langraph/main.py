@@ -22,6 +22,7 @@ import langchain_openai.chat_models
 import langgraph.graph
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
+from couchbase.exceptions import KeyspaceNotFoundException
 from couchbase.options import ClusterOptions
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
@@ -383,24 +384,29 @@ def clear_bookings_and_reviews():
                     logger.info(
                         f"🗑️  Clearing airline reviews collection: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
                     )
-                    client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+                    client.clear_collection_data(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
                     logger.info(
                         f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
                     )
 
-            except Exception as count_error:
-                # Collection doesn't exist or query failed - clear anyway to ensure fresh start
+            except KeyspaceNotFoundException:
+                # Collection doesn't exist yet - this is expected for fresh setup
                 logger.info(
-                    f"📊 Collection doesn't exist or query failed, will clear and reload: {count_error}"
+                    f"📊 Collection doesn't exist yet, will create and load fresh data"
                 )
-                client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+            except Exception as count_error:
+                # Other query errors - clear anyway to ensure fresh start
+                logger.info(
+                    f"📊 Collection query failed, will clear and reload: {count_error}"
+                )
+                client.clear_collection_data(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
                 logger.info(
                     f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
                 )
 
         except Exception as e:
             logger.warning(f"⚠️  Could not check collection count, clearing anyway: {e}")
-            client.clear_collection(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
+            client.clear_collection_data(os.environ["CB_SCOPE"], os.environ["CB_COLLECTION"])
             logger.info(
                 f"✅ Cleared existing airline reviews for fresh data load: {os.environ['CB_BUCKET']}.{os.environ['CB_SCOPE']}.{os.environ['CB_COLLECTION']}"
             )
@@ -465,7 +471,7 @@ def setup_flight_search_agent():
             password=SecretStr(os.environ["AGENT_CATALOG_PASSWORD"]),
             bucket=os.environ["AGENT_CATALOG_BUCKET"],
         )
-        application_span = catalog.Span(name="Flight Search Agent")
+        application_span = catalog.Span(name="Flight Search Agent", blacklist=set())
 
         # Test Capella AI connectivity
         if os.getenv("CAPELLA_API_ENDPOINT"):

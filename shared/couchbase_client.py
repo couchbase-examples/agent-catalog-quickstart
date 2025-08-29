@@ -19,6 +19,7 @@ from typing import Optional
 
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
+from couchbase.exceptions import KeyspaceNotFoundException
 from couchbase.management.buckets import BucketType, CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
@@ -221,6 +222,9 @@ class CouchbaseClient:
                 else:
                     logger.warning(f"⚠️ Collection clear incomplete, {remaining_count} documents remaining")
 
+        except KeyspaceNotFoundException:
+            logger.info(f"ℹ️ Collection {self.bucket_name}.{scope_name}.{collection_name} doesn't exist, nothing to clear")
+            # This is actually success - clearing non-existent collection is successful
         except Exception as e:
             logger.warning(f"⚠️ Error clearing collection data: {e}")
             # Continue anyway - collection might not exist or be empty
