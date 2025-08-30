@@ -6,10 +6,10 @@ import uuid
 from datetime import timedelta
 
 import agentc
-import couchbase.auth
-import couchbase.cluster
-import couchbase.exceptions
-import couchbase.options
+from couchbase.auth import PasswordAuthenticator
+from couchbase.cluster import Cluster
+from couchbase.exceptions import CouchbaseException
+from couchbase.options import ClusterOptions
 import dotenv
 
 dotenv.load_dotenv(override=True)
@@ -19,21 +19,21 @@ logger = logging.getLogger(__name__)
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 cluster = None
 try:
-    auth = couchbase.auth.PasswordAuthenticator(
+    auth = PasswordAuthenticator(
         username=os.getenv("CB_USERNAME", "Administrator"),
         password=os.getenv("CB_PASSWORD", "password"),
     )
-    options = couchbase.options.ClusterOptions(auth)
+    options = ClusterOptions(auth)
     
     # Use WAN profile for better timeout handling with remote clusters
     options.apply_profile("wan_development")
     
-    cluster = couchbase.cluster.Cluster(
+    cluster = Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"),
         options,
     )
     cluster.wait_until_ready(timedelta(seconds=15))
-except couchbase.exceptions.CouchbaseException as e:
+except CouchbaseException as e:
     logger.error(f"Could not connect to Couchbase cluster: {e!s}")
     cluster = None
 
@@ -192,31 +192,47 @@ def parse_passenger_details(original_input: str) -> tuple[int, str]:
     passengers = 1
     flight_class = "economy"
     
-    # Parse passenger count - check multiple patterns
-    # Pattern 1: "2 passengers" or "2 passenger"
-    passenger_match = re.search(r'(\d+)\s*passengers?', original_input, re.I)
-    if passenger_match:
-        passengers = int(passenger_match.group(1))
+    # Parse passenger count - prefer explicit key=value when present
+    # Pattern 0: key=value form like "passengers=2"
+    kv_match = re.search(r'passengers\s*[:=]\s*(\d+)', original_input, re.I)
+    if kv_match:
+        passengers = int(kv_match.group(1))
     else:
-        # Pattern 2: Comma-separated format like "LAX,JFK,2025-08-06,2,business"
-        parts = original_input.split(',')
-        if len(parts) >= 4:  # source,dest,date,passengers,...
-            try:
-                passengers = int(parts[3].strip())
-            except (ValueError, IndexError):
-                pass
+        # Pattern 1: "2 passengers" or "2 passenger"
+        passenger_match = re.search(r'(\d+)\s*passengers?', original_input, re.I)
+        if passenger_match:
+            passengers = int(passenger_match.group(1))
         else:
-            # Pattern 3: Just a number followed by class "2 business class"
-            number_match = re.search(r'\b(\d+)\b', original_input)
-            if number_match:
-                passengers = int(number_match.group(1))
+            # Pattern 2: Comma-separated format like "LAX,JFK,2025-08-06,2,business"
+            parts = original_input.split(',')
+            if len(parts) >= 4:  # source,dest,date,passengers,...
+                # Attempt to find an integer in the 4th part or any part mentioning passengers
+                parsed = False
+                try:
+                    passengers = int(parts[3].strip())
+                    parsed = True
+                except (ValueError, IndexError):
+                    pass
+                if not parsed:
+                    for part in parts:
+                        if 'passenger' in part.lower():
+                            mnum = re.search(r'(\d+)', part)
+                            if mnum:
+                                passengers = int(mnum.group(1))
+                                parsed = True
+                                break
+            else:
+                # Pattern 3: Just a number anywhere (fallback)
+                number_match = re.search(r'\b(\d+)\b', original_input)
+                if number_match:
+                    passengers = int(number_match.group(1))
     
     # Parse class - runs independently of passenger parsing
-    if re.search(r'\bbusiness\b', original_input, re.I):
+    if re.search(r'\bflight_class\s*[:=]\s*\"?business\"?', original_input, re.I) or re.search(r'\bbusiness\b', original_input, re.I):
         flight_class = "business"
-    elif re.search(r'\bfirst\b', original_input, re.I):
+    elif re.search(r'\bflight_class\s*[:=]\s*\"?first\"?', original_input, re.I) or re.search(r'\bfirst\b', original_input, re.I):
         flight_class = "first"
-    elif re.search(r'\beconomy\b|\bbasic\b', original_input, re.I):
+    elif re.search(r'\bflight_class\s*[:=]\s*\"?economy\"?', original_input, re.I) or re.search(r'\beconomy\b|\bbasic\b', original_input, re.I):
         flight_class = "economy"
     
     return passengers, flight_class

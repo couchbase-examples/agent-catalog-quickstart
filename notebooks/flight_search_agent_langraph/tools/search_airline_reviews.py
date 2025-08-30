@@ -3,13 +3,12 @@ import os
 from datetime import timedelta
 
 import agentc
-import couchbase.auth
-import couchbase.cluster
-import couchbase.exceptions
-import couchbase.options
 import dotenv
-
-from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
+from couchbase.auth import PasswordAuthenticator
+from couchbase.cluster import Cluster
+from couchbase.exceptions import CouchbaseException
+from couchbase.options import ClusterOptions
+from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv(override=True)
@@ -19,20 +18,20 @@ logger = logging.getLogger(__name__)
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
 cluster = None
 try:
-    auth = couchbase.auth.PasswordAuthenticator(
+    auth = PasswordAuthenticator(
         username=os.getenv("CB_USERNAME", "Administrator"),
         password=os.getenv("CB_PASSWORD", "password"),
     )
-    options = couchbase.options.ClusterOptions(auth)
+    options = ClusterOptions(auth)
 
     # Use WAN profile for better timeout handling with remote clusters
     options.apply_profile("wan_development")
 
-    cluster = couchbase.cluster.Cluster(
+    cluster = Cluster(
         os.getenv("CB_CONN_STRING", "couchbase://localhost"), options
     )
     cluster.wait_until_ready(timedelta(seconds=20))
-except couchbase.exceptions.CouchbaseException as e:
+except CouchbaseException as e:
     logger.error(f"Could not connect to Couchbase cluster: {e!s}")
     cluster = None
 
@@ -42,14 +41,14 @@ def create_vector_store():
     try:
         # Setup embeddings directly - using Capella AI with OpenAI wrapper (priority 1)
         embeddings = OpenAIEmbeddings(
-            model=os.getenv("CAPELLA_API_EMBEDDING_MODEL", "nvidia/nv-embedqa-e5-v5"),
+            model=os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
             api_key=os.getenv("CAPELLA_API_EMBEDDINGS_KEY"),
             base_url=f"{os.getenv('CAPELLA_API_ENDPOINT')}/v1",
             check_embedding_ctx_length=False,  # Fix for asymmetric models
         )
 
         # Create vector store
-        return CouchbaseSearchVectorStore(
+        return CouchbaseVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
@@ -130,7 +129,7 @@ def search_airline_reviews(query: str) -> str:
         
         return format_review_results(results, query)
 
-    except couchbase.exceptions.CouchbaseException as e:
+    except CouchbaseException as e:
         logger.exception("Database error in search_airline_reviews")
         return "Unable to search airline reviews due to a database error. Please try again later."
     except Exception as e:

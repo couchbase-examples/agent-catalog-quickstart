@@ -170,18 +170,38 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                         # Call appropriate tool with proper parameter handling
                         if name == "lookup_flight_info":
                             # Parse airport codes from input
-                            if ',' in tool_input:
-                                parts = tool_input.split(',')
-                                source = parts[0].strip().upper()
-                                dest = parts[1].strip().upper()
-                            else:
-                                # Try to extract from natural language
+                            import re
+
+                            source = None
+                            dest = None
+
+                            # 1) Support key=value style inputs from ReAct (e.g., source_airport="JFK", destination_airport="LAX")
+                            try:
+                                m_src = re.search(r"source_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
+                                m_dst = re.search(r"destination_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
+                                if m_src and m_dst:
+                                    source = m_src.group(1).upper()
+                                    dest = m_dst.group(1).upper()
+                            except Exception:
+                                pass
+
+                            # 2) Fallback: comma separated codes (e.g., "JFK,LAX")
+                            if source is None or dest is None:
+                                if ',' in tool_input:
+                                    parts = tool_input.split(',')
+                                    if len(parts) >= 2:
+                                        source = parts[0].strip().upper()
+                                        dest = parts[1].strip().upper()
+
+                            # 3) Fallback: natural language (e.g., "JFK to LAX")
+                            if source is None or dest is None:
                                 words = tool_input.upper().split()
                                 airport_codes = [w for w in words if len(w) == 3 and w.isalpha()]
                                 if len(airport_codes) >= 2:
                                     source, dest = airport_codes[0], airport_codes[1]
-                                else:
-                                    return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
+
+                            if not source or not dest:
+                                return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
                             
                             result = original_tool.func(source_airport=source, destination_airport=dest)
 
