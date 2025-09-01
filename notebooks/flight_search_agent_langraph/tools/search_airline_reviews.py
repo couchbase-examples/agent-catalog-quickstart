@@ -8,7 +8,7 @@ from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.exceptions import CouchbaseException
 from couchbase.options import ClusterOptions
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from langchain_openai import OpenAIEmbeddings
 
 dotenv.load_dotenv(override=True)
@@ -48,7 +48,7 @@ def create_vector_store():
         )
 
         # Create vector store
-        return CouchbaseVectorStore(
+        return CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
