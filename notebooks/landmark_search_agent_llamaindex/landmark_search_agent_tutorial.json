@@ -650,7 +650,7 @@
       ]
     },
     {
-      "cell_type": "raw",
+      "cell_type": "markdown",
       "metadata": {
         "vscode": {
           "languageId": "raw"
@@ -658,7 +658,6 @@
       },
       "source": [
         "## Test Functions\n",
-        "\n",
         "Define test functions to demonstrate the landmark search agent functionality.\n"
       ]
     },

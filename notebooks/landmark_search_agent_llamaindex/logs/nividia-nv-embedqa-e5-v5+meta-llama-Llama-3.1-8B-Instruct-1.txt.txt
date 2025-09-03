@@ -524,34 +524,7 @@ llm_classify |██████████████████████
 2025-07-31 12:21:52,577 - __main__ - INFO -    ✅ relevance evaluation completed
 2025-07-31 12:21:52,578 - __main__ - INFO -    📊 Running qa_correctness evaluation...
 llm_classify |                                                                                                                                                                                                      | 0/5 (0.0%) | ⏳ 00:00<? | ?it/s2025-07-31 12:21:56,162 - asyncio - ERROR - Task exception was never retrieved
-future: <Task finished name='Task-99044' coro=<AsyncClient.aclose() done, defined at /Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')>
-Traceback (most recent call last):
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1985, in aclose
-    await self._transport.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 406, in aclose
-    await self._pool.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 353, in aclose
-    await self._close_connections(closing_connections)
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py", line 345, in _close_connections
-    await connection.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/connection.py", line 173, in aclose
-    await self._connection.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_async/http11.py", line 258, in aclose
-    await self._network_stream.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpcore/_backends/anyio.py", line 53, in aclose
-    await self._stream.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/anyio/streams/tls.py", line 216, in aclose
-    await self.transport_stream.aclose()
-  File "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1314, in aclose
-    self._transport.close()
-  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/selector_events.py", line 1210, in close
-    super().close()
-  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/selector_events.py", line 875, in close
-    self._loop.call_soon(self._call_connection_lost, None)
-  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 794, in call_soon
-    self._check_closed()
-  File "/Users/kaustavghosh/.pyenv/versions/3.12.8/lib/python3.12/asyncio/base_events.py", line 540, in _check_closed
-    raise RuntimeError('Event loop is closed')
+future: <Task finished name='Task-99044' coro=<AsyncClient.aclose() done, defined at /Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/httpx/_client.py:1978> exception=RuntimeError('Event loop is closed')
 RuntimeError: Event loop is closed
 llm_classify |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:10<00:00 |  2.05s/it
 2025-07-31 12:22:02,872 - __main__ - INFO -    ✅ qa_correctness evaluation completed

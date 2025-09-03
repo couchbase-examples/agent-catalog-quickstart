@@ -9,6 +9,10 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
+    # Agent Catalog dependencies
+    "agentc @ ../../agent-catalog/libs/agentc",
+    "agentc-llamaindex @ ../../agent-catalog/libs/agentc_integrations/llamaindex",
+
     # LlamaIndex core and integrations
     "llama-index>=0.12.0,<0.13.0",
     "llama-index-vector-stores-couchbase>=0.4.0,<0.5.0",
@@ -32,10 +36,6 @@ dependencies = [
     "tqdm>=4.64.0,<5.0.0",
     "pandas>=2.0.0,<3.0.0",
     
-    # Agent Catalog dependencies
-    "agentc @ ../../agent-catalog/libs/agentc",
-    "agentc-llamaindex @ ../../agent-catalog/libs/agentc_integrations/llamaindex",
-    
     # Arize and evaluation dependencies
     "arize-phoenix>=11.0.0,<12.0.0",
     "arize>=7.0.0,<8.0.0",
@@ -46,21 +46,16 @@ dependencies = [
     "openinference-instrumentation-llama-index>=4.0.0,<5.0.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0,<8.0.0",
-    "black>=23.0.0,<24.0.0",
-    "ruff>=0.12.1,<0.13.0",
-    "ipykernel>=6.29.5,<7.0.0",
-    "jupyter>=1.0.0,<2.0.0",
-]
-
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-arize-phoenix = "^11.6.2"
-pydantic = "^2.11.7"
+ipykernel = "*"
+jupyter = "*"
+tqdm = "*"
+pytest = "*"
+black = "*"
+ruff = "*"
 
 [build-system]
 requires = ["poetry-core"]

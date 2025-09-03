@@ -16,6 +16,8 @@ import json
 import logging
 import nest_asyncio
 import os
+import socket
+import subprocess
 import sys
 import time
 import warnings
@@ -92,6 +94,7 @@ class EvaluationConfig:
 
     # Phoenix Configuration
     phoenix_base_port: int = 6006
+    phoenix_grpc_base_port: int = 4317
     phoenix_max_port_attempts: int = 5
 
     # Evaluation Configuration
@@ -108,6 +111,34 @@ class PhoenixManager:
         self.session = None
         self.active_port = None
 
+    def _is_port_in_use(self, port: int) -> bool:
+        """Check if a port is in use."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(("localhost", port)) == 0
+
+    def _kill_existing_phoenix_processes(self) -> None:
+        """Kill any existing Phoenix processes."""
+        try:
+            subprocess.run(["pkill", "-f", "phoenix"], check=False, capture_output=True)
+            time.sleep(2)  # Wait for processes to terminate
+        except Exception as e:
+            logger.debug(f"Error killing Phoenix processes: {e}")
+
+    def _find_available_port(self) -> tuple[int, int]:
+        """Find available ports for Phoenix."""
+        phoenix_port = self.config.phoenix_base_port
+        grpc_port = self.config.phoenix_grpc_base_port
+
+        for _ in range(self.config.phoenix_max_port_attempts):
+            if not self._is_port_in_use(phoenix_port):
+                return phoenix_port, grpc_port
+            phoenix_port += 1
+            grpc_port += 1
+
+        raise RuntimeError(
+            f"Could not find available ports after {self.config.phoenix_max_port_attempts} attempts"
+        )
+
     def start_phoenix(self) -> bool:
         """Start Phoenix server and return success status."""
         if not PHOENIX_AVAILABLE:
@@ -117,12 +148,22 @@ class PhoenixManager:
         try:
             logger.info("🔧 Setting up Phoenix observability...")
 
+            # Clean up existing processes
+            self._kill_existing_phoenix_processes()
+
+            # Find available ports
+            phoenix_port, grpc_port = self._find_available_port()
+
+            # Set environment variables
+            os.environ["PHOENIX_PORT"] = str(phoenix_port)
+            os.environ["PHOENIX_GRPC_PORT"] = str(grpc_port)
+
             # Start Phoenix session
             self.session = px.launch_app()
+            self.active_port = phoenix_port
 
             if self.session:
                 logger.info(f"🌐 Phoenix UI: {self.session.url}")
-                self.active_port = self.config.phoenix_base_port
 
             # Register Phoenix OTEL for LlamaIndex
             register(
@@ -174,8 +215,11 @@ class LandmarkSearchEvaluator:
         # Phoenix evaluators
         self.evaluator_llm = None
 
-        if PHOENIX_AVAILABLE:
+        # Add option to bypass Phoenix for debugging
+        if PHOENIX_AVAILABLE and not os.getenv("SKIP_PHOENIX", "false").lower() == "true":
             self._setup_phoenix_evaluators()
+        elif os.getenv("SKIP_PHOENIX", "false").lower() == "true":
+            logger.info("🔧 Phoenix setup skipped due to SKIP_PHOENIX=true")
 
     def _setup_phoenix_evaluators(self) -> None:
         """Setup Phoenix evaluators for LLM-based evaluation."""

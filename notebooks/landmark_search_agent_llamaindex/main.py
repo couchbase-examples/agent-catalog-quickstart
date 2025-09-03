@@ -188,7 +188,7 @@ def setup_landmark_agent():
 
     # Initialize Agent Catalog
     catalog = agentc.Catalog()
-    span = catalog.Span(name="Landmark Search Agent Setup")
+    span = catalog.Span(name="Landmark Search Agent Setup", blacklist=set())
 
     # Setup database client using shared module
     client = create_couchbase_client()
