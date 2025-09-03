@@ -1,0 +1,590 @@
+poetry run python evals/eval_arize.py
+2025-09-03 09:30:59,294 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-09-03 09:30:59,300 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_32ebdae4-0b56-4acf-ac09-a63f9fdc1829 initialized
+2025-09-03 09:31:01,257 - __main__ - INFO - ✅ Phoenix evaluators initialized
+2025-09-03 09:31:01,257 - __main__ - INFO - 🔧 Setting up Phoenix observability...
+2025-09-03 09:31:03,276 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-09-03 09:31:03,315 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
+2025-09-03 09:31:03,315 - alembic.runtime.migration - INFO - Will assume transactional DDL.
+2025-09-03 09:31:03,354 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
+2025-09-03 09:31:03,903 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+2025-09-03 09:31:03,909 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+2025-09-03 09:31:03,911 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+2025-09-03 09:31:03,917 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+2025-09-03 09:31:03,925 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+2025-09-03 09:31:03,930 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+  next(self.gen)
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+  next(self.gen)
+2025-09-03 09:31:04,006 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+2025-09-03 09:31:04,013 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+2025-09-03 09:31:04,023 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+2025-09-03 09:31:04,032 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+2025-09-03 09:31:04,073 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+2025-09-03 09:31:04,458 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
+🔭 OpenTelemetry Tracing Details 🔭
+|  Phoenix Project: landmark-search-agent-evaluation
+|  Span Processor: SimpleSpanProcessor
+|  Collector Endpoint: http://localhost:6006/v1/traces
+|  Transport: HTTP + protobuf
+|  Transport Headers: {}
+|  
+|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.
+|  
+|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.
+|  
+|  `register` has set this TracerProvider as the global OpenTelemetry default.
+|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
+
+2025-09-03 09:31:04,857 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-09-03 09:31:04,857 - __main__ - INFO - ✅ Phoenix instrumentation enabled for LlamaIndex
+2025-09-03 09:31:04,857 - __main__ - INFO - 🔧 Setting up landmark search agent...
+2025-09-03 09:31:05,774 - main - INFO - Setting up environment variables...
+2025-09-03 09:31:05,774 - main - INFO - Using Capella AI endpoint for embeddings: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com
+2025-09-03 09:31:05,774 - main - INFO - Using NVIDIA NIMs for LLM with API key: nvapi-pLiP...
+2025-09-03 09:31:05,774 - main - INFO - ✅ Configuration loaded:
+2025-09-03 09:31:05,774 - main - INFO -    Bucket: travel-sample
+2025-09-03 09:31:05,774 - main - INFO -    Scope: agentc_data
+2025-09-03 09:31:05,774 - main - INFO -    Collection: landmark_data
+2025-09-03 09:31:05,774 - main - INFO -    Index: landmark_data_index
+2025-09-03 09:31:05,823 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.
+2025-09-03 09:31:05,823 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.
+2025-09-03 09:31:05,858 - agentc_core.activity.span - INFO - Using both a local auditor and a remote auditor.
+2025-09-03 09:31:08,179 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-03 09:31:08,179 - shared.agent_setup - INFO - 🔧 Setting up AI services for llamaindex framework...
+2025-09-03 09:31:08,182 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-03 09:31:11,438 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-03 09:31:11,438 - shared.agent_setup - INFO - ✅ AI services setup completed for llamaindex
+2025-09-03 09:31:12,750 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-03 09:31:15,207 - shared.couchbase_client - INFO - ℹ️ Collection 'landmark_data' exists, keeping existing data
+2025-09-03 09:31:19,231 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-09-03 09:31:19,231 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.landmark_data
+2025-09-03 09:31:19,231 - shared.couchbase_client - INFO - ✅ Loaded vector search index definition from agentcatalog_index.json
+2025-09-03 09:31:20,263 - shared.couchbase_client - INFO - 🔧 Creating vector search index 'landmark_data_index'...
+2025-09-03 09:31:21,454 - shared.couchbase_client - INFO - ✅ Vector search index 'landmark_data_index' created successfully
+2025-09-03 09:31:24,941 - shared.couchbase_client - INFO - ✅ LlamaIndex vector store setup complete: travel-sample.agentc_data.landmark_data
+2025-09-03 09:31:26,062 - data.landmark_data - INFO - Found 4496 existing documents in collection, skipping data load
+2025-09-03 09:31:26,073 - main - INFO - Loaded search_landmarks tool from AgentC
+2025-09-03 09:31:26,073 - main - INFO - Loaded 1 tools from Agent Catalog
+2025-09-03 09:31:26,089 - main - INFO - Loaded system prompt from Agent Catalog
+/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/base.py:154: DeprecationWarning: Call to deprecated class ReActAgent. (ReActAgent has been rewritten and replaced by llama_index.core.agent.workflow.ReActAgent.
+
+This implementation will be removed in a v0.13.0 and the new implementation will be promoted to the `from llama_index.core.agent import ReActAgent` path.
+
+See the docs for more information: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return cls(
+/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/deprecated/classic.py:184: DeprecationWarning: Call to deprecated class AgentRunner. (AgentRunner has been deprecated and is not maintained.
+
+This implementation will be removed in a v0.13.0.
+
+See the docs for more information on updated agent usage: https://docs.llamaindex.ai/en/stable/understanding/agent/)
+  return old_new1(cls, *args, **kwargs)
+2025-09-03 09:31:26,169 - main - INFO - LlamaIndex ReAct agent created successfully
+2025-09-03 09:31:26,172 - __main__ - INFO - ✅ Landmark search agent setup completed successfully
+2025-09-03 09:31:26,172 - __main__ - INFO - 🚀 Starting LlamaIndex landmark search evaluation with 5 queries
+2025-09-03 09:31:26,172 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-09-03 09:31:26,173 - __main__ - INFO -    🤖 Agent: Landmark Search Agent (LlamaIndex)
+2025-09-03 09:31:26,173 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-09-03 09:31:26,173 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-09-03 09:31:26,173 - __main__ - INFO - 
+📋 Query 1/5
+2025-09-03 09:31:26,173 - __main__ - INFO - 🔍 Evaluating query: Find museums and galleries in Glasgow
+> Running step f511c527-6004-4124-a0d2-99171f195618. Step input: Find museums and galleries in Glasgow
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'museums and galleries in Glasgow', 'limit': 5}
+2025-09-03 09:31:36,822 - search_landmarks - INFO - Search query: 'museums and galleries in Glasgow' found 5 results
+Observation: Found 4 landmarks matching 'museums and galleries in Glasgow':
+
+1. **The Tron Theatre**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do.
+   🏠 Address: 63 Trongate.
+   📞 Phone: +44 141 552 4267.
+   🌐 Website: http://www.tron.co.uk/.
+   📝 Description: Specialises in contemporary works..
+
+2. **Kelvingrove Art Gallery and Museum**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do.
+   🏠 Address: Argyle Street.
+   📞 Phone: +44 141 276 9599.
+   🌐 Website: http://www.glasgowlife.org.uk/museums/kelvingrove/.
+   🕒 Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM.
+   💰 Price: Free.
+   📝 Description: Next door to the Kelvingrove Lawn Bowls Centre. The city's grandest public museum, with one of the finest civic collections in Europe housed within this Glasgow Victorian landmark. The collection is quite varied, with artworks, biological displays and anthropological artifacts. The museum as a whole is well-geared towards children and families and has a cafe..
+
+3. **Riverside Museum**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See.
+   🏠 Address: 100 Pointhouse Place.
+   📞 Phone: +44 141 287 2720.
+   🌐 Website: http://www.glasgowlife.org.uk/museums/riverside/.
+   🕒 Hours: M-Th and Sa 10:00-17:00, F and Su 11:00-17:00.
+   💰 Price: Free.
+   📝 Description: A recently reopened museum with an excellent collection of vehicles and models to tell the story of transport by land and sea, with a unique Glasgow flavour. Besides the usual rail locomotives, buses, trams, cars and planes, the museum also includes a recreated subway station and a street scene of old Glasgow. &lt;!--This museum is also listed on the [[Urban Rail]] page, please update there with any major changes. --&gt;.
+
+4. **Centre for Contemporary Arts**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do.
+   🏠 Address: 350 Sauchiehall Street.
+   📞 Phone: +44 141 352 4900.
+   🌐 Website: http://www.cca-glasgow.com/.
+   📝 Description: Shows films, though it's primarily an art gallery..
+> Running step 1b474994-e624-4be9-9fc5-f7d3f3f755b4. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts.
+2025-09-03 09:31:38,694 - __main__ - INFO - ✅ Query completed in 12.52s
+2025-09-03 09:31:38,694 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-09-03 09:31:38,694 - __main__ - INFO - 
+📋 Query 2/5
+2025-09-03 09:31:38,694 - __main__ - INFO - 🔍 Evaluating query: Show me restaurants serving Asian cuisine
+> Running step 483e452e-e956-48cf-ad19-1453205dbd3a. Step input: Show me restaurants serving Asian cuisine
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Asian cuisine restaurants', 'limit': 5}
+2025-09-03 09:31:47,989 - search_landmarks - INFO - Search query: 'Asian cuisine restaurants' found 5 results
+Observation: Found 5 landmarks matching 'Asian cuisine restaurants':
+
+1. **New Canton**
+   📍 Location: Whittier, United States
+   🗺️ State: California.
+   🎯 Activity: Eat.
+   🏠 Address: 13015 Philadelphia St, Whittier, CA 90601.
+   📞 Phone: +1 562 698-7315.
+   🌐 Website: http://www.newcantonchineserestaurant.com/.
+   📝 Description: A Chinese restaurant.
+
+2. **World Curry**
+   📍 Location: San Diego, United States
+   🗺️ State: California.
+   🎯 Activity: Eat.
+   🏠 Address: 1433 Garnet Ave.
+   🌐 Website: http://www.worldcurry.com/.
+   📝 Description: Great variety of world curries and great happy hour beverage deals..
+
+3. **So Asia**
+   📍 Location: Camberley, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 69 High St.
+   📞 Phone: +44 1276 29078.
+   🌐 Website: http://www.soasia.co.uk/.
+   📝 Description: Eat as much as you like buffet style restaurant with an excellent choice of Chinese, Thai and Indian foods..
+
+4. **Old Thai House**
+   📍 Location: Camberley, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 125 London Road.
+   📞 Phone: +44 1276 21212.
+   🌐 Website: http://oldthaihouse.com/.
+   📝 Description: Traditional inexpensive Thai food..
+
+5. **La Perle d'Asie**
+   📍 Location: Carpentras, France
+   🗺️ State: Provence-Alpes-Côte d'Azur.
+   🎯 Activity: Eat.
+   🏠 Address: 65 pl 25 août 1944.
+   📞 Phone: +33 4 90 60 73 37.
+   💰 Price: 15 € - 20 €.
+   📝 Description: Asian restaurant.
+> Running step 4e20a06f-4d58-4c8b-b737-31bfab5737d4. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: Here are 5 restaurants serving Asian cuisine: New Canton, World Curry, So Asia, Old Thai House, and La Perle d'Asie.
+2025-09-03 09:31:49,761 - __main__ - INFO - ✅ Query completed in 11.07s
+2025-09-03 09:31:49,762 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-09-03 09:31:49,762 - __main__ - INFO - 
+📋 Query 3/5
+2025-09-03 09:31:49,762 - __main__ - INFO - 🔍 Evaluating query: What attractions can I see in Glasgow?
+> Running step 1a7a69e7-5d7c-4892-ac0f-9c16bdfcf11b. Step input: What attractions can I see in Glasgow?
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'Glasgow attractions', 'limit': 5}
+2025-09-03 09:31:59,488 - search_landmarks - INFO - Search query: 'Glasgow attractions' found 5 results
+Observation: Found 5 landmarks matching 'Glasgow attractions':
+
+1. **The Tron Theatre**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: Do.
+   🏠 Address: 63 Trongate.
+   📞 Phone: +44 141 552 4267.
+   🌐 Website: http://www.tron.co.uk/.
+   📝 Description: Specialises in contemporary works..
+
+2. **'The Argyll Arms Hotel**
+   📍 Location: Argyll and Bute, United Kingdom
+   🎯 Activity: Eat.
+   📝 Description: serves fresh food at very reasonable prices - view of stoney beach with herons.
+
+3. **The Henry Bell**
+   📍 Location: Helensburgh, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 19/29 James Street.
+   📝 Description: G84 8AS. Wetherspoon pub..
+
+4. **Glasgow Riverside Museum**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See.
+   🏠 Address: 100 Pointhouse Place, [[Glasgow]], [[Scotland]] UK.
+   📞 Phone: +44 141 287 2720.
+   🌐 Website: http://www.glasgowlife.org.uk/museums/riverside-museum/.
+   🕒 Hours: M-Th and Sa 10AM-5PM, F and Su 11AM-5PM.
+   💰 Price: Free.
+   📝 Description: The museum includes a recreated subway station..
+
+5. **Clyde Arc**
+   📍 Location: Glasgow, United Kingdom
+   🎯 Activity: See.
+   📝 Description: A relatively new and prominent bridge over the River Clyde that has an elegant curved design and is unique for how it crosses the river at an angle..
+> Running step 632d1d84-6f36-4878-905b-1cfaa0cc50a0. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: There are several attractions you can see in Glasgow, including The Tron Theatre, Glasgow Riverside Museum, and the Clyde Arc. The Tron Theatre is a contemporary theatre that hosts various performances and events. The Glasgow Riverside Museum is a museum that showcases the city's transportation history and features a recreated subway station. The Clyde Arc is a unique bridge that crosses the River Clyde at an angle and offers a great view of the city.
+2025-09-03 09:32:01,639 - __main__ - INFO - ✅ Query completed in 11.88s
+2025-09-03 09:32:01,639 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-09-03 09:32:01,639 - __main__ - INFO - 
+📋 Query 4/5
+2025-09-03 09:32:01,639 - __main__ - INFO - 🔍 Evaluating query: Tell me about Monet's House
+> Running step 5cd68e19-a0b6-4d37-b406-75fc3c5272d0. Step input: Tell me about Monet's House
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': "Monet's House", 'limit': 5}
+2025-09-03 09:32:10,925 - search_landmarks - INFO - Search query: 'Monet's House' found 5 results
+Observation: Found 5 landmarks matching 'Monet's House':
+
+1. **Monet's House**
+   📍 Location: Giverny, France
+   🗺️ State: Haute-Normandie. Alternative name: Fondation Claude Monet.
+   🎯 Activity: See.
+   🏠 Address: 84 rue Claude Monet.
+   📞 Phone: +33 232512821.
+   🌐 Website: http://www.fondation-monet.com/.
+   🕒 Hours: open April-October Mo-Su 9:30-18:00.
+   💰 Price: €9, $5 students, €4 4.00 disabled, under-7s free.
+   📝 Description: the house is quietly eccentric and highly interesting in an Orient-influenced style, and includes Monet's collection of [http://www.intermonet.com/japan/ Japanese prints]. There are no original Monet paintings on the site - the real drawcard, is the gardens around the house - the [http://giverny-impression.com/category/water-garden/ water garden] with the [http://www.intermonet.com/oeuvre/pontjapo.htm Japanese bridge], [http://giverny-impression.com/tag/weeping-willow/ weeping willows] and [http://giverny-impression.com/tag/water-lily/ waterlilies] is now somewhat iconic. Monet's house has the obligatory gift-store attached, designed to help you part with your money in exchange for all manner of things Impressionist. [http://giverny.org/gardens/fcm/ticket/ e-tickets] can now be purchased o..
+
+2. **La Gare**
+   📍 Location: Santa Rosa, United States
+   🗺️ State: California.
+   🎯 Activity: Eat.
+   🏠 Address: 208 Wilson Street.
+   📞 Phone: +1 707-528-4355.
+   🌐 Website: http://www.lagarerestaurant.com/.
+   📝 Description: French/Swiss cuisine. Local favorite..
+
+3. **Musée Marmottan**
+   📍 Location: Paris, France
+   🗺️ State: Île-de-France.
+   🎯 Activity: See.
+   🏠 Address: 2 rue Louis-Boilly, 16th.
+   📞 Phone: +33 1 44 96 50 33.
+   🌐 Website: http://www.marmottan.com.
+   🕒 Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing.
+   📝 Description: Monet's best works are in this charming museum, which contains the largest Monet collection in the world as well as works by Renoir, Manet, Berthe, Caillebotte and Gauguin..
+
+4. **Hanawa**
+   📍 Location: Paris, France
+   🗺️ State: Île-de-France.
+   🎯 Activity: Eat.
+   🏠 Address: 26, rue Bayard.
+   📞 Phone: +33 1 56 62 70 70.
+   📝 Description: Great sushi in a nice atmosphere, extensive menu..
+
+5. **Kymin**
+   📍 Location: Monmouthshire, United Kingdom
+   🎯 Activity: See.
+   💰 Price: Free.
+   📝 Description: Impressive view of Monmouth and the surrounding countryside..
+> Running step 0d853285-71b0-474d-8720-d8500cdd34a3. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: The landmark you are referring to is likely the house of Claude Monet, a famous French painter, located in Giverny, France. The house, also known as the Fondation Claude Monet, is a museum that showcases Monet's collection of Japanese prints and features a beautiful garden with a Japanese bridge, weeping willows, and waterlilies. The house is now a popular tourist destination and a must-visit for art lovers and fans of Monet's work.
+2025-09-03 09:32:13,322 - __main__ - INFO - ✅ Query completed in 11.68s
+2025-09-03 09:32:13,322 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-09-03 09:32:13,322 - __main__ - INFO - 
+📋 Query 5/5
+2025-09-03 09:32:13,322 - __main__ - INFO - 🔍 Evaluating query: Find places to eat in Gillingham
+> Running step 8283ef91-0d2a-4cc6-b5cb-fccbb2b15222. Step input: Find places to eat in Gillingham
+Thought: The current language of the user is: English. I need to use a tool to help me answer the question.
+Action: search_landmarks
+Action Input: {'query': 'places to eat in Gillingham', 'limit': 5}
+2025-09-03 09:32:22,292 - search_landmarks - INFO - Search query: 'places to eat in Gillingham' found 5 results
+Observation: Found 5 landmarks matching 'places to eat in Gillingham':
+
+1. **Beijing Inn**
+   📍 Location: Gillingham, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 3 King Street, ME6 1EY.
+   🌐 Website: http://beijinginn.co.uk/div/.
+   📝 Description: Chinese restaurant just off the High Street..
+
+2. **Ossie's Fish and Chips**
+   📍 Location: Gillingham, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 75 Richmond Road, ME7 1LS.
+   📞 Phone: +44 1634 582000.
+   📝 Description: Best fish and chips in the area..
+
+3. **The Bridge Brasserie**
+   📍 Location: Chippenham, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 29 New Road, Chippenham SN15 1HZ.
+   📞 Phone: +44 1249 444552.
+   🌐 Website: http://thebridgebrasserie.co.uk.
+   📝 Description: Casual fine dining and great cocktails, a seasonal à la carte menu, and free WiFi.
+
+4. **Saffron**
+   📍 Location: Bedford, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 64 Tavistock St, MK40 2RG.
+   📞 Phone: +44 1234 325655.
+   📝 Description: Does a superb and cheap Sunday lunch buffet..
+
+5. **Ashbourne Fishbar**
+   📍 Location: Ashbourne, United Kingdom
+   🎯 Activity: Eat.
+   🏠 Address: 9 Compton.
+   📞 Phone: +44 1335 345700.
+   📝 Description: Eat in or takeout fish and chips..
+> Running step f2d58d10-693e-466e-8e6d-65ec1a086924. Step input: None
+Thought: I can answer without using any more tools. I'll use the user's language to answer
+Answer: Based on the search results, here are some places to eat in Gillingham: Beijing Inn, Ossie's Fish and Chips, The Bridge Brasserie (note: this one is actually in Chippenham, not Gillingham), Saffron (note: this one is actually in Bedford, not Gillingham), and Ashbourne Fishbar (note: this one is actually in Ashbourne, not Gillingham). It seems that the search results included some places that are not actually in Gillingham. If you're looking for places to eat in Gillingham, I would recommend checking online review sites such as TripAdvisor or Yelp for more accurate and up-to-date information.
+2025-09-03 09:32:24,885 - __main__ - INFO - ✅ Query completed in 11.56s
+2025-09-03 09:32:24,885 - __main__ - INFO - 📊 Retrieved 0 source documents
+2025-09-03 09:32:24,886 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
+2025-09-03 09:32:24,886 - __main__ - INFO - 📋 Evaluation criteria:
+2025-09-03 09:32:24,886 - __main__ - INFO -    🔍 Relevance: Does the response address the landmark search query?
+2025-09-03 09:32:24,886 - __main__ - INFO -    🎯 QA Correctness: Is the landmark information accurate?
+2025-09-03 09:32:24,886 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
+2025-09-03 09:32:24,886 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
+2025-09-03 09:32:24,887 - __main__ - INFO - ✅ Using lenient evaluation templates
+2025-09-03 09:32:24,887 - __main__ - INFO -    📊 Running relevance evaluation...
+llm_classify |███████████████████████████████████████▏         | 4/5 (80.0%) | ⏳ 00:02<00:00 |  2.02it/s2025-09-03 09:32:28,406 - __main__ - INFO -    ✅ relevance evaluation completed
+2025-09-03 09:32:28,406 - __main__ - INFO -    📊 Running qa_correctness evaluation...
+llm_classify |████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  1.42it/s
+llm_classify |                                                          | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-03 09:32:34,062 - __main__ - INFO -    ✅ qa_correctness evaluation completed:04<00:00 |  1.24it/s
+2025-09-03 09:32:34,062 - __main__ - INFO -    📊 Running hallucination evaluation...
+llm_classify |████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.13s/it
+llm_classify |████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  1.97it/s2025-09-03 09:32:38,339 - __main__ - INFO -    ✅ hallucination evaluation completed
+2025-09-03 09:32:38,339 - __main__ - INFO -    📊 Running toxicity evaluation...
+llm_classify |████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.17it/s
+llm_classify |                                                          | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-03 09:32:43,358 - __main__ - INFO -    ✅ toxicity evaluation completed ⏳ 00:03<00:00 |  1.81it/s
+2025-09-03 09:32:43,358 - __main__ - INFO - ✅ Phoenix evaluations completed
+2025-09-03 09:32:43,358 - __main__ - INFO - 
+📊 Evaluation Summary:
+2025-09-03 09:32:43,358 - __main__ - INFO -   Total queries: 5
+2025-09-03 09:32:43,358 - __main__ - INFO -   Successful executions: 5
+2025-09-03 09:32:43,358 - __main__ - INFO -   Failed executions: 0
+2025-09-03 09:32:43,358 - __main__ - INFO -   Average execution time: 11.74s
+2025-09-03 09:32:43,358 - __main__ - INFO -   Average sources per query: 0.0
+
+==================================================
+🏛️ LANDMARK SEARCH EVALUATION RESULTS
+==================================================
+
+🔍 Relevance: Does the response address the landmark query?
+----------------------------------------
+  ✅ Relevant: 5/5 (100.0%)
+
+🎯 QA Correctness: Is the landmark information accurate?
+----------------------------------------
+  ✅ Correct: 5/5 (100.0%)
+
+🚨 Hallucination: Does the response contain fabricated info?
+----------------------------------------
+  ✅ Factual: 4/5 (80.0%)
+  ⚠️ Hallucinated: 1/5 (20.0%)
+
+☠️ Toxicity: Is the response harmful or inappropriate?
+----------------------------------------
+  ✅ Non-Toxic: 5/5 (100.0%)
+
+==================================================
+
+⚡ Performance: 5/5 queries successful
+📊 Average response time: 11.74s
+🔗 Average sources retrieved: 0.0
+==================================================
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
+2025-09-03 09:32:43,359 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+🔍 QUERY 1: Find museums and galleries in Glasgow
+2025-09-03 09:32:43,359 - __main__ - INFO - ------------------------------------------------------------
+2025-09-03 09:32:43,359 - __main__ - INFO - 📄 RESPONSE: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts....
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-03 09:32:43,359 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,359 - __main__ - INFO - The question asks for museums and galleries located in Glasgow. The reference text provides a list of several museums and galleries in Glasgow, including the Gallery of Modern Art, Kelvingrove Art Gallery and Museum, Hunterian Museum and Art Gallery, and the Riverside Museum. It also provides additional details about the collections and locations of these institutions. Therefore, the reference text contains information that directly answers the question.
+2025-09-03 09:32:43,359 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-03 09:32:43,359 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,359 - __main__ - INFO - The AI response correctly identifies several museums and galleries in Glasgow, including the Kelvingrove Art Gallery and Museum and the Riverside Museum, which are also mentioned in the reference answer. Although the AI response includes The Tron Theatre and Centre for Contemporary Arts, which are not in the reference, these are still relevant cultural venues in Glasgow. The core functionality of providing information about museums and galleries in Glasgow is achieved, and the user would likely find the response useful.
+2025-09-03 09:32:43,359 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-03 09:32:43,359 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,359 - __main__ - INFO - The AI response lists some valid museums and galleries in Glasgow, such as the Kelvingrove Art Gallery and Museum and the Riverside Museum, which are consistent with the reference answer. However, it also includes "The Tron Theatre" and "Centre for Contemporary Arts," which are not typically categorized as museums or galleries. Despite this, these are real places in Glasgow, and the AI's response does not fabricate any information. The variation in the list is expected due to dynamic search results, and the inclusion of different venues is plausible. Therefore, the response is factual.
+2025-09-03 09:32:43,359 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-03 09:32:43,359 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,359 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Find museums and galleries in Glasgow".
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group. It is a neutral statement about finding museums and galleries.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any person or group. It is simply a request for information.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is straightforward and polite.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats of any kind in the text. It is a benign request for information.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a neutral and non-offensive statement.
+2025-09-03 09:32:43,359 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,359 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,359 - __main__ - INFO - 
+🔍 QUERY 2: Show me restaurants serving Asian cuisine
+2025-09-03 09:32:43,359 - __main__ - INFO - ------------------------------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 📄 RESPONSE: Here are 5 restaurants serving Asian cuisine: New Canton, World Curry, So Asia, Old Thai House, and La Perle d'Asie....
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The question asks for restaurants serving Asian cuisine. The reference text provides a list of several Asian restaurants, including their names and locations, such as Shangri-la Chinese Restaurant, Taiwan Restaurant, Hong Kong Seafood Restaurant, Cheung Hing Chinese Restaurant, and Vietnam Restaurant. These establishments offer various Asian dishes, including Chinese, Taiwanese, Cantonese, and Vietnamese cuisines. Therefore, the reference text contains information that directly answers the question by listing restaurants that serve Asian cuisine.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response successfully provided a list of restaurants serving Asian cuisine, which was the user's request. Although the specific restaurants differ from the reference answer, the core functionality of providing relevant and accurate information about Asian cuisine restaurants was achieved. The user would likely be satisfied with the response as it meets the request for Asian cuisine options.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response lists plausible restaurant names that could serve Asian cuisine. The names provided do not appear to be fabricated or impossible, and they are consistent with what one might expect from a dynamic search for Asian restaurants. The fact that the results differ from the reference is normal and expected due to the dynamic nature of search results. Therefore, the response is factual.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Show me restaurants serving Asian cuisine." 
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group. It is a neutral request for information about restaurants.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any person or group. It simply asks for information about a type of cuisine.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a straightforward request.
+
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a non-toxic request for information about restaurants serving a specific type of cuisine.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+🔍 QUERY 3: What attractions can I see in Glasgow?
+2025-09-03 09:32:43,360 - __main__ - INFO - ------------------------------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 📄 RESPONSE: There are several attractions you can see in Glasgow, including The Tron Theatre, Glasgow Riverside Museum, and the Clyde Arc. The Tron Theatre is a contemporary theatre that hosts various performance...
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The question asks about attractions that can be seen in Glasgow. The reference text provides a list of attractions in Glasgow, including Glasgow Green, Glasgow University, Glasgow Cathedral, the City Chambers, Glasgow Central Station, and Kelvingrove Park. These are all specific attractions located in Glasgow, which directly answers the question about what attractions can be seen in the city.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response correctly provides information about attractions in Glasgow, mentioning The Tron Theatre, Glasgow Riverside Museum, and the Clyde Arc. These are valid and relevant landmarks in Glasgow, offering cultural and historical insights. Although the specific attractions differ from the reference answer, the response still fulfills the user's request by providing accurate and useful information about Glasgow's attractions.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response provides plausible and factual information about attractions in Glasgow. The Tron Theatre, Glasgow Riverside Museum, and the Clyde Arc are all real and well-known landmarks in Glasgow. The details provided about each attraction are consistent with their actual characteristics. The response does not contain any fabricated or impossible information, and the variation from the reference answer is expected due to dynamic search results.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning comments, inappropriate language, or threats of violence. The text in question is: "What attractions can I see in Glasgow?" 
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group.
+2. **Demeaning or Disparaging Comments**: There are no comments that belittle or insult anyone.
+3. **Inappropriate Language**: The language used is appropriate and neutral.
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text.
+
+The text is a simple question asking about attractions in Glasgow, which is a neutral and non-offensive inquiry. Therefore, it does not meet any criteria for toxicity.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+🔍 QUERY 4: Tell me about Monet's House
+2025-09-03 09:32:43,360 - __main__ - INFO - ------------------------------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 📄 RESPONSE: The landmark you are referring to is likely the house of Claude Monet, a famous French painter, located in Giverny, France. The house, also known as the Fondation Claude Monet, is a museum that showca...
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The question asks for information about Monet's House. The reference text provides detailed information about Monet's House, including its location in Giverny, France, its architectural style, the main attractions such as the gardens and water garden, and practical details like opening times, admission fees, and accessibility. This information directly answers the question by describing Monet's House and what visitors can expect. Therefore, the reference text is relevant to the question.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response correctly identifies Monet's House as the house of Claude Monet located in Giverny, France. It mentions the museum aspect, the collection of Japanese prints, and the famous garden features like the Japanese bridge, weeping willows, and waterlilies. These are key attractions of Monet's House, making the response accurate and helpful for someone inquiring about this landmark.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response provides plausible and accurate information about Monet's House. It correctly identifies the location as Giverny, France, and mentions the house's connection to Claude Monet, the famous painter. The description of the house as a museum with Monet's collection of Japanese prints and the garden with a Japanese bridge, weeping willows, and waterlilies aligns with known facts about Monet's House. There is no clearly fabricated information or impossible details in the response.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - 1. **Identify the Content**: The text in question is a request for information about "Monet's House."
+
+2. **Check for Hateful Statements**: There are no statements in the text that express hate towards any individual or group.
+
+3. **Look for Demeaning or Disparaging Language**: The text does not contain any language that demeans or disparages anyone.
+
+4. **Inappropriate Language**: The text does not use any inappropriate or offensive language.
+
+5. **Threats of Violence**: There are no threats of physical or emotional violence present in the text.
+
+6. **Overall Context**: The text is a simple request for information about a specific topic, which is Monet's House, and does not contain any elements of toxicity.
+
+Based on the above analysis, the text does not meet any criteria for being considered toxic.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+🔍 QUERY 5: Find places to eat in Gillingham
+2025-09-03 09:32:43,360 - __main__ - INFO - ------------------------------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 📄 RESPONSE: Based on the search results, here are some places to eat in Gillingham: Beijing Inn, Ossie's Fish and Chips, The Bridge Brasserie (note: this one is actually in Chippenham, not Gillingham), Saffron (n...
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The question asks for places to eat in Gillingham. The reference text provides a list of dining options in Gillingham, including specific restaurants with their names, types of cuisine, and locations. This directly addresses the question by offering multiple places to eat in Gillingham, thus providing relevant information.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response did provide some places to eat in Gillingham, such as Beijing Inn and Ossie's Fish and Chips, which are accurate and relevant to the user's request. However, it also included incorrect information by listing places not located in Gillingham, such as The Bridge Brasserie, Saffron, and Ashbourne Fishbar. Despite this, the AI acknowledged the error and suggested using online review sites for more accurate information. While the response contained some inaccuracies, it did provide useful information and guidance, which could be considered functionally successful in helping the user find dining options in Gillingham.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,360 - __main__ - INFO - The AI response includes places that are not in Gillingham, which is a factual error. The AI correctly identifies that some of the search results are not in Gillingham, but it still lists them as options, which could mislead users. This indicates a failure in the search functionality or the AI's interpretation of the results, leading to a response that contains incorrect information about the location of the restaurants. Therefore, the response is marked as hallucinated.
+2025-09-03 09:32:43,360 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,360 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-03 09:32:43,360 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-03 09:32:43,361 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Find places to eat in Gillingham."
+
+1. **Hateful Statements**: The text does not contain any language that could be interpreted as hateful towards any individual or group. It is a neutral request for information.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is simply asking for recommendations on places to eat.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is straightforward and polite.
+
+4. **Threats of Violence**: There are no threats, either physical or emotional, present in the text. It is a benign inquiry.
+
+Given these points, the text does not meet any of the criteria for toxicity. It is a non-toxic request for information about dining options in a specific location.
+2025-09-03 09:32:43,361 - __main__ - INFO - ----------------------------------------
+2025-09-03 09:32:43,361 - __main__ - INFO - ================================================================================
+2025-09-03 09:32:43,361 - __main__ - INFO - 📊 Creating Arize dataset...
+2025-09-03 09:32:44,201 - __main__ - INFO - ✅ Arize dataset created: landmark-search-evaluation-20250903_093243 (ID: RGF0YXNldDozMDQyMDM6d29tVQ==)
+2025-09-03 09:32:44,201 - __main__ - INFO - 
+✅ Landmark search evaluation complete!
+2025-09-03 09:32:44,201 - __main__ - INFO - 🔒 Phoenix cleanup completed
+llm_classify |████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.17s/it
