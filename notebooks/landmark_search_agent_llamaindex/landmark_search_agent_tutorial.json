@@ -102,7 +102,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:22:26,620 - INFO - ✅ Environment variables configured\n"
+            "2025-09-03 10:37:23,754 - INFO - ✅ Environment variables configured\n"
           ]
         }
       ],
@@ -1049,59 +1049,59 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:22:28,098 - INFO - ✅ Environment variables configured\n",
-            "2025-09-03 10:22:28,142 - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.\n",
-            "2025-09-03 10:22:28,142 - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.\n",
-            "2025-09-03 10:22:28,188 - INFO - Using both a local auditor and a remote auditor.\n",
-            "2025-09-03 10:22:28,189 - INFO - 🔧 Setting up Priority 1 AI services for llamaindex framework...\n",
-            "2025-09-03 10:22:28,189 - INFO - 🔧 Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-03 10:22:28,190 - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
-            "2025-09-03 10:22:28,190 - INFO - 🔧 API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-03 10:22:28,190 - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
-            "2025-09-03 10:22:28,191 - INFO - 🔧 LLM Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-03 10:22:28,191 - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-09-03 10:22:28,191 - INFO - 🔧 LLM API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-03 10:22:29,678 - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
-            "2025-09-03 10:22:29,679 - INFO - ✅ Priority 1 AI services setup completed for llamaindex\n",
-            "2025-09-03 10:22:32,008 - INFO - Successfully connected to Couchbase\n",
-            "2025-09-03 10:22:32,009 - INFO - 🔧 Setting up Priority 1 AI services for llamaindex framework...\n",
-            "2025-09-03 10:22:32,009 - INFO - 🔧 Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-03 10:22:32,009 - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
-            "2025-09-03 10:22:32,010 - INFO - 🔧 API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-03 10:22:32,010 - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
-            "2025-09-03 10:22:32,011 - INFO - 🔧 LLM Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-03 10:22:32,012 - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-09-03 10:22:32,012 - INFO - 🔧 LLM API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-03 10:22:33,293 - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
-            "2025-09-03 10:22:33,294 - INFO - ✅ Priority 1 AI services setup completed for llamaindex\n",
-            "2025-09-03 10:22:34,790 - INFO - Connected to bucket 'travel-sample'\n",
-            "2025-09-03 10:22:37,198 - INFO - Collection 'landmark_data' exists, clearing data...\n",
-            "2025-09-03 10:22:37,198 - INFO - Clearing data from travel-sample.agentc_data.landmark_data...\n",
-            "2025-09-03 10:22:42,522 - INFO - Collection cleared successfully, 0 documents remaining\n",
-            "2025-09-03 10:22:46,626 - INFO - Primary index created successfully\n",
-            "2025-09-03 10:22:46,627 - INFO - Collection setup complete\n",
-            "2025-09-03 10:22:46,627 - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
-            "2025-09-03 10:22:47,788 - INFO - Vector search index 'landmark_data_index' already exists\n",
-            "2025-09-03 10:22:51,227 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
-            "2025-09-03 10:22:51,228 - INFO - Processing landmark documents...\n",
-            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 5319807.13landmarks/s]\n",
-            "2025-09-03 10:22:59,306 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
-            "2025-09-03 10:23:01,467 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
-            "2025-09-03 10:23:01,467 - INFO - Processing landmark documents...\n",
-            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 5354557.36landmarks/s]\n",
-            "2025-09-03 10:23:06,976 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
-            "2025-09-03 10:23:06,978 - INFO - Generating landmark text embeddings...\n",
-            "Processing landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 261881.83landmarks/s]\n",
-            "2025-09-03 10:23:06,997 - INFO - Generated 4495 landmark text embeddings\n",
-            "2025-09-03 10:23:10,479 - INFO - Creating 4495 LlamaIndex Documents...\n",
-            "2025-09-03 10:23:10,513 - INFO - Processing documents with ingestion pipeline...\n",
-            "2025-09-03 10:23:10,595 - INFO - Processing 4495 documents in 180 batches...\n",
-            "Loading batches: 100%|██████████| 180/180 [04:45<00:00,  1.59s/batch]\n",
-            "2025-09-03 10:27:56,078 - INFO - Successfully loaded 4495 landmark documents to vector store\n",
-            "2025-09-03 10:27:56,079 - INFO - Landmark data loaded into vector store successfully\n",
-            "2025-09-03 10:27:56,091 - INFO - Loaded search_landmarks tool from AgentC\n",
-            "2025-09-03 10:27:56,091 - INFO - Loaded 1 tools from Agent Catalog\n",
-            "2025-09-03 10:27:56,103 - INFO - Loaded system prompt from Agent Catalog\n",
+            "2025-09-03 10:37:25,026 - INFO - ✅ Environment variables configured\n",
+            "2025-09-03 10:37:25,071 - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.\n",
+            "2025-09-03 10:37:25,071 - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.\n",
+            "2025-09-03 10:37:25,113 - INFO - Using both a local auditor and a remote auditor.\n",
+            "2025-09-03 10:37:25,113 - INFO - 🔧 Setting up Priority 1 AI services for llamaindex framework...\n",
+            "2025-09-03 10:37:25,114 - INFO - 🔧 Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
+            "2025-09-03 10:37:25,114 - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
+            "2025-09-03 10:37:25,114 - INFO - 🔧 API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-09-03 10:37:25,115 - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
+            "2025-09-03 10:37:25,115 - INFO - 🔧 LLM Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
+            "2025-09-03 10:37:25,115 - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
+            "2025-09-03 10:37:25,115 - INFO - 🔧 LLM API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-09-03 10:37:26,465 - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
+            "2025-09-03 10:37:26,466 - INFO - ✅ Priority 1 AI services setup completed for llamaindex\n",
+            "2025-09-03 10:37:28,446 - INFO - Successfully connected to Couchbase\n",
+            "2025-09-03 10:37:28,446 - INFO - 🔧 Setting up Priority 1 AI services for llamaindex framework...\n",
+            "2025-09-03 10:37:28,447 - INFO - 🔧 Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
+            "2025-09-03 10:37:28,447 - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
+            "2025-09-03 10:37:28,448 - INFO - 🔧 API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-09-03 10:37:28,448 - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
+            "2025-09-03 10:37:28,449 - INFO - 🔧 LLM Endpoint: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com\n",
+            "2025-09-03 10:37:28,449 - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
+            "2025-09-03 10:37:28,450 - INFO - 🔧 LLM API Base: https://o1w7qdmspvermloq.ai.sandbox.nonprod-project-avengers.com/v1\n",
+            "2025-09-03 10:37:29,843 - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
+            "2025-09-03 10:37:29,844 - INFO - ✅ Priority 1 AI services setup completed for llamaindex\n",
+            "2025-09-03 10:37:31,272 - INFO - Connected to bucket 'travel-sample'\n",
+            "2025-09-03 10:37:33,241 - INFO - Collection 'landmark_data' exists, clearing data...\n",
+            "2025-09-03 10:37:33,242 - INFO - Clearing data from travel-sample.agentc_data.landmark_data...\n",
+            "2025-09-03 10:37:38,446 - INFO - Collection cleared successfully, 0 documents remaining\n",
+            "2025-09-03 10:37:42,432 - INFO - Primary index created successfully\n",
+            "2025-09-03 10:37:42,433 - INFO - Collection setup complete\n",
+            "2025-09-03 10:37:42,434 - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
+            "2025-09-03 10:37:43,424 - INFO - Vector search index 'landmark_data_index' already exists\n",
+            "2025-09-03 10:37:46,018 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
+            "2025-09-03 10:37:46,019 - INFO - Processing landmark documents...\n",
+            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 6443402.76landmarks/s]\n",
+            "2025-09-03 10:37:52,853 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
+            "2025-09-03 10:37:55,255 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
+            "2025-09-03 10:37:55,256 - INFO - Processing landmark documents...\n",
+            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 7556471.54landmarks/s]\n",
+            "2025-09-03 10:38:01,653 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
+            "2025-09-03 10:38:01,655 - INFO - Generating landmark text embeddings...\n",
+            "Processing landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 272349.53landmarks/s]\n",
+            "2025-09-03 10:38:01,673 - INFO - Generated 4495 landmark text embeddings\n",
+            "2025-09-03 10:38:05,270 - INFO - Creating 4495 LlamaIndex Documents...\n",
+            "2025-09-03 10:38:05,299 - INFO - Processing documents with ingestion pipeline...\n",
+            "2025-09-03 10:38:05,379 - INFO - Processing 4495 documents in 180 batches...\n",
+            "Loading batches: 100%|██████████| 180/180 [04:51<00:00,  1.62s/batch]\n",
+            "2025-09-03 10:42:57,324 - INFO - Successfully loaded 4495 landmark documents to vector store\n",
+            "2025-09-03 10:42:57,324 - INFO - Landmark data loaded into vector store successfully\n",
+            "2025-09-03 10:42:57,337 - INFO - Loaded search_landmarks tool from AgentC\n",
+            "2025-09-03 10:42:57,338 - INFO - Loaded 1 tools from Agent Catalog\n",
+            "2025-09-03 10:42:57,350 - INFO - Loaded system prompt from Agent Catalog\n",
             "/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/base.py:154: DeprecationWarning: Call to deprecated class ReActAgent. (ReActAgent has been rewritten and replaced by llama_index.core.agent.workflow.ReActAgent.\n",
             "\n",
             "This implementation will be removed in a v0.13.0 and the new implementation will be promoted to the `from llama_index.core.agent import ReActAgent` path.\n",
@@ -1114,7 +1114,7 @@
             "\n",
             "See the docs for more information on updated agent usage: https://docs.llamaindex.ai/en/stable/understanding/agent/)\n",
             "  return old_new1(cls, *args, **kwargs)\n",
-            "2025-09-03 10:27:56,113 - INFO - LlamaIndex ReAct agent created successfully\n"
+            "2025-09-03 10:42:57,351 - INFO - LlamaIndex ReAct agent created successfully\n"
           ]
         }
       ],
@@ -1256,19 +1256,19 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:27:56,133 - INFO - Testing Landmark Data Loading from travel-sample\n",
-            "2025-09-03 10:27:56,135 - INFO - ==================================================\n",
-            "2025-09-03 10:27:58,740 - INFO - ✅ Landmark count in travel-sample.inventory.landmark: 4495\n",
-            "2025-09-03 10:28:00,936 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
-            "2025-09-03 10:28:00,937 - INFO - Processing landmark documents...\n",
-            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 5316806.68landmarks/s]\n",
-            "2025-09-03 10:28:07,006 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
-            "2025-09-03 10:28:07,007 - INFO - Generating landmark text embeddings...\n",
-            "Processing landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 165884.14landmarks/s]\n",
-            "2025-09-03 10:28:07,037 - INFO - Generated 4495 landmark text embeddings\n",
-            "2025-09-03 10:28:07,040 - INFO - ✅ Generated 4495 landmark texts for embeddings\n",
-            "2025-09-03 10:28:07,041 - INFO - ✅ First landmark text sample: San Francisco/Haight (&quot;Hippie Temptation&quot; house) in San Francisco, United States. Description: Site of the CBS documentary.. Address: 1550 Page St. Activity type: see. Type: landmark. State:...\n",
-            "2025-09-03 10:28:07,042 - INFO - ✅ Data loading test completed successfully\n"
+            "2025-09-03 10:42:57,366 - INFO - Testing Landmark Data Loading from travel-sample\n",
+            "2025-09-03 10:42:57,367 - INFO - ==================================================\n",
+            "2025-09-03 10:42:59,708 - INFO - ✅ Landmark count in travel-sample.inventory.landmark: 4495\n",
+            "2025-09-03 10:43:02,136 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
+            "2025-09-03 10:43:02,137 - INFO - Processing landmark documents...\n",
+            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 7408014.33landmarks/s]\n",
+            "2025-09-03 10:43:09,775 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
+            "2025-09-03 10:43:09,776 - INFO - Generating landmark text embeddings...\n",
+            "Processing landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 270268.59landmarks/s]\n",
+            "2025-09-03 10:43:09,794 - INFO - Generated 4495 landmark text embeddings\n",
+            "2025-09-03 10:43:09,797 - INFO - ✅ Generated 4495 landmark texts for embeddings\n",
+            "2025-09-03 10:43:09,798 - INFO - ✅ First landmark text sample: San Francisco/Haight (&quot;Hippie Temptation&quot; house) in San Francisco, United States. Description: Site of the CBS documentary.. Address: 1550 Page St. Activity type: see. Type: landmark. State:...\n",
+            "2025-09-03 10:43:09,798 - INFO - ✅ Data loading test completed successfully\n"
           ]
         }
       ],
@@ -1345,16 +1345,77 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:28:07,076 - INFO - 🏛️ Landmark Query: Find me landmarks in Tokyo\n"
+            "2025-09-03 10:43:09,811 - INFO - 🏛️ Landmark Query: Find me landmarks in Tokyo\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "> Running step 24917a16-be47-4c11-973b-6d39e2644315. Step input: Find me landmarks in Tokyo\n",
+            "> Running step fc295578-24c3-4383-8bff-6e113c7bb8b7. Step input: Find me landmarks in Tokyo\n",
             "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
             "Action: search_landmarks\n",
+            "Action Input: {'query': 'Tokyo', 'limit': 5}\n",
+            "\u001b[0m"
+          ]
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-09-03 10:43:20,263 - INFO - Search query: 'Tokyo' found 5 results\n"
+          ]
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo':\n",
+            "\n",
+            "1. **Hanawa**\n",
+            "   📍 Location: Paris, France\n",
+            "   🗺️ State: Île-de-France.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 26, rue Bayard.\n",
+            "   📞 Phone: +33 1 56 62 70 70.\n",
+            "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
+            "\n",
+            "2. **Sapporo**\n",
+            "   📍 Location: Liverpool, United Kingdom\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 134 Duke Street, East Village.\n",
+            "   📞 Phone: +44 151 709-4002.\n",
+            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
+            "   📝 Description: Japanese cuisine.\n",
+            "\n",
+            "3. **Mikawaya**\n",
+            "   📍 Location: Los Angeles, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 118 Japanese Village Plaza Mall.\n",
+            "   📞 Phone: +1 213 624-1681.\n",
+            "   🌐 Website: http://www.mikawayausa.com.\n",
+            "   🕒 Hours: M,Sa 10AM-7PM, Tu-Th 10AM-10PM, F 9AM-11PM, Su closed.\n",
+            "   📝 Description: Their motto says it best: &quot;The finest name in Japanese pastries since 1910.&quot;.\n",
+            "\n",
+            "4. **Tru**\n",
+            "   📍 Location: Camberley, United Kingdom\n",
+            "   🎯 Activity: Drink.\n",
+            "   🏠 Address: 52 High Street.\n",
+            "   📞 Phone: +44 1276 676565.\n",
+            "   🌐 Website: http://www.trucamberley.co.uk.\n",
+            "   📝 Description: Camberley's main event club.\n",
+            "\n",
+            "5. **Simply Blues**\n",
+            "   📍 Location: Hornchurch, United Kingdom\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 48 Station Lane, Hornchurch, RM12 6NB.\n",
+            "   📞 Phone: +44 1708 440438.\n",
+            "   🌐 Website: http://www.simplyblues.com/hornchurch.\n",
+            "   📝 Description: Independent American-style restaurant.\n",
+            "\u001b[0m> Running step a3deca8b-93a3-46da-9069-b1c098477b23. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: The search results are not for Tokyo, but rather for places with the name 'Tokyo' in their name. I need to use the tool to find landmarks in Tokyo.\n",
+            "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo landmarks', 'limit': 5}\n",
             "\u001b[0m"
           ]
@@ -1363,7 +1424,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:28:17,172 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
+            "2025-09-03 10:43:30,399 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
           ]
         },
         {
@@ -1414,10 +1475,10 @@
             "   🎯 Activity: Buy.\n",
             "   🏠 Address: 3760 S. Centinela Ave.\n",
             "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
-            "\u001b[0m> Running step dae92e2d-cf3a-47a7-9ea4-9be9ee8d8e39. Step input: None\n",
-            "\u001b[1;3;38;5;200mThought: The search results seem to be about Japanese restaurants in various cities, not landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
+            "\u001b[0m> Running step 637aa4e3-e340-4bc5-8006-d35dc0793ae4. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: The search results are still not for Tokyo, but rather for places with the name 'Tokyo' in their name or for Japanese restaurants. I need to use the tool to find landmarks in Tokyo.\n",
             "Action: search_landmarks\n",
-            "Action Input: {'query': 'Tokyo landmarks', 'limit': 5}\n",
+            "Action Input: {'query': 'Tokyo Japan landmarks', 'limit': 5}\n",
             "\u001b[0m"
           ]
         },
@@ -1425,76 +1486,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:28:27,309 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
+            "2025-09-03 10:43:40,656 - INFO - Search query: 'Tokyo Japan landmarks' found 5 results\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo landmarks':\n",
-            "\n",
-            "1. **Hanawa**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 26, rue Bayard.\n",
-            "   📞 Phone: +33 1 56 62 70 70.\n",
-            "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
-            "\n",
-            "2. **Sapporo**\n",
-            "   📍 Location: Liverpool, United Kingdom\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 134 Duke Street, East Village.\n",
-            "   📞 Phone: +44 151 709-4002.\n",
-            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
-            "   📝 Description: Japanese cuisine.\n",
-            "\n",
-            "3. **Sapporo-Ya Japanese Restaurant**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1581 Webster Street.\n",
-            "   📞 Phone: +1 415 563-7400.\n",
-            "   🕒 Hours: M-Sa 11AM-11PM, Su 11AM-10:30PM.\n",
-            "   📝 Description: Excellent Japanese noodles served dozens of ways. Open very late, and a good place to warm up on a cold foggy day..\n",
-            "\n",
-            "4. **Kyoto Sushi**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1233 Van Ness Ave.\n",
-            "   📞 Phone: +1 415 351-1234.\n",
-            "   🌐 Website: http://www.kyotosushi-sf.com/.\n",
-            "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
-            "   💰 Price: $11-$23.\n",
-            "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
-            "\n",
-            "5. **Mitsuwa Marketplace**\n",
-            "   📍 Location: Los Angeles, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Buy.\n",
-            "   🏠 Address: 3760 S. Centinela Ave.\n",
-            "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
-            "\u001b[0m> Running step 0627e629-e254-48f3-ab6d-48a5772709ac. Step input: None\n",
-            "\u001b[1;3;38;5;200mThought: The search results are still not showing landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': 'Tokyo famous landmarks', 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-03 10:28:37,857 - INFO - Search query: 'Tokyo famous landmarks' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo famous landmarks':\n",
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo Japan landmarks':\n",
             "\n",
             "1. **Hanawa**\n",
             "   📍 Location: Paris, France\n",
@@ -1538,10 +1537,10 @@
             "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
             "   💰 Price: $11-$23.\n",
             "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
-            "\u001b[0m> Running step 4381925a-fa14-487c-babb-c34d2c3dacfc. Step input: None\n",
-            "\u001b[1;3;38;5;200mThought: The search results are still not showing famous landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
+            "\u001b[0m> Running step 0ae8b58a-b4b0-4293-ba1f-9147f1bd1b63. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: The search results are still not for Tokyo, but rather for places with the name 'Tokyo' in their name or for Japanese restaurants. I need to use the tool to find landmarks in Tokyo, Japan.\n",
             "Action: search_landmarks\n",
-            "Action Input: {'query': 'Tokyo famous buildings', 'limit': 5}\n",
+            "Action Input: {'query': 'Tokyo Japan', 'limit': 5}\n",
             "\u001b[0m"
           ]
         },
@@ -1549,14 +1548,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:28:48,404 - INFO - Search query: 'Tokyo famous buildings' found 5 results\n"
+            "2025-09-03 10:43:50,880 - INFO - Search query: 'Tokyo Japan' found 5 results\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo famous buildings':\n",
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo Japan':\n",
             "\n",
             "1. **Hanawa**\n",
             "   📍 Location: Paris, France\n",
@@ -1566,34 +1565,23 @@
             "   📞 Phone: +33 1 56 62 70 70.\n",
             "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
             "\n",
-            "2. **Sapporo-Ya Japanese Restaurant**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
+            "2. **Sapporo**\n",
+            "   📍 Location: Liverpool, United Kingdom\n",
             "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1581 Webster Street.\n",
-            "   📞 Phone: +1 415 563-7400.\n",
-            "   🕒 Hours: M-Sa 11AM-11PM, Su 11AM-10:30PM.\n",
-            "   📝 Description: Excellent Japanese noodles served dozens of ways. Open very late, and a good place to warm up on a cold foggy day..\n",
+            "   🏠 Address: 134 Duke Street, East Village.\n",
+            "   📞 Phone: +44 151 709-4002.\n",
+            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
+            "   📝 Description: Japanese cuisine.\n",
             "\n",
-            "3. **Mitsuwa Marketplace**\n",
-            "   📍 Location: Los Angeles, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Buy.\n",
-            "   🏠 Address: 3760 S. Centinela Ave.\n",
-            "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
+            "3. **Tru**\n",
+            "   📍 Location: Camberley, United Kingdom\n",
+            "   🎯 Activity: Drink.\n",
+            "   🏠 Address: 52 High Street.\n",
+            "   📞 Phone: +44 1276 676565.\n",
+            "   🌐 Website: http://www.trucamberley.co.uk.\n",
+            "   📝 Description: Camberley's main event club.\n",
             "\n",
-            "4. **Kyoto Sushi**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1233 Van Ness Ave.\n",
-            "   📞 Phone: +1 415 351-1234.\n",
-            "   🌐 Website: http://www.kyotosushi-sf.com/.\n",
-            "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
-            "   💰 Price: $11-$23.\n",
-            "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
-            "\n",
-            "5. **Mikawaya**\n",
+            "4. **Mikawaya**\n",
             "   📍 Location: Los Angeles, United States\n",
             "   🗺️ State: California.\n",
             "   🎯 Activity: Eat.\n",
@@ -1602,10 +1590,21 @@
             "   🌐 Website: http://www.mikawayausa.com.\n",
             "   🕒 Hours: M,Sa 10AM-7PM, Tu-Th 10AM-10PM, F 9AM-11PM, Su closed.\n",
             "   📝 Description: Their motto says it best: &quot;The finest name in Japanese pastries since 1910.&quot;.\n",
-            "\u001b[0m> Running step cfc2affa-14c1-49d1-8702-e79e31489e95. Step input: None\n",
-            "\u001b[1;3;38;5;200mThought: The search results are still not showing famous buildings in Tokyo. I need to use the tool to search again with a more specific query.\n",
+            "\n",
+            "5. **Taiko**\n",
+            "   📍 Location: Los Angeles, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 11677 San Vicente Blvd.\n",
+            "   📞 Phone: +1 310 207-7782.\n",
+            "   🌐 Website: http://www.taikolosangeles.com/.\n",
+            "   📝 Description: Taiko is a casual little Japanese restaurant located in the Brentwood Gardens. The service is very friendly, and the unique variety of dishes will satisfy anyone's tastes. The ''Nabeyaki'' udon is not to be missed..\n",
+            "\u001b[0m> Running step c9b1c3fa-e3bb-4999-845f-9bca89ab7e29. Step input: None\n",
+            "\u001b[1;3;34mObservation: Error: Could not parse output. Please follow the thought-action-input format. Try again.\n",
+            "\u001b[0m> Running step 728db9ba-e751-4acc-b1d0-1bff51372f6a. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: I need to use the tool to find landmarks in Tokyo, Japan.\n",
             "Action: search_landmarks\n",
-            "Action Input: {'query': 'Tokyo famous buildings Tokyo Japan', 'limit': 5}\n",
+            "Action Input: {'query': 'Tokyo Japan', 'limit': 5}\n",
             "\u001b[0m"
           ]
         },
@@ -1613,14 +1612,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:28:58,851 - INFO - Search query: 'Tokyo famous buildings Tokyo Japan' found 5 results\n"
+            "2025-09-03 10:44:01,139 - INFO - Search query: 'Tokyo Japan' found 5 results\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo famous buildings Tokyo Japan':\n",
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo Japan':\n",
             "\n",
             "1. **Hanawa**\n",
             "   📍 Location: Paris, France\n",
@@ -1630,41 +1629,44 @@
             "   📞 Phone: +33 1 56 62 70 70.\n",
             "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
             "\n",
-            "2. **Webster Bridge**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: on Webster Street over Geary Boulevard.\n",
-            "   📝 Description: The bridge's design was inspired by traditional Japanese pedestrian walkways. In addition to providing a safe passage over the traffic on Geary Boulevard, the arched bridge has views of Japan Center and Western Addition..\n",
+            "2. **Sapporo**\n",
+            "   📍 Location: Liverpool, United Kingdom\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 134 Duke Street, East Village.\n",
+            "   📞 Phone: +44 151 709-4002.\n",
+            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
+            "   📝 Description: Japanese cuisine.\n",
             "\n",
-            "3. **Mitsuwa Marketplace**\n",
+            "3. **Tru**\n",
+            "   📍 Location: Camberley, United Kingdom\n",
+            "   🎯 Activity: Drink.\n",
+            "   🏠 Address: 52 High Street.\n",
+            "   📞 Phone: +44 1276 676565.\n",
+            "   🌐 Website: http://www.trucamberley.co.uk.\n",
+            "   📝 Description: Camberley's main event club.\n",
+            "\n",
+            "4. **Mikawaya**\n",
             "   📍 Location: Los Angeles, United States\n",
             "   🗺️ State: California.\n",
-            "   🎯 Activity: Buy.\n",
-            "   🏠 Address: 3760 S. Centinela Ave.\n",
-            "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 118 Japanese Village Plaza Mall.\n",
+            "   📞 Phone: +1 213 624-1681.\n",
+            "   🌐 Website: http://www.mikawayausa.com.\n",
+            "   🕒 Hours: M,Sa 10AM-7PM, Tu-Th 10AM-10PM, F 9AM-11PM, Su closed.\n",
+            "   📝 Description: Their motto says it best: &quot;The finest name in Japanese pastries since 1910.&quot;.\n",
             "\n",
-            "4. **Maison de la culture du Japon**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 101Bis Quai Branly.\n",
-            "   📞 Phone: +33 1 44 37 95 01.\n",
-            "   🌐 Website: http://www.mcjp.fr/.\n",
-            "   📝 Description: The location hosts several expositions, a library and a concert hall..\n",
-            "\n",
-            "5. **Sapporo-Ya Japanese Restaurant**\n",
-            "   📍 Location: San Francisco, United States\n",
+            "5. **Taiko**\n",
+            "   📍 Location: Los Angeles, United States\n",
             "   🗺️ State: California.\n",
             "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1581 Webster Street.\n",
-            "   📞 Phone: +1 415 563-7400.\n",
-            "   🕒 Hours: M-Sa 11AM-11PM, Su 11AM-10:30PM.\n",
-            "   📝 Description: Excellent Japanese noodles served dozens of ways. Open very late, and a good place to warm up on a cold foggy day..\n",
-            "\u001b[0m> Running step 35a957f7-cee1-4b77-811d-5b16d07093b4. Step input: None\n",
-            "\u001b[1;3;38;5;200mThought: The search results are still not showing famous buildings in Tokyo, Japan. I need to use the tool to search again with a more specific query.\n",
+            "   🏠 Address: 11677 San Vicente Blvd.\n",
+            "   📞 Phone: +1 310 207-7782.\n",
+            "   🌐 Website: http://www.taikolosangeles.com/.\n",
+            "   📝 Description: Taiko is a casual little Japanese restaurant located in the Brentwood Gardens. The service is very friendly, and the unique variety of dishes will satisfy anyone's tastes. The ''Nabeyaki'' udon is not to be missed..\n",
+            "\u001b[0m> Running step 22f46179-91bf-4358-b53e-bc5a80164879. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: The search results are not for Tokyo, Japan, but rather for places with the name 'Tokyo' in their name or for Japanese restaurants. I need to use the tool to find landmarks in Tokyo, Japan.\n",
             "Action: search_landmarks\n",
-            "Action Input: {'query': 'Tokyo famous buildings Tokyo Japan famous', 'limit': 5}\n",
+            "Action Input: {'query': 'Tokyo Japan landmarks', 'limit': 5}\n",
             "\u001b[0m"
           ]
         },
@@ -1672,10 +1674,10 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:09,836 - INFO - Search query: 'Tokyo famous buildings Tokyo Japan famous' found 5 results\n",
-            "2025-09-03 10:29:09,838 - ERROR - ❌ Query failed: Reached max iterations.\n",
+            "2025-09-03 10:44:11,401 - INFO - Search query: 'Tokyo Japan landmarks' found 5 results\n",
+            "2025-09-03 10:44:11,403 - ERROR - ❌ Query failed: Reached max iterations.\n",
             "Traceback (most recent call last):\n",
-            "  File \"/tmp/ipykernel_63525/2404050830.py\", line 7, in run_landmark_query\n",
+            "  File \"/tmp/ipykernel_67511/2404050830.py\", line 7, in run_landmark_query\n",
             "    response = agent.chat(query, chat_history=[])\n",
             "               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
             "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py\", line 317, in wrapper\n",
@@ -1720,7 +1722,7 @@
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo famous buildings Tokyo Japan famous':\n",
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo Japan landmarks':\n",
             "\n",
             "1. **Hanawa**\n",
             "   📍 Location: Paris, France\n",
@@ -1730,14 +1732,13 @@
             "   📞 Phone: +33 1 56 62 70 70.\n",
             "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
             "\n",
-            "2. **Maison de la culture du Japon**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 101Bis Quai Branly.\n",
-            "   📞 Phone: +33 1 44 37 95 01.\n",
-            "   🌐 Website: http://www.mcjp.fr/.\n",
-            "   📝 Description: The location hosts several expositions, a library and a concert hall..\n",
+            "2. **Sapporo**\n",
+            "   📍 Location: Liverpool, United Kingdom\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 134 Duke Street, East Village.\n",
+            "   📞 Phone: +44 151 709-4002.\n",
+            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
+            "   📝 Description: Japanese cuisine.\n",
             "\n",
             "3. **Mitsuwa Marketplace**\n",
             "   📍 Location: Los Angeles, United States\n",
@@ -1746,14 +1747,7 @@
             "   🏠 Address: 3760 S. Centinela Ave.\n",
             "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
             "\n",
-            "4. **Webster Bridge**\n",
-            "   📍 Location: San Francisco, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: on Webster Street over Geary Boulevard.\n",
-            "   📝 Description: The bridge's design was inspired by traditional Japanese pedestrian walkways. In addition to providing a safe passage over the traffic on Geary Boulevard, the arched bridge has views of Japan Center and Western Addition..\n",
-            "\n",
-            "5. **Sapporo-Ya Japanese Restaurant**\n",
+            "4. **Sapporo-Ya Japanese Restaurant**\n",
             "   📍 Location: San Francisco, United States\n",
             "   🗺️ State: California.\n",
             "   🎯 Activity: Eat.\n",
@@ -1761,6 +1755,17 @@
             "   📞 Phone: +1 415 563-7400.\n",
             "   🕒 Hours: M-Sa 11AM-11PM, Su 11AM-10:30PM.\n",
             "   📝 Description: Excellent Japanese noodles served dozens of ways. Open very late, and a good place to warm up on a cold foggy day..\n",
+            "\n",
+            "5. **Kyoto Sushi**\n",
+            "   📍 Location: San Francisco, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 1233 Van Ness Ave.\n",
+            "   📞 Phone: +1 415 351-1234.\n",
+            "   🌐 Website: http://www.kyotosushi-sf.com/.\n",
+            "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
+            "   💰 Price: $11-$23.\n",
+            "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
             "\u001b[0m"
           ]
         }
@@ -1791,14 +1796,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:09,867 - INFO - 🏛️ Landmark Query: Show me museums in London\n"
+            "2025-09-03 10:44:11,427 - INFO - 🏛️ Landmark Query: Show me museums in London\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "> Running step c8b795ca-0b7a-4474-bbd8-031dc6cef844. Step input: Show me museums in London\n",
+            "> Running step 1f24316e-20f3-48c6-88a8-b23c79eede73. Step input: Show me museums in London\n",
             "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'museums in London', 'limit': 5}\n",
@@ -1809,7 +1814,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:19,231 - INFO - Search query: 'museums in London' found 5 results\n"
+            "2025-09-03 10:44:20,782 - INFO - Search query: 'museums in London' found 5 results\n"
           ]
         },
         {
@@ -1846,15 +1851,15 @@
             "   📍 Location: London, United Kingdom\n",
             "   🎯 Activity: See.\n",
             "   📝 Description: Part of the Lea Valley Park, a natural habitat for many resident plants and animals..\n",
-            "\u001b[0m> Running step 210870cc-01ac-4874-9de7-57e46441b38e. Step input: None\n"
+            "\u001b[0m> Running step 1e706d96-3452-4d78-bfe6-6f554895ab66. Step input: None\n"
           ]
         },
         {
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:21,482 - INFO - 🤖 AI Response: There are several museums in London that you might be interested in visiting. Some of the options include the London Transport Museum, the Clockmaker's Museum, 575 Wandsworth Road, and Tottenham Marsh. The London Transport Museum is located in Covent Garden and features a collection of old timepieces. The Clockmaker's Museum is located in the Guildhall Library and offers free admission. 575 Wandsworth Road is a historic house that requires booking in advance, and Tottenham Marsh is a natural habitat for plants and animals.\n",
-            "2025-09-03 10:29:21,483 - INFO - ✅ Query completed successfully\n"
+            "2025-09-03 10:44:22,420 - INFO - 🤖 AI Response: There are several museums in London, including the London Transport Museum, the Clockmaker's Museum, 575 Wandsworth Road, and Tottenham Marsh.\n",
+            "2025-09-03 10:44:22,420 - INFO - ✅ Query completed successfully\n"
           ]
         },
         {
@@ -1862,7 +1867,7 @@
           "output_type": "stream",
           "text": [
             "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: There are several museums in London that you might be interested in visiting. Some of the options include the London Transport Museum, the Clockmaker's Museum, 575 Wandsworth Road, and Tottenham Marsh. The London Transport Museum is located in Covent Garden and features a collection of old timepieces. The Clockmaker's Museum is located in the Guildhall Library and offers free admission. 575 Wandsworth Road is a historic house that requires booking in advance, and Tottenham Marsh is a natural habitat for plants and animals.\n",
+            "Answer: There are several museums in London, including the London Transport Museum, the Clockmaker's Museum, 575 Wandsworth Road, and Tottenham Marsh.\n",
             "\u001b[0m"
           ]
         }
@@ -1893,14 +1898,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:21,496 - INFO - 🏛️ Landmark Query: What parks can I visit in Paris?\n"
+            "2025-09-03 10:44:22,441 - INFO - 🏛️ Landmark Query: What parks can I visit in Paris?\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "> Running step 5bfd5a6b-db47-45c4-b4d4-124fcb01a1e3. Step input: What parks can I visit in Paris?\n",
+            "> Running step 7508eac5-8ffa-4da1-aa39-5b8926823c71. Step input: What parks can I visit in Paris?\n",
             "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'parks in Paris', 'limit': 5}\n",
@@ -1911,7 +1916,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:30,340 - INFO - Search query: 'parks in Paris' found 5 results\n"
+            "2025-09-03 10:44:31,797 - INFO - Search query: 'parks in Paris' found 5 results\n"
           ]
         },
         {
@@ -1957,15 +1962,15 @@
             "   🕒 Hours: Daily 10:00-19:00.\n",
             "   💰 Price: €4 for the exhibitions, €8 for the workshops.\n",
             "   📝 Description: The little brother of the original Musée en Herbe in the Bois de Boulogne, this museum is also geared to '''children'''. They have games and hands-on exhibits so won't have to supervise quite as closely as in other museums. Arts workshops are available as well, but you'll need to reserve a space in advance..\n",
-            "\u001b[0m> Running step a41ad6f0-9c05-4114-bb21-f8de6f5247d5. Step input: None\n"
+            "\u001b[0m> Running step b30f1ccb-68f9-4e14-aa0f-63810334aca8. Step input: None\n"
           ]
         },
         {
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:31,899 - INFO - 🤖 AI Response: You can visit the following parks in Paris: Parc André Malraux, Parc André Citroën, and Musée en Herbe.\n",
-            "2025-09-03 10:29:31,899 - INFO - ✅ Query completed successfully\n"
+            "2025-09-03 10:44:33,479 - INFO - 🤖 AI Response: You can visit the following parks in Paris: Parc André Malraux, Parc André Citroën, and Musée en Herbe.\n",
+            "2025-09-03 10:44:33,480 - INFO - ✅ Query completed successfully\n"
           ]
         },
         {
@@ -2603,13 +2608,13 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:32,019 - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix\n",
-            "2025-09-03 10:29:32,032 - INFO - Dataset: phoenix_inferences_6069ae2c-b207-4025-8e45-3679fe207b51 initialized\n",
-            "2025-09-03 10:29:33,057 - INFO - ✅ Arize Phoenix evaluation components available\n",
-            "2025-09-03 10:29:33,058 - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix\n",
-            "2025-09-03 10:29:33,107 - INFO - Context impl SQLiteImpl.\n",
-            "2025-09-03 10:29:33,108 - INFO - Will assume transactional DDL.\n",
-            "2025-09-03 10:29:33,145 - INFO - Running upgrade  -> cf03bd6bae1d, init\n"
+            "2025-09-03 10:44:33,658 - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix\n",
+            "2025-09-03 10:44:33,669 - INFO - Dataset: phoenix_inferences_271eb27e-8ba3-4d12-b562-06832444ef57 initialized\n",
+            "2025-09-03 10:44:34,680 - INFO - ✅ Arize Phoenix evaluation components available\n",
+            "2025-09-03 10:44:34,681 - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix\n",
+            "2025-09-03 10:44:34,732 - INFO - Context impl SQLiteImpl.\n",
+            "2025-09-03 10:44:34,733 - INFO - Will assume transactional DDL.\n",
+            "2025-09-03 10:44:34,766 - INFO - Running upgrade  -> cf03bd6bae1d, init\n"
           ]
         },
         {
@@ -2623,24 +2628,24 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:33,722 - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets\n",
-            "2025-09-03 10:29:33,731 - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table\n",
-            "2025-09-03 10:29:33,734 - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens\n",
-            "2025-09-03 10:29:33,742 - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table\n",
-            "2025-09-03 10:29:33,752 - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables\n",
-            "2025-09-03 10:29:34,085 - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations\n",
+            "2025-09-03 10:44:35,343 - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets\n",
+            "2025-09-03 10:44:35,352 - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table\n",
+            "2025-09-03 10:44:35,356 - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens\n",
+            "2025-09-03 10:44:35,363 - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table\n",
+            "2025-09-03 10:44:35,375 - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables\n",
+            "2025-09-03 10:44:35,717 - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations\n",
             "/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total\n",
             "  next(self.gen)\n",
             "/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency\n",
             "  next(self.gen)\n",
-            "2025-09-03 10:29:34,175 - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table\n",
-            "2025-09-03 10:29:34,182 - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts\n",
-            "2025-09-03 10:29:34,193 - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.\n",
-            "2025-09-03 10:29:34,203 - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables\n",
-            "2025-09-03 10:29:34,247 - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)\n",
-            "2025-09-03 10:29:34,546 - INFO - 🚀 Phoenix UI available at http://localhost:6006/\n",
-            "2025-09-03 10:29:34,584 - INFO - ✅ LlamaIndex instrumentation enabled\n",
-            "2025-09-03 10:29:34,584 - INFO - 🔍 Running evaluation query 1: Find me landmarks in Tokyo\n"
+            "2025-09-03 10:44:35,794 - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table\n",
+            "2025-09-03 10:44:35,802 - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts\n",
+            "2025-09-03 10:44:35,815 - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.\n",
+            "2025-09-03 10:44:35,825 - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables\n",
+            "2025-09-03 10:44:35,868 - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)\n",
+            "2025-09-03 10:44:36,176 - INFO - 🚀 Phoenix UI available at http://localhost:6006/\n",
+            "2025-09-03 10:44:36,212 - INFO - ✅ LlamaIndex instrumentation enabled\n",
+            "2025-09-03 10:44:36,213 - INFO - 🔍 Running evaluation query 1: Find me landmarks in Tokyo\n"
           ]
         },
         {
@@ -2663,7 +2668,7 @@
             "|  `register` has set this TracerProvider as the global OpenTelemetry default.\n",
             "|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.\n",
             "\n",
-            "> Running step 8200cda7-3616-4824-95d5-21731a94f86d. Step input: Find me landmarks in Tokyo\n",
+            "> Running step 0e0da227-9498-4efc-9422-b80d832c8d1d. Step input: Find me landmarks in Tokyo\n",
             "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo landmarks', 'limit': 5}\n",
@@ -2674,7 +2679,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:44,282 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
+            "2025-09-03 10:44:45,983 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
           ]
         },
         {
@@ -2725,7 +2730,7 @@
             "   🎯 Activity: Buy.\n",
             "   🏠 Address: 3760 S. Centinela Ave.\n",
             "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
-            "\u001b[0m> Running step 59672c3c-5442-4248-acdf-1738b2bf8afa. Step input: None\n",
+            "\u001b[0m> Running step a626be9e-4c08-4c99-91a2-c4c82754e1fd. Step input: None\n",
             "\u001b[1;3;38;5;200mThought: The search results seem to be about Japanese restaurants in various cities, not landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo landmarks', 'limit': 5}\n",
@@ -2736,7 +2741,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:29:54,120 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
+            "2025-09-03 10:44:56,303 - INFO - Search query: 'Tokyo landmarks' found 5 results\n"
           ]
         },
         {
@@ -2787,7 +2792,7 @@
             "   🎯 Activity: Buy.\n",
             "   🏠 Address: 3760 S. Centinela Ave.\n",
             "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
-            "\u001b[0m> Running step 40c924cb-1f2e-4ad5-9e3e-2ae6e87ee042. Step input: None\n",
+            "\u001b[0m> Running step fd8c7143-5048-4e5e-b751-0e27f9aa3d4a. Step input: None\n",
             "\u001b[1;3;38;5;200mThought: The search results are still not about landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo famous landmarks', 'limit': 5}\n",
@@ -2798,7 +2803,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:04,089 - INFO - Search query: 'Tokyo famous landmarks' found 5 results\n"
+            "2025-09-03 10:45:06,748 - INFO - Search query: 'Tokyo famous landmarks' found 5 results\n"
           ]
         },
         {
@@ -2849,7 +2854,7 @@
             "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
             "   💰 Price: $11-$23.\n",
             "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
-            "\u001b[0m> Running step c298c10b-49ee-4dab-8d41-da32150ce52b. Step input: None\n",
+            "\u001b[0m> Running step b0eacec4-c5c0-4fda-8db5-db0495f9b512. Step input: None\n",
             "\u001b[1;3;38;5;200mThought: The search results are still not about famous landmarks in Tokyo. I need to use the tool to search again with a more specific query.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo famous buildings', 'limit': 5}\n",
@@ -2860,7 +2865,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:14,740 - INFO - Search query: 'Tokyo famous buildings' found 5 results\n"
+            "2025-09-03 10:45:16,835 - INFO - Search query: 'Tokyo famous buildings' found 5 results\n"
           ]
         },
         {
@@ -2913,7 +2918,7 @@
             "   🌐 Website: http://www.mikawayausa.com.\n",
             "   🕒 Hours: M,Sa 10AM-7PM, Tu-Th 10AM-10PM, F 9AM-11PM, Su closed.\n",
             "   📝 Description: Their motto says it best: &quot;The finest name in Japanese pastries since 1910.&quot;.\n",
-            "\u001b[0m> Running step 36aedfda-e756-4237-8777-8a6edba05517. Step input: None\n",
+            "\u001b[0m> Running step 9b6311f4-0bac-4132-96a7-39abbd7c90c3. Step input: None\n",
             "\u001b[1;3;38;5;200mThought: The search results are still not about famous buildings in Tokyo. I need to use the tool to search again with a more specific query.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'Tokyo famous buildings', 'limit': 5}\n",
@@ -2924,7 +2929,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:24,878 - INFO - Search query: 'Tokyo famous buildings' found 5 results\n"
+            "2025-09-03 10:45:26,638 - INFO - Search query: 'Tokyo famous buildings' found 5 results\n"
           ]
         },
         {
@@ -2977,28 +2982,113 @@
             "   🌐 Website: http://www.mikawayausa.com.\n",
             "   🕒 Hours: M,Sa 10AM-7PM, Tu-Th 10AM-10PM, F 9AM-11PM, Su closed.\n",
             "   📝 Description: Their motto says it best: &quot;The finest name in Japanese pastries since 1910.&quot;.\n",
-            "\u001b[0m> Running step bf6f9dd1-be04-4040-b71d-cdc07faf3635. Step input: None\n"
+            "\u001b[0m> Running step 46c1d6f5-3c32-4c4a-900c-520a8d1c281a. Step input: None\n",
+            "\u001b[1;3;38;5;200mThought: The search results are still not about famous buildings in Tokyo. I need to try a different approach.\n",
+            "Action: \n",
+            "Thought: I will try to search for landmarks in Tokyo without specifying \"famous buildings\".\n",
+            "Action: search_landmarks\n",
+            "Action Input: {'query': 'Tokyo landmarks', 'limit': 5}\n",
+            "\u001b[0m"
           ]
         },
         {
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:27,589 - INFO - ✅ Query 1 completed successfully\n",
-            "2025-09-03 10:30:27,590 - INFO - 🔍 Running evaluation query 2: Show me museums in London\n"
+            "2025-09-03 10:45:37,178 - INFO - Search query: 'Tokyo landmarks' found 5 results\n",
+            "2025-09-03 10:45:37,210 - ERROR - ❌ Query 1 failed: Reached max iterations.\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/tmp/ipykernel_67511/590910829.py\", line 60, in <module>\n",
+            "    response = agent.chat(query, chat_history=[])\n",
+            "               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py\", line 317, in wrapper\n",
+            "    result = func(*args, **kwargs)\n",
+            "             ^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py\", line 42, in wrapper\n",
+            "    return func(self, *args, **kwargs)\n",
+            "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py\", line 708, in chat\n",
+            "    chat_response = self._chat(\n",
+            "                    ^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py\", line 317, in wrapper\n",
+            "    result = func(*args, **kwargs)\n",
+            "             ^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py\", line 640, in _chat\n",
+            "    cur_step_output = self._run_step(\n",
+            "                      ^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py\", line 317, in wrapper\n",
+            "    result = func(*args, **kwargs)\n",
+            "             ^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/runner/base.py\", line 436, in _run_step\n",
+            "    cur_step_output = self.agent_worker.run_step(step, task, **kwargs)\n",
+            "                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index_instrumentation/dispatcher.py\", line 317, in wrapper\n",
+            "    result = func(*args, **kwargs)\n",
+            "             ^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/callbacks/utils.py\", line 42, in wrapper\n",
+            "    return func(self, *args, **kwargs)\n",
+            "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py\", line 828, in run_step\n",
+            "    return self._run_step(step, task)\n",
+            "           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py\", line 586, in _run_step\n",
+            "    agent_response = self._get_response(\n",
+            "                     ^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/llama_index/core/agent/react/step.py\", line 439, in _get_response\n",
+            "    raise ValueError(\"Reached max iterations.\")\n",
+            "ValueError: Reached max iterations.\n",
+            "2025-09-03 10:45:37,213 - INFO - 🔍 Running evaluation query 2: Show me museums in London\n"
           ]
         },
         {
           "name": "stdout",
           "output_type": "stream",
           "text": [
-            "\u001b[1;3;38;5;200mThought: The search results are still not about famous buildings in Tokyo. I need to try a different approach to find the information.\n",
+            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Tokyo landmarks':\n",
             "\n",
-            "Thought: I will try to search for famous buildings in Tokyo using a different tool or approach.\n",
+            "1. **Hanawa**\n",
+            "   📍 Location: Paris, France\n",
+            "   🗺️ State: Île-de-France.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 26, rue Bayard.\n",
+            "   📞 Phone: +33 1 56 62 70 70.\n",
+            "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
             "\n",
-            "Thought: I will try to search for famous buildings in Tokyo using a general search engine.\n",
-            "Answer: Unfortunately, I was unable to find the information about famous buildings in Tokyo using the provided tools. However, I can suggest some famous buildings in Tokyo such as Tokyo Tower, Tokyo Skytree, and the Imperial Palace.\n",
-            "\u001b[0m> Running step a63a0082-e946-4f64-8fd3-ebb73381318f. Step input: Show me museums in London\n",
+            "2. **Sapporo**\n",
+            "   📍 Location: Liverpool, United Kingdom\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 134 Duke Street, East Village.\n",
+            "   📞 Phone: +44 151 709-4002.\n",
+            "   🌐 Website: http://www.sapporo.co.uk/restaurant-liverpool/.\n",
+            "   📝 Description: Japanese cuisine.\n",
+            "\n",
+            "3. **Sapporo-Ya Japanese Restaurant**\n",
+            "   📍 Location: San Francisco, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 1581 Webster Street.\n",
+            "   📞 Phone: +1 415 563-7400.\n",
+            "   🕒 Hours: M-Sa 11AM-11PM, Su 11AM-10:30PM.\n",
+            "   📝 Description: Excellent Japanese noodles served dozens of ways. Open very late, and a good place to warm up on a cold foggy day..\n",
+            "\n",
+            "4. **Kyoto Sushi**\n",
+            "   📍 Location: San Francisco, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Eat.\n",
+            "   🏠 Address: 1233 Van Ness Ave.\n",
+            "   📞 Phone: +1 415 351-1234.\n",
+            "   🌐 Website: http://www.kyotosushi-sf.com/.\n",
+            "   🕒 Hours: M-Th 11AM-10:30PM, F 11AM-11PM, Sa 11:30AM-11PM, Su 4:30PM-10:30PM.\n",
+            "   💰 Price: $11-$23.\n",
+            "   📝 Description: With the multitude of sushi places it is hard to say which is best, but this one rates at the top for taste, freshness, and authenticity..\n",
+            "\n",
+            "5. **Mitsuwa Marketplace**\n",
+            "   📍 Location: Los Angeles, United States\n",
+            "   🗺️ State: California.\n",
+            "   🎯 Activity: Buy.\n",
+            "   🏠 Address: 3760 S. Centinela Ave.\n",
+            "   📝 Description: A Japanese supermarket with several locations in the US, boasting a collection of Japanese food shops in its food court such as '''Santouka Ramen''', '''Tendon Hannosuke''' tempura, '''Sanuki Sandou Udon''', '''Misasa''', and '''Daikichi Sushi'''..\n",
+            "\u001b[0m> Running step 392733f1-71eb-47b3-86f4-000975482a4d. Step input: Show me museums in London\n",
             "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
             "Action: search_landmarks\n",
             "Action Input: {'query': 'museums in London', 'limit': 5}\n",
@@ -3009,7 +3099,7 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:37,166 - INFO - Search query: 'museums in London' found 5 results\n"
+            "2025-09-03 10:45:47,216 - INFO - Search query: 'museums in London' found 5 results\n"
           ]
         },
         {
@@ -3046,25 +3136,25 @@
             "   📍 Location: London, United Kingdom\n",
             "   🎯 Activity: See.\n",
             "   📝 Description: Part of the Lea Valley Park, a natural habitat for many resident plants and animals..\n",
-            "\u001b[0m> Running step c6c563b4-a175-4bce-98dd-5d7ff3d4d822. Step input: None\n"
+            "\u001b[0m> Running step f2cc216c-9ccc-4603-9f26-563684d1c525. Step input: None\n"
           ]
         },
         {
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:39,256 - INFO - ✅ Query 2 completed successfully\n",
-            "2025-09-03 10:30:39,258 - INFO - 📊 Collected 2 responses for evaluation\n",
-            "2025-09-03 10:30:39,260 - INFO - Query: Find me landmarks in Tokyo\n",
-            "2025-09-03 10:30:39,260 - INFO - Response: Unfortunately, I was unable to find the information about famous buildings in Tokyo using the provided tools. However, I can suggest some famous buildings in Tokyo such as Tokyo Tower, Tokyo Skytree, ...\n",
-            "2025-09-03 10:30:39,261 - INFO - Success: True\n",
-            "2025-09-03 10:30:39,262 - INFO - --------------------------------------------------\n",
-            "2025-09-03 10:30:39,263 - INFO - Query: Show me museums in London\n",
-            "2025-09-03 10:30:39,264 - INFO - Response: There are several museums in London that you might be interested in visiting. These include the London Transport Museum, the Clockmaker's Museum, and the National Trust's 575 Wandsworth Road. Each of ...\n",
-            "2025-09-03 10:30:39,265 - INFO - Success: True\n",
-            "2025-09-03 10:30:39,267 - INFO - --------------------------------------------------\n",
-            "2025-09-03 10:30:39,268 - INFO - 💡 Visit Phoenix UI at http://localhost:6006/ to see detailed traces and evaluations\n",
-            "2025-09-03 10:30:39,269 - INFO - 💡 Use the evaluation script at evals/eval_arize.py for comprehensive evaluation\n"
+            "2025-09-03 10:45:49,292 - INFO - ✅ Query 2 completed successfully\n",
+            "2025-09-03 10:45:49,293 - INFO - 📊 Collected 2 responses for evaluation\n",
+            "2025-09-03 10:45:49,293 - INFO - Query: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:49,294 - INFO - Response: Error: Reached max iterations....\n",
+            "2025-09-03 10:45:49,295 - INFO - Success: False\n",
+            "2025-09-03 10:45:49,295 - INFO - --------------------------------------------------\n",
+            "2025-09-03 10:45:49,296 - INFO - Query: Show me museums in London\n",
+            "2025-09-03 10:45:49,297 - INFO - Response: There are several museums in London that you might be interested in visiting. Some of the options include the London Transport Museum, the Clockmaker's Museum, and the National Trust's 575 Wandsworth ...\n",
+            "2025-09-03 10:45:49,298 - INFO - Success: True\n",
+            "2025-09-03 10:45:49,299 - INFO - --------------------------------------------------\n",
+            "2025-09-03 10:45:49,300 - INFO - 💡 Visit Phoenix UI at http://localhost:6006/ to see detailed traces and evaluations\n",
+            "2025-09-03 10:45:49,301 - INFO - 💡 Use the evaluation script at evals/eval_arize.py for comprehensive evaluation\n"
           ]
         },
         {
@@ -3072,7 +3162,7 @@
           "output_type": "stream",
           "text": [
             "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: There are several museums in London that you might be interested in visiting. These include the London Transport Museum, the Clockmaker's Museum, and the National Trust's 575 Wandsworth Road. Each of these museums offers a unique perspective on history and culture, and they are all located in different parts of the city.\n",
+            "Answer: There are several museums in London that you might be interested in visiting. Some of the options include the London Transport Museum, the Clockmaker's Museum, and the National Trust's 575 Wandsworth Road. Each of these museums offers a unique perspective on history and culture, and they are all located in different parts of the city.\n",
             "\u001b[0m"
           ]
         }
@@ -3185,14 +3275,14 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:39,302 - INFO - 🔍 Running comprehensive Phoenix evaluations...\n",
-            "2025-09-03 10:30:39,345 - INFO - 🔍 Running Relevance Evaluation...\n"
+            "2025-09-03 10:45:49,333 - INFO - 🔍 Running comprehensive Phoenix evaluations...\n",
+            "2025-09-03 10:45:49,371 - INFO - 🔍 Running Relevance Evaluation...\n"
           ]
         },
         {
           "data": {
             "application/vnd.jupyter.widget-view+json": {
-              "model_id": "81410a3a258d4b6496fd066ea3cdec0d",
+              "model_id": "b716258078e24ac494208295aa996f17",
               "version_major": 2,
               "version_minor": 0
             },
@@ -3207,20 +3297,192 @@
           "name": "stderr",
           "output_type": "stream",
           "text": [
-            "2025-09-03 10:30:41,641 - INFO - ✅ Relevance Evaluation Results:\n",
-            "2025-09-03 10:30:41,641 - INFO -    Query: Find me landmarks in Tokyo\n",
-            "2025-09-03 10:30:41,642 - INFO -    Relevance: label\n",
-            "2025-09-03 10:30:41,642 - INFO -    ------------------------------\n",
-            "2025-09-03 10:30:41,642 - INFO -    Query: Show me museums in London\n",
-            "2025-09-03 10:30:41,642 - INFO -    Relevance: exceptions\n",
-            "2025-09-03 10:30:41,642 - INFO -    ------------------------------\n",
-            "2025-09-03 10:30:41,642 - ERROR - ❌ Phoenix evaluation failed: list index out of range\n",
+            "2025-09-03 10:45:52,541 - INFO - ✅ Relevance Evaluation Results:\n",
+            "2025-09-03 10:45:52,541 - INFO -    Query: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:52,541 - INFO -    Relevance: label\n",
+            "2025-09-03 10:45:52,542 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,542 - INFO -    Query: Show me museums in London\n",
+            "2025-09-03 10:45:52,542 - INFO -    Relevance: exceptions\n",
+            "2025-09-03 10:45:52,542 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,542 - INFO -    Query: Query 3\n",
+            "2025-09-03 10:45:52,542 - INFO -    Relevance: execution_status\n",
+            "2025-09-03 10:45:52,543 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,543 - INFO -    Query: Query 4\n",
+            "2025-09-03 10:45:52,543 - INFO -    Relevance: execution_seconds\n",
+            "2025-09-03 10:45:52,543 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,543 - INFO -    Query: Query 5\n",
+            "2025-09-03 10:45:52,544 - INFO -    Relevance: prompt_tokens\n",
+            "2025-09-03 10:45:52,544 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,545 - INFO -    Query: Query 6\n",
+            "2025-09-03 10:45:52,545 - INFO -    Relevance: completion_tokens\n",
+            "2025-09-03 10:45:52,545 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,545 - INFO -    Query: Query 7\n",
+            "2025-09-03 10:45:52,546 - INFO -    Relevance: total_tokens\n",
+            "2025-09-03 10:45:52,546 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:52,546 - INFO - 🔍 Running QA Evaluation...\n"
+          ]
+        },
+        {
+          "data": {
+            "application/vnd.jupyter.widget-view+json": {
+              "model_id": "c0a09ff570354044ab6f28d2d6fc3b08",
+              "version_major": 2,
+              "version_minor": 0
+            },
+            "text/plain": [
+              "llm_classify |          | 0/2 (0.0%) | ⏳ 00:00<? | ?it/s"
+            ]
+          },
+          "metadata": {},
+          "output_type": "display_data"
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-09-03 10:45:55,068 - INFO - ✅ QA Evaluation Results:\n",
+            "2025-09-03 10:45:55,068 - INFO -    Query: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:55,068 - INFO -    QA Score: label\n",
+            "2025-09-03 10:45:55,069 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,069 - INFO -    Query: Show me museums in London\n",
+            "2025-09-03 10:45:55,069 - INFO -    QA Score: exceptions\n",
+            "2025-09-03 10:45:55,069 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,070 - INFO -    Query: Query 3\n",
+            "2025-09-03 10:45:55,070 - INFO -    QA Score: execution_status\n",
+            "2025-09-03 10:45:55,071 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,071 - INFO -    Query: Query 4\n",
+            "2025-09-03 10:45:55,072 - INFO -    QA Score: execution_seconds\n",
+            "2025-09-03 10:45:55,073 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,073 - INFO -    Query: Query 5\n",
+            "2025-09-03 10:45:55,073 - INFO -    QA Score: prompt_tokens\n",
+            "2025-09-03 10:45:55,074 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,074 - INFO -    Query: Query 6\n",
+            "2025-09-03 10:45:55,074 - INFO -    QA Score: completion_tokens\n",
+            "2025-09-03 10:45:55,075 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,075 - INFO -    Query: Query 7\n",
+            "2025-09-03 10:45:55,076 - INFO -    QA Score: total_tokens\n",
+            "2025-09-03 10:45:55,076 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:55,076 - INFO - 🔍 Running Hallucination Evaluation...\n"
+          ]
+        },
+        {
+          "data": {
+            "application/vnd.jupyter.widget-view+json": {
+              "model_id": "13a6bd808dd64b2c89eaed4ec41f867a",
+              "version_major": 2,
+              "version_minor": 0
+            },
+            "text/plain": [
+              "llm_classify |          | 0/2 (0.0%) | ⏳ 00:00<? | ?it/s"
+            ]
+          },
+          "metadata": {},
+          "output_type": "display_data"
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-09-03 10:45:56,927 - INFO - ✅ Hallucination Evaluation Results:\n",
+            "2025-09-03 10:45:56,927 - INFO -    Query: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:56,928 - INFO -    Hallucination: label\n",
+            "2025-09-03 10:45:56,928 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,928 - INFO -    Query: Show me museums in London\n",
+            "2025-09-03 10:45:56,929 - INFO -    Hallucination: exceptions\n",
+            "2025-09-03 10:45:56,929 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,930 - INFO -    Query: Query 3\n",
+            "2025-09-03 10:45:56,930 - INFO -    Hallucination: execution_status\n",
+            "2025-09-03 10:45:56,930 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,930 - INFO -    Query: Query 4\n",
+            "2025-09-03 10:45:56,931 - INFO -    Hallucination: execution_seconds\n",
+            "2025-09-03 10:45:56,931 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,931 - INFO -    Query: Query 5\n",
+            "2025-09-03 10:45:56,932 - INFO -    Hallucination: prompt_tokens\n",
+            "2025-09-03 10:45:56,933 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,934 - INFO -    Query: Query 6\n",
+            "2025-09-03 10:45:56,935 - INFO -    Hallucination: completion_tokens\n",
+            "2025-09-03 10:45:56,935 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,935 - INFO -    Query: Query 7\n",
+            "2025-09-03 10:45:56,936 - INFO -    Hallucination: total_tokens\n",
+            "2025-09-03 10:45:56,936 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:56,937 - INFO - 🔍 Running Toxicity Evaluation...\n"
+          ]
+        },
+        {
+          "data": {
+            "application/vnd.jupyter.widget-view+json": {
+              "model_id": "edeb5c9c0dd64d2385a123a1bff33ad4",
+              "version_major": 2,
+              "version_minor": 0
+            },
+            "text/plain": [
+              "llm_classify |          | 0/2 (0.0%) | ⏳ 00:00<? | ?it/s"
+            ]
+          },
+          "metadata": {},
+          "output_type": "display_data"
+        },
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "Retries exhausted after 1 attempts: Missing template variable: 'input'\n",
+            "Retries exhausted after 1 attempts: Missing template variable: 'input'\n"
+          ]
+        },
+        {
+          "name": "stderr",
+          "output_type": "stream",
+          "text": [
+            "2025-09-03 10:45:57,995 - INFO - ✅ Toxicity Evaluation Results:\n",
+            "2025-09-03 10:45:57,996 - INFO -    Query: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:57,996 - INFO -    Toxicity: label\n",
+            "2025-09-03 10:45:57,997 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:57,997 - INFO -    Query: Show me museums in London\n",
+            "2025-09-03 10:45:57,998 - INFO -    Toxicity: exceptions\n",
+            "2025-09-03 10:45:57,998 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:57,999 - INFO -    Query: Query 3\n",
+            "2025-09-03 10:45:57,999 - INFO -    Toxicity: execution_status\n",
+            "2025-09-03 10:45:58,000 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:58,001 - INFO -    Query: Query 4\n",
+            "2025-09-03 10:45:58,001 - INFO -    Toxicity: execution_seconds\n",
+            "2025-09-03 10:45:58,002 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:58,002 - INFO -    Query: Query 5\n",
+            "2025-09-03 10:45:58,003 - INFO -    Toxicity: prompt_tokens\n",
+            "2025-09-03 10:45:58,003 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:58,003 - INFO -    Query: Query 6\n",
+            "2025-09-03 10:45:58,003 - INFO -    Toxicity: completion_tokens\n",
+            "2025-09-03 10:45:58,004 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:58,005 - INFO -    Query: Query 7\n",
+            "2025-09-03 10:45:58,005 - INFO -    Toxicity: total_tokens\n",
+            "2025-09-03 10:45:58,006 - INFO -    ------------------------------\n",
+            "2025-09-03 10:45:58,007 - INFO - 📊 EVALUATION SUMMARY\n",
+            "2025-09-03 10:45:58,007 - INFO - ==================================================\n",
+            "2025-09-03 10:45:58,008 - INFO - Query 1: Find me landmarks in Tokyo\n",
+            "2025-09-03 10:45:58,008 - ERROR - ❌ Phoenix evaluation failed: 0\n",
             "Traceback (most recent call last):\n",
-            "  File \"/tmp/ipykernel_63525/2450233225.py\", line 31, in <module>\n",
-            "    query = landmark_eval_data[i][\"input\"]\n",
-            "            ~~~~~~~~~~~~~~~~~~^^^\n",
-            "IndexError: list index out of range\n",
-            "2025-09-03 10:30:41,643 - INFO - 💡 This might be due to API rate limits or model availability\n"
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/pandas/core/indexes/base.py\", line 3805, in get_loc\n",
+            "    return self._engine.get_loc(casted_key)\n",
+            "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"index.pyx\", line 167, in pandas._libs.index.IndexEngine.get_loc\n",
+            "  File \"index.pyx\", line 196, in pandas._libs.index.IndexEngine.get_loc\n",
+            "  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7081, in pandas._libs.hashtable.PyObjectHashTable.get_item\n",
+            "  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7089, in pandas._libs.hashtable.PyObjectHashTable.get_item\n",
+            "KeyError: 0\n",
+            "\n",
+            "The above exception was the direct cause of the following exception:\n",
+            "\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/tmp/ipykernel_67511/165782991.py\", line 106, in <module>\n",
+            "    logger.info(f\"  Relevance: {landmark_relevance_results[i].label}\")\n",
+            "                                ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/pandas/core/frame.py\", line 4102, in __getitem__\n",
+            "    indexer = self.columns.get_loc(key)\n",
+            "              ^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "  File \"/home/kaustav/.cache/pypoetry/virtualenvs/landmark-search-agent-2081kaWT-py3.12/lib/python3.12/site-packages/pandas/core/indexes/base.py\", line 3812, in get_loc\n",
+            "    raise KeyError(key) from err\n",
+            "KeyError: 0\n",
+            "2025-09-03 10:45:58,013 - INFO - 💡 This might be due to API rate limits or model availability\n"
           ]
         }
       ],
@@ -3255,7 +3517,11 @@
         "        \n",
         "        logger.info(\"✅ Relevance Evaluation Results:\")\n",
         "        for i, result in enumerate(landmark_relevance_results):\n",
-        "            query = landmark_eval_data[i][\"input\"]\n",
+        "            # Add bounds checking to prevent IndexError\n",
+        "            if i < len(landmark_eval_data):\n",
+        "                query = landmark_eval_data[i][\"input\"]\n",
+        "            else:\n",
+        "                query = f\"Query {i+1}\"\n",
         "            logger.info(f\"   Query: {query}\")\n",
         "            logger.info(f\"   Relevance: {result}\")\n",
         "            logger.info(\"   \" + \"-\"*30)\n",
@@ -3271,7 +3537,11 @@
         "        \n",
         "        logger.info(\"✅ QA Evaluation Results:\")\n",
         "        for i, result in enumerate(landmark_qa_results):\n",
-        "            query = landmark_eval_data[i][\"input\"]\n",
+        "            # Add bounds checking to prevent IndexError\n",
+        "            if i < len(landmark_eval_data):\n",
+        "                query = landmark_eval_data[i][\"input\"]\n",
+        "            else:\n",
+        "                query = f\"Query {i+1}\"\n",
         "            logger.info(f\"   Query: {query}\")\n",
         "            logger.info(f\"   QA Score: {result}\")\n",
         "            logger.info(\"   \" + \"-\"*30)\n",
@@ -3287,7 +3557,11 @@
         "        \n",
         "        logger.info(\"✅ Hallucination Evaluation Results:\")\n",
         "        for i, result in enumerate(landmark_hallucination_results):\n",
-        "            query = landmark_eval_data[i][\"input\"]\n",
+        "            # Add bounds checking to prevent IndexError\n",
+        "            if i < len(landmark_eval_data):\n",
+        "                query = landmark_eval_data[i][\"input\"]\n",
+        "            else:\n",
+        "                query = f\"Query {i+1}\"\n",
         "            logger.info(f\"   Query: {query}\")\n",
         "            logger.info(f\"   Hallucination: {result}\")\n",
         "            logger.info(\"   \" + \"-\"*30)\n",
@@ -3303,7 +3577,11 @@
         "        \n",
         "        logger.info(\"✅ Toxicity Evaluation Results:\")\n",
         "        for i, result in enumerate(landmark_toxicity_results):\n",
-        "            query = landmark_eval_data[i][\"input\"]\n",
+        "            # Add bounds checking to prevent IndexError\n",
+        "            if i < len(landmark_eval_data):\n",
+        "                query = landmark_eval_data[i][\"input\"]\n",
+        "            else:\n",
+        "                query = f\"Query {i+1}\"\n",
         "            logger.info(f\"   Query: {query}\")\n",
         "            logger.info(f\"   Toxicity: {result}\")\n",
         "            logger.info(\"   \" + \"-\"*30)\n",
