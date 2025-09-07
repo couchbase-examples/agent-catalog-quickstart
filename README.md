@@ -214,6 +214,89 @@ Run evaluations with Arize:
 poetry run python evals/eval_arize.py
 ```
 
+## Repository Resources
+
+### 📚 Documentation (`docs/`)
+
+Comprehensive guides and references for working with the Agent Catalog ecosystem:
+
+| Document | Purpose |
+|---|---|
+| **[PYPROJECT_GUIDE.md](docs/PYPROJECT_GUIDE.md)** | Complete guide to `pyproject.toml` configuration |
+| **[AGENTC_GUIDE.md](docs/AGENTC_GUIDE.md)** | Agent Catalog CLI and usage documentation |
+| **[PYTHON_LINUX.md](docs/PYTHON_LINUX.md)** | Linux Python setup and pip troubleshooting |
+| **[PYTHON_MAC.md](docs/PYTHON_MAC.md)** | macOS Python environment setup guide |
+| **[CAPELLA_MODELS.md](docs/CAPELLA_MODELS.md)** | Couchbase Capella model services integration |
+| **[EVALUATION_FRAMEWORKS_COMPARISON.md](docs/EVALUATION_FRAMEWORKS_COMPARISON.md)** | Comparison of AI evaluation frameworks |
+
+**Quick access:**
+```bash
+# View documentation
+ls docs/                    # List all documentation files
+cat docs/PYPROJECT_GUIDE.md # Read specific guide
+```
+
+### 🛠️ Templates (`templates/`)
+
+Ready-to-use templates for creating Agent Catalog components:
+
+| Template | Purpose | Usage |
+|---|---|---|
+| **`prompt_template.yaml`** | Agent prompt templates | Create new prompts with proper structure |
+| **`python_function_template.py`** | Python tool functions | Build custom tools and utilities |
+| **`semantic_search_template.yaml`** | Couchbase vector search | Set up semantic search functionality |
+| **`sqlpp_query_template.sqlpp`** | Database queries | Create SQL++ queries for Couchbase |
+| **`http_request_template.yaml`** | HTTP/API requests | Build HTTP request tools |
+| **`agentc_command_notes.txt`** | CLI command reference | AgentC command examples |
+
+**Using templates:**
+```bash
+# Copy template for new component
+cp templates/prompt_template.yaml prompts/my_new_prompt.yaml
+cp templates/python_function_template.py tools/my_new_tool.py
+
+# Edit with your specific requirements
+$EDITOR prompts/my_new_prompt.yaml
+```
+
+### 🔧 Shared Resources (`shared/`)
+
+Common utilities and configurations used across all agents:
+
+| File | Purpose |
+|---|---|
+| **`agent_setup.py`** | Common agent initialization and setup utilities |
+| **`couchbase_client.py`** | Couchbase database connection and client management |
+| **`capella_model_services_langchain.py`** | LangChain integration with Capella model services |
+| **`capella_model_services_llamaindex.py`** | LlamaIndex integration with Capella model services |
+| **`__init__.py`** | Package initialization for shared utilities |
+
+**Using shared resources:**
+```python
+# Import shared utilities in your agent
+from shared.couchbase_client import get_couchbase_client
+from shared.agent_setup import initialize_agent
+from shared.capella_model_services_langchain import get_langchain_llm
+```
+
+### 📋 Scripts (`scripts/`)
+
+Automation and setup scripts for the repository:
+
+| Script | Purpose |
+|---|---|
+| **`setup.sh`** | Full repository setup and installation |
+| **`setup_pipx.sh`** | Clean pipx-based installation (recommended) |
+| **`scope_copy.py`** | Utility for copying agent scopes |
+
+**Using scripts:**
+```bash
+# Run setup scripts
+bash scripts/setup.sh --yes           # Full setup
+bash scripts/setup_pipx.sh           # Clean pipx setup
+python scripts/scope_copy.py         # Utility script
+```
+
 ## Architecture
 
 Each example agent follows this structure:

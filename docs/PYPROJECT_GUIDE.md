@@ -1,349 +1,702 @@
-Writing your pyproject.toml
-pyproject.toml is a configuration file used by packaging tools, as well as other tools such as linters, type checkers, etc. There are three possible TOML tables in this file.
+# 📦 Complete Guide to `pyproject.toml`
 
-The [build-system] table is strongly recommended. It allows you to declare which build backend you use and which other dependencies are needed to build your project.
+A comprehensive guide to configuring your Python project with `pyproject.toml` - the modern standard for Python packaging and project configuration.
 
-The [project] table is the format that most build backends use to specify your project’s basic metadata, such as the dependencies, your name, etc.
+## 🎯 What is pyproject.toml?
 
-The [tool] table has tool-specific subtables, e.g., [tool.hatch], [tool.black], [tool.mypy]. We only touch upon this table here because its contents are defined by each tool. Consult the particular tool’s documentation to know what it can contain.
+`pyproject.toml` is a configuration file used by:
+- **Packaging tools** (for building and distributing your project)
+- **Development tools** (linters, type checkers, formatters, etc.)
+- **Build systems** (setuptools, hatchling, poetry, etc.)
 
-Note
+## 📋 Table Structure Overview
 
-The [build-system] table should always be present, regardless of which build backend you use ([build-system] defines the build tool you use).
+The `pyproject.toml` file contains three main TOML tables:
 
-On the other hand, the [project] table is understood by most build backends, but some build backends use a different format.
+| Table | Purpose | Required | Description |
+|---|---|---|---|
+| `[build-system]` | ✅ **Required** | Yes | Declares which build backend and dependencies to use |
+| `[project]` | 📦 **Metadata** | Recommended | Project metadata (name, version, dependencies, etc.) |
+| `[tool]` | 🔧 **Tools** | Optional | Tool-specific configurations (black, mypy, pytest, etc.) |
 
-A notable exception is Poetry, which before version 2.0 (released January 5, 2025) did not use the [project] table, it used the [tool.poetry] table instead. With version 2.0, it supports both. Also, the setuptools build backend supports both the [project] table, and the older format in setup.cfg or setup.py.
+---
 
-For new projects, use the [project] table, and keep setup.py only if some programmatic configuration is needed (such as building C extensions), but the setup.cfg and setup.py formats are still valid. See Is setup.py deprecated?.
+## 🏗️ Build System Configuration
 
-Declaring the build backend
-The [build-system] table contains a build-backend key, which specifies the build backend to be used. It also contains a requires key, which is a list of dependencies needed to build the project – this is typically just the build backend package, but it may also contain additional dependencies. You can also constrain the versions, e.g., requires = ["setuptools >= 61.0"].
+### Why [build-system] is Essential
 
-Usually, you’ll just copy what your build backend’s documentation suggests (after choosing your build backend). Here are the values for some common build backends:
+> ⚠️ **Important:** The `[build-system]` table should **always** be present, regardless of which build backend you use.
 
+This table defines:
+- **Which build tool** to use for your project
+- **Dependencies needed** to build your project
 
-Hatchling
+### Common Build Backend Examples
+
+#### 🚀 **Hatchling** (Recommended for new projects)
+```toml
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+```
+
+#### 🔧 **setuptools** (Traditional, widely supported)
+```toml
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+```
+
+#### ✨ **Flit** (Lightweight)
+```toml
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+```
+
+#### 🎨 **PDM** (Modern dependency management)
+```toml
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+```
+
+---
+
+## 📦 Project Metadata Configuration
+
+The `[project]` table contains your project's basic information and is understood by most modern build backends.
+
+### 🔄 Static vs Dynamic Metadata
+
+**Static:** You directly specify the value
+```toml
+[project]
+version = "1.0.0"
+requires-python = ">= 3.8"
+```
+
+**Dynamic:** Build backend computes the value
+```toml
+[project]
+dynamic = ["version"]  # Read from __version__ or Git tag
+```
+
+---
+
+### ✅ Required Fields
+
+#### 📛 **name** (Required)
+The name of your project on PyPI.
+
+```toml
+[project]
+name = "my-awesome-project"
+```
+
+**Naming Rules:**
+- ✅ ASCII letters, digits, underscores `_`, hyphens `-`, periods `.`
+- ❌ Cannot start or end with `_`, `-`, or `.`
+- 🔄 Case-insensitive: `Cool-Stuff` = `cool.stuff` = `COOL_STUFF`
+
+#### 🏷️ **version** (Required)
+Project version following [semantic versioning](https://semver.org/).
+
+```toml
+[project]
+version = "2024.1.0"
+```
+
+**Version Examples:**
+- `1.0.0` - Standard release
+- `2024.1.0a1` - Alpha release
+- `1.2.3rc1` - Release candidate
+- `0.1.0.dev1` - Development version
+
+---
+
+### 📚 Dependencies and Requirements
+
+#### 🔗 **dependencies**
+Core dependencies required for your project to run.
+
+```toml
+[project]
+dependencies = [
+    "httpx",
+    "requests >= 2.28.0",
+    "pydantic >= 2.0.0, < 3.0.0",
+    "python-dotenv ~= 1.0.0",
+    "django > 4.0; python_version >= '3.8'",
+]
+```
+
+**Dependency Specification Syntax:**
+- `package-name` - Latest version
+- `package-name >= 1.0` - Minimum version
+- `package-name < 2.0` - Maximum version
+- `package-name >= 1.0, < 2.0` - Version range
+- `package-name ~= 1.4.2` - Compatible release
+- `package-name[extra]` - With optional extras
+- `package-name; condition` - Conditional dependency
+
+#### 🎯 **optional-dependencies**
+Optional features that users can install separately.
+
+```toml
+[project.optional-dependencies]
+# GUI support
+gui = ["PyQt6", "matplotlib"]
+
+# CLI tools
+cli = ["click >= 8.0", "rich", "typer"]
+
+# Development tools
+dev = [
+    "pytest >= 7.0",
+    "black",
+    "isort",
+    "mypy",
+    "pre-commit",
+]
+
+# Documentation
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
+]
+
+# All optional dependencies
+all = ["my-project[gui,cli,dev,docs]"]
+```
+
+**Installation Examples:**
+```bash
+pip install my-project[gui]          # With GUI support
+pip install my-project[dev,docs]     # Multiple extras
+pip install my-project[all]          # Everything
+```
+
+#### 🐍 **requires-python**
+Minimum Python version your project supports.
+
+```toml
+[project]
+requires-python = ">= 3.8"
+```
+
+> 💡 **Tip:** Avoid upper bounds like `<= 3.11` unless absolutely necessary. They can cause dependency resolution issues.
+
+---
+
+### 🎭 Project Identity
+
+#### 👥 **authors/maintainers**
+People responsible for the project.
+
+```toml
+[project]
+authors = [
+    {name = "Alice Developer", email = "alice@example.com"},
+    {name = "Bob Maintainer", email = "bob@example.com"},
+    {name = "Contributors Team"},
+    {email = "team@example.com"},
+]
+
+maintainers = [
+    {name = "Current Maintainer", email = "maintainer@example.com"}
+]
+```
+
+#### 📝 **description**
+One-line project description (appears as headline on PyPI).
+
+```toml
+[project]
+description = "A fast and intuitive web framework for building APIs"
+```
+
+#### 📖 **readme**
+Longer project description (displayed on PyPI project page).
+
+```toml
+[project]
+readme = "README.md"
+```
+
+**Alternative formats:**
+```toml
+[project]
+readme = {file = "README.rst", content-type = "text/x-rst"}
+# or
+readme = {text = "My project description", content-type = "text/plain"}
+```
+
+---
+
+### ⚖️ Licensing
+
+#### 📄 **license** (Modern PEP 639 Format)
+SPDX license expression.
+
+```toml
+[project]
+license = "MIT"
+# or
+license = "Apache-2.0"
+# or complex expressions
+license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
+# or custom license
+license = "LicenseRef-My-Custom-License"
+```
+
+#### 📁 **license-files**
+License files to distribute with your package.
+
+```toml
+[project]
+license-files = ["LICENSE", "NOTICE", "AUTHORS.md"]
+# or with globs
+license-files = ["LICEN[CS]E*", "*.LICENSE", "legal/*.txt"]
+```
+
+**Build Backend Support for PEP 639:**
+
+| Build Backend | Minimum Version |
+|---|---|
+| hatchling | 1.27.0+ ✅ |
+| setuptools | 77.0.3+ ✅ |
+| flit-core | 3.12+ ✅ |
+| pdm-backend | 2.4.0+ ✅ |
+| poetry-core | ❌ Not yet |
+
+---
+
+### 🔍 Discovery and Classification
+
+#### 🏷️ **keywords**
+Help users find your project through search.
+
+```toml
+[project]
+keywords = ["web", "api", "framework", "async", "fast"]
+```
+
+#### 📊 **classifiers**
+PyPI classifiers for categorizing your project.
+
+```toml
+[project]
+classifiers = [
+    # Development Status
+    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
+    
+    # Intended Audience
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    
+    # Topic
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    
+    # License
+    "License :: OSI Approved :: MIT License",
+    
+    # Python Versions
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    
+    # Operating System
+    "Operating System :: OS Independent",
+    
+    # Special classifiers
+    "Private :: Do Not Upload",  # Prevents PyPI upload
+]
+```
+
+#### 🔗 **urls**
+Important project links.
+
+```toml
+[project.urls]
+Homepage = "https://myproject.com"
+Documentation = "https://docs.myproject.com"
+Repository = "https://github.com/user/myproject"
+"Bug Tracker" = "https://github.com/user/myproject/issues"
+Changelog = "https://github.com/user/myproject/blob/main/CHANGELOG.md"
+"Funding" = "https://github.com/sponsors/user"
+"Say Thanks!" = "https://saythanks.io/to/user"
+```
+
+**Well-known URL Labels:**
+- `Homepage`, `Home`, `Home-page`
+- `Download`, `Download-URL`
+- `Documentation`, `Docs`
+- `Repository`, `Source`, `Source-Code`
+- `Bug-Tracker`, `Issue-Tracker`
+- `Changelog`, `Release-Notes`
+- `Funding`, `Donate`, `Sponsor`
+
+---
+
+### 🖥️ Executable Scripts
+
+#### 📱 **scripts**
+Command-line tools (console scripts).
+
+```toml
+[project.scripts]
+myproject = "myproject.cli:main"
+myproject-dev = "myproject.dev:dev_main"
+```
+
+After installation:
+```bash
+myproject --help          # Runs myproject.cli:main()
+myproject-dev --serve     # Runs myproject.dev:dev_main()
+```
+
+#### 🪟 **gui-scripts**
+GUI applications (Windows-specific behavior).
+
+```toml
+[project.gui-scripts]
+myproject-gui = "myproject.gui:gui_main"
+```
+
+**Differences:**
+- **Console scripts:** Open terminal on Windows
+- **GUI scripts:** Run in background on Windows (no terminal popup)
+- **Linux/macOS:** No difference between the two
+
+---
+
+### 🔌 Advanced: Entry Points
+
+Create plugins or extensions for other tools.
+
+```toml
+[project.entry-points."pytest11"]
+myplugin = "myproject.pytest_plugin"
+
+[project.entry-points."myframework.plugins"]
+auth = "myproject.auth:AuthPlugin"
+cache = "myproject.cache:CachePlugin"
+```
+
+---
+
+## 🛠️ Tool Configuration
+
+The `[tool]` table contains tool-specific configurations.
+
+### 🎨 **Black** (Code formatter)
+```toml
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  migrations
+  | .venv
+)/
+'''
+```
+
+### 📐 **isort** (Import sorter)
+```toml
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+```
+
+### 🔍 **mypy** (Type checker)
+```toml
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+```
+
+### 🧪 **pytest** (Testing framework)
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--cov=myproject",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+```
+
+### 📊 **coverage.py** (Code coverage)
+```toml
+[tool.coverage.run]
+source = ["myproject"]
+omit = ["tests/*", "migrations/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+```
+
+---
+
+## 📄 Complete Example Template
+
+Here's a comprehensive `pyproject.toml` example:
+
+```toml
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
-setuptools
-
-Flit
-
-PDM
-Static vs. dynamic metadata
-The rest of this guide is devoted to the [project] table.
-
-Most of the time, you will directly write the value of a [project] field. For example: requires-python = ">= 3.8", or version = "1.0".
-
-However, in some cases, it is useful to let your build backend compute the metadata for you. For example: many build backends can read the version from a __version__ attribute in your code, a Git tag, or similar. In such cases, you should mark the field as dynamic using, e.g.,
-
 [project]
-dynamic = ["version"]
-When a field is dynamic, it is the build backend’s responsibility to fill it. Consult your build backend’s documentation to learn how it does it.
-
-Basic information
-name
-Put the name of your project on PyPI. This field is required and is the only field that cannot be marked as dynamic.
-
-[project]
-name = "spam-eggs"
-The project name must consist of ASCII letters, digits, underscores “_”, hyphens “-” and periods “.”. It must not start or end with an underscore, hyphen or period.
-
-Comparison of project names is case insensitive and treats arbitrarily long runs of underscores, hyphens, and/or periods as equal. For example, if you register a project named cool-stuff, users will be able to download it or declare a dependency on it using any of the following spellings: Cool-Stuff, cool.stuff, COOL_STUFF, CoOl__-.-__sTuFF.
-
-version
-Put the version of your project.
-
-[project]
-version = "2020.0.0"
-Some more complicated version specifiers like 2020.0.0a1 (for an alpha release) are possible; see the specification for full details.
-
-This field is required, although it is often marked as dynamic using
-
-[project]
-dynamic = ["version"]
-This allows use cases such as filling the version from a __version__ attribute or a Git tag. Consult the Single-sourcing the Project Version discussion for more details.
-
-Dependencies and requirements
-dependencies/optional-dependencies
-If your project has dependencies, list them like this:
-
-[project]
-dependencies = [
-  "httpx",
-  "gidgethub[httpx]>4.0.0",
-  "django>2.1; os_name != 'nt'",
-  "django>2.0; os_name == 'nt'",
-]
-See Dependency specifiers for the full syntax you can use to constrain versions.
-
-You may want to make some of your dependencies optional, if they are only needed for a specific feature of your package. In that case, put them in optional-dependencies.
-
-[project.optional-dependencies]
-gui = ["PyQt5"]
-cli = [
-  "rich",
-  "click",
-]
-Each of the keys defines a “packaging extra”. In the example above, one could use, e.g., pip install your-project-name[gui] to install your project with GUI support, adding the PyQt5 dependency.
-
-requires-python
-This lets you declare the minimum version of Python that you support [1].
-
-[project]
-requires-python = ">= 3.8"
-Creating executable scripts
-To install a command as part of your package, declare it in the [project.scripts] table.
-
-[project.scripts]
-spam-cli = "spam:main_cli"
-In this example, after installing your project, a spam-cli command will be available. Executing this command will do the equivalent of import sys; from spam import main_cli; sys.exit(main_cli()).
-
-On Windows, scripts packaged this way need a terminal, so if you launch them from within a graphical application, they will make a terminal pop up. To prevent this from happening, use the [project.gui-scripts] table instead of [project.scripts].
-
-[project.gui-scripts]
-spam-gui = "spam:main_gui"
-In that case, launching your script from the command line will give back control immediately, leaving the script to run in the background.
-
-The difference between [project.scripts] and [project.gui-scripts] is only relevant on Windows.
-
-About your project
-authors/maintainers
-Both of these fields contain lists of people identified by a name and/or an email address.
-
-[project]
-authors = [
-  {name = "Pradyun Gedam", email = "pradyun@example.com"},
-  {name = "Tzu-Ping Chung", email = "tzu-ping@example.com"},
-  {name = "Another person"},
-  {email = "different.person@example.com"},
-]
-maintainers = [
-  {name = "Brett Cannon", email = "brett@example.com"}
-]
-description
-This should be a one-line description of your project, to show as the “headline” of your project page on PyPI (example), and other places such as lists of search results (example).
-
-[project]
-description = "Lovely Spam! Wonderful Spam!"
-readme
-This is a longer description of your project, to display on your project page on PyPI. Typically, your project will have a README.md or README.rst file and you just put its file name here.
-
-[project]
+name = "awesome-web-api"
+version = "1.2.0"
+description = "A fast and intuitive web framework for building APIs"
 readme = "README.md"
-The README’s format is auto-detected from the extension:
-
-README.md → GitHub-flavored Markdown,
-
-README.rst → reStructuredText (without Sphinx extensions).
-
-You can also specify the format explicitly, like this:
-
-[project]
-readme = {file = "README.txt", content-type = "text/markdown"}
-# or
-readme = {file = "README.txt", content-type = "text/x-rst"}
-license and license-files
-As per PEP 639 licenses should be declared with two fields:
-
-license is an SPDX license expression consisting of one or more license identifiers.
-
-license-files is a list of license file glob patterns.
-
-A previous PEP had specified license to be a table with a file or a text key, this format is now deprecated. Most build backends now support the new format as shown in the following table.
-
-build backend versions that introduced PEP 639 support
-hatchling
-
-setuptools
-
-flit-core [2]
-
-pdm-backend
-
-poetry-core
-
-1.27.0
-
-77.0.3
-
-3.12
-
-2.4.0
-
-not yet
-
-license
-The new format for license is a valid SPDX license expression consisting of one or more license identifiers. The full license list is available at the SPDX license list page. The supported list version is 3.17 or any later compatible one.
-
-[project]
-license = "GPL-3.0-or-later"
-# or
-license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
-Note
-
-If you get a build error that license should be a dict/table, your build backend doesn’t yet support the new format. See the above section for more context. The now deprecated format is described in PEP 621.
-
-As a general rule, it is a good idea to use a standard, well-known license, both to avoid confusion and because some organizations avoid software whose license is unapproved.
-
-If your project is licensed with a license that doesn’t have an existing SPDX identifier, you can create a custom one in format LicenseRef-[idstring]. The custom identifiers must follow the SPDX specification, clause 10.1 of the version 2.2 or any later compatible one.
-
-[project]
-license = "LicenseRef-My-Custom-License"
-license-files
-This is a list of license files and files containing other legal information you want to distribute with your package.
-
-[project]
-license-files = ["LICEN[CS]E*", "vendored/licenses/*.txt", "AUTHORS.md"]
-The glob patterns must follow the specification:
-
-Alphanumeric characters, underscores (_), hyphens (-) and dots (.) will be matched verbatim.
-
-Special characters: *, ?, ** and character ranges: [] are supported.
-
-Path delimiters must be the forward slash character (/).
-
-Patterns are relative to the directory containing pyproject.toml, and thus may not start with a slash character.
-
-Parent directory indicators (..) must not be used.
-
-Each glob must match at least one file.
-
-Literal paths are valid globs. Any characters or character sequences not covered by this specification are invalid.
-
-keywords
-This will help PyPI’s search box to suggest your project when people search for these keywords.
-
-[project]
-keywords = ["egg", "bacon", "sausage", "tomatoes", "Lobster Thermidor"]
-classifiers
-A list of PyPI classifiers that apply to your project. Check the full list of possibilities.
-
-classifiers = [
-  # How mature is this project? Common values are
-  #   3 - Alpha
-  #   4 - Beta
-  #   5 - Production/Stable
-  "Development Status :: 4 - Beta",
-
-  # Indicate who your project is intended for
-  "Intended Audience :: Developers",
-  "Topic :: Software Development :: Build Tools",
-
-  # Specify the Python versions you support here.
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.6",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-]
-Although the list of classifiers is often used to declare what Python versions a project supports, this information is only used for searching and browsing projects on PyPI, not for installing projects. To actually restrict what Python versions a project can be installed on, use the requires-python argument.
-
-To prevent a package from being uploaded to PyPI, use the special Private :: Do Not Upload classifier. PyPI will always reject packages with classifiers beginning with Private ::.
-
-urls
-A list of URLs associated with your project, displayed on the left sidebar of your PyPI project page.
-
-Note
-
-See Well-known labels for a listing of labels that PyPI and other packaging tools are specifically aware of, and PyPI’s project metadata docs for PyPI-specific URL processing.
-
-[project.urls]
-Homepage = "https://example.com"
-Documentation = "https://readthedocs.org"
-Repository = "https://github.com/me/spam.git"
-Issues = "https://github.com/me/spam/issues"
-Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
-Note that if the label contains spaces, it needs to be quoted, e.g., Website = "https://example.com" but "Official Website" = "https://example.com".
-
-Users are advised to use Well-known labels for their project URLs where appropriate, since consumers of metadata (like package indices) can specialize their presentation.
-
-For example in the following metadata, neither MyHomepage nor "Download Link" is a well-known label, so they will be rendered verbatim:
-
-[project.urls]
-MyHomepage = "https://example.com"
-"Download Link" = "https://example.com/abc.tar.gz"
-Whereas in this metadata HomePage and DOWNLOAD both have well-known equivalents (homepage and download), and can be presented with those semantics in mind (the project’s home page and its external download location, respectively).
-
-[project.urls]
-HomePage = "https://example.com"
-DOWNLOAD = "https://example.com/abc.tar.gz"
-Advanced plugins
-Some packages can be extended through plugins. Examples include Pytest and Pygments. To create such a plugin, you need to declare it in a subtable of [project.entry-points] like this:
-
-[project.entry-points."spam.magical"]
-tomatoes = "spam:main_tomatoes"
-See the Plugin guide for more information.
-
-A full example
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = "spam-eggs"
-version = "2020.0.0"
-dependencies = [
-  "httpx",
-  "gidgethub[httpx]>4.0.0",
-  "django>2.1; os_name != 'nt'",
-  "django>2.0; os_name == 'nt'",
-]
-requires-python = ">=3.8"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-  {name = "Pradyun Gedam", email = "pradyun@example.com"},
-  {name = "Tzu-Ping Chung", email = "tzu-ping@example.com"},
-  {name = "Another person"},
-  {email = "different.person@example.com"},
+    {name = "Alice Developer", email = "alice@company.com"},
+    {name = "Bob Maintainer", email = "bob@company.com"},
 ]
 maintainers = [
-  {name = "Brett Cannon", email = "brett@example.com"}
+    {name = "Current Team", email = "team@company.com"}
 ]
-description = "Lovely Spam! Wonderful Spam!"
-readme = "README.rst"
-license = "MIT"
-license-files = ["LICEN[CS]E.*"]
-keywords = ["egg", "bacon", "sausage", "tomatoes", "Lobster Thermidor"]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python"
+requires-python = ">= 3.8"
+keywords = ["web", "api", "framework", "async", "fast"]
+
+dependencies = [
+    "fastapi >= 0.104.0",
+    "uvicorn[standard] >= 0.24.0",
+    "pydantic >= 2.0.0, < 3.0.0",
+    "sqlalchemy >= 2.0.0",
+    "alembic >= 1.12.0",
+    "python-dotenv >= 1.0.0",
 ]
 
 [project.optional-dependencies]
-gui = ["PyQt5"]
-cli = [
-  "rich",
-  "click",
+# Development dependencies
+dev = [
+    "pytest >= 7.4.0",
+    "pytest-cov >= 4.1.0",
+    "pytest-asyncio >= 0.21.0",
+    "black >= 23.0.0",
+    "isort >= 5.12.0",
+    "mypy >= 1.5.0",
+    "ruff >= 0.1.0",
+    "pre-commit >= 3.4.0",
 ]
 
+# Documentation dependencies
+docs = [
+    "mkdocs >= 1.5.0",
+    "mkdocs-material >= 9.4.0",
+    "mkdocstrings[python] >= 0.24.0",
+]
+
+# Production extras
+redis = ["redis >= 5.0.0"]
+postgresql = ["asyncpg >= 0.28.0"]
+monitoring = ["prometheus-client >= 0.17.0", "sentry-sdk >= 1.30.0"]
+
+# Meta extras
+all = ["awesome-web-api[redis,postgresql,monitoring]"]
+
 [project.urls]
-Homepage = "https://example.com"
-Documentation = "https://readthedocs.org"
-Repository = "https://github.com/me/spam.git"
-"Bug Tracker" = "https://github.com/me/spam/issues"
-Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+Homepage = "https://awesome-api.com"
+Documentation = "https://docs.awesome-api.com"
+Repository = "https://github.com/company/awesome-web-api"
+"Bug Tracker" = "https://github.com/company/awesome-web-api/issues"
+Changelog = "https://github.com/company/awesome-web-api/blob/main/CHANGELOG.md"
 
 [project.scripts]
-spam-cli = "spam:main_cli"
+awesome-api = "awesome_web_api.cli:main"
+awesome-migrate = "awesome_web_api.migration:migrate_cli"
 
 [project.gui-scripts]
-spam-gui = "spam:main_gui"
+awesome-api-gui = "awesome_web_api.gui:gui_main"
 
-[project.entry-points."spam.magical"]
-tomatoes = "spam:main_tomatoes"
-[1]
-Think twice before applying an upper bound like requires-python = "<= 3.10" here. This blog post contains some information regarding possible problems.
+[project.entry-points."awesome_api.plugins"]
+auth = "awesome_web_api.auth:AuthPlugin"
+cache = "awesome_web_api.cache:CachePlugin"
 
-[2]
-flit-core does not yet support WITH in SPDX license expressions.
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
 
-Next
-Packaging and distributing projects
-Previous
-Building and Publishing
-Copyright © 2013–2020, PyPA
-Made with Sphinx and @pradyunsg's Furo
-Last updated on Jun 19, 2025
+# Tool configurations
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--strict-markers",
+    "--cov=awesome_web_api",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = ["awesome_web_api"]
+omit = ["tests/*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "W", "C", "N"]
+```
+
+---
+
+## 💡 Best Practices
+
+### ✅ **Do This:**
+
+1. **Always include `[build-system]`** - Required for modern Python packaging
+2. **Use semantic versioning** - `MAJOR.MINOR.PATCH` format
+3. **Specify Python version range** - Use `requires-python` appropriately
+4. **Pin important dependencies** - Avoid breaking changes
+5. **Use optional-dependencies** - Keep core lightweight
+6. **Include comprehensive metadata** - Help users discover your project
+7. **Add tool configurations** - Standardize your development workflow
+8. **Use well-known URL labels** - Better integration with tools
+
+### ❌ **Avoid This:**
+
+1. **Don't omit `[build-system]`** - Your project won't build properly
+2. **Don't use overly strict version pins** - `package==1.0.0` unless necessary
+3. **Don't include development deps in main `dependencies`** - Use `optional-dependencies`
+4. **Don't forget `requires-python`** - Prevents installation on incompatible Python versions
+5. **Don't use deprecated license format** - Use SPDX identifiers
+
+### 🔄 **Migration from setup.py/setup.cfg:**
+
+**Old setup.py:**
+```python
+from setuptools import setup
+
+setup(
+    name="myproject",
+    version="1.0.0",
+    install_requires=["requests"],
+)
+```
+
+**New pyproject.toml:**
+```toml
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myproject"
+version = "1.0.0"
+dependencies = ["requests"]
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Common Issues:
+
+**Error: "No module named 'build'"**
+```bash
+pip install build
+```
+
+**Error: "Invalid build-backend"**
+- Check your `build-backend` spelling
+- Ensure the backend package is in `requires`
+
+**Error: "License should be a dict/table"**
+- Your build backend doesn't support PEP 639
+- Update your build backend or use old format
+
+**Dynamic version not working:**
+```toml
+[project]
+dynamic = ["version"]
+
+# For setuptools, add:
+[tool.setuptools.dynamic]
+version = {attr = "mypackage.__version__"}
+
+# For hatchling, add:
+[tool.hatch.version]
+path = "mypackage/__init__.py"
+```
+
+---
+
+## 📚 Additional Resources
+
+- 📖 [Python Packaging User Guide](https://packaging.python.org/)
+- 🔧 [PEP 621 - Storing project metadata in pyproject.toml](https://peps.python.org/pep-0621/)
+- ⚖️ [PEP 639 - Improving License Clarity with Better Package Metadata](https://peps.python.org/pep-0639/)
+- 🏗️ [Build backends comparison](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
+- 🔍 [PyPI Classifiers](https://pypi.org/classifiers/)
+- 📜 [SPDX License List](https://spdx.org/licenses/)
+
+---
+
+*This guide follows the latest Python packaging standards and best practices as of 2024. Always refer to the official documentation for the most up-to-date information.*
