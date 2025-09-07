@@ -481,6 +481,71 @@ You now have the **IDEAL Python development setup**:
 
 **Your setup now follows industry best practices and gives you the best development experience possible!** 🎉
 
+## Cross-Platform Development 🌍
+
+### 🐧 **Working with Linux Systems:**
+
+If you also work on Linux systems, be aware of platform differences:
+
+**Linux-Specific Issues:**
+- **EXTERNALLY-MANAGED error:** Ubuntu/Debian systems block `pip` by default
+- **Solution documented:** See `PYTHON_LINUX.md` for the complete fix
+- **Different approach needed:** Linux requires removing restriction file
+
+**macOS vs Linux Python Management:**
+
+| Aspect | macOS (This Guide) | Linux (Ubuntu/Debian) |
+|---|---|---|
+| **System Python** | `/usr/bin/python3` (3.9.6) | `/usr/bin/python3` (varies) |
+| **Package Manager** | Homebrew + pip work together | apt conflicts with pip |
+| **Default pip** | Works normally | Blocked by EXTERNALLY-MANAGED |
+| **Best Practice** | Use Homebrew versions | Remove restriction file |
+| **Virtual Environments** | Optional, Poetry recommended | Optional after fix |
+
+**Cross-Platform Project Setup:**
+```bash
+# Works on both macOS and Linux (after our fixes)
+pip install package-name        # Standard approach
+poetry install                  # For this agent-catalog project
+python3 -m venv env            # Virtual env if needed
+```
+
+### 🔄 **Switching Between Systems:**
+
+Your agent-catalog project works identically on both platforms:
+```bash
+# Same commands work everywhere
+poetry shell
+poetry run python script.py
+poetry add new-package
+```
+
+### 📋 **Cross-Platform Checklist:**
+
+- ✅ **macOS:** Modern Python as default (this guide)
+- ✅ **Linux:** EXTERNALLY-MANAGED restriction removed (see PYTHON_LINUX.md)
+- ✅ **Both:** Poetry working for agent-catalog project
+- ✅ **Both:** Standard pip workflow restored
+- ✅ **Both:** Professional development environment
+
+## Platform-Specific Quick References
+
+### 🍎 **macOS Quick Commands:**
+```bash
+python3 --version              # Python 3.13.5 (Homebrew default)
+which python3                  # /opt/homebrew/bin/python3
+brew install python@3.12       # Install specific version
+poetry shell                   # Project environment
+```
+
+### 🐧 **Linux Quick Commands:**
+```bash
+python3 --version              # System Python (varies by distro)
+which python3                  # /usr/bin/python3  
+sudo apt install python3-pip   # Install pip if missing
+poetry shell                   # Project environment
+```
+
 ---
 
-_This is a professional-grade Python environment that many senior developers would be proud to have._
+_These guides provide professional-grade Python environments for both macOS and Linux that many senior developers would be proud to have._
