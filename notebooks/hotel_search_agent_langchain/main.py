@@ -7,7 +7,6 @@ with LangChain and Couchbase vector search for hotel booking assistance.
 Uses real hotel data from travel-sample.inventory.hotel collection.
 """
 
-import base64
 import json
 import logging
 import os
@@ -64,26 +63,7 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 # Load environment variables
 dotenv.load_dotenv(override=True)
 
-# Generate Capella AI API keys if endpoint is provided and no direct API keys exist
-if (
-    os.getenv("CAPELLA_API_ENDPOINT")
-    and os.getenv("CB_USERNAME")
-    and os.getenv("CB_PASSWORD")
-):
-    # Generate embeddings API key if not provided
-    if not os.getenv("CAPELLA_API_EMBEDDINGS_KEY"):
-        logger.info("Generating Capella embeddings API key from username:password")
-        os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = base64.b64encode(
-            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
-        ).decode("utf-8")
-
-    # Generate LLM API key if not provided
-    if not os.getenv("CAPELLA_API_LLM_KEY"):
-        logger.info("Generating Capella LLM API key from username:password")
-        os.environ["CAPELLA_API_LLM_KEY"] = base64.b64encode(
-            f"{os.getenv('CB_USERNAME')}:{os.getenv('CB_PASSWORD')}".encode("utf-8")
-        ).decode("utf-8")
-
+# Priority 1 setup uses direct API keys from environment only
 if os.getenv("CAPELLA_API_EMBEDDINGS_KEY") or os.getenv("CAPELLA_API_LLM_KEY"):
     logger.info("Using direct Capella API keys from environment")
 
@@ -93,42 +73,19 @@ DEFAULT_SCOPE = "agentc_data"
 DEFAULT_COLLECTION = "hotel_data"
 DEFAULT_INDEX = "hotel_data_index"
 
-DEFAULT_NVIDIA_API_EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5"
-DEFAULT_NVIDIA_API_LLM_MODEL = "meta/llama-4-maverick-17b-128e-instruct"
 
 
-def setup_capella_ai_config():
-    """Setup Capella AI configuration - requires environment variables to be set."""
-    # Verify required environment variables are set (no defaults)
-    required_capella_vars = [
-        "CB_USERNAME",
-        "CB_PASSWORD",
-        "CAPELLA_API_ENDPOINT",
-        "CAPELLA_API_EMBEDDING_MODEL",
-        "CAPELLA_API_LLM_MODEL",
-    ]
-    missing_vars = [var for var in required_capella_vars if not os.getenv(var)]
-    if missing_vars:
-        raise ValueError(
-            f"Missing required Capella AI environment variables: {missing_vars}"
-        )
-
-    return {
-        "endpoint": os.getenv("CAPELLA_API_ENDPOINT"),
-        "embedding_model": os.getenv("CAPELLA_API_EMBEDDING_MODEL"),
-        "llm_model": os.getenv("CAPELLA_API_LLM_MODEL"),
-    }
 
 
-# Simplified setup functions using shared module
+# Simplified setup functions using shared Priority 1 AI services
 def setup_embeddings_service(input_type="query"):
-    """Setup embeddings service using shared 4-case priority ladder."""
+    """Setup embeddings service using Priority 1 (OpenAI wrappers + Capella)."""
     embeddings, _ = setup_ai_services(framework="langchain")
     return embeddings
 
 
 def setup_llm_service(application_span=None):
-    """Setup LLM service using shared 4-case priority ladder."""
+    """Setup LLM service using Priority 1 (OpenAI wrappers + Capella)."""
     callbacks = (
         [agentc_langchain.chat.Callback(span=application_span)]
         if application_span
@@ -163,7 +120,7 @@ def setup_hotel_support_agent():
         couchbase_client.setup_collection(
             os.getenv("CB_SCOPE", DEFAULT_SCOPE),
             os.getenv("CB_COLLECTION", DEFAULT_COLLECTION),
-            clear_existing_data=False,  # Let data loader decide based on count check
+            clear_existing_data=False,  # Keep existing data, let data loader handle it
         )
 
         # Setup vector index

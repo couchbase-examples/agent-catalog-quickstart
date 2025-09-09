@@ -1,7 +1,7 @@
 [project]
 name = "hotel-search-agent"
 version = "0.1.0"
-description = "A hotel search agent using Couchbase."
+description = "Hotel search agent with Agent Catalog integration, LangChain, and Couchbase vector store"
 authors = [
     {name = "Agent Catalog Team"}
 ]
@@ -9,40 +9,56 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-    # Core dependencies
+    # Agent Catalog dependencies
+    "agentc @ ../../agent-catalog/libs/agentc",
+    "agentc-core @ ../../agent-catalog/libs/agentc_core",
+    "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
+    
+    # Observability and monitoring
+    "arize>=7.48.1,<8.0.0",
+    "arize-otel>=0.9.0,<1.0.0",
+    "arize-phoenix[evals]>=11.0.0",
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
+    
+    # CLI and utilities
+    "nest-asyncio>=1.6.0,<2.0.0",
+    
+    # Data processing
+    "pandas>=2.0.0,<3.0.0",
+    
+    # LangChain ecosystem
+    "langchain-couchbase>=0.2.4,<=0.4.0",
+    "langchain-openai>=0.3.11,<0.4.0",
+    "langchain-nvidia-ai-endpoints>=0.3.13,<0.4.0",
+    
+    # Core Python libraries
     "pydantic>=2.0.0,<3.0.0",
     "python-dotenv>=1.0.0,<2.0.0",
-    "pandas>=2.0.0,<3.0.0",
-    "tqdm>=4.64.0,<5.0.0",
-    "nest-asyncio>=1.5.0,<2.0.0",
-
-    # Langchain and related integrations
-    "langchain-couchbase>=0.4.0",
-    "langchain-openai>=0.3.13,<0.4.0",
-    "langchain-nvidia-ai-endpoints>=0.3.0,<0.4.0",
-
-    # Agent Catalog
-    "agentc @ ../../agent-catalog/libs/agentc",
-    "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
-
-    # Arize and related instrumentation
-    "arize>=5.0.0",
-    "arize-otel>=0.7.0,<1.0.0",
-    "arize-phoenix[evals]>=11.0.0",
-    "openinference-instrumentation-openai>=0.1.18,<0.2.0",
-    "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0,<8.0.0",
-    "black>=23.0.0,<24.0.0",
-    "ruff>=0.1.0,<0.2.0",
+    
+    # HTTP and utilities
+    "requests>=2.28.0,<3.0.0",
+    "httpx>=0.24.0,<1.0.0",
 ]
 
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "*"
+jupyter = "*"
+pytest = "*"
+black = "*"
+ruff = "*"
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
