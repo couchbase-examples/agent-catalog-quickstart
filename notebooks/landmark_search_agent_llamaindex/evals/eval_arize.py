@@ -54,10 +54,6 @@ try:
     import phoenix as px
     from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
     from phoenix.evals import (
-        HALLUCINATION_PROMPT_RAILS_MAP,
-        HALLUCINATION_PROMPT_TEMPLATE,
-        QA_PROMPT_RAILS_MAP,
-        QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
         TOXICITY_PROMPT_RAILS_MAP,
