@@ -34,6 +34,7 @@ if project_root and project_root not in sys.path:
 
 # Now import agentc and other modules after path is set
 import agentc
+import agentc_llamaindex.chat
 from shared.agent_setup import setup_ai_services, setup_environment, test_capella_connectivity
 from shared.couchbase_client import create_couchbase_client
 
@@ -122,38 +123,29 @@ def setup_environment():
 
 
 def create_llamaindex_agent(catalog, span):
-    """Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog."""
+    """Create LlamaIndex ReAct agent with tools from Agent Catalog prompt."""
     try:
         from llama_index.core.agent import ReActAgent
         from llama_index.core.tools import FunctionTool
 
-        # Get tools from Agent Catalog
-        tools = []
-
-        # Search landmarks tool
-        search_tool_result = catalog.find("tool", name="search_landmarks")
-        if search_tool_result:
-            tools.append(
-                FunctionTool.from_defaults(
-                    fn=search_tool_result.func,
-                    name="search_landmarks",
-                    description=getattr(search_tool_result.meta, "description", None)
-                    or "Search for landmark information using semantic vector search. Use for finding attractions, monuments, museums, parks, and other points of interest.",
-                )
-            )
-            logger.info("Loaded search_landmarks tool from AgentC")
-
-        if not tools:
-            logger.warning("No tools found in Agent Catalog")
-        else:
-            logger.info(f"Loaded {len(tools)} tools from Agent Catalog")
-
-        # Get prompt from Agent Catalog - REQUIRED, no fallbacks
+        # Get prompt and tools from Agent Catalog
         prompt_result = catalog.find("prompt", name="landmark_search_assistant")
         if not prompt_result:
             raise RuntimeError("Prompt 'landmark_search_assistant' not found in Agent Catalog")
 
-        # Try different possible attributes for the prompt content
+        # Convert Agent Catalog tools to LlamaIndex tools
+        tools = []
+        for catalog_tool in prompt_result.tools:
+            llamaindex_tool = FunctionTool.from_defaults(
+                fn=catalog_tool.func,
+                name=catalog_tool.meta.name,
+                description=catalog_tool.meta.description,
+            )
+            tools.append(llamaindex_tool)
+
+        logger.info(f"Loaded {len(tools)} tools from Agent Catalog prompt")
+
+        # Get prompt content
         system_prompt = (
             getattr(prompt_result, "content", None)
             or getattr(prompt_result, "template", None)
@@ -161,7 +153,7 @@ def create_llamaindex_agent(catalog, span):
         )
         if not system_prompt:
             raise RuntimeError(
-                "Could not access prompt content from AgentC - prompt content is None or empty"
+                "Could not access prompt content from Agent Catalog - prompt content is None or empty"
             )
 
         logger.info("Loaded system prompt from Agent Catalog")
@@ -195,7 +187,14 @@ def setup_landmark_agent():
     client.connect()
 
     # Setup LLM and embeddings using shared module
-    embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1, application_span=span)
+    embeddings, llm = setup_ai_services(framework="llamaindex", temperature=0.1)
+
+    # Add Agent Catalog callback for proper logging integration
+    callback = agentc_llamaindex.chat.Callback(span=span)
+    if llm.callback_manager is not None:
+        llm.callback_manager.add_handler(callback)
+    else:
+        logger.warning("LLM callback_manager is None, cannot add Agent Catalog callback")
 
     # Set global LlamaIndex settings
     Settings.llm = llm
