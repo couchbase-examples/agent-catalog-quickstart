@@ -5,8 +5,8 @@
 import os
 
 # --- Credentials (Paste from your Capella Account) ---
-CAPELLA_API_SECRET = "WTQ2SGUyM0RWSmpWUEgxdUZZSUJTdnlPTThPZmNVSzA6RHN3YTZESjV2JEJhM3JheEwkaE5XMnlhV2JHK1NWa35LbiFoXjRFdGFwP2N5bUN5eWpaRzY4OD8hcEV0eW5aIw=="
-ORGANIZATION_ID = "7f838922-096f-48bd-acd9-a6087f707418"
+CAPELLA_API_SECRET = "<YOUR_CAPELLA_API_SECRET_HERE>"
+ORGANIZATION_ID = "<YOUR_ORGANIZATION_ID_HERE>"
 
 # --- Configuration for this Tutorial ---
 # The notebook will automatically find or create a project with this name.
