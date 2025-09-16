@@ -19,7 +19,7 @@ from typing import Optional
 
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.exceptions import KeyspaceNotFoundException
+from couchbase.exceptions import KeyspaceNotFoundException, InternalServerFailureException
 from couchbase.management.buckets import BucketType, CreateBucketSettings
 from couchbase.management.search import SearchIndex
 from couchbase.options import ClusterOptions
@@ -296,10 +296,18 @@ class CouchbaseClient:
                 raise RuntimeError("❌ Bucket not initialized. Call setup_bucket first.")
 
             scope_index_manager = self.bucket.scope(scope_name).search_indexes()
-            existing_indexes = scope_index_manager.get_all_indexes()
             index_name = index_definition["name"]
 
-            if index_name not in [index.name for index in existing_indexes]:
+            # Try to get existing indexes, but handle case when no indexes exist yet
+            try:
+                existing_indexes = scope_index_manager.get_all_indexes()
+                index_exists = index_name in [index.name for index in existing_indexes]
+            except InternalServerFailureException as get_error:
+                # When no indexes exist, get_all_indexes() throws InternalServerFailureException
+                logger.info(f"🔍 No existing indexes found (empty scope): {get_error}")
+                index_exists = False
+
+            if not index_exists:
                 logger.info(f"🔧 Creating vector search index '{index_name}'...")
                 search_index = SearchIndex.from_json(index_definition)
                 scope_index_manager.upsert_index(search_index)
