@@ -13,12 +13,16 @@ ORGANIZATION_ID = os.getenv("ORGANIZATION_ID")
 PROJECT_NAME = os.getenv("PROJECT_NAME", "Agent-Hub-Project")
 CLUSTER_NAME = os.getenv("CLUSTER_NAME", "agent-hub-flight-cluster")
 DB_USERNAME = os.getenv("DB_USERNAME", "agent_app_user")
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "nvidia/llama-3.2-nv-embedqa-1b-v2")
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Snowflake/snowflake-arctic-embed-l-v2.0")
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 
 # Validate required environment variables
-if not CAPELLA_API_SECRET or not ORGANIZATION_ID:
-    raise ValueError("Missing required environment variables: CAPELLA_API_SECRET, ORGANIZATION_ID")
+if not CAPELLA_API_SECRET:
+    raise ValueError("Missing required environment variable: CAPELLA_API_SECRET")
+
+# Allow auto-detection of organization ID if not provided
+if not ORGANIZATION_ID:
+    print("No ORGANIZATION_ID provided, will auto-detect from first organization...")
 
 
 import httpx
@@ -44,17 +48,35 @@ def get_current_ip():
         pass
     return "Unable to determine IP"
 
-def test_api_connection():
+def get_organization_id():
+    """Get organization ID - either from env var or auto-detect first organization."""
+    if ORGANIZATION_ID:
+        return ORGANIZATION_ID
+
+    try:
+        with httpx.Client(headers=HEADERS, timeout=10) as client:
+            response = client.get(f"{API_BASE_URL}/v4/organizations")
+        if response.status_code == 200:
+            orgs = response.json().get("data", [])
+            if orgs:
+                auto_org_id = orgs[0]["id"]
+                print(f"   Auto-detected Organization ID: {auto_org_id}")
+                return auto_org_id
+        raise Exception(f"Failed to get organizations. Status: {response.status_code}")
+    except Exception as e:
+        raise Exception(f"Failed to auto-detect organization ID: {e}")
+
+def test_api_connection(org_id):
     """Test API connection and provide debugging info."""
     print("🔍 Testing API connection...")
     print(f"   Current IP: {get_current_ip()}")
     print(f"   API Base URL: {API_BASE_URL}")
-    print(f"   Organization ID: {ORGANIZATION_ID}")
+    print(f"   Organization ID: {org_id}")
 
     # Test basic API connectivity
     try:
         with httpx.Client(headers=HEADERS, timeout=10) as client:
-            response = client.get(f"{API_BASE_URL}/v4/organizations/{ORGANIZATION_ID}")
+            response = client.get(f"{API_BASE_URL}/v4/organizations/{org_id}")
         print(f"   API Response Status: {response.status_code}")
         if response.status_code == 401:
             print("   ❌ Authentication failed - check API key and IP allowlist")
@@ -115,33 +137,13 @@ def get_or_create_project(org_id, project_name):
 
 def create_free_tier_cluster(org_id, proj_id, name):
     """Creates a new free tier cluster using the Management API."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters"
+    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/freeTier"
     payload = {
         "name": name,
-        "description": "Cluster for Agent Application Hub Tutorial",
-        "cloudProvider": "aws",
-        "couchbaseServer": {
-            "version": "7.6"
-        },
-        "serviceGroups": [
-            {
-                "node": {
-                    "compute": "t3.medium",
-                    "disk": {
-                        "storage": 50,
-                        "type": "gp3"
-                    }
-                },
-                "numOfNodes": 3,
-                "services": ["data", "query", "index", "search"]
-            }
-        ],
-        "availability": {
-            "type": "single"
-        },
-        "support": {
-            "plan": "basic",
-            "timezone": "PT"
+        "cloudProvider": {
+            "type": "aws",
+            "region": "us-east-2",
+            "cidr": "10.1.30.0/23"
         }
     }
     with httpx.Client(headers=HEADERS, timeout=30) as client:
@@ -166,18 +168,9 @@ def create_free_tier_cluster(org_id, proj_id, name):
 
 def load_travel_sample(org_id, proj_id, cluster_id):
     """Loads the travel-sample bucket into the specified cluster."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/buckets"
+    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/sampleBuckets"
     payload = {
-        "name": "travel-sample",
-        "type": "couchbase",
-        "storageBackend": "couchstore",
-        "memoryAllocationInMb": 1024,
-        "bucketConflictResolution": "seqno",
-        "durabilityLevel": "none",
-        "replicas": 1,
-        "flush": False,
-        "timeToLiveInSeconds": 0,
-        "evictionPolicy": "valueOnly"
+        "name": "travel-sample"
     }
     with httpx.Client(headers=HEADERS, timeout=60) as client:
         response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
@@ -199,11 +192,24 @@ def load_travel_sample(org_id, proj_id, cluster_id):
 def create_db_user(org_id, proj_id, cluster_id, username):
     """Creates a database user with broad access for the tutorial."""
     endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/users"
+
+    # First, check if user already exists
+    with httpx.Client(headers=HEADERS, timeout=30) as client:
+        list_response = client.get(f"{API_BASE_URL}{endpoint}")
+
+    if list_response.status_code == 200:
+        existing_users = list_response.json().get('data', [])
+        for user in existing_users:
+            if user.get('name') == username:
+                print(f"   Database user '{username}' already exists. Skipping creation.")
+                # Return a placeholder password since we can't retrieve the existing one
+                return "existing_user_password_not_retrievable"
+
+    # Create new user if doesn't exist
     payload = {
         "name": username,
-        "password": None,  # Auto-generated
         "access": [{
-            "privileges": ["data_reader", "data_writer", "query_select", "query_insert", "query_update", "query_delete"],
+            "privileges": ["data_reader", "data_writer"],
             "resources": {
                 "buckets": [{
                     "name": "travel-sample",
@@ -226,13 +232,19 @@ def create_db_user(org_id, proj_id, cluster_id, username):
 def create_ai_model(org_id, model_name, deployment_name, model_type="embedding"):
     """Deploys a new AI model using the Management API."""
     # Note: AI Services endpoint may vary - check current API documentation
-    endpoint = f"/v4/organizations/{org_id}/integrations/ai"
+    endpoint = f"/v4/organizations/{org_id}/aiServices/models"
 
     # Determine provider based on model name
     if "nvidia" in model_name.lower():
         provider = "nvidia"
     elif "meta-llama" in model_name.lower():
         provider = "meta"
+    elif "snowflake" in model_name.lower():
+        provider = "snowflake"
+    elif "intfloat" in model_name.lower():
+        provider = "huggingface"
+    elif "deepseek" in model_name.lower():
+        provider = "deepseek"
     else:
         provider = "unknown"
 
@@ -258,43 +270,46 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     
 print("--- 🚀 Starting Automated Capella Environment Setup ---")
 
-# Test API connection first
-test_api_connection()
-
 try:
+    # Get organization ID (from env var or auto-detect)
+    organization_id = get_organization_id()
+
+    # Test API connection first
+    test_api_connection(organization_id)
+
     # 1. Get or Create Project
     print("\n[1/6] Finding or Creating Capella Project...")
-    project_id = get_or_create_project(ORGANIZATION_ID, PROJECT_NAME)
+    project_id = get_or_create_project(organization_id, PROJECT_NAME)
 
     # 2. Create and Wait for Cluster
     print("\n[2/6] Deploying Capella Free Tier Cluster...")
-    cluster_id = create_free_tier_cluster(ORGANIZATION_ID, project_id, CLUSTER_NAME)
-    cluster_check_url = f"/v4/organizations/{ORGANIZATION_ID}/projects/{project_id}/clusters/{cluster_id}"
+    cluster_id = create_free_tier_cluster(organization_id, project_id, CLUSTER_NAME)
+    cluster_check_url = f"/v4/organizations/{organization_id}/projects/{project_id}/clusters/{cluster_id}"
     cluster_details = wait_for_resource_ready(cluster_check_url, "Cluster")
     cluster_conn_string = cluster_details.get("connectionString")
 
     # 3. Load Sample Data
     print("\n[3/6] Loading 'travel-sample' Dataset...")
-    load_travel_sample(ORGANIZATION_ID, project_id, cluster_id)
+    load_travel_sample(organization_id, project_id, cluster_id)
 
     # 4. Create Database User
     print("\n[4/6] Creating Database Credentials...")
-    db_password = create_db_user(ORGANIZATION_ID, project_id, cluster_id, DB_USERNAME)
+    db_password = create_db_user(organization_id, project_id, cluster_id, DB_USERNAME)
 
     # 5. Deploy AI Models
     print("\n[5/6] Deploying AI Models...")
 
     # Deploy Embedding Model
     print("   Deploying embedding model...")
-    embedding_model_id = create_ai_model(ORGANIZATION_ID, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
-    embedding_check_url = f"/v4/organizations/{ORGANIZATION_ID}/integrations/ai/{embedding_model_id}"
+    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
+    embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
     embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model")
     embedding_endpoint = embedding_details.get("connectionString", "")
 
     # Deploy LLM Model
     print("   Deploying LLM model...")
-    llm_model_id = create_ai_model(ORGANIZATION_ID, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
-    llm_check_url = f"/v4/organizations/{ORGANIZATION_ID}/integrations/ai/{llm_model_id}"
+    llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
+    llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
     llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
     llm_endpoint = llm_details.get("connectionString", "")
     
@@ -304,7 +319,8 @@ try:
     os.environ["CB_USERNAME"] = DB_USERNAME
     os.environ["CB_PASSWORD"] = db_password
     os.environ["CB_BUCKET"] = "travel-sample"
-    
+
+    # Set AI model endpoints and credentials
     os.environ["CAPELLA_API_EMBEDDING_ENDPOINT"] = embedding_endpoint
     os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
     os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = CAPELLA_API_SECRET
