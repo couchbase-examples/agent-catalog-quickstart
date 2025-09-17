@@ -122,7 +122,7 @@ def setup_environment():
     logger.info(f"   Index: {os.environ['CB_INDEX']}")
 
 
-def create_llamaindex_agent(catalog, span):
+def create_llamaindex_agent(catalog):
     """Create LlamaIndex ReAct agent with tools from Agent Catalog prompt."""
     try:
         from llama_index.core.agent import ReActAgent
@@ -158,13 +158,13 @@ def create_llamaindex_agent(catalog, span):
 
         logger.info("Loaded system prompt from Agent Catalog")
 
-        # Create ReAct agent with reasonable iteration limit
+        # Create ReAct agent using the correct API
         agent = ReActAgent.from_tools(
             tools=tools,
             llm=Settings.llm,
-            verbose=True,  # Keep on for debugging
-            system_prompt=system_prompt,
-            max_iterations=4,  # Allow one tool call and finalization without warnings
+            max_iterations=4,
+            verbose=True,
+            context=system_prompt,  # system prompt goes in 'context' parameter
         )
 
         logger.info("LlamaIndex ReAct agent created successfully")
@@ -230,7 +230,7 @@ def setup_landmark_agent():
     )
 
     # Create LlamaIndex ReAct agent
-    agent = create_llamaindex_agent(catalog, span)
+    agent = create_llamaindex_agent(catalog)
 
     return agent, client
 
