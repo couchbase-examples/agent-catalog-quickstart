@@ -110,8 +110,6 @@ class CapellaCompatibleToolNode(agentc_langgraph.tool.ToolNode):
         def wrapper_func(tool_input):
             """Wrapper that handles various input formats for Capella AI compatibility."""
             try:
-                logger.info(f"🔧 Tool {tool_name} called with input: {repr(tool_input)}")
-
                 # Handle different input types that Capella AI might send
                 if isinstance(tool_input, dict):
                     # Direct dictionary input
@@ -127,7 +125,6 @@ class CapellaCompatibleToolNode(agentc_langgraph.tool.ToolNode):
                 # Call the appropriate tool with proper parameters
                 result = self._call_catalog_tool(catalog_tool, tool_name, clean_input)
 
-                logger.info(f"✅ Tool {tool_name} executed successfully")
                 return str(result) if result is not None else "No results found"
 
             except Exception as e:
@@ -338,20 +335,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             prompt_str = prompt_str.replace("{tools}", tools_str)
             prompt_str = prompt_str.replace("{tool_names}", tool_names_str)
 
-            # Debug: Print the prompt to see what we have
-            logger.info("🔍 Agent Catalog prompt after variable replacement:")
-            logger.info(f"Length: {len(prompt_str)} characters")
-            logger.info(f"Tools replacement: '{tools_str}' ({len(tools_str)} chars)")
-            logger.info(f"Tool names replacement: '{tool_names_str}' ({len(tool_names_str)} chars)")
-            if "{tools}" in prompt_str:
-                logger.warning("⚠️ {tools} still found in prompt after replacement!")
-            if "{tool_names}" in prompt_str:
-                logger.warning("⚠️ {tool_names} still found in prompt after replacement!")
-            # Show a snippet around the tools section
-            tools_pos = prompt_str.find("You have access to the following tools:")
-            if tools_pos >= 0:
-                snippet = prompt_str[tools_pos:tools_pos+200]
-                logger.info(f"Tools section: {repr(snippet)}")
 
             # Escape any remaining curly braces that aren't LangChain variables
             # This fixes the "Input to PromptTemplate is missing variables {''}" error
@@ -362,7 +345,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 if content in ['input', 'agent_scratchpad']:
                     return match.group(0)  # Keep LangChain variables as-is
                 else:
-                    logger.info(f"🔧 Escaping placeholder: {{{content}}}")
                     return '{{' + content + '}}'  # Escape other braces
 
             prompt_str = re.sub(r'\{([^}]*)\}', escape_braces, prompt_str)
@@ -371,15 +353,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             if "{input}" not in prompt_str:
                 prompt_str = prompt_str + "\n\nQuestion: {input}\nThought:{agent_scratchpad}"
 
-            # Debug: Check final prompt before creating PromptTemplate
-            logger.info("🔍 Final prompt template content:")
-            logger.info(f"Contains {{tools}}: {'{tools}' in prompt_str}")
-            logger.info(f"Contains {{tool_names}}: {'{tool_names}' in prompt_str}")
-
-            # Save the prompt to a file for inspection
-            with open('/tmp/final_prompt.txt', 'w') as f:
-                f.write(prompt_str)
-            logger.info("💾 Saved final prompt to /tmp/final_prompt.txt for inspection")
 
             # Create PromptTemplate with Agent Catalog content
             # Since we've pre-filled {tools} and {tool_names}, we need to tell LangChain they're partial
@@ -411,8 +384,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         def wrapper_func(tool_input: str) -> str:
             """Simple wrapper that handles Capella AI's text-based tool calling."""
             try:
-                logger.info(f"🔧 Tool {tool_name} called with input: {repr(tool_input)}")
-
                 # Clean the input
                 clean_input = self._clean_tool_input(tool_input)
 
@@ -433,7 +404,6 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 else:
                     result = catalog_tool.func(clean_input)
 
-                logger.info(f"✅ Tool {tool_name} executed successfully")
                 return str(result) if result is not None else "No results found"
 
             except Exception as e:
