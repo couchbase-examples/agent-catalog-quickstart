@@ -20,6 +20,7 @@ import langchain_core.messages
 import langchain_core.runnables
 import langchain_openai.chat_models
 import langgraph.graph
+import langgraph.prebuilt
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.exceptions import KeyspaceNotFoundException
@@ -70,6 +71,31 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 dotenv.load_dotenv(override=True)
 
 
+
+class CapellaCompatibleChatModel(langchain_core.runnables.Runnable):
+    """Wrapper for chat models that disables function calling for Capella AI compatibility."""
+
+    def __init__(self, chat_model):
+        super().__init__()
+        self.chat_model = chat_model
+
+    def bind_tools(self, *args, **kwargs):
+        """Disabled bind_tools to force traditional ReAct format."""
+        return self
+
+    def invoke(self, input, config=None, **kwargs):
+        """Delegate invoke to the original model."""
+        return self.chat_model.invoke(input, config, **kwargs)
+
+    def generate(self, *args, **kwargs):
+        """Delegate generate to the original model."""
+        return self.chat_model.generate(*args, **kwargs)
+
+    def __getattr__(self, name):
+        """Delegate any missing attributes to the original model."""
+        return getattr(self.chat_model, name)
+
+
 class FlightSearchState(agentc_langgraph.agent.State):
     """State for flight search conversations - single user system."""
 
@@ -89,9 +115,84 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
             chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
 
+        # Wrap the chat model to disable function calling for Capella AI compatibility
+        chat_model = CapellaCompatibleChatModel(chat_model)
+        logger.info("Wrapped chat model to disable function calling for Capella AI compatibility")
+
         super().__init__(
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
         )
+
+    def create_react_agent(self, span: agentc.Span, **kwargs):
+        """Simplified approach: Use Agent Catalog's built-in methods directly."""
+
+        # Use Agent Catalog's direct tool discovery methods
+        tools = []
+        tool_names = ["lookup_flight_info", "save_flight_booking", "retrieve_flight_bookings", "search_airline_reviews"]
+
+        for tool_name in tool_names:
+            try:
+                # Direct Agent Catalog tool lookup as suggested by user
+                catalog_tool = self.catalog.find("tool", name=tool_name)
+                if catalog_tool:
+                    langchain_tool = Tool(
+                        name=tool_name,
+                        description=f"Tool: {tool_name}",
+                        func=catalog_tool.func
+                    )
+                    tools.append(langchain_tool)
+                    logger.info(f"✅ Added tool from Agent Catalog: {tool_name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to add tool {tool_name}: {e}")
+
+        # Fallback: Use direct catalog search if no tools found
+        if not tools:
+            try:
+                all_tools = self.catalog.find_tools()
+                for catalog_tool in all_tools:
+                    if hasattr(catalog_tool, 'meta') and hasattr(catalog_tool.meta, 'name'):
+                        tool_name = catalog_tool.meta.name
+                        if tool_name in tool_names:
+                            langchain_tool = Tool(
+                                name=tool_name,
+                                description=f"Tool: {tool_name}",
+                                func=catalog_tool.func
+                            )
+                            tools.append(langchain_tool)
+                            logger.info(f"✅ Added tool from fallback search: {tool_name}")
+            except Exception as e:
+                logger.error(f"❌ Fallback tool discovery failed: {e}")
+
+        # Use existing Agent Catalog prompt structure directly
+        if self.prompt_content:
+            import datetime
+            current_date = datetime.date.today().strftime("%Y-%m-%d")
+
+            # Agent Catalog prompt already has ReAct format and all placeholders
+            react_template = str(self.prompt_content.content)
+            react_template = react_template.replace("{current_date}", current_date)
+
+            # Create PromptTemplate using existing Agent Catalog structure
+            react_prompt = PromptTemplate(
+                template=react_template,
+                input_variables=["input", "agent_scratchpad", "tools", "tool_names"]
+            )
+        else:
+            raise ValueError("Agent Catalog prompt not loaded")
+
+        # Create traditional ReAct agent for beautiful verbose output
+        agent = create_react_agent(self.chat_model, tools, react_prompt)
+
+        # Return AgentExecutor with verbose=True for beautiful real-time output
+        return AgentExecutor(
+            agent=agent,
+            tools=tools,
+            verbose=True,  # This gives us the beautiful Action/Observation format!
+            handle_parsing_errors=True,
+            max_iterations=3,
+            return_intermediate_steps=True
+        )
+
 
     def _invoke(
         self,
@@ -99,218 +200,89 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         state: FlightSearchState,
         config: langchain_core.runnables.RunnableConfig,
     ) -> FlightSearchState:
-        """Handle flight search conversation using ReActAgent."""
+        """Handle flight search conversation with comprehensive debug logging."""
+
+        logger.info("=" * 60)
+        logger.info("🔍 STARTING FLIGHT SEARCH AGENT EXECUTION")
+        logger.info("=" * 60)
 
         # Initialize conversation if this is the first message
         if not state["messages"]:
             initial_msg = langchain_core.messages.HumanMessage(content=state["query"])
             state["messages"].append(initial_msg)
-            logger.info(f"Flight Query: {state['query']}")
+            logger.info(f"📝 Flight Query: {state['query']}")
+            logger.info(f"📨 Initial messages count: {len(state['messages'])}")
 
-        # Get prompt resource first - we'll need it for the ReAct agent
-        prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
+        # Debug: Log state before agent execution
+        logger.info(f"🏷️  Current state keys: {list(state.keys())}")
+        logger.info(f"📊 Messages in state: {len(state.get('messages', []))}")
 
-        # Get tools from Agent Catalog with simplified discovery
-        tools = []
-        tool_names = [
-            "lookup_flight_info",
-            "save_flight_booking", 
-            "retrieve_flight_bookings",
-            "search_airline_reviews",
-        ]
+        # Create hybrid AgentExecutor with Agent Catalog tools and beautiful verbose output
+        logger.info("🔧 Creating hybrid AgentExecutor...")
+        agent_executor = self.create_react_agent(span)
+        logger.info(f"🤖 AgentExecutor created: {type(agent_executor).__name__}")
 
-        for tool_name in tool_names:
-            try:
-                # Find tool using Agent Catalog
-                catalog_tool = self.catalog.find("tool", name=tool_name)
-                if catalog_tool:
-                    logger.info(f"✅ Found tool: {tool_name}")
-                else:
-                    logger.error(f"❌ Tool not found: {tool_name}")
-                    continue
+        # Execute with beautiful real-time Action/Observation/Thought display
+        logger.info("⚡ Invoking AgentExecutor with verbose output...")
+        try:
+            response = agent_executor.invoke({"input": state["query"]})
+            logger.info("✅ AgentExecutor invocation completed successfully!")
+        except Exception as e:
+            logger.error(f"❌ AgentExecutor invocation failed: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
 
-            except Exception as e:
-                logger.error(f"❌ Failed to find tool {tool_name}: {e}")
-                continue
+        # COMPREHENSIVE RESPONSE ANALYSIS
+        logger.info("🔍 ANALYZING AGENT RESPONSE")
+        logger.info("-" * 40)
+        logger.info(f"📦 Response type: {type(response)}")
+        logger.info(f"🗝️  Response keys: {list(response.keys()) if hasattr(response, 'keys') else 'No keys method'}")
 
-            # Create wrapper function to handle proper parameter parsing
-            def create_tool_wrapper(original_tool, name):
-                """Create a wrapper for Agent Catalog tools with robust input handling."""
+        # Log each key-value pair in detail
+        if hasattr(response, 'keys'):
+            for key in response.keys():
+                value = response[key]
+                logger.info(f"🔑 {key}: {type(value).__name__} = {str(value)[:200]}{'...' if len(str(value)) > 200 else ''}")
 
-                def wrapper_func(tool_input: str) -> str:
-                    """Wrapper function that handles input parsing and error handling."""
-                    try:
-                        logger.info(f"🔧 Tool {name} called with raw input: {repr(tool_input)}")
+        # Look for verbose execution data
+        verbose_keys = ['intermediate_steps', 'agent_scratchpad', 'actions', 'observations', 'thoughts', 'steps', 'trace']
+        for key in verbose_keys:
+            if key in response:
+                logger.info(f"🎯 FOUND VERBOSE KEY '{key}': {type(response[key])} = {response[key]}")
 
-                        # Robust input sanitization to handle ReAct format artifacts
-                        if isinstance(tool_input, str):
-                            # Remove ReAct format artifacts that get mixed into input
-                            clean_input = tool_input.strip()
-                            
-                            # Remove common ReAct artifacts
-                            artifacts_to_remove = [
-                                '\nObservation', 'Observation', '\nThought:', 'Thought:', 
-                                '\nAction:', 'Action:', '\nAction Input:', 'Action Input:',
-                                '\nFinal Answer:', 'Final Answer:'
-                            ]
-                            
-                            for artifact in artifacts_to_remove:
-                                if artifact in clean_input:
-                                    clean_input = clean_input.split(artifact)[0]
-                            
-                            # Clean up quotes and whitespace
-                            clean_input = clean_input.strip().strip("\"'").strip()
-                            # Normalize whitespace
-                            clean_input = " ".join(clean_input.split())
-                            
-                            tool_input = clean_input
-
-                        logger.info(f"🧹 Tool {name} cleaned input: {repr(tool_input)}")
-
-                        # Call appropriate tool with proper parameter handling
-                        if name == "lookup_flight_info":
-                            # Parse airport codes from input
-                            import re
-
-                            source = None
-                            dest = None
-
-                            # 1) Support key=value style inputs from ReAct (e.g., source_airport="JFK", destination_airport="LAX")
-                            try:
-                                m_src = re.search(r"source_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-                                m_dst = re.search(r"destination_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-                                if m_src and m_dst:
-                                    source = m_src.group(1).upper()
-                                    dest = m_dst.group(1).upper()
-                            except Exception:
-                                pass
-
-                            # 2) Fallback: comma separated codes (e.g., "JFK,LAX")
-                            if source is None or dest is None:
-                                if ',' in tool_input:
-                                    parts = tool_input.split(',')
-                                    if len(parts) >= 2:
-                                        source = parts[0].strip().upper()
-                                        dest = parts[1].strip().upper()
-
-                            # 3) Fallback: natural language (e.g., "JFK to LAX")
-                            if source is None or dest is None:
-                                words = tool_input.upper().split()
-                                airport_codes = [w for w in words if len(w) == 3 and w.isalpha()]
-                                if len(airport_codes) >= 2:
-                                    source, dest = airport_codes[0], airport_codes[1]
-
-                            if not source or not dest:
-                                return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
-                            
-                            result = original_tool.func(source_airport=source, destination_airport=dest)
-
-                        elif name == "save_flight_booking":
-                            result = original_tool.func(booking_input=tool_input)
-
-                        elif name == "retrieve_flight_bookings":
-                            # Handle empty input for "all bookings"
-                            if not tool_input or tool_input.lower() in ["", "all", "none"]:
-                                result = original_tool.func(booking_query="")
-                            else:
-                                result = original_tool.func(booking_query=tool_input)
-
-                        elif name == "search_airline_reviews":
-                            if not tool_input:
-                                return "Error: Please provide a search query for airline reviews"
-                            result = original_tool.func(query=tool_input)
-
-                        else:
-                            # Generic fallback - pass as first positional argument
-                            result = original_tool.func(tool_input)
-
-                        logger.info(f"✅ Tool {name} executed successfully")
-                        return str(result) if result is not None else "No results found"
-
-                    except Exception as e:
-                        error_msg = f"Error in tool {name}: {str(e)}"
-                        logger.error(f"❌ {error_msg}")
-                        return error_msg
-
-                return wrapper_func
-
-            # Create LangChain tool with descriptive information
-            tool_descriptions = {
-                "lookup_flight_info": "Find available flights between airports. Input: 'JFK,LAX' or 'JFK to LAX'. Returns flight options with airlines and aircraft.",
-                "save_flight_booking": "Create a flight booking. Input: 'JFK,LAX,2025-12-25' or natural language. Handles passenger count and class automatically.",
-                "retrieve_flight_bookings": "View existing bookings. Input: empty string for all bookings, or 'JFK,LAX,2025-12-25' for specific booking.",
-                "search_airline_reviews": "Search airline customer reviews. Input: 'SpiceJet service' or 'food quality'. Returns passenger reviews and ratings."
-            }
-            
-            langchain_tool = Tool(
-                name=tool_name,
-                description=tool_descriptions.get(tool_name, f"Tool for {tool_name.replace('_', ' ')}"),
-                func=create_tool_wrapper(catalog_tool, tool_name),
-            )
-            tools.append(langchain_tool)
-
-        # Use the Agent Catalog prompt content directly - get first result if it's a list
-        if isinstance(prompt_resource, list):
-            prompt_resource = prompt_resource[0]
-
-        # Safely get the content from the prompt resource
-        prompt_content = getattr(prompt_resource, "content", "")
-        if not prompt_content:
-            prompt_content = "You are a helpful flight search assistant. Use the available tools to help users with their flight queries."
-
-        # Inject current date into the prompt content
-        import datetime
-
-        current_date = datetime.date.today().strftime("%Y-%m-%d")
-        prompt_content = prompt_content.replace("{current_date}", current_date)
-
-        # Use the Agent Catalog prompt content directly - it already has ReAct format
-        react_prompt = PromptTemplate.from_template(str(prompt_content))
-
-        # Create ReAct agent with tools and prompt
-        agent = create_react_agent(self.chat_model, tools, react_prompt)
-
-        # Custom parsing error handler - force stopping on parsing errors
-        def handle_parsing_errors(error):
-            """Custom handler for parsing errors - force early termination."""
-            error_msg = str(error)
-            if "both a final answer and a parse-able action" in error_msg:
-                # Force early termination - return a reasonable response
-                return "Final Answer: I encountered a parsing error. Please reformulate your request."
-            elif "Missing 'Action:'" in error_msg:
-                return "I need to use the correct format with Action: and Action Input:"
-            else:
-                return f"Final Answer: I encountered an error processing your request. Please try again."
-
-        # Create agent executor - very strict: only 2 iterations max
-        agent_executor = AgentExecutor(
-            agent=agent,
-            tools=tools,
-            verbose=True,
-            handle_parsing_errors=handle_parsing_errors,
-            max_iterations=2,  # STRICT: 1 tool call + 1 Final Answer only
-            early_stopping_method="force",  # Force stop
-            return_intermediate_steps=True,
-        )
-
-        # Execute the agent
-        response = agent_executor.invoke({"input": state["query"]})
-
-        # Extract tool outputs from intermediate_steps and store in search_results
+        # Handle AgentExecutor response format
+        # Extract tool outputs from intermediate_steps for search_results tracking
         if "intermediate_steps" in response and response["intermediate_steps"]:
+            logger.info(f"🔧 Found {len(response['intermediate_steps'])} intermediate steps")
             tool_outputs = []
             for step in response["intermediate_steps"]:
                 if isinstance(step, tuple) and len(step) >= 2:
-                    # step[0] is the action, step[1] is the tool output/observation
+                    # step[1] is the tool output/observation
                     tool_output = str(step[1])
                     if tool_output and tool_output.strip():
                         tool_outputs.append(tool_output)
             state["search_results"] = tool_outputs
+        else:
+            # Fallback: use the final output as search results
+            state["search_results"] = [response.get("output", "")]
 
-        # Add response to conversation
-        assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
-        state["messages"].append(assistant_msg)
+        # Add the agent's final response as an AI message
+        if "output" in response:
+            logger.info(f"📤 Final output: {response['output'][:200]}...")
+            assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
+            state["messages"].append(assistant_msg)
+
+        # Final state logging
+        logger.info("🏁 FINAL STATE")
+        logger.info("-" * 40)
+        logger.info(f"📊 Final messages count: {len(state.get('messages', []))}")
+        logger.info(f"🔍 Search results count: {len(state.get('search_results', []))}")
+        logger.info(f"✅ Resolved: {state.get('resolved', False)}")
+
         state["resolved"] = True
+        logger.info("=" * 60)
+        logger.info("🏁 FLIGHT SEARCH AGENT EXECUTION COMPLETED")
+        logger.info("=" * 60)
 
         return state
 

@@ -14,7 +14,7 @@ import couchbase.exceptions
 from couchbase.options import ClusterOptions
 import dotenv
 import pandas as pd
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from tqdm import tqdm
 
 # Import kagglehub only when needed to avoid import errors during indexing
@@ -153,7 +153,7 @@ class AirlineReviewsDataManager:
             review_texts = self.process_to_texts()
 
             # Setup vector store for the target collection
-            vector_store = CouchbaseVectorStore(
+            vector_store = CouchbaseSearchVectorStore(
                 cluster=cluster,
                 bucket_name=bucket_name,
                 scope_name=scope_name,

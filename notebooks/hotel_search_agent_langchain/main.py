@@ -84,14 +84,9 @@ def setup_embeddings_service(input_type="query"):
     return embeddings
 
 
-def setup_llm_service(application_span=None):
+def setup_llm_service():
     """Setup LLM service using Priority 1 (OpenAI wrappers + Capella)."""
-    callbacks = (
-        [agentc_langchain.chat.Callback(span=application_span)]
-        if application_span
-        else None
-    )
-    _, llm = setup_ai_services(framework="langchain", callbacks=callbacks)
+    _, llm = setup_ai_services(framework="langchain")
     return llm
 
 
@@ -157,29 +152,35 @@ def setup_hotel_support_agent():
             data_loader_func=load_hotel_data_to_couchbase,
         )
 
-        # Setup LLM with priority order
-        llm = setup_llm_service(application_span)
+        # Setup LLM 
+        llm = setup_llm_service()
 
-        # Load tools and create agent
-        tool_search = catalog.find("tool", name="search_vector_database")
-        if not tool_search:
-            raise ValueError(
-                "Could not find search_vector_database tool. Make sure it's indexed with 'agentc index tools/'"
-            )
-
-        tools = [
-            Tool(
-                name=tool_search.meta.name,
-                description=tool_search.meta.description,
-                func=tool_search.func,
-            ),
-        ]
-
+        # Get prompt and tools from Agent Catalog
         hotel_prompt = catalog.find("prompt", name="hotel_search_assistant")
         if not hotel_prompt:
             raise ValueError(
                 "Could not find hotel_search_assistant prompt in catalog. Make sure it's indexed with 'agentc index prompts/'"
             )
+
+        # Convert Agent Catalog tools to LangChain tools
+        tools = []
+        for catalog_tool in hotel_prompt.tools:
+            langchain_tool = Tool(
+                name=catalog_tool.meta.name,
+                description=catalog_tool.meta.description,
+                func=catalog_tool.func,
+            )
+            tools.append(langchain_tool)
+
+        # Add Agent Catalog callback for proper logging integration
+        callback = agentc_langchain.chat.Callback(
+            span=application_span,
+            tools=tools,
+            output=hotel_prompt.output
+        )
+        if llm.callbacks is None:
+            llm.callbacks = []
+        llm.callbacks.append(callback)
 
         custom_prompt = PromptTemplate(
             template=hotel_prompt.content.strip(),
