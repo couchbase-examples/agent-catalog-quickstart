@@ -304,29 +304,24 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                     simple_tools.append(simple_tool)
                     logger.info(f"✅ Added Capella-compatible tool from prompt: {tool_name}")
                 except Exception as e:
-                    logger.error(f"❌ Failed to add tool {getattr(tool_result, 'name', 'unknown')}: {e}")
+                    tool_name = getattr(tool_result, 'meta', {}).get('name', 'unknown') if hasattr(tool_result, 'meta') else 'unknown'
+                    logger.error(f"❌ Failed to add tool {tool_name}: {e}")
         else:
             logger.warning("No tools found in Agent Catalog prompt or prompt not loaded properly")
 
-        # Create the ReAct agent with simple tools (not function calling)
-        agent_kwargs = kwargs.copy()
-        if self.prompt_content is not None:
-            agent_kwargs["prompt"] = self.prompt_content
-        if self.output is not None:
-            agent_kwargs["response_format"] = self.output
-
-        # Use traditional LangChain AgentExecutor for verbose output like the original
+        # Use Agent Catalog prompt content directly - no fallbacks
         if self.prompt_content is not None:
             # Handle Agent Catalog prompt template variables
             import datetime
             current_date = datetime.date.today().strftime("%Y-%m-%d")
 
-            # Clean up the prompt content and inject variables
             # Extract the actual string content from Agent Catalog prompt object
             if hasattr(self.prompt_content, 'content'):
                 prompt_str = str(self.prompt_content.content)
             else:
                 prompt_str = str(self.prompt_content)
+
+            # Replace Agent Catalog variables with actual content
             prompt_str = prompt_str.replace("{current_date}", current_date)
 
             # Create tool descriptions and names for the prompt
@@ -339,52 +334,65 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             tools_str = "\n".join(tool_descriptions)
             tool_names_str = ", ".join(tool_names)
 
+            # Replace tool placeholders before escaping other braces
             prompt_str = prompt_str.replace("{tools}", tools_str)
             prompt_str = prompt_str.replace("{tool_names}", tool_names_str)
 
-            # Ensure we have the required LangChain variables
+            # Debug: Print the prompt to see what we have
+            logger.info("🔍 Agent Catalog prompt after variable replacement:")
+            logger.info(f"Length: {len(prompt_str)} characters")
+            logger.info(f"Tools replacement: '{tools_str}' ({len(tools_str)} chars)")
+            logger.info(f"Tool names replacement: '{tool_names_str}' ({len(tool_names_str)} chars)")
+            if "{tools}" in prompt_str:
+                logger.warning("⚠️ {tools} still found in prompt after replacement!")
+            if "{tool_names}" in prompt_str:
+                logger.warning("⚠️ {tool_names} still found in prompt after replacement!")
+            # Show a snippet around the tools section
+            tools_pos = prompt_str.find("You have access to the following tools:")
+            if tools_pos >= 0:
+                snippet = prompt_str[tools_pos:tools_pos+200]
+                logger.info(f"Tools section: {repr(snippet)}")
+
+            # Escape any remaining curly braces that aren't LangChain variables
+            # This fixes the "Input to PromptTemplate is missing variables {''}" error
+            import re
+            # Find all {xxx} patterns that aren't input or agent_scratchpad
+            def escape_braces(match):
+                content = match.group(1)
+                if content in ['input', 'agent_scratchpad']:
+                    return match.group(0)  # Keep LangChain variables as-is
+                else:
+                    logger.info(f"🔧 Escaping placeholder: {{{content}}}")
+                    return '{{' + content + '}}'  # Escape other braces
+
+            prompt_str = re.sub(r'\{([^}]*)\}', escape_braces, prompt_str)
+
+            # Ensure we have the required LangChain variables for ReAct format
             if "{input}" not in prompt_str:
                 prompt_str = prompt_str + "\n\nQuestion: {input}\nThought:{agent_scratchpad}"
 
+            # Debug: Check final prompt before creating PromptTemplate
+            logger.info("🔍 Final prompt template content:")
+            logger.info(f"Contains {{tools}}: {'{tools}' in prompt_str}")
+            logger.info(f"Contains {{tool_names}}: {'{tool_names}' in prompt_str}")
 
-            # Create a clean PromptTemplate with only the required LangChain variables
+            # Save the prompt to a file for inspection
+            with open('/tmp/final_prompt.txt', 'w') as f:
+                f.write(prompt_str)
+            logger.info("💾 Saved final prompt to /tmp/final_prompt.txt for inspection")
+
+            # Create PromptTemplate with Agent Catalog content
+            # Since we've pre-filled {tools} and {tool_names}, we need to tell LangChain they're partial
             react_prompt = PromptTemplate(
                 template=prompt_str,
-                input_variables=["input", "agent_scratchpad"]
+                input_variables=["input", "agent_scratchpad"],
+                partial_variables={"tools": tools_str, "tool_names": tool_names_str}
             )
         else:
-            react_prompt = PromptTemplate.from_template(
-                "You are a helpful flight search assistant. Use the available tools to help users with their flight queries.\n\n"
-                "You have access to the following tools:\n{tools}\n\n"
-                "Use the following format:\nQuestion: {input}\nThought: I need to think about what to do\n"
-                "Action: the action to take, should be one of [{tool_names}]\nAction Input: the input to the action\n"
-                "Observation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\n"
-                "Thought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\n"
-                "Question: {input}\nThought:{agent_scratchpad}"
-            )
+            # Only if Agent Catalog prompt fails to load
+            raise ValueError("Agent Catalog prompt not loaded - check prompt_name='flight_search_assistant'")
 
-        # Fallback to simple prompt template that works
-        # Since Agent Catalog prompt has variables that conflict with LangChain validation
-        # Use the fallback template path
-        if self.prompt_content is not None:
-            # Since the Agent Catalog prompt has validation issues, use a simplified fallback
-            react_prompt = PromptTemplate.from_template(
-                "You are a professional flight search assistant helping users with comprehensive flight operations.\n\n"
-                "TOOL USAGE RULES:\n"
-                "- When users ask to 'find flights' or 'search flights', use lookup_flight_info ONCE and provide Final Answer\n"
-                "- When users ask to 'book a flight', use save_flight_booking IMMEDIATELY - do NOT search first\n"
-                "- When users ask to 'show bookings' or 'get bookings', use retrieve_flight_bookings ONCE\n"
-                "- When users ask about airline reviews or service quality, use search_airline_reviews ONCE\n"
-                "- ALWAYS provide a Final Answer after getting tool results - do NOT repeat the same tool call\n\n"
-                "You have access to the following tools:\n{tools}\n\n"
-                "Use the following format:\nQuestion: {input}\nThought: I need to identify the task and choose the correct tool\n"
-                "Action: the action to take, should be one of [{tool_names}]\nAction Input: the input to the action\n"
-                "Observation: the result of the action\n"
-                "Thought: I now have the information needed to answer the question\nFinal Answer: the final answer to the original input question\n\n"
-                "Question: {input}\nThought:{agent_scratchpad}"
-            )
-
-        # Create traditional ReAct agent with the working fallback template
+        # Create traditional ReAct agent with Agent Catalog prompt
         agent = create_react_agent(self.chat_model, simple_tools, react_prompt)
 
         # Return AgentExecutor with verbose logging to match original output
