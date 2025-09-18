@@ -25,7 +25,9 @@ from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.exceptions import KeyspaceNotFoundException
 from couchbase.options import ClusterOptions
-# Removed unused imports - using Agent Catalog's native approach
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain_core.prompts import PromptTemplate
+from langchain_core.tools import Tool
 from pydantic import SecretStr
 
 
@@ -121,8 +123,75 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
         )
 
-    # Remove custom create_react_agent override - use Agent Catalog's native approach
-    # This follows the pattern from /agent-catalog/examples/with_langgraph/node.py
+    def create_react_agent(self, span: agentc.Span, **kwargs):
+        """Simplified approach: Use Agent Catalog's built-in methods directly."""
+
+        # Use Agent Catalog's direct tool discovery methods
+        tools = []
+        tool_names = ["lookup_flight_info", "save_flight_booking", "retrieve_flight_bookings", "search_airline_reviews"]
+
+        for tool_name in tool_names:
+            try:
+                # Direct Agent Catalog tool lookup as suggested by user
+                catalog_tool = self.catalog.find("tool", name=tool_name)
+                if catalog_tool:
+                    langchain_tool = Tool(
+                        name=tool_name,
+                        description=f"Tool: {tool_name}",
+                        func=catalog_tool.func
+                    )
+                    tools.append(langchain_tool)
+                    logger.info(f"✅ Added tool from Agent Catalog: {tool_name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to add tool {tool_name}: {e}")
+
+        # Fallback: Use direct catalog search if no tools found
+        if not tools:
+            try:
+                all_tools = self.catalog.find_tools()
+                for catalog_tool in all_tools:
+                    if hasattr(catalog_tool, 'meta') and hasattr(catalog_tool.meta, 'name'):
+                        tool_name = catalog_tool.meta.name
+                        if tool_name in tool_names:
+                            langchain_tool = Tool(
+                                name=tool_name,
+                                description=f"Tool: {tool_name}",
+                                func=catalog_tool.func
+                            )
+                            tools.append(langchain_tool)
+                            logger.info(f"✅ Added tool from fallback search: {tool_name}")
+            except Exception as e:
+                logger.error(f"❌ Fallback tool discovery failed: {e}")
+
+        # Use existing Agent Catalog prompt structure directly
+        if self.prompt_content:
+            import datetime
+            current_date = datetime.date.today().strftime("%Y-%m-%d")
+
+            # Agent Catalog prompt already has ReAct format and all placeholders
+            react_template = str(self.prompt_content.content)
+            react_template = react_template.replace("{current_date}", current_date)
+
+            # Create PromptTemplate using existing Agent Catalog structure
+            react_prompt = PromptTemplate(
+                template=react_template,
+                input_variables=["input", "agent_scratchpad", "tools", "tool_names"]
+            )
+        else:
+            raise ValueError("Agent Catalog prompt not loaded")
+
+        # Create traditional ReAct agent for beautiful verbose output
+        agent = create_react_agent(self.chat_model, tools, react_prompt)
+
+        # Return AgentExecutor with verbose=True for beautiful real-time output
+        return AgentExecutor(
+            agent=agent,
+            tools=tools,
+            verbose=True,  # This gives us the beautiful Action/Observation format!
+            handle_parsing_errors=True,
+            max_iterations=3,
+            return_intermediate_steps=True
+        )
 
 
     def _invoke(
@@ -148,23 +217,18 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         logger.info(f"🏷️  Current state keys: {list(state.keys())}")
         logger.info(f"📊 Messages in state: {len(state.get('messages', []))}")
 
-        # Use Agent Catalog's native create_react_agent (like official examples)
-        logger.info("🔧 Creating Agent Catalog ReAct agent...")
-        agent = self.create_react_agent(span)
-        logger.info(f"🤖 Agent created: {type(agent).__name__}")
-        logger.info(f"🔍 Agent attributes: {[attr for attr in dir(agent) if not attr.startswith('_')][:10]}...")
+        # Create hybrid AgentExecutor with Agent Catalog tools and beautiful verbose output
+        logger.info("🔧 Creating hybrid AgentExecutor...")
+        agent_executor = self.create_react_agent(span)
+        logger.info(f"🤖 AgentExecutor created: {type(agent_executor).__name__}")
 
-        # Execute with Agent Catalog's approach
-        logger.info("⚡ Invoking agent with state...")
-        logger.info(f"📋 Input state type: {type(state)}")
-        logger.info(f"📋 Config type: {type(config)}")
-
+        # Execute with beautiful real-time Action/Observation/Thought display
+        logger.info("⚡ Invoking AgentExecutor with verbose output...")
         try:
-            response = agent.invoke(input=state, config=config)
-            logger.info(f"🔍 Response: {response}")
-            logger.info("✅ Agent invocation completed successfully!")
+            response = agent_executor.invoke({"input": state["query"]})
+            logger.info("✅ AgentExecutor invocation completed successfully!")
         except Exception as e:
-            logger.error(f"❌ Agent invocation failed: {e}")
+            logger.error(f"❌ AgentExecutor invocation failed: {e}")
             logger.error(f"Error type: {type(e).__name__}")
             raise
 
@@ -186,51 +250,27 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             if key in response:
                 logger.info(f"🎯 FOUND VERBOSE KEY '{key}': {type(response[key])} = {response[key]}")
 
-        # Handle Agent Catalog response format (following official examples pattern)
-        if "messages" in response and response["messages"]:
-            logger.info(f"📨 Found {len(response['messages']) if isinstance(response['messages'], list) else 1} response messages")
-
-            # Add the agent's response message(s)
-            if isinstance(response["messages"], list):
-                for i, msg in enumerate(response["messages"]):
-                    logger.info(f"📨 Message {i+1}: {type(msg).__name__}")
-
-                    # Extract and display verbose ReAct content if it's an AI message
-                    if hasattr(msg, 'content') and 'Thought:' in str(msg.content):
-                        logger.info("🎯 VERBOSE REACT OUTPUT DETECTED!")
-                        logger.info("=" * 50)
-                        logger.info(f"🧠 FULL REACT CONTENT:\n{msg.content}")
-                        logger.info("=" * 50)
-                    else:
-                        logger.info(f"   Content: {str(msg)[:300]}...")
-
-                state["messages"].extend(response["messages"])
-            else:
-                logger.info(f"📨 Single message: {type(response['messages']).__name__}")
-
-                # Extract verbose content for single message too
-                if hasattr(response["messages"], 'content') and 'Thought:' in str(response["messages"].content):
-                    logger.info("🎯 VERBOSE REACT OUTPUT DETECTED!")
-                    logger.info("=" * 50)
-                    logger.info(f"🧠 FULL REACT CONTENT:\n{response['messages'].content}")
-                    logger.info("=" * 50)
-                else:
-                    logger.info(f"   Content: {str(response['messages'])[:300]}...")
-
-                state["messages"].append(response["messages"])
+        # Handle AgentExecutor response format
+        # Extract tool outputs from intermediate_steps for search_results tracking
+        if "intermediate_steps" in response and response["intermediate_steps"]:
+            logger.info(f"🔧 Found {len(response['intermediate_steps'])} intermediate steps")
+            tool_outputs = []
+            for step in response["intermediate_steps"]:
+                if isinstance(step, tuple) and len(step) >= 2:
+                    # step[1] is the tool output/observation
+                    tool_output = str(step[1])
+                    if tool_output and tool_output.strip():
+                        tool_outputs.append(tool_output)
+            state["search_results"] = tool_outputs
         else:
-            logger.info("⚠️  No messages found in response")
+            # Fallback: use the final output as search results
+            state["search_results"] = [response.get("output", "")]
 
-        # Extract any structured response or output for search_results tracking
-        if "structured_response" in response:
-            logger.info(f"📊 Found structured_response: {response['structured_response']}")
-            state["search_results"] = [str(response["structured_response"])]
-        elif "output" in response:
-            logger.info(f"📤 Found output: {response['output']}")
-            state["search_results"] = [response["output"]]
-        else:
-            logger.info("📤 Using fallback: full response as search_results")
-            state["search_results"] = [str(response)]
+        # Add the agent's final response as an AI message
+        if "output" in response:
+            logger.info(f"📤 Final output: {response['output'][:200]}...")
+            assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
+            state["messages"].append(assistant_msg)
 
         # Final state logging
         logger.info("🏁 FINAL STATE")
