@@ -25,9 +25,7 @@ from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.exceptions import KeyspaceNotFoundException
 from couchbase.options import ClusterOptions
-from langchain_core.tools import Tool
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
+# Removed unused imports - using Agent Catalog's native approach
 from pydantic import SecretStr
 
 
@@ -70,148 +68,6 @@ logging.getLogger("agentc_core").setLevel(logging.WARNING)
 # Load environment variables
 dotenv.load_dotenv(override=True)
 
-
-class CapellaCompatibleToolNode(agentc_langgraph.tool.ToolNode):
-    """Custom ToolNode that ensures Capella AI compatibility by handling tool arguments properly."""
-
-    def __init__(self, span: agentc.Span, catalog: agentc.Catalog, *args, **kwargs):
-        self.catalog = catalog
-
-        # Get Agent Catalog tools and convert them with proper argument handling
-        tool_names = [
-            "lookup_flight_info",
-            "save_flight_booking",
-            "retrieve_flight_bookings",
-            "search_airline_reviews",
-        ]
-
-        tools = []
-        for tool_name in tool_names:
-            try:
-                catalog_tool = self.catalog.find("tool", name=tool_name)
-                if catalog_tool:
-                    # Create LangChain tool with Agent Catalog tool's metadata
-                    wrapper_func = self._create_capella_compatible_wrapper(catalog_tool, tool_name)
-                    # Set the function name and description for proper tool registration
-                    wrapper_func.__name__ = tool_name
-                    wrapper_func.__doc__ = getattr(catalog_tool, 'description', f"Tool for {tool_name.replace('_', ' ')}")
-
-                    langchain_tool = langchain_core.tools.tool(wrapper_func)
-                    tools.append(langchain_tool)
-                    logger.info(f"✅ Added Capella-compatible tool: {tool_name}")
-            except Exception as e:
-                logger.error(f"❌ Failed to add tool {tool_name}: {e}")
-
-        super().__init__(span, tools=tools, *args, **kwargs)
-
-    def _create_capella_compatible_wrapper(self, catalog_tool, tool_name):
-        """Create a wrapper that handles Capella AI argument parsing."""
-
-        def wrapper_func(tool_input):
-            """Wrapper that handles various input formats for Capella AI compatibility."""
-            try:
-                # Handle different input types that Capella AI might send
-                if isinstance(tool_input, dict):
-                    # Direct dictionary input
-                    input_str = str(tool_input)
-                elif isinstance(tool_input, str):
-                    input_str = tool_input.strip()
-                else:
-                    input_str = str(tool_input)
-
-                # Clean up the input string
-                clean_input = self._clean_tool_input(input_str)
-
-                # Call the appropriate tool with proper parameters
-                result = self._call_catalog_tool(catalog_tool, tool_name, clean_input)
-
-                return str(result) if result is not None else "No results found"
-
-            except Exception as e:
-                error_msg = f"Error in tool {tool_name}: {str(e)}"
-                logger.error(f"❌ {error_msg}")
-                return error_msg
-
-        return wrapper_func
-
-    def _clean_tool_input(self, tool_input: str) -> str:
-        """Clean and normalize tool input for consistent processing."""
-        # Remove ReAct format artifacts
-        artifacts_to_remove = [
-            '\nObservation', 'Observation', '\nThought:', 'Thought:',
-            '\nAction:', 'Action:', '\nAction Input:', 'Action Input:',
-            '\nFinal Answer:', 'Final Answer:'
-        ]
-
-        clean_input = tool_input
-        for artifact in artifacts_to_remove:
-            if artifact in clean_input:
-                clean_input = clean_input.split(artifact)[0]
-
-        # Clean up quotes and whitespace
-        clean_input = clean_input.strip().strip("\"'").strip()
-        # Normalize whitespace
-        clean_input = " ".join(clean_input.split())
-
-        return clean_input
-
-    def _call_catalog_tool(self, catalog_tool, tool_name: str, clean_input: str):
-        """Call the Agent Catalog tool with appropriate parameter mapping."""
-
-        if tool_name == "lookup_flight_info":
-            return self._handle_lookup_flight_info(catalog_tool, clean_input)
-        elif tool_name == "save_flight_booking":
-            return catalog_tool.func(booking_input=clean_input)
-        elif tool_name == "retrieve_flight_bookings":
-            # Handle empty input for "all bookings"
-            if not clean_input or clean_input.lower() in ["", "all", "none"]:
-                return catalog_tool.func(booking_query="")
-            else:
-                return catalog_tool.func(booking_query=clean_input)
-        elif tool_name == "search_airline_reviews":
-            if not clean_input:
-                return "Error: Please provide a search query for airline reviews"
-            return catalog_tool.func(query=clean_input)
-        else:
-            # Generic fallback
-            return catalog_tool.func(clean_input)
-
-    def _handle_lookup_flight_info(self, catalog_tool, tool_input: str):
-        """Handle lookup_flight_info with flexible airport code parsing."""
-        import re
-
-        source = None
-        dest = None
-
-        # 1) Support key=value style inputs (e.g., source_airport="JFK", destination_airport="LAX")
-        try:
-            m_src = re.search(r"source_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-            m_dst = re.search(r"destination_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-            if m_src and m_dst:
-                source = m_src.group(1).upper()
-                dest = m_dst.group(1).upper()
-        except Exception:
-            pass
-
-        # 2) Fallback: comma separated codes (e.g., "JFK,LAX")
-        if source is None or dest is None:
-            if ',' in tool_input:
-                parts = tool_input.split(',')
-                if len(parts) >= 2:
-                    source = parts[0].strip().upper()
-                    dest = parts[1].strip().upper()
-
-        # 3) Fallback: natural language (e.g., "JFK to LAX")
-        if source is None or dest is None:
-            words = tool_input.upper().split()
-            airport_codes = [w for w in words if len(w) == 3 and w.isalpha()]
-            if len(airport_codes) >= 2:
-                source, dest = airport_codes[0], airport_codes[1]
-
-        if not source or not dest:
-            return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
-
-        return catalog_tool.func(source_airport=source, destination_airport=dest)
 
 
 class CapellaCompatibleChatModel(langchain_core.runnables.Runnable):
@@ -265,213 +121,9 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
         )
 
-    def create_react_agent(self, span: agentc.Span, tools=None, **kwargs):
-        """Override to use traditional ReAct format instead of function calling for Capella AI."""
+    # Remove custom create_react_agent override - use Agent Catalog's native approach
+    # This follows the pattern from /agent-catalog/examples/with_langgraph/node.py
 
-        # For Capella AI compatibility, we'll use the traditional ReAct format
-        # instead of modern function calling which Capella AI doesn't support well
-
-        # Add a callback to our chat model for Agent Catalog integration
-        from agentc_langchain.chat import Callback
-        callback = Callback(span=span, tools=self.tools, output=self.output)
-        self.chat_model.callbacks.append(callback)
-
-        # Get tools from the Agent Catalog prompt (proper Agent Catalog way)
-        simple_tools = []
-
-        # Get the prompt and extract tools from it
-        if self.prompt and hasattr(self.prompt, 'tools'):
-            for tool_result in self.prompt.tools:
-                try:
-                    # Get tool name from the meta descriptor
-                    tool_name = tool_result.meta.name
-
-                    # Find the actual tool using the catalog
-                    catalog_tool = self.catalog.find("tool", name=tool_name)
-                    if not catalog_tool:
-                        logger.error(f"❌ Tool not found in catalog: {tool_name}")
-                        continue
-
-                    # Create simple Tool with our wrapper
-                    simple_tool = Tool(
-                        name=tool_name,
-                        description=getattr(catalog_tool, 'description', catalog_tool.meta.description if hasattr(catalog_tool, 'meta') else f"Tool for {tool_name.replace('_', ' ')}"),
-                        func=self._create_capella_compatible_func(catalog_tool, tool_name)
-                    )
-                    simple_tools.append(simple_tool)
-                    logger.info(f"✅ Added Capella-compatible tool from prompt: {tool_name}")
-                except Exception as e:
-                    tool_name = getattr(tool_result, 'meta', {}).get('name', 'unknown') if hasattr(tool_result, 'meta') else 'unknown'
-                    logger.error(f"❌ Failed to add tool {tool_name}: {e}")
-        else:
-            logger.warning("No tools found in Agent Catalog prompt or prompt not loaded properly")
-
-        # Use Agent Catalog prompt content directly - no fallbacks
-        if self.prompt_content is not None:
-            # Handle Agent Catalog prompt template variables
-            import datetime
-            current_date = datetime.date.today().strftime("%Y-%m-%d")
-
-            # Extract the actual string content from Agent Catalog prompt object
-            if hasattr(self.prompt_content, 'content'):
-                prompt_str = str(self.prompt_content.content)
-            else:
-                prompt_str = str(self.prompt_content)
-
-            # Replace Agent Catalog variables with actual content
-            prompt_str = prompt_str.replace("{current_date}", current_date)
-
-            # Create tool descriptions and names for the prompt
-            tool_descriptions = []
-            tool_names = []
-            for tool in simple_tools:
-                tool_descriptions.append(f"{tool.name}: {tool.description}")
-                tool_names.append(tool.name)
-
-            tools_str = "\n".join(tool_descriptions)
-            tool_names_str = ", ".join(tool_names)
-
-            # Replace tool placeholders before escaping other braces
-            prompt_str = prompt_str.replace("{tools}", tools_str)
-            prompt_str = prompt_str.replace("{tool_names}", tool_names_str)
-
-
-            # Escape any remaining curly braces that aren't LangChain variables
-            # This fixes the "Input to PromptTemplate is missing variables {''}" error
-            import re
-            # Find all {xxx} patterns that aren't input or agent_scratchpad
-            def escape_braces(match):
-                content = match.group(1)
-                if content in ['input', 'agent_scratchpad']:
-                    return match.group(0)  # Keep LangChain variables as-is
-                else:
-                    return '{{' + content + '}}'  # Escape other braces
-
-            prompt_str = re.sub(r'\{([^}]*)\}', escape_braces, prompt_str)
-
-            # Ensure we have the required LangChain variables for ReAct format
-            if "{input}" not in prompt_str:
-                prompt_str = prompt_str + "\n\nQuestion: {input}\nThought:{agent_scratchpad}"
-
-
-            # Create PromptTemplate with Agent Catalog content
-            # Since we've pre-filled {tools} and {tool_names}, we need to tell LangChain they're partial
-            react_prompt = PromptTemplate(
-                template=prompt_str,
-                input_variables=["input", "agent_scratchpad"],
-                partial_variables={"tools": tools_str, "tool_names": tool_names_str}
-            )
-        else:
-            # Only if Agent Catalog prompt fails to load
-            raise ValueError("Agent Catalog prompt not loaded - check prompt_name='flight_search_assistant'")
-
-        # Create traditional ReAct agent with Agent Catalog prompt
-        agent = create_react_agent(self.chat_model, simple_tools, react_prompt)
-
-        # Return AgentExecutor with verbose logging to match original output
-        return AgentExecutor(
-            agent=agent,
-            tools=simple_tools,
-            verbose=True,  # Enable verbose output like the original
-            handle_parsing_errors=True,
-            max_iterations=2,  # Reduce to encourage single tool call + Final Answer
-            return_intermediate_steps=True
-        )
-
-    def _create_capella_compatible_func(self, catalog_tool, tool_name):
-        """Create a simple function wrapper for Capella AI compatibility."""
-
-        def wrapper_func(tool_input: str) -> str:
-            """Simple wrapper that handles Capella AI's text-based tool calling."""
-            try:
-                # Clean the input
-                clean_input = self._clean_tool_input(tool_input)
-
-                # Call the catalog tool appropriately
-                if tool_name == "lookup_flight_info":
-                    result = self._handle_lookup_flight_info(catalog_tool, clean_input)
-                elif tool_name == "save_flight_booking":
-                    result = catalog_tool.func(booking_input=clean_input)
-                elif tool_name == "retrieve_flight_bookings":
-                    if not clean_input or clean_input.lower() in ["", "all", "none"]:
-                        result = catalog_tool.func(booking_query="")
-                    else:
-                        result = catalog_tool.func(booking_query=clean_input)
-                elif tool_name == "search_airline_reviews":
-                    if not clean_input:
-                        return "Error: Please provide a search query for airline reviews"
-                    result = catalog_tool.func(query=clean_input)
-                else:
-                    result = catalog_tool.func(clean_input)
-
-                return str(result) if result is not None else "No results found"
-
-            except Exception as e:
-                error_msg = f"Error in tool {tool_name}: {str(e)}"
-                logger.error(f"❌ {error_msg}")
-                return error_msg
-
-        return wrapper_func
-
-    def _clean_tool_input(self, tool_input: str) -> str:
-        """Clean and normalize tool input for consistent processing."""
-        if not isinstance(tool_input, str):
-            tool_input = str(tool_input)
-
-        # Remove ReAct format artifacts - handle all variations
-        artifacts_to_remove = [
-            '"\nObservation', '\nObservation', 'Observation',
-            '\nThought:', 'Thought:', '\nAction:', 'Action:',
-            '\nAction Input:', 'Action Input:', '\nFinal Answer:', 'Final Answer:'
-        ]
-
-        clean_input = tool_input
-        for artifact in artifacts_to_remove:
-            if artifact in clean_input:
-                clean_input = clean_input.split(artifact)[0]
-
-        # Clean up quotes and whitespace
-        clean_input = clean_input.strip().strip("\"'").strip()
-        clean_input = " ".join(clean_input.split())
-
-        return clean_input
-
-    def _handle_lookup_flight_info(self, catalog_tool, tool_input: str):
-        """Handle lookup_flight_info with flexible airport code parsing."""
-        import re
-
-        source = None
-        dest = None
-
-        # Support key=value style inputs
-        try:
-            m_src = re.search(r"source_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-            m_dst = re.search(r"destination_airport\s*[:=]\s*\"?([A-Za-z]{3})\"?", tool_input, re.I)
-            if m_src and m_dst:
-                source = m_src.group(1).upper()
-                dest = m_dst.group(1).upper()
-        except Exception:
-            pass
-
-        # Fallback: comma separated codes
-        if source is None or dest is None:
-            if ',' in tool_input:
-                parts = tool_input.split(',')
-                if len(parts) >= 2:
-                    source = parts[0].strip().upper()
-                    dest = parts[1].strip().upper()
-
-        # Fallback: natural language
-        if source is None or dest is None:
-            words = tool_input.upper().split()
-            airport_codes = [w for w in words if len(w) == 3 and w.isalpha()]
-            if len(airport_codes) >= 2:
-                source, dest = airport_codes[0], airport_codes[1]
-
-        if not source or not dest:
-            return "Error: Please provide source and destination airports (e.g., JFK,LAX or JFK to LAX)"
-
-        return catalog_tool.func(source_airport=source, destination_airport=dest)
 
     def _invoke(
         self,
@@ -479,39 +131,119 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         state: FlightSearchState,
         config: langchain_core.runnables.RunnableConfig,
     ) -> FlightSearchState:
-        """Handle flight search conversation using ReActAgent."""
+        """Handle flight search conversation with comprehensive debug logging."""
+
+        logger.info("=" * 60)
+        logger.info("🔍 STARTING FLIGHT SEARCH AGENT EXECUTION")
+        logger.info("=" * 60)
 
         # Initialize conversation if this is the first message
         if not state["messages"]:
             initial_msg = langchain_core.messages.HumanMessage(content=state["query"])
             state["messages"].append(initial_msg)
-            logger.info(f"Flight Query: {state['query']}")
+            logger.info(f"📝 Flight Query: {state['query']}")
+            logger.info(f"📨 Initial messages count: {len(state['messages'])}")
 
-        # Use the ReActAgent's built-in create_react_agent method
-        # This automatically handles prompt loading, tool integration, and span management
+        # Debug: Log state before agent execution
+        logger.info(f"🏷️  Current state keys: {list(state.keys())}")
+        logger.info(f"📊 Messages in state: {len(state.get('messages', []))}")
+
+        # Use Agent Catalog's native create_react_agent (like official examples)
+        logger.info("🔧 Creating Agent Catalog ReAct agent...")
         agent = self.create_react_agent(span)
+        logger.info(f"🤖 Agent created: {type(agent).__name__}")
+        logger.info(f"🔍 Agent attributes: {[attr for attr in dir(agent) if not attr.startswith('_')][:10]}...")
 
-        # Execute the agent with the correct input format for AgentExecutor
-        response = agent.invoke({"input": state["query"]}, config=config)
+        # Execute with Agent Catalog's approach
+        logger.info("⚡ Invoking agent with state...")
+        logger.info(f"📋 Input state type: {type(state)}")
+        logger.info(f"📋 Config type: {type(config)}")
 
-        # Extract tool outputs from AgentExecutor intermediate_steps for search_results tracking
-        if "intermediate_steps" in response and response["intermediate_steps"]:
-            tool_outputs = []
-            for step in response["intermediate_steps"]:
-                if isinstance(step, tuple) and len(step) >= 2:
-                    # step[0] is the action, step[1] is the tool output/observation
-                    tool_output = str(step[1])
-                    if tool_output and tool_output.strip():
-                        tool_outputs.append(tool_output)
-            state["search_results"] = tool_outputs
+        try:
+            response = agent.invoke(input=state, config=config)
+            logger.info(f"🔍 Response: {response}")
+            logger.info("✅ Agent invocation completed successfully!")
+        except Exception as e:
+            logger.error(f"❌ Agent invocation failed: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
 
-        # Update state with the final response from AgentExecutor
-        if "output" in response:
-            # Add the agent's final response as an AI message
-            assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
-            state["messages"].append(assistant_msg)
+        # COMPREHENSIVE RESPONSE ANALYSIS
+        logger.info("🔍 ANALYZING AGENT RESPONSE")
+        logger.info("-" * 40)
+        logger.info(f"📦 Response type: {type(response)}")
+        logger.info(f"🗝️  Response keys: {list(response.keys()) if hasattr(response, 'keys') else 'No keys method'}")
+
+        # Log each key-value pair in detail
+        if hasattr(response, 'keys'):
+            for key in response.keys():
+                value = response[key]
+                logger.info(f"🔑 {key}: {type(value).__name__} = {str(value)[:200]}{'...' if len(str(value)) > 200 else ''}")
+
+        # Look for verbose execution data
+        verbose_keys = ['intermediate_steps', 'agent_scratchpad', 'actions', 'observations', 'thoughts', 'steps', 'trace']
+        for key in verbose_keys:
+            if key in response:
+                logger.info(f"🎯 FOUND VERBOSE KEY '{key}': {type(response[key])} = {response[key]}")
+
+        # Handle Agent Catalog response format (following official examples pattern)
+        if "messages" in response and response["messages"]:
+            logger.info(f"📨 Found {len(response['messages']) if isinstance(response['messages'], list) else 1} response messages")
+
+            # Add the agent's response message(s)
+            if isinstance(response["messages"], list):
+                for i, msg in enumerate(response["messages"]):
+                    logger.info(f"📨 Message {i+1}: {type(msg).__name__}")
+
+                    # Extract and display verbose ReAct content if it's an AI message
+                    if hasattr(msg, 'content') and 'Thought:' in str(msg.content):
+                        logger.info("🎯 VERBOSE REACT OUTPUT DETECTED!")
+                        logger.info("=" * 50)
+                        logger.info(f"🧠 FULL REACT CONTENT:\n{msg.content}")
+                        logger.info("=" * 50)
+                    else:
+                        logger.info(f"   Content: {str(msg)[:300]}...")
+
+                state["messages"].extend(response["messages"])
+            else:
+                logger.info(f"📨 Single message: {type(response['messages']).__name__}")
+
+                # Extract verbose content for single message too
+                if hasattr(response["messages"], 'content') and 'Thought:' in str(response["messages"].content):
+                    logger.info("🎯 VERBOSE REACT OUTPUT DETECTED!")
+                    logger.info("=" * 50)
+                    logger.info(f"🧠 FULL REACT CONTENT:\n{response['messages'].content}")
+                    logger.info("=" * 50)
+                else:
+                    logger.info(f"   Content: {str(response['messages'])[:300]}...")
+
+                state["messages"].append(response["messages"])
+        else:
+            logger.info("⚠️  No messages found in response")
+
+        # Extract any structured response or output for search_results tracking
+        if "structured_response" in response:
+            logger.info(f"📊 Found structured_response: {response['structured_response']}")
+            state["search_results"] = [str(response["structured_response"])]
+        elif "output" in response:
+            logger.info(f"📤 Found output: {response['output']}")
+            state["search_results"] = [response["output"]]
+        else:
+            logger.info("📤 Using fallback: full response as search_results")
+            state["search_results"] = [str(response)]
+
+        # Final state logging
+        logger.info("🏁 FINAL STATE")
+        logger.info("-" * 40)
+        logger.info(f"📊 Final messages count: {len(state.get('messages', []))}")
+        logger.info(f"🔍 Search results count: {len(state.get('search_results', []))}")
+        logger.info(f"✅ Resolved: {state.get('resolved', False)}")
 
         state["resolved"] = True
+        logger.info("=" * 60)
+        logger.info("🏁 FLIGHT SEARCH AGENT EXECUTION COMPLETED")
+        logger.info("=" * 60)
+
         return state
 
 
