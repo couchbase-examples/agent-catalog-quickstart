@@ -112,22 +112,20 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Execute the agent with proper Agent Catalog integration
         response = agent.invoke(input=state, config=config)
+        logger.info(f"🔍FULL Agent response: {response}")
 
-        # Agent Catalog provides structured_response automatically if output schema is defined
-        if "structured_response" in response:
-            structured_response = response["structured_response"]
-            logger.info(f"📊 Agent Catalog structured response: {structured_response}")
-
-        # Extract final message and add to state
+        # Extract final message and add to state - Agent Catalog provides natural responses
         if "messages" in response and response["messages"]:
             # Get the last AI message
             last_message = response["messages"][-1]
             state["messages"].append(last_message)
+            logger.info(f"📊 Agent response: {last_message.content}...")
         else:
             # Fallback to output field
             output_content = response.get("output", "No response generated")
             assistant_msg = langchain_core.messages.AIMessage(content=output_content)
             state["messages"].append(assistant_msg)
+            logger.info(f"📊 Agent output: {output_content}...")
 
         # Mark as resolved
         state["resolved"] = True

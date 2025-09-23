@@ -1,0 +1,83 @@
+
+2025-09-23 19:35:02,931 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-09-23 19:35:02,938 - __main__ - INFO - ✅ LangChain instrumentation enabled
+2025-09-23 19:35:02,940 - __main__ - INFO - ✅ OpenAI instrumentation enabled
+2025-09-23 19:35:05,876 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-23 19:35:07,732 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-23 19:35:07,732 - shared.couchbase_client - INFO - 🗑️ Clearing scope: travel-sample.agentc_bookings
+2025-09-23 19:35:09,356 - shared.couchbase_client - INFO - 🗑️ Clearing data from travel-sample.agentc_bookings.user_bookings_20250923...
+2025-09-23 19:35:13,075 - shared.couchbase_client - INFO - ✅ Cleared collection: travel-sample.agentc_bookings.user_bookings_20250923
+2025-09-23 19:35:13,075 - shared.couchbase_client - INFO - ✅ Completed clearing scope: travel-sample.agentc_bookings
+2025-09-23 19:35:13,075 - main - INFO - ✅ Cleared existing flight bookings for fresh test run: travel-sample.agentc_bookings
+2025-09-23 19:35:13,099 - data.airline_reviews_data - INFO - Downloading Indian Airlines Customer Reviews dataset from Kaggle...
+2025-09-23 19:35:13,584 - data.airline_reviews_data - INFO - Loading reviews from /home/kaustav/.cache/kagglehub/datasets/jagathratchakan/indian-airlines-customer-reviews/versions/1/Indian_Domestic_Airline.csv
+2025-09-23 19:35:13,604 - data.airline_reviews_data - INFO - Loaded 2210 airline reviews from Kaggle dataset
+2025-09-23 19:35:13,606 - data.airline_reviews_data - INFO - Processed 2210 airline reviews into text format
+2025-09-23 19:35:14,945 - main - INFO - 📊 Airline reviews collection: 2210 existing, 2210 expected
+2025-09-23 19:35:14,945 - main - INFO - ✅ Collection already has correct document count (2210), skipping clear
+2025-09-23 19:35:14,946 - __main__ - INFO - 🔧 Setting up flight search agent...
+2025-09-23 19:35:14,946 - shared.agent_setup - INFO - ✅ Environment variables configured
+2025-09-23 19:35:19,208 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-23 19:35:20,823 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-23 19:35:23,695 - shared.couchbase_client - INFO - ℹ️ Collection 'airline_reviews' exists, keeping existing data
+2025-09-23 19:35:28,316 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-09-23 19:35:28,316 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.airline_reviews
+2025-09-23 19:35:28,316 - main - INFO - Loaded vector search index definition from agentcatalog_index.json
+2025-09-23 19:35:29,941 - shared.couchbase_client - INFO - ℹ️ Vector search index 'airline_reviews_index' already exists
+2025-09-23 19:35:29,942 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-23 19:35:30,090 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-23 19:35:31,617 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-23 19:35:31,617 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-23 19:35:31,617 - shared.couchbase_client - INFO - 🔄 Loading data into vector store...
+2025-09-23 19:35:32,933 - data.airline_reviews_data - INFO - Found 2210 existing documents in collection, skipping data load
+2025-09-23 19:35:32,934 - shared.couchbase_client - INFO - ✅ Data loaded into vector store successfully
+2025-09-23 19:35:37,515 - shared.couchbase_client - INFO - ✅ LangChain vector store setup complete: travel-sample.agentc_data.airline_reviews
+2025-09-23 19:35:37,515 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-23 19:35:37,543 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-23 19:35:38,956 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-23 19:35:38,956 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-23 19:36:03,152 - main - INFO - Agent Catalog integration successful
+2025-09-23 19:36:03,154 - __main__ - INFO - ✅ Flight search agent setup completed successfully
+2025-09-23 19:36:03,154 - __main__ - INFO - 🚀 Starting evaluation with 5 queries
+2025-09-23 19:36:03,154 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-09-23 19:36:03,154 - __main__ - INFO -    🤖 Agent: Flight Search Agent (LangGraph)
+2025-09-23 19:36:03,154 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-09-23 19:36:03,154 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-09-23 19:36:03,154 - __main__ - INFO -    🧠 Phoenix Evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
+2025-09-23 19:36:03,154 - __main__ - INFO - 
+📋 Query 1/5
+2025-09-23 19:36:03,154 - __main__ - INFO - 🔍 Evaluating query: Find flights from JFK to LAX
+2025-09-23 19:36:03,155 - main - INFO - Flight Query: Find flights from JFK to LAX
+2025-09-23 19:36:08,612 - main - INFO - 📊 Agent response: Thought: The user has found flights from JFK to LAX using the lookup_flight_info tool.
+Final Answer:...
+2025-09-23 19:36:08,621 - __main__ - INFO - ✅ Query completed in 5.47s
+2025-09-23 19:36:08,621 - __main__ - INFO - 
+📋 Query 2/5
+2025-09-23 19:36:08,621 - __main__ - INFO - 🔍 Evaluating query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-23 19:36:08,623 - main - INFO - Flight Query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-23 19:36:21,120 - main - INFO - 📊 Agent response: The previous response was an error. The correct response should be:
+
+<function/save_flight_booking>{...
+2025-09-23 19:36:21,130 - __main__ - INFO - ✅ Query completed in 12.51s
+2025-09-23 19:36:21,130 - __main__ - INFO - 
+📋 Query 3/5
+2025-09-23 19:36:21,130 - __main__ - INFO - 🔍 Evaluating query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-23 19:36:21,131 - main - INFO - Flight Query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-23 19:36:27,533 - main - INFO - 📊 Agent response: Thought: I need to book a flight using save_flight_booking tool
+Action: save_flight_booking
+Action I...
+2025-09-23 19:36:27,544 - __main__ - INFO - ✅ Query completed in 6.41s
+2025-09-23 19:36:27,544 - __main__ - INFO - 
+📋 Query 4/5
+2025-09-23 19:36:27,544 - __main__ - INFO - 🔍 Evaluating query: Show me my current flight bookings
+2025-09-23 19:36:27,545 - main - INFO - Flight Query: Show me my current flight bookings
+2025-09-23 19:36:41,561 - main - INFO - 📊 Agent response: Thought: The user wants to see their current flight bookings.
+Action: Retrieve flight bookings using...
+2025-09-23 19:36:41,569 - __main__ - INFO - ✅ Query completed in 14.02s
+2025-09-23 19:36:41,569 - __main__ - INFO - 
+📋 Query 5/5
+2025-09-23 19:36:41,569 - __main__ - INFO - 🔍 Evaluating query: What do passengers say about SpiceJet's service quality?
+2025-09-23 19:36:41,571 - main - INFO - Flight Query: What do passengers say about SpiceJet's service quality?
+2025-09-23 19:36:48,792 - search_airline_reviews - INFO - Searching for airline reviews with query: 'SpiceJet service quality'
+2025-09-23 19:36:51,657 - search_airline_reviews - INFO - Found 5 results for query: 'SpiceJet service quality'
+2025-09-23 19:36:54,676 - main - INFO - 📊 Agent response: Final Answer: Passengers have generally positive experiences with SpiceJet's service quality, with m...
