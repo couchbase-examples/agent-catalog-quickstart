@@ -130,7 +130,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 # Use tool results for production display
                 assistant_msg = langchain_core.messages.AIMessage(content=tool_content)
                 state["messages"].append(assistant_msg)
-                logger.info(f"📊 Tool results: {tool_content[:200]}...")
+                logger.info(f"📊 Tool results: {tool_content}")
             else:
                 # Fallback to last AI message if no tool results
                 last_message = response["messages"][-1]

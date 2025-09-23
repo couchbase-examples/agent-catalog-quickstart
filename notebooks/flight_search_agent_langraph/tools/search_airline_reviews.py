@@ -87,9 +87,7 @@ def format_review_results(results: list, query: str) -> str:
             if meta_parts:
                 metadata_info = f"[{' | '.join(meta_parts)}]\n"
 
-        # Limit content length for readability
-        if len(content) > 300:
-            content = content[:300] + "..."
+        # Keep full content for production tutorial display
 
         formatted_results.append(f"Review {i}:\n{metadata_info}{content}")
 
