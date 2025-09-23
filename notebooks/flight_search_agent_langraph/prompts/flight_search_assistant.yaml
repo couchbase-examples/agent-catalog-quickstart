@@ -23,8 +23,25 @@ annotations:
 tools:
   - name: "lookup_flight_info"
   - name: "save_flight_booking"
-  - name: "retrieve_flight_bookings" 
+  - name: "retrieve_flight_bookings"
   - name: "search_airline_reviews"
+
+# Structured output schema for Agent Catalog (like FastAPI example)
+output:
+  title: FlightSearchResponse
+  description: Response from the flight search assistant with action taken and results
+  type: object
+  properties:
+    action_completed:
+      type: string
+      description: "Brief description of the action that was completed (e.g., 'flight_search', 'booking_created', 'bookings_retrieved', 'reviews_found')"
+    summary:
+      type: string
+      description: "Summary of the results or confirmation message for the user"
+    success:
+      type: boolean
+      description: "Whether the requested action was completed successfully"
+  required: [action_completed, summary, success]
 
 # The main content of the prompt - single string format for compatibility
 content: >

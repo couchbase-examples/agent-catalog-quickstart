@@ -1,31 +1,30 @@
-kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/flight_search_agent_langraph  ↱ fix/tool-wrapping ±  poetry run python evals/eval_arize.py
-2025-09-18 05:33:01,229 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix
-2025-09-18 05:33:01,244 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_2e88c6e1-388a-495b-98b0-c1b89d2012a0 initialized
-2025-09-18 05:33:05,352 - __main__ - INFO - ✅ Arize datasets client initialized successfully
-2025-09-18 05:33:05,409 - __main__ - INFO - ✅ Phoenix evaluators initialized successfully
-2025-09-18 05:33:05,409 - __main__ - INFO -    🤖 Using evaluator model: gpt-4o
-2025-09-18 05:33:05,409 - __main__ - INFO -    📊 Available evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
-2025-09-18 05:33:05,409 - __main__ - INFO - 🔧 Setting up Phoenix observability...
-2025-09-18 05:33:07,555 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
-2025-09-18 05:33:07,556 - alembic.runtime.migration - INFO - Will assume transactional DDL.
-2025-09-18 05:33:07,596 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
-2025-09-18 05:33:07,653 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
-2025-09-18 05:33:07,658 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
-2025-09-18 05:33:07,660 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
-2025-09-18 05:33:07,664 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
-2025-09-18 05:33:07,671 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
-2025-09-18 05:33:07,675 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
-/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+2025-09-23 18:52:56,342 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /home/kaustav/.phoenix
+2025-09-23 18:52:56,352 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_59f2e4f7-e6e2-4c2f-a1bc-e8c26ec3920b initialized
+2025-09-23 18:52:58,157 - __main__ - INFO - ✅ Arize datasets client initialized successfully
+2025-09-23 18:52:58,205 - __main__ - INFO - ✅ Phoenix evaluators initialized successfully
+2025-09-23 18:52:58,205 - __main__ - INFO -    🤖 Using evaluator model: gpt-4o
+2025-09-23 18:52:58,205 - __main__ - INFO -    📊 Available evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
+2025-09-23 18:52:58,205 - __main__ - INFO - 🔧 Setting up Phoenix observability...
+2025-09-23 18:53:00,281 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.
+2025-09-23 18:53:00,281 - alembic.runtime.migration - INFO - Will assume transactional DDL.
+2025-09-23 18:53:00,315 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init
+2025-09-23 18:53:00,890 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets
+2025-09-23 18:53:00,896 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table
+2025-09-23 18:53:00,898 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens
+2025-09-23 18:53:00,903 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table
+2025-09-23 18:53:00,910 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables
+2025-09-23 18:53:00,913 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
   next(self.gen)
-/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+/usr/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
   next(self.gen)
-2025-09-18 05:33:07,733 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
-2025-09-18 05:33:07,737 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
-2025-09-18 05:33:07,744 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
-2025-09-18 05:33:07,750 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
+2025-09-23 18:53:00,971 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table
+2025-09-23 18:53:00,975 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts
+2025-09-23 18:53:00,983 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.
+2025-09-23 18:53:00,989 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables
 🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
 📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
-2025-09-18 05:33:08,090 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
+2025-09-23 18:53:01,252 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6006/
 🔭 OpenTelemetry Tracing Details 🔭
 |  Phoenix Project: flight-search-agent-evaluation
 |  Span Processor: SimpleSpanProcessor
@@ -40,488 +39,277 @@ kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/flight_
 |  `register` has set this TracerProvider as the global OpenTelemetry default.
 |  To disable this behavior, call `register` with `set_global_tracer_provider=False`.
 
-2025-09-18 05:33:08,111 - __main__ - INFO - ✅ Phoenix setup completed successfully
-2025-09-18 05:33:08,115 - __main__ - INFO - ✅ LangChain instrumentation enabled
-2025-09-18 05:33:08,119 - __main__ - INFO - ✅ OpenAI instrumentation enabled
-2025-09-18 05:33:10,823 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
-2025-09-18 05:33:12,395 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
-2025-09-18 05:33:12,395 - shared.couchbase_client - INFO - 🗑️ Clearing scope: travel-sample.agentc_bookings
-2025-09-18 05:33:13,815 - shared.couchbase_client - INFO - 🗑️ Clearing data from travel-sample.agentc_bookings.user_bookings_20250918...
-2025-09-18 05:33:17,080 - shared.couchbase_client - INFO - ✅ Cleared collection: travel-sample.agentc_bookings.user_bookings_20250918
-2025-09-18 05:33:17,080 - shared.couchbase_client - INFO - ✅ Completed clearing scope: travel-sample.agentc_bookings
-2025-09-18 05:33:17,080 - main - INFO - ✅ Cleared existing flight bookings for fresh test run: travel-sample.agentc_bookings
-2025-09-18 05:33:17,114 - data.airline_reviews_data - INFO - Downloading Indian Airlines Customer Reviews dataset from Kaggle...
-2025-09-18 05:33:17,679 - data.airline_reviews_data - INFO - Loading reviews from /Users/kaustavghosh/.cache/kagglehub/datasets/jagathratchakan/indian-airlines-customer-reviews/versions/1/Indian_Domestic_Airline.csv
-2025-09-18 05:33:17,703 - data.airline_reviews_data - INFO - Loaded 2210 airline reviews from Kaggle dataset
-2025-09-18 05:33:17,707 - data.airline_reviews_data - INFO - Processed 2210 airline reviews into text format
-2025-09-18 05:33:19,015 - main - INFO - 📊 Airline reviews collection: 2210 existing, 2210 expected
-2025-09-18 05:33:19,016 - main - INFO - ✅ Collection already has correct document count (2210), skipping clear
-2025-09-18 05:33:19,019 - __main__ - INFO - 🔧 Setting up flight search agent...
-2025-09-18 05:33:19,019 - shared.agent_setup - INFO - ✅ Environment variables configured
-2025-09-18 05:33:23,302 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
-2025-09-18 05:33:24,887 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
-2025-09-18 05:33:27,453 - shared.couchbase_client - INFO - ℹ️ Collection 'airline_reviews' exists, keeping existing data
-2025-09-18 05:33:31,723 - shared.couchbase_client - INFO - ✅ Primary index created successfully
-2025-09-18 05:33:31,723 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.airline_reviews
-2025-09-18 05:33:31,726 - main - INFO - Loaded vector search index definition from agentcatalog_index.json
-2025-09-18 05:33:32,976 - shared.couchbase_client - INFO - ℹ️ Vector search index 'airline_reviews_index' already exists
-2025-09-18 05:33:32,976 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
-2025-09-18 05:33:33,292 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-I0000 00:00:1758153813.313293 1551937 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
-I0000 00:00:1758153813.332781 1551937 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
-2025-09-18 05:33:34,943 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
-2025-09-18 05:33:34,943 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
-2025-09-18 05:33:34,943 - shared.couchbase_client - INFO - 🔄 Loading data into vector store...
-2025-09-18 05:33:36,284 - data.airline_reviews_data - INFO - Found 2210 existing documents in collection, skipping data load
-2025-09-18 05:33:36,285 - shared.couchbase_client - INFO - ✅ Data loaded into vector store successfully
-2025-09-18 05:33:40,313 - shared.couchbase_client - INFO - ✅ LangChain vector store setup complete: travel-sample.agentc_data.airline_reviews
-2025-09-18 05:33:40,313 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
-2025-09-18 05:33:40,325 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
-2025-09-18 05:33:41,755 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
-2025-09-18 05:33:41,755 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
-2025-09-18 05:33:41,756 - main - INFO - Wrapped chat model to disable function calling for Capella AI compatibility
-2025-09-18 05:34:03,496 - main - INFO - Agent Catalog integration successful
-2025-09-18 05:34:03,499 - __main__ - INFO - ✅ Flight search agent setup completed successfully
-2025-09-18 05:34:03,499 - __main__ - INFO - 🚀 Starting evaluation with 5 queries
-2025-09-18 05:34:03,499 - __main__ - INFO - 📋 Evaluation Configuration:
-2025-09-18 05:34:03,499 - __main__ - INFO -    🤖 Agent: Flight Search Agent (LangGraph)
-2025-09-18 05:34:03,499 - __main__ - INFO -    🔧 Phoenix Available: ✅
-2025-09-18 05:34:03,499 - __main__ - INFO -    📊 Arize Datasets: ✅
-2025-09-18 05:34:03,499 - __main__ - INFO -    🧠 Phoenix Evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
-2025-09-18 05:34:03,499 - __main__ - INFO - 
+2025-09-23 18:53:01,258 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-09-23 18:53:01,264 - __main__ - INFO - ✅ LangChain instrumentation enabled
+2025-09-23 18:53:01,267 - __main__ - INFO - ✅ OpenAI instrumentation enabled
+2025-09-23 18:53:04,047 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-23 18:53:05,668 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-23 18:53:05,668 - shared.couchbase_client - INFO - 🗑️ Clearing scope: travel-sample.agentc_bookings
+2025-09-23 18:53:07,222 - shared.couchbase_client - INFO - 🗑️ Clearing data from travel-sample.agentc_bookings.user_bookings_20250923...
+2025-09-23 18:53:10,752 - shared.couchbase_client - INFO - ✅ Cleared collection: travel-sample.agentc_bookings.user_bookings_20250923
+2025-09-23 18:53:10,752 - shared.couchbase_client - INFO - ✅ Completed clearing scope: travel-sample.agentc_bookings
+2025-09-23 18:53:10,752 - main - INFO - ✅ Cleared existing flight bookings for fresh test run: travel-sample.agentc_bookings
+2025-09-23 18:53:10,767 - data.airline_reviews_data - INFO - Downloading Indian Airlines Customer Reviews dataset from Kaggle...
+2025-09-23 18:53:11,271 - data.airline_reviews_data - INFO - Loading reviews from /home/kaustav/.cache/kagglehub/datasets/jagathratchakan/indian-airlines-customer-reviews/versions/1/Indian_Domestic_Airline.csv
+2025-09-23 18:53:11,290 - data.airline_reviews_data - INFO - Loaded 2210 airline reviews from Kaggle dataset
+2025-09-23 18:53:11,293 - data.airline_reviews_data - INFO - Processed 2210 airline reviews into text format
+2025-09-23 18:53:12,558 - main - INFO - 📊 Airline reviews collection: 2210 existing, 2210 expected
+2025-09-23 18:53:12,558 - main - INFO - ✅ Collection already has correct document count (2210), skipping clear
+2025-09-23 18:53:12,560 - __main__ - INFO - 🔧 Setting up flight search agent...
+2025-09-23 18:53:12,560 - shared.agent_setup - INFO - ✅ Environment variables configured
+2025-09-23 18:53:16,928 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-23 18:53:18,686 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-23 18:53:21,239 - shared.couchbase_client - INFO - ℹ️ Collection 'airline_reviews' exists, keeping existing data
+2025-09-23 18:53:25,563 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-09-23 18:53:25,563 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.airline_reviews
+2025-09-23 18:53:25,563 - main - INFO - Loaded vector search index definition from agentcatalog_index.json
+2025-09-23 18:53:26,942 - shared.couchbase_client - INFO - ℹ️ Vector search index 'airline_reviews_index' already exists
+2025-09-23 18:53:26,942 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-23 18:53:27,084 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-23 18:53:28,632 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-23 18:53:28,632 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-23 18:53:28,632 - shared.couchbase_client - INFO - 🔄 Loading data into vector store...
+2025-09-23 18:53:30,259 - data.airline_reviews_data - INFO - Found 2210 existing documents in collection, skipping data load
+2025-09-23 18:53:30,259 - shared.couchbase_client - INFO - ✅ Data loaded into vector store successfully
+2025-09-23 18:53:34,250 - shared.couchbase_client - INFO - ✅ LangChain vector store setup complete: travel-sample.agentc_data.airline_reviews
+2025-09-23 18:53:34,250 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-23 18:53:34,276 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-23 18:53:36,001 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-23 18:53:36,001 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-23 18:53:57,570 - main - INFO - Agent Catalog integration successful
+2025-09-23 18:53:57,572 - __main__ - INFO - ✅ Flight search agent setup completed successfully
+2025-09-23 18:53:57,572 - __main__ - INFO - 🚀 Starting evaluation with 5 queries
+2025-09-23 18:53:57,572 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-09-23 18:53:57,572 - __main__ - INFO -    🤖 Agent: Flight Search Agent (LangGraph)
+2025-09-23 18:53:57,572 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-09-23 18:53:57,572 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-09-23 18:53:57,572 - __main__ - INFO -    🧠 Phoenix Evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
+2025-09-23 18:53:57,572 - __main__ - INFO - 
 📋 Query 1/5
-2025-09-18 05:34:03,499 - __main__ - INFO - 🔍 Evaluating query: Find flights from JFK to LAX
-2025-09-18 05:34:03,500 - main - INFO - Flight Query: Find flights from JFK to LAX
-2025-09-18 05:34:03,532 - main - INFO - ✅ Added Capella-compatible tool from prompt: lookup_flight_info
-2025-09-18 05:34:03,552 - main - INFO - ✅ Added Capella-compatible tool from prompt: save_flight_booking
-2025-09-18 05:34:03,570 - main - INFO - ✅ Added Capella-compatible tool from prompt: retrieve_flight_bookings
-2025-09-18 05:34:03,584 - main - INFO - ✅ Added Capella-compatible tool from prompt: search_airline_reviews
-
-
-> Entering new AgentExecutor chain...
-Thought: I need to identify the task and choose the correct tool. The task is to find flights between two airports, which requires information about available flights, airlines, and aircraft.
-
-Action: lookup_flight_info
-Action Input: source_airport="JFK", destination_airport="LAX"
-Observation2025-09-18 05:34:05,553 - main - INFO - 🔧 Tool lookup_flight_info called with input: 'source_airport="JFK", destination_airport="LAX"\nObservation'
-2025-09-18 05:34:06,862 - main - INFO - ✅ Tool lookup_flight_info executed successfully
-Available flights from JFK to LAX:
-
-1. AS flight from JFK to LAX using 321 762
-2. B6 flight from JFK to LAX using 320
-3. DL flight from JFK to LAX using 76W 752
-4. QF flight from JFK to LAX using 744
-5. AA flight from JFK to LAX using 32B 762
-6. UA flight from JFK to LAX using 757
-7. US flight from JFK to LAX using 32B 762
-8. VX flight from JFK to LAX using 320Thought: I now have the information needed to answer the question.
-
-Final Answer: The available flights from JFK to LAX are:
-1. AS flight from JFK to LAX using 321 762
-2. B6 flight from JFK to LAX using 320
-3. DL flight from JFK to LAX using 76W 752
-4. QF flight from JFK to LAX using 744
-5. AA flight from JFK to LAX using 32B 762
-6. UA flight from JFK to LAX using 757
-7. US flight from JFK to LAX using 32B 762
-8. VX flight from JFK to LAX using 320
-
-> Finished chain.
-2025-09-18 05:34:08,617 - __main__ - INFO - ✅ Query completed in 5.12s
-2025-09-18 05:34:08,617 - __main__ - INFO - 
+2025-09-23 18:53:57,572 - __main__ - INFO - 🔍 Evaluating query: Find flights from JFK to LAX
+2025-09-23 18:53:57,573 - main - INFO - Flight Query: Find flights from JFK to LAX
+2025-09-23 18:54:20,763 - main - INFO - 📊 Agent Catalog structured response: {'action_completed': 'true', 'success': True, 'summary': 'Available flights from JFK to LAX have been found.'}
+2025-09-23 18:54:20,771 - __main__ - INFO - ✅ Query completed in 23.20s
+2025-09-23 18:54:20,771 - __main__ - INFO - 
 📋 Query 2/5
-2025-09-18 05:34:08,617 - __main__ - INFO - 🔍 Evaluating query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
-2025-09-18 05:34:08,618 - main - INFO - Flight Query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
-2025-09-18 05:34:08,660 - main - INFO - ✅ Added Capella-compatible tool from prompt: lookup_flight_info
-2025-09-18 05:34:08,679 - main - INFO - ✅ Added Capella-compatible tool from prompt: save_flight_booking
-2025-09-18 05:34:08,696 - main - INFO - ✅ Added Capella-compatible tool from prompt: retrieve_flight_bookings
-2025-09-18 05:34:08,712 - main - INFO - ✅ Added Capella-compatible tool from prompt: search_airline_reviews
-
-
-> Entering new AgentExecutor chain...
-Thought: The task is to book a flight, but the user also wants to specify the number of passengers and class of service. However, the provided tools do not support specifying the number of passengers or class of service. The correct tool to use is save_flight_booking, but we need to format the input correctly.
-
-Action: save_flight_booking
-Action Input: "LAX,JFK,tomorrow" (assuming "tomorrow" is the date for the flight, but we need to format it correctly)
-Observation2025-09-18 05:34:10,047 - main - INFO - 🔧 Tool save_flight_booking called with input: 'LAX,JFK,tomorrow" (assuming "tomorrow" is the date for the flight, but we need to format it correctly)\nObservation'
-2025-09-18 05:34:16,262 - main - INFO - ✅ Tool save_flight_booking executed successfully
-Flight Booking Confirmed!
-
-Booking ID: FL0919C3012086
-Route: LAX → JFK
-Departure Date: 2025-09-19
-Passengers: 1
-Class: economy
-Total Price: $250.00
-
-Next Steps:
-1. Check-in opens 24 hours before departure
-2. Arrive at airport 2 hours early for domestic flights
-3. Bring valid government-issued photo ID
-
-Thank you for choosing our airline!Question: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
-Thought: The task is to book a flight, but the user also wants to specify the number of passengers and class of service. However, the provided tools do not support specifying the number of passengers or class of service. The correct tool to use is save_flight_booking, but we need to format the input correctly.
-
-Action: save_flight_booking
-Action Input: "LAX,JFK,tomorrow" (assuming "tomorrow" is the date for the flight, but we need to format it correctly)
-Observation2025-09-18 05:34:18,764 - main - INFO - 🔧 Tool save_flight_booking called with input: 'LAX,JFK,tomorrow" (assuming "tomorrow" is the date for the flight, but we need to format it correctly)\nObservation'
-2025-09-18 05:34:23,143 - main - INFO - ✅ Tool save_flight_booking executed successfully
-Duplicate booking found! You already have a confirmed booking:
-- Booking ID: FL0919C3012086
-- Route: LAX → JFK
-- Date: 2025-09-19
-- Total: $250.00
-
-No new booking was created. Use the existing booking ID for reference.
-
-> Finished chain.
-2025-09-18 05:34:23,170 - __main__ - INFO - ✅ Query completed in 14.55s
-2025-09-18 05:34:23,170 - __main__ - INFO - 
+2025-09-23 18:54:20,771 - __main__ - INFO - 🔍 Evaluating query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-23 18:54:20,772 - main - INFO - Flight Query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-23 18:54:33,260 - main - INFO - 📊 Agent Catalog structured response: {'action_completed': 'true', 'success': False, 'summary': 'Booking created, but class was set to economy instead of business.'}
+2025-09-23 18:54:33,268 - __main__ - INFO - ✅ Query completed in 12.50s
+2025-09-23 18:54:33,268 - __main__ - INFO - 
 📋 Query 3/5
-2025-09-18 05:34:23,170 - __main__ - INFO - 🔍 Evaluating query: Book an economy flight from JFK to MIA for next week, 1 passenger
-2025-09-18 05:34:23,171 - main - INFO - Flight Query: Book an economy flight from JFK to MIA for next week, 1 passenger
-2025-09-18 05:34:23,208 - main - INFO - ✅ Added Capella-compatible tool from prompt: lookup_flight_info
-2025-09-18 05:34:23,227 - main - INFO - ✅ Added Capella-compatible tool from prompt: save_flight_booking
-2025-09-18 05:34:23,243 - main - INFO - ✅ Added Capella-compatible tool from prompt: retrieve_flight_bookings
-2025-09-18 05:34:23,254 - main - INFO - ✅ Added Capella-compatible tool from prompt: search_airline_reviews
-
-
-> Entering new AgentExecutor chain...
-Thought: I need to identify the task and choose the correct tool. The task is to book a flight, so I need to use the save_flight_booking tool.
-
-Action: save_flight_booking
-Action Input: "JFK,MIA,2024-07-31" (assuming next week is July 31st)
-Observation2025-09-18 05:34:24,260 - main - INFO - 🔧 Tool save_flight_booking called with input: 'JFK,MIA,2024-07-31" (assuming next week is July 31st)\nObservation'
-2025-09-18 05:34:28,974 - main - INFO - ✅ Tool save_flight_booking executed successfully
-Flight Booking Confirmed!
-
-Booking ID: FL092516E75167
-Route: JFK → MIA
-Departure Date: 2025-09-25
-Passengers: 2024
-Class: economy
-Total Price: $506000.00
-
-Next Steps:
-1. Check-in opens 24 hours before departure
-2. Arrive at airport 2 hours early for domestic flights
-3. Bring valid government-issued photo ID
-
-Thank you for choosing our airline!Question: Book an economy flight from JFK to MIA for next week, 1 passenger
-Thought: I need to identify the task and choose the correct tool. The task is to book a flight, so I need to use the save_flight_booking tool.
-
-Action: save_flight_booking
-Action Input: "JFK,MIA,2024-07-31" (assuming next week is July 31st)
-Observation2025-09-18 05:34:30,194 - main - INFO - 🔧 Tool save_flight_booking called with input: 'JFK,MIA,2024-07-31" (assuming next week is July 31st)\nObservation'
-2025-09-18 05:34:34,438 - main - INFO - ✅ Tool save_flight_booking executed successfully
-Duplicate booking found! You already have a confirmed booking:
-- Booking ID: FL092516E75167
-- Route: JFK → MIA
-- Date: 2025-09-25
-- Total: $506000.00
-
-No new booking was created. Use the existing booking ID for reference.
-
-> Finished chain.
-2025-09-18 05:34:34,462 - __main__ - INFO - ✅ Query completed in 11.29s
-2025-09-18 05:34:34,462 - __main__ - INFO - 
+2025-09-23 18:54:33,268 - __main__ - INFO - 🔍 Evaluating query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-23 18:54:33,270 - main - INFO - Flight Query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-23 18:54:41,407 - main - INFO - 📊 Agent Catalog structured response: {'action_completed': 'true', 'success': True, 'summary': 'Flight booked successfully. Booking ID: BK001. Flight details: Source Airport: JFK, Destination Airport: MIA, Departure Date: 2025-09-24, Passengers: 1, Flight Class: Economy, Cost: $200'}
+2025-09-23 18:54:41,419 - __main__ - INFO - ✅ Query completed in 8.15s
+2025-09-23 18:54:41,419 - __main__ - INFO - 
 📋 Query 4/5
-2025-09-18 05:34:34,462 - __main__ - INFO - 🔍 Evaluating query: Show me my current flight bookings
-2025-09-18 05:34:34,463 - main - INFO - Flight Query: Show me my current flight bookings
-2025-09-18 05:34:34,492 - main - INFO - ✅ Added Capella-compatible tool from prompt: lookup_flight_info
-2025-09-18 05:34:34,511 - main - INFO - ✅ Added Capella-compatible tool from prompt: save_flight_booking
-2025-09-18 05:34:34,529 - main - INFO - ✅ Added Capella-compatible tool from prompt: retrieve_flight_bookings
-2025-09-18 05:34:34,538 - main - INFO - ✅ Added Capella-compatible tool from prompt: search_airline_reviews
-
-
-> Entering new AgentExecutor chain...
-Thought: I need to identify the task and choose the correct tool. The task is to retrieve flight bookings, so I will use the retrieve_flight_bookings tool.
-
-Action: retrieve_flight_bookings
-Action Input: ""
-Observation2025-09-18 05:34:35,372 - main - INFO - 🔧 Tool retrieve_flight_bookings called with input: '\nObservation'
-2025-09-18 05:34:36,663 - main - INFO - ✅ Tool retrieve_flight_bookings executed successfully
-Your Current Bookings (2 found):
-
-Booking 1:
-  Booking ID: FL092516E75167
-  Route: JFK → MIA
-  Date: 2025-09-25
-  Passengers: 2024
-  Class: economy
-  Total: $506000.00
-  Status: confirmed
-  Booked: 2025-09-18
-
-Booking 2:
-  Booking ID: FL0919C3012086
-  Route: LAX → JFK
-  Date: 2025-09-19
-  Passengers: 1
-  Class: economy
-  Total: $250.00
-  Status: confirmed
-  Booked: 2025-09-18I now have the information needed to answer the question.
-
-Final Answer: Your Current Bookings (2 found):
-
-Booking 1:
-  Booking ID: FL092516E75167
-  Route: JFK → MIA
-  Date: 2025-09-25
-  Passengers: 2024
-  Class: economy
-  Total: $506000.00
-  Status: confirmed
-  Booked: 2025-09-18
-
-Booking 2:
-  Booking ID: FL0919C3012086
-  Route: LAX → JFK
-  Date: 2025-09-19
-  Passengers: 1
-  Class: economy
-  Total: $250.00
-  Status: confirmed
-  Booked: 2025-09-18
-
-> Finished chain.
-2025-09-18 05:34:38,570 - __main__ - INFO - ✅ Query completed in 4.11s
-2025-09-18 05:34:38,570 - __main__ - INFO - 
+2025-09-23 18:54:41,419 - __main__ - INFO - 🔍 Evaluating query: Show me my current flight bookings
+2025-09-23 18:54:41,420 - main - INFO - Flight Query: Show me my current flight bookings
+2025-09-23 18:54:49,348 - main - INFO - 📊 Agent Catalog structured response: {'action_completed': 'true', 'success': True, 'summary': 'Flight booking details retrieved successfully'}
+2025-09-23 18:54:49,356 - __main__ - INFO - ✅ Query completed in 7.94s
+2025-09-23 18:54:49,356 - __main__ - INFO - 
 📋 Query 5/5
-2025-09-18 05:34:38,570 - __main__ - INFO - 🔍 Evaluating query: What do passengers say about SpiceJet's service quality?
-2025-09-18 05:34:38,571 - main - INFO - Flight Query: What do passengers say about SpiceJet's service quality?
-2025-09-18 05:34:38,602 - main - INFO - ✅ Added Capella-compatible tool from prompt: lookup_flight_info
-2025-09-18 05:34:38,620 - main - INFO - ✅ Added Capella-compatible tool from prompt: save_flight_booking
-2025-09-18 05:34:38,662 - main - INFO - ✅ Added Capella-compatible tool from prompt: retrieve_flight_bookings
-2025-09-18 05:34:38,683 - main - INFO - ✅ Added Capella-compatible tool from prompt: search_airline_reviews
-
-
-> Entering new AgentExecutor chain...
-Thought: I need to identify the task and choose the correct tool
-Action: search_airline_reviews
-Action Input: "SpiceJet's service quality"
-Observation2025-09-18 05:34:39,417 - main - INFO - 🔧 Tool search_airline_reviews called with input: 'SpiceJet\'s service quality"\nObservation'
-2025-09-18 05:34:45,091 - search_airline_reviews - INFO - Searching for airline reviews with query: 'SpiceJet's service quality'
-2025-09-18 05:34:47,676 - search_airline_reviews - INFO - Found 5 results for query: 'SpiceJet's service quality'
-2025-09-18 05:34:47,676 - main - INFO - ✅ Tool search_airline_reviews executed successfully
-Found 5 relevant airline reviews for 'SpiceJet's service quality':
-
-Review 1:
-Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recom...
-
-Review 2:
-Airline: SpiceJet. Title: "excellent hospitality". Review: ✅ Trip Verified |  It's very grateful to SpiceJet for the service in flight. Everything is fine with excellent hospitality. Very politely behavior and warmly welcome from your cabin crew and all members.. Rating: 10.0/10. Reviewer: A Kajan. ...
-
-Review 3:
-Airline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April...
-
-Review 4:
-Airline: SpiceJet. Title: "Excellent service". Review: ✅ Trip Verified |  Excellent service by the ground staff courteous beyond expectations always willing to help in the real sense and not lipservice i will recommend to all whom I know. Rating: 10.0/10. Reviewer: Ramanathan Ramchandra. Date: 1st N...
-
-Review 5:
-Airline: SpiceJet. Title: "Highly disappointed". Review: Not Verified |  Very poor services. Highly disappointed. Round trip flight was booked, cancelled my return flight and didn't even compensate or accomodate me in other flight.. Rating: 1.0/10. Reviewer: Mayank Baid. Date: 25th March 2023. Recom...Thought: I now have the information needed to answer the question
-Final Answer: Passengers have generally had a positive experience with SpiceJet's service quality, with many reviewers praising the airline's courteous and enthusiastic crew, excellent hospitality, and great travel experience. However, one reviewer had a highly disappointing experience with poor services.
-
-> Finished chain.
-2025-09-18 05:34:49,632 - __main__ - INFO - ✅ Query completed in 11.06s
-2025-09-18 05:34:49,633 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
-2025-09-18 05:34:49,633 - __main__ - INFO - 📋 Evaluation criteria:
-2025-09-18 05:34:49,633 - __main__ - INFO -    🔍 Relevance: Does the response address the flight search query?
-2025-09-18 05:34:49,633 - __main__ - INFO -    🎯 QA Correctness: Is the flight information accurate and helpful?
-2025-09-18 05:34:49,633 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
-2025-09-18 05:34:49,633 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
-2025-09-18 05:34:49,633 - __main__ - INFO -    📊 Running relevance evaluation...
-I0000 00:00:1758153889.650436 1551937 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.06s/it2025-09-18 05:34:56,066 - __main__ - INFO -    ✅ relevance evaluation completed
-2025-09-18 05:34:56,066 - __main__ - INFO -    📊 Running qa_correctness evaluation...
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:06<00:00 |  1.29s/it
-llm_classify |                                                     | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-18 05:35:01,240 - __main__ - INFO -    ✅ qa_correctness evaluation completed0:00 |  1.36it/s
-2025-09-18 05:35:01,241 - __main__ - INFO -    📊 Running hallucination evaluation...
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.04s/it
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:06<00:00 |  1.30s/it2025-09-18 05:35:08,304 - __main__ - INFO -    ✅ hallucination evaluation completed
-2025-09-18 05:35:08,304 - __main__ - INFO -    📊 Running toxicity evaluation...
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:07<00:00 |  1.41s/it
-llm_classify |                                                     | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-18 05:35:15,189 - __main__ - INFO -    ✅ toxicity evaluation completed0:05<00:00 |  1.23it/s
-2025-09-18 05:35:15,190 - __main__ - INFO - ✅ Phoenix evaluations completed
-2025-09-18 05:35:15,190 - __main__ - INFO - 
+2025-09-23 18:54:49,356 - __main__ - INFO - 🔍 Evaluating query: What do passengers say about SpiceJet's service quality?
+2025-09-23 18:54:49,357 - main - INFO - Flight Query: What do passengers say about SpiceJet's service quality?
+2025-09-23 18:54:56,575 - search_airline_reviews - INFO - Searching for airline reviews with query: 'SpiceJet service quality'
+2025-09-23 18:54:59,126 - search_airline_reviews - INFO - Found 5 results for query: 'SpiceJet service quality'
+2025-09-23 18:55:03,820 - main - INFO - 📊 Agent Catalog structured response: {'action_completed': 'true', 'success': True, 'summary': "Passengers praise SpiceJet's service quality, citing courteous and enthusiastic crew members, excellent hospitality, and warm welcomes. However, one reviewer experienced a delayed flight and expressed disappointment with the service."}
+2025-09-23 18:55:03,829 - __main__ - INFO - ✅ Query completed in 14.47s
+2025-09-23 18:55:03,829 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
+2025-09-23 18:55:03,829 - __main__ - INFO - 📋 Evaluation criteria:
+2025-09-23 18:55:03,829 - __main__ - INFO -    🔍 Relevance: Does the response address the flight search query?
+2025-09-23 18:55:03,829 - __main__ - INFO -    🎯 QA Correctness: Is the flight information accurate and helpful?
+2025-09-23 18:55:03,829 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
+2025-09-23 18:55:03,829 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
+2025-09-23 18:55:03,830 - __main__ - INFO -    📊 Running relevance evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.04s/it2025-09-23 18:55:10,488 - __main__ - INFO -    ✅ relevance evaluation completed
+2025-09-23 18:55:10,489 - __main__ - INFO -    📊 Running qa_correctness evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:06<00:00 |  1.33s/it
+llm_classify |                                                                                                                                                                                               | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-23 18:55:14,987 - __main__ - INFO -    ✅ qa_correctness evaluation completed███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  2.19it/s
+2025-09-23 18:55:14,987 - __main__ - INFO -    📊 Running hallucination evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.11it/s
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  1.66it/s2025-09-23 18:55:19,703 - __main__ - INFO -    ✅ hallucination evaluation completed
+2025-09-23 18:55:19,703 - __main__ - INFO -    📊 Running toxicity evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.06it/s
+llm_classify |                                                                                                                                                                                               | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-23 18:55:27,838 - __main__ - INFO -    ✅ toxicity evaluation completed█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:07<00:00 |  1.02s/it
+2025-09-23 18:55:27,838 - __main__ - INFO - ✅ Phoenix evaluations completed
+2025-09-23 18:55:27,838 - __main__ - INFO - 
 📊 Phoenix Evaluation Summary:
-2025-09-18 05:35:15,190 - __main__ - INFO -   Total queries: 5
-2025-09-18 05:35:15,190 - __main__ - INFO -   Successful executions: 5
-2025-09-18 05:35:15,190 - __main__ - INFO -   Failed executions: 0
-2025-09-18 05:35:15,190 - __main__ - INFO -   Average execution time: 9.23s
-2025-09-18 05:35:15,190 - __main__ - INFO - 
+2025-09-23 18:55:27,838 - __main__ - INFO -   Total queries: 5
+2025-09-23 18:55:27,838 - __main__ - INFO -   Successful executions: 5
+2025-09-23 18:55:27,838 - __main__ - INFO -   Failed executions: 0
+2025-09-23 18:55:27,838 - __main__ - INFO -   Average execution time: 13.25s
+2025-09-23 18:55:27,838 - __main__ - INFO - 
 🧠 Phoenix Evaluation Results:
-2025-09-18 05:35:15,191 - __main__ - INFO -    relevance: {'relevant': np.int64(5)}
-2025-09-18 05:35:15,192 - __main__ - INFO -    qa_correctness: {'correct': np.int64(3), 'incorrect': np.int64(2)}
-2025-09-18 05:35:15,192 - __main__ - INFO -    hallucination: {'hallucinated': np.int64(4), 'factual': np.int64(1)}
-2025-09-18 05:35:15,192 - __main__ - INFO -    toxicity: {'non-toxic': np.int64(5)}
-2025-09-18 05:35:15,192 - __main__ - INFO - 
+2025-09-23 18:55:27,838 - __main__ - INFO -    relevance: {'relevant': np.int64(5)}
+2025-09-23 18:55:27,838 - __main__ - INFO -    qa_correctness: {'correct': np.int64(4), 'incorrect': np.int64(1)}
+2025-09-23 18:55:27,839 - __main__ - INFO -    hallucination: {'factual': np.int64(3), 'hallucinated': np.int64(2)}
+2025-09-23 18:55:27,839 - __main__ - INFO -    toxicity: {'non-toxic': np.int64(5)}
+2025-09-23 18:55:27,839 - __main__ - INFO - 
 📊 Quick Scores Summary:
-2025-09-18 05:35:15,192 - __main__ - INFO -    Query 1: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
-2025-09-18 05:35:15,193 - __main__ - INFO -    Query 2: ✅ relevance: relevant | ❌ qa_correctness: incorrect | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
-2025-09-18 05:35:15,193 - __main__ - INFO -    Query 3: ✅ relevance: relevant | ❌ qa_correctness: incorrect | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
-2025-09-18 05:35:15,193 - __main__ - INFO -    Query 4: ✅ relevance: relevant | ✅ qa_correctness: correct | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
-2025-09-18 05:35:15,193 - __main__ - INFO -    Query 5: ✅ relevance: relevant | ✅ qa_correctness: correct | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
-2025-09-18 05:35:15,193 - __main__ - INFO - 
+2025-09-23 18:55:27,839 - __main__ - INFO -    Query 1: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-23 18:55:27,839 - __main__ - INFO -    Query 2: ✅ relevance: relevant | ❌ qa_correctness: incorrect | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
+2025-09-23 18:55:27,839 - __main__ - INFO -    Query 3: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-23 18:55:27,839 - __main__ - INFO -    Query 4: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-23 18:55:27,839 - __main__ - INFO -    Query 5: ✅ relevance: relevant | ✅ qa_correctness: correct | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
+2025-09-23 18:55:27,839 - __main__ - INFO - 
 📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
-2025-09-18 05:35:15,193 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,193 - __main__ - INFO - 
+2025-09-23 18:55:27,839 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,839 - __main__ - INFO - 
 🔍 QUERY 1: Find flights from JFK to LAX
-2025-09-18 05:35:15,193 - __main__ - INFO - ------------------------------------------------------------
-2025-09-18 05:35:15,193 - __main__ - INFO - 
+2025-09-23 18:55:27,839 - __main__ - INFO - ------------------------------------------------------------
+2025-09-23 18:55:27,839 - __main__ - INFO - 
 📊 RELEVANCE: relevant
-2025-09-18 05:35:15,193 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,193 - __main__ - INFO - The question asks for flights from JFK to LAX. The reference text provides a list of available flights from JFK to LAX, including the airline codes and aircraft types. This information directly answers the question by listing the flights that are available for the specified route.
-2025-09-18 05:35:15,193 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,193 - __main__ - INFO - 
+2025-09-23 18:55:27,839 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,839 - __main__ - INFO - The question asks for flights from JFK to LAX. The reference text provides a list of available flights from JFK to LAX, including the airline codes and aircraft types. This information directly answers the question by listing the flights that are available for the specified route. Therefore, the reference text is relevant to the question.
+2025-09-23 18:55:27,839 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,839 - __main__ - INFO - 
 📊 QA_CORRECTNESS: correct
-2025-09-18 05:35:15,193 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,193 - __main__ - INFO - The agent successfully provided the list of available flights from JFK to LAX, which was the user's request. The core information is accurate and matches the reference answer, indicating that the user would be satisfied with the response.
-2025-09-18 05:35:15,193 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,193 - __main__ - INFO - 
+2025-09-23 18:55:27,839 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,839 - __main__ - INFO - The agent provided a list of available flights from JFK to LAX, which matches the user's request. The flight details, including airlines and aircraft types, are consistent with the reference answer. The core functionality of finding and listing flights was successfully executed.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 HALLUCINATION: factual
-2025-09-18 05:35:15,193 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,193 - __main__ - INFO - The agent's response matches the reference text exactly, listing the same flights with the same details. There is no indication of impossible information or made-up data. The response is consistent with the system's capabilities and does not contradict any fundamental facts.
-2025-09-18 05:35:15,193 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,194 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent's response matches the reference text exactly, listing the same flights and aircraft types. There is no impossible information or contradictions present. The response is consistent with the system's capabilities and does not contain any hallucinated data.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 TOXICITY: non-toxic
-2025-09-18 05:35:15,194 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,194 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning comments, inappropriate language, or threats of violence. The text in question is: "Find flights from JFK to LAX." This text is a straightforward request for information about flights between two airports, JFK and LAX. It does not contain any language that could be considered hateful, demeaning, or inappropriate. There are no threats of physical or emotional violence present in the text. The language is neutral and purely informational, focusing on travel logistics. Therefore, the text does not meet any criteria for toxicity.
-2025-09-18 05:35:15,194 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,194 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,194 - __main__ - INFO - 
-🔍 QUERY 2: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
-2025-09-18 05:35:15,194 - __main__ - INFO - ------------------------------------------------------------
-2025-09-18 05:35:15,194 - __main__ - INFO - 
-📊 RELEVANCE: relevant
-2025-09-18 05:35:15,194 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,194 - __main__ - INFO - 1. The question asks for booking a flight from LAX to JFK for tomorrow, for 2 passengers in business class.
-2. The reference text provides details of a confirmed flight booking with the following information:
-   - Route: LAX → JFK
-   - Departure Date: 2025-08-06
-   - Passengers: 2
-   - Class: business
-3. The reference text matches the requirements of the question in terms of route, number of passengers, and class.
-4. The only discrepancy is the date; the question asks for a flight "for tomorrow," but the reference text shows a specific date (2025-08-06), which may or may not align with "tomorrow" depending on the current date.
-5. Despite the date uncertainty, the reference text contains relevant information about a flight booking that matches the other criteria of the question.
-
-Therefore, the reference text is relevant to the question as it provides information about a flight booking that meets most of the specified criteria.
-2025-09-18 05:35:15,194 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,194 - __main__ - INFO - 
-📊 QA_CORRECTNESS: incorrect
-2025-09-18 05:35:15,194 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,194 - __main__ - INFO - The agent's response indicates a booking was made, but it does not match the user's request. The booking is for 1 passenger in economy class, while the user requested 2 passengers in business class. Additionally, the agent mentions a duplicate booking, which suggests the booking was not successfully updated to meet the user's request. Therefore, the core functionality did not work as expected, and the user would likely not be satisfied with the response.
-2025-09-18 05:35:15,194 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,194 - __main__ - INFO - 
-📊 HALLUCINATION: hallucinated
-2025-09-18 05:35:15,194 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,194 - __main__ - INFO - The agent's response contains a booking confirmation with a different booking ID, date, and passenger class, which is expected due to dynamic data generation. However, the response mentions a duplicate booking with the same ID and details, which is inconsistent with the request for a new booking for 2 passengers in business class. This suggests a contradiction in the response, as it does not align with the user's request and the system's capabilities to create a new booking with the specified parameters.
-2025-09-18 05:35:15,194 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,195 - __main__ - INFO - 
-📊 TOXICITY: non-toxic
-2025-09-18 05:35:15,195 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,195 - __main__ - INFO - To determine whether the text is toxic, we need to analyze it based on the definition of toxicity provided. The text in question is: "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class." 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Find flights from JFK to LAX".
 
 1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group.
 
-2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is a straightforward request to book a flight.
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages anyone. It is a straightforward request for information about flights.
 
-3. **Inappropriate Language**: The text uses formal and appropriate language suitable for a travel booking context.
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a simple, neutral statement.
 
-4. **Threats of Physical or Emotional Violence**: There are no threats or implications of violence in the text.
+4. **Threats of Physical or Emotional Violence**: There are no threats, either physical or emotional, present in the text.
 
-Given these points, the text does not meet any of the criteria for toxicity. It is a neutral statement related to booking a flight and does not contain any elements that could be considered toxic.
-2025-09-18 05:35:15,195 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,195 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,195 - __main__ - INFO - 
-🔍 QUERY 3: Book an economy flight from JFK to MIA for next week, 1 passenger
-2025-09-18 05:35:15,195 - __main__ - INFO - ------------------------------------------------------------
-2025-09-18 05:35:15,195 - __main__ - INFO - 
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a neutral request for information about flights, without any negative or harmful language.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+🔍 QUERY 2: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-23 18:55:27,840 - __main__ - INFO - ------------------------------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 RELEVANCE: relevant
-2025-09-18 05:35:15,195 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,195 - __main__ - INFO - The question asks for booking an economy flight from JFK to MIA for next week for 1 passenger. The reference text provides details of a confirmed flight booking from JFK to MIA, specifying that it is for 1 passenger in economy class. Although the reference text does not specify the exact date of 'next week,' it does confirm a flight booking that matches the route, class, and number of passengers requested in the question. Therefore, the reference text contains relevant information that aligns with the request in the question.
-2025-09-18 05:35:15,195 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The question asks for booking a flight from LAX to JFK for tomorrow, for 2 passengers in business class. The reference text provides details of a confirmed flight booking with the same route (LAX to JFK), the same number of passengers (2), and the same class (business). Although the departure date in the reference text is not specified as 'tomorrow', it does show a specific date (2025-08-06), which could be interpreted as 'tomorrow' if the current date is 2025-08-05. Therefore, the reference text contains information that directly answers the question by confirming the booking details that match the request.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 QA_CORRECTNESS: incorrect
-2025-09-18 05:35:15,196 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,196 - __main__ - INFO - The agent's response indicates a successful booking with a confirmation message, including a booking ID, route, departure date, passenger count, class, and total price. However, there is a significant error in the passenger count and total price, which are clearly incorrect (2024 passengers and $506000.00). Additionally, the agent mentions a duplicate booking, which is not relevant to the user's request. These errors make the response incorrect as it does not provide accurate and helpful information to the user.
-2025-09-18 05:35:15,196 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent did not fulfill the user's request correctly because the user specifically asked for a business class booking, but the agent confirmed a booking in economy class instead. This does not meet the user's requirements, and therefore, the response is incorrect.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 HALLUCINATION: hallucinated
-2025-09-18 05:35:15,196 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,196 - __main__ - INFO - The response contains a booking for 2024 passengers, which is an implausible number for a single booking request for 1 passenger. The total price of $506,000.00 also reflects this error. This indicates a hallucination in the response, as it contradicts the request for 1 passenger.
-2025-09-18 05:35:15,196 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent's response indicates that the booking was made in economy class instead of business class, which contradicts the user's request for a business class booking. This is a fundamental error in the booking process, as the class of service is a critical aspect of the booking that should match the user's request. Therefore, the response contains incorrect information regarding the class of service, which is not a dynamic data issue but a factual error.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 TOXICITY: non-toxic
-2025-09-18 05:35:15,196 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,196 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text provided is a straightforward request to book a flight from JFK to MIA for one passenger next week. It does not contain any language that could be considered hateful or demeaning. There are no inappropriate words or phrases, nor are there any threats of physical or emotional violence. The text is purely transactional and informational, focusing on the details of a flight booking. Therefore, it does not meet any criteria for toxicity.
-2025-09-18 05:35:15,196 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text provided is: "Book a flight from LAX to JFK for tomorrow, 2 passengers, business class." This text is a straightforward request to book a flight. It does not contain any language that is hateful, demeaning, or inappropriate. There are no threats of physical or emotional violence present. The text is neutral and purely transactional, focusing on the details of a flight booking. Therefore, it does not meet any criteria for toxicity.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+🔍 QUERY 3: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-23 18:55:27,840 - __main__ - INFO - ------------------------------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The question asks for booking an economy flight from JFK to MIA for next week for 1 passenger. The reference text provides details of a confirmed flight booking from JFK to MIA, specifying that it is for 1 passenger and in economy class. Although the departure date in the reference text is in 2025, which may not align with 'next week' from the current date, the reference text still contains relevant information about a flight booking that matches the route, class, and number of passengers requested in the question. Therefore, the reference text is relevant to the question as it provides an example of a flight booking that meets the criteria specified in the question.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent successfully booked an economy flight from JFK to MIA for one passenger, as requested by the user. The departure date was set for next week, which is dynamically calculated and may differ from the reference. The booking was confirmed with a booking ID, and the core information provided (route, class, number of passengers) was accurate and helpful. The user would be satisfied with the response as it fulfills the request.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent's response contains dynamic data such as the booking ID, departure date, and cost, which are expected to differ from the reference text. The response provides plausible flight booking details and does not contain any impossible information or contradictions. Therefore, the response is factual.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text provided is a straightforward request to book a flight from JFK to MIA for one passenger next week. It does not contain any language that could be considered hateful or demeaning. There are no inappropriate words or phrases, nor are there any threats of physical or emotional violence. The text is purely transactional and informational, focusing on travel arrangements without any negative or harmful language. Therefore, the text does not meet the criteria for toxicity.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 🔍 QUERY 4: Show me my current flight bookings
-2025-09-18 05:35:15,196 - __main__ - INFO - ------------------------------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - ------------------------------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 RELEVANCE: relevant
-2025-09-18 05:35:15,196 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,196 - __main__ - INFO - The question asks for the user's current flight bookings. The reference text provides detailed information about two current flight bookings, including booking IDs, routes, dates, number of passengers, class, total cost, status, and booking dates. This information directly answers the question by listing the current flight bookings the user has, making the reference text relevant to the question.
-2025-09-18 05:35:15,196 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The question asks for the user's current flight bookings. The reference text provides detailed information about two current flight bookings, including booking IDs, routes, dates, number of passengers, class, total cost, status, and booking dates. This information directly answers the question by listing the current flight bookings the user has, making the reference text relevant to the question.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 QA_CORRECTNESS: correct
-2025-09-18 05:35:15,196 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,196 - __main__ - INFO - The agent provided the user with their current flight bookings, including booking IDs, routes, dates, passenger numbers, class, total cost, status, and booking dates. Although the details differ from the reference due to dynamic data, the core functionality of retrieving and displaying the user's current bookings was successfully executed. The user received the requested information accurately and would likely be satisfied with the response.
-2025-09-18 05:35:15,196 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,196 - __main__ - INFO - 
-📊 HALLUCINATION: hallucinated
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - The response contains a booking with 2024 passengers, which is an implausible number for a single booking. This suggests a data error or hallucination. Additionally, the total cost of $506,000.00 for an economy class ticket is unrealistic. These elements indicate hallucinated information.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent successfully retrieved and displayed the user's current flight bookings. Although the number of bookings and details differ from the reference, this is expected due to dynamic data. The core functionality of retrieving and presenting the booking information was achieved, and the user received accurate and useful information about their current booking.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - The agent's response contains a single booking with different details from the reference text, which is expected due to dynamic data generation. The booking ID, date, and other details are different, but this is normal behavior for dynamic data. There is no indication of impossible information or contradictions with system capabilities. Therefore, the response is factual.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 TOXICITY: non-toxic
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text in question is: "Show me my current flight bookings." This statement is a straightforward request for information about flight bookings. It does not contain any language that could be considered hateful or demeaning. There are no inappropriate words or phrases, nor are there any threats of physical or emotional violence. The text is neutral and purely informational, focusing on a personal request for information. Therefore, it does not meet any of the criteria for toxicity.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,840 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Show me my current flight bookings." 
+
+1. **Hateful Statements**: The text does not contain any language that could be interpreted as hateful towards any individual or group.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages another user. It is a straightforward request for information.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is polite and neutral.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats, either physical or emotional, present in the text.
+
+Given these points, the text does not meet any of the criteria for toxicity. It is a simple, non-confrontational request for information about flight bookings.
+2025-09-23 18:55:27,840 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 🔍 QUERY 5: What do passengers say about SpiceJet's service quality?
-2025-09-18 05:35:15,197 - __main__ - INFO - ------------------------------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - ------------------------------------------------------------
+2025-09-23 18:55:27,840 - __main__ - INFO - 
 📊 RELEVANCE: relevant
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - The question asks about passengers' opinions on SpiceJet's service quality. The reference text contains five reviews from passengers about their experiences with SpiceJet's service. Each review provides specific feedback on the service quality, such as 'impeccable service,' 'good service by the crew,' 'outstanding service,' 'efficient and warm onboard service,' and 'very good service.' These reviews directly address the question by providing insights into what passengers say about SpiceJet's service quality. Therefore, the reference text is relevant to answering the question.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,840 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,841 - __main__ - INFO - The question asks about passengers' opinions on SpiceJet's service quality. The reference text provides five reviews from passengers specifically about SpiceJet's service. Each review contains passengers' opinions and experiences regarding the service quality of SpiceJet. For example, reviews mention 'impeccable service', 'good service by the crew', 'outstanding service', 'efficient and warm onboard service', and 'very good service'. These reviews directly address the question by providing insights into what passengers say about SpiceJet's service quality.
+2025-09-23 18:55:27,849 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,850 - __main__ - INFO - 
 📊 QA_CORRECTNESS: correct
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - The agent provided a list of 5 reviews about SpiceJet's service quality, which is what the user requested. The reviews included both positive and negative feedback, giving a balanced view of passenger experiences. This satisfies the user's request for information about SpiceJet's service quality.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,850 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,850 - __main__ - INFO - The agent provided a summary of passenger reviews about SpiceJet's service quality, highlighting positive aspects such as courteous and enthusiastic crew members, excellent hospitality, and warm welcomes. Although the agent mentioned a negative aspect (a delayed flight), the core information about the service quality was conveyed. The user would likely be satisfied with this summary, as it addresses the question about service quality.
+2025-09-23 18:55:27,850 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,850 - __main__ - INFO - 
 📊 HALLUCINATION: hallucinated
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - The agent's response contains reviews that are not present in the reference text, such as 'excellent hospitality' and 'Great travel experience'. Additionally, the negative review 'Highly disappointed' is not found in the reference text. These discrepancies indicate that the agent has generated information not supported by the reference, which constitutes hallucination.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - 
+2025-09-23 18:55:27,850 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,850 - __main__ - INFO - The agent's response accurately reflects the positive reviews found in the reference text, highlighting courteous and enthusiastic crew members, excellent hospitality, and warm welcomes. However, the mention of a delayed flight and disappointment is not present in the reference text, which only contains positive reviews. This additional negative aspect is not supported by the provided reviews, making it a hallucination.
+2025-09-23 18:55:27,850 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,850 - __main__ - INFO - 
 📊 TOXICITY: non-toxic
-2025-09-18 05:35:15,197 - __main__ - INFO - 💭 FULL REASONING:
-2025-09-18 05:35:15,197 - __main__ - INFO - 1. **Understanding the Content**: The text is a question asking about passengers' opinions on SpiceJet's service quality. It does not provide any opinions or statements itself.
+2025-09-23 18:55:27,850 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-23 18:55:27,850 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text in question is: "What do passengers say about SpiceJet's service quality?" 
 
-2. **Checking for Hateful Statements**: The text does not contain any language that could be considered hateful. It is a neutral question.
+1. The text is a question asking for opinions or feedback about the service quality of SpiceJet, an airline.
+2. There are no words or phrases in the text that are inherently hateful or demeaning.
+3. The text does not contain any inappropriate language or slurs.
+4. There are no threats of physical or emotional violence present in the text.
+5. The text is neutral and simply seeks information or opinions from passengers.
 
-3. **Assessing for Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages any individual or group. It simply asks for opinions.
-
-4. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is a straightforward question.
-
-5. **Threats of Violence**: There are no threats, either physical or emotional, present in the text.
-
-6. **Conclusion**: The text is a neutral question asking for feedback and does not contain any elements of toxicity as defined. Therefore, it is non-toxic.
-2025-09-18 05:35:15,197 - __main__ - INFO - ----------------------------------------
-2025-09-18 05:35:15,197 - __main__ - INFO - ================================================================================
-2025-09-18 05:35:15,197 - __main__ - INFO - 📊 Creating Arize dataset...
-llm_classify |███████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:06<00:00 |  1.38s/it
-2025-09-18 05:35:15,966 - __main__ - INFO - ✅ Arize dataset created successfully: RGF0YXNldDozMTY2MTY6djJNdw==
-2025-09-18 05:35:15,967 - __main__ - INFO - 📊 Arize dataset created: RGF0YXNldDozMTY2MTY6djJNdw==
-2025-09-18 05:35:15,967 - __main__ - INFO - 
+Based on this analysis, the text does not meet any criteria for toxicity. It is a straightforward question without any negative or harmful language.
+2025-09-23 18:55:27,850 - __main__ - INFO - ----------------------------------------
+2025-09-23 18:55:27,850 - __main__ - INFO - ================================================================================
+2025-09-23 18:55:27,850 - __main__ - INFO - 📊 Creating Arize dataset...
+2025-09-23 18:55:28,627 - __main__ - INFO - ✅ Arize dataset created successfully: RGF0YXNldDozMTY4OTM6cFZpMg==
+2025-09-23 18:55:28,627 - __main__ - INFO - 📊 Arize dataset created: RGF0YXNldDozMTY4OTM6cFZpMg==
+2025-09-23 18:55:28,627 - __main__ - INFO - 
 ✅ Phoenix evaluation complete!
-2025-09-18 05:35:15,967 - __main__ - INFO - 🔒 Phoenix cleanup completed
- kaustavghosh@WQ7X9RQ6YW  ~/Desktop/agent-catalog-quickstart/notebooks/flight_search_agent_langraph  ↱ fix/tool-wrapping ✚  
+2025-09-23 18:55:28,627 - __main__ - INFO - 🔒 Phoenix cleanup completed
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:09<00:00 |  1.81s/it
+(flight-search-agent-py3.12)  kaustav@Kaustav-OMEN-ubuntu  ~/Desktop/agent-catalog-quickstart/notebooks/flight_search_agent_langraph  ↱ fix/tool-wrapping  
+
