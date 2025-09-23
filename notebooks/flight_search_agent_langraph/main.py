@@ -93,6 +93,14 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
         )
 
+    def _extract_tool_results(self, messages):
+        """Extract tool results from messages for production display."""
+        # Find the last ToolMessage which contains the actual results
+        for message in reversed(messages):
+            if hasattr(message, 'name') and message.name in ['lookup_flight_info', 'save_flight_booking', 'retrieve_flight_bookings', 'search_airline_reviews']:
+                return message.content
+        return None
+
     def _invoke(
         self,
         span: agentc.Span,
@@ -114,12 +122,20 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         response = agent.invoke(input=state, config=config)
         logger.info(f"🔍FULL Agent response: {response}")
 
-        # Extract final message and add to state - Agent Catalog provides natural responses
+        # Extract tool results instead of conversational responses for production display
         if "messages" in response and response["messages"]:
-            # Get the last AI message
-            last_message = response["messages"][-1]
-            state["messages"].append(last_message)
-            logger.info(f"📊 Agent response: {last_message.content}...")
+            # Find the last ToolMessage (contains actual results)
+            tool_content = self._extract_tool_results(response["messages"])
+            if tool_content:
+                # Use tool results for production display
+                assistant_msg = langchain_core.messages.AIMessage(content=tool_content)
+                state["messages"].append(assistant_msg)
+                logger.info(f"📊 Tool results: {tool_content[:200]}...")
+            else:
+                # Fallback to last AI message if no tool results
+                last_message = response["messages"][-1]
+                state["messages"].append(last_message)
+                logger.info(f"📊 Agent response: {last_message.content}...")
         else:
             # Fallback to output field
             output_content = response.get("output", "No response generated")
