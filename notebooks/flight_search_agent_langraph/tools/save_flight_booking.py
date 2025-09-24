@@ -173,11 +173,12 @@ def parse_and_validate_date(departure_date: str) -> tuple[datetime.date, str]:
                 raise ValueError("Date must be in YYYY-MM-DD format. Example: 2024-12-25")
             dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
         
-        # Check if date is in the future (allow today for demo purposes)
-        if dep_date < datetime.date.today():
-            today = datetime.date.today().strftime('%Y-%m-%d')
-            tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-            raise ValueError(f"Departure date must be in the future. Today is {today}. Please use a date like {tomorrow}")
+        # Allow booking for today and future dates (demo purposes)
+        today_date = datetime.date.today()
+        logger.info(f"🗓️ Date validation: dep_date={dep_date}, today={today_date}, comparison={dep_date < today_date}")
+        if dep_date < today_date:
+            today = today_date.strftime('%Y-%m-%d')
+            raise ValueError(f"Departure date cannot be in the past. Today is {today}. Please use today's date or later.")
         
         return dep_date, departure_date
     
@@ -347,6 +348,9 @@ def save_flight_booking(source_airport: str, destination_airport: str, departure
         Booking confirmation message with booking ID and details
     """
     try:
+        # Log parameters to debug flight_class extraction
+        logger.info(f"🎯 Booking parameters: source={source_airport}, dest={destination_airport}, date={departure_date}, passengers={passengers}, flight_class={flight_class}")
+
         # Validate database connection
         if cluster is None:
             return "Database connection unavailable. Unable to save booking. Please try again later."

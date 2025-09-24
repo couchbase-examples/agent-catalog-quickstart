@@ -93,12 +93,24 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
         )
 
+    def _get_tool_names(self) -> set[str]:
+        """Get available tool names from agent metadata."""
+        if hasattr(self, 'tools') and self.tools:
+            return {tool.name for tool in self.tools}
+        return set()
+
     def _extract_tool_results(self, messages):
         """Extract tool results from messages for production display."""
-        # Find the last ToolMessage which contains the actual results
-        for message in reversed(messages):
-            if hasattr(message, 'name') and message.name in ['lookup_flight_info', 'save_flight_booking', 'retrieve_flight_bookings', 'search_airline_reviews']:
+        # Get available tool names dynamically
+        tool_names = self._get_tool_names()
+
+        # Find the first successful ToolMessage (skip error results)
+        for message in messages:
+            if (hasattr(message, 'name') and
+                message.name in tool_names and
+                not message.content.startswith("Error:")):
                 return message.content
+
         return None
 
     def _invoke(
@@ -124,7 +136,7 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Extract tool results instead of conversational responses for production display
         if "messages" in response and response["messages"]:
-            # Find the last ToolMessage (contains actual results)
+            # Find the first successful tool result
             tool_content = self._extract_tool_results(response["messages"])
             if tool_content:
                 # Use tool results for production display
