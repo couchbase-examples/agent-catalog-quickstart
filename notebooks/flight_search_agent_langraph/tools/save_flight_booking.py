@@ -170,21 +170,20 @@ def parse_and_validate_date(departure_date: str) -> tuple[datetime.date, str]:
         else:
             # Validate date format
             if not re.match(r"^\d{4}-\d{2}-\d{2}$", departure_date):
-                raise ValueError("Date must be in YYYY-MM-DD format. Example: 2024-12-25")
+                raise ValueError("Date must be in YYYY-MM-DD format. Example: 2025-12-25")
             dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
-        
-        # Allow booking for today and future dates (demo purposes)
-        today_date = datetime.date.today()
-        logger.info(f"🗓️ Date validation: dep_date={dep_date}, today={today_date}, comparison={dep_date < today_date}")
-        if dep_date < today_date:
-            today = today_date.strftime('%Y-%m-%d')
+        # Allow bookings for today and future dates
+        if dep_date < datetime.date.today():
+            today = datetime.date.today().strftime('%Y-%m-%d')
             raise ValueError(f"Departure date cannot be in the past. Today is {today}. Please use today's date or later.")
-        
+
+        # Add logging for debugging
+        logger.info(f"🗓️ Date validation: dep_date={dep_date}, today={datetime.date.today()}, comparison={dep_date < datetime.date.today()}")
         return dep_date, departure_date
-    
+
     except ValueError as e:
         if "time data" in str(e):
-            raise ValueError("Invalid date format. Please use YYYY-MM-DD format. Example: 2024-12-25")
+            raise ValueError("Invalid date format. Please use YYYY-MM-DD format. Example: 2025-12-25")
         raise
 
 
@@ -229,11 +228,18 @@ def parse_passenger_details(original_input: str) -> tuple[int, str]:
                     passengers = int(number_match.group(1))
     
     # Parse class - runs independently of passenger parsing
-    if re.search(r'\bflight_class\s*[:=]\s*\"?business\"?', original_input, re.I) or re.search(r'\bbusiness\b', original_input, re.I):
+    # Enhanced patterns to catch "business class", "2 passengers, business class" etc.
+    if (re.search(r'\bflight_class\s*[:=]\s*["\']?business["\']?', original_input, re.I) or
+        re.search(r'\bbusiness\s*class\b', original_input, re.I) or
+        re.search(r'\bbusiness\b', original_input, re.I)):
         flight_class = "business"
-    elif re.search(r'\bflight_class\s*[:=]\s*\"?first\"?', original_input, re.I) or re.search(r'\bfirst\b', original_input, re.I):
+    elif (re.search(r'\bflight_class\s*[:=]\s*["\']?first["\']?', original_input, re.I) or
+          re.search(r'\bfirst\s*class\b', original_input, re.I) or
+          re.search(r'\bfirst\b', original_input, re.I)):
         flight_class = "first"
-    elif re.search(r'\bflight_class\s*[:=]\s*\"?economy\"?', original_input, re.I) or re.search(r'\beconomy\b|\bbasic\b', original_input, re.I):
+    elif (re.search(r'\bflight_class\s*[:=]\s*["\']?economy["\']?', original_input, re.I) or
+          re.search(r'\beconomy\s*class\b', original_input, re.I) or
+          re.search(r'\beconomy\b|\bbasic\b', original_input, re.I)):
         flight_class = "economy"
     
     return passengers, flight_class

@@ -38,9 +38,13 @@ except couchbase.exceptions.CouchbaseException as e:
 
 def parse_booking_query(booking_query: str) -> dict:
     """Parse booking query input and return search parameters."""
-    if not booking_query or booking_query.strip().lower() in ["", "all", "none"]:
+    # More robust empty input detection
+    if (not booking_query or
+        booking_query.strip() == "" or
+        booking_query.strip().lower() in ["all", "none", "show all", "get all"] or
+        len(booking_query.strip()) <= 2):  # Handle single chars, colons, etc.
         return {"type": "all"}
-    
+
     parts = booking_query.strip().split(",")
     if len(parts) != 3:
         raise ValueError("For specific booking search, use format 'source_airport,destination_airport,date'. Example: 'JFK,LAX,2024-12-25'. Or use empty string for all bookings.")
