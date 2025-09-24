@@ -82,23 +82,23 @@ Booking 2:
   Status: confirmed
   Booked: 2025-08-05""",
 
-    # Query 5: SpiceJet service quality reviews
-    """Found 5 relevant airline reviews for 'SpiceJet service':
+    # Query 5: SpiceJet service quality reviews (Updated to match Kaggle dataset)
+    """Found 5 relevant airline reviews for 'SpiceJet service quality':
 
 Review 1:
-Airline: SpiceJet. Title: "Service is impeccable". Review: ✅ Trip Verified | Much better than airbus models. Even the basic economy class has ambient lighting. Better personal air vents and better spotlights. Even overhead storage bins are good. Service is impeccable with proper care taken of guests...
+Airline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes
 
 Review 2:
-Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recom...
+Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recommended: yes
 
 Review 3:
-Airline: SpiceJet. Title: "outstanding service I experienced". Review: Not Verified |  I wanted to take a moment to express my sincere thanks for the outstanding service I experienced on my recent flight from Pune to Delhi. SG-8937. From the moment I boarded, the warmth and friendliness of the air h...
+Airline: SpiceJet. Title: "Excellent service". Review: ✅ Trip Verified |  Excellent service by the ground staff courteous beyond expectations always willing to help in the real sense and not lipservice i will recommend to all whom I know. Rating: 10.0/10. Reviewer: Ramanathan Ramchandra. Date: 1st November 2023. Recommended: yes
 
 Review 4:
-Airline: SpiceJet. Title: "efficient and warm onboard service". Review: ✅ Trip Verified |  New Delhi to Kolkata. Delighted with the prompt, efficient and warm onboard service provided by the crew. Appreciate their efforts towards customer centricity.. Rating: 10.0/10. Reviewer: Debashis Roy. Date: 2...
+Airline: SpiceJet. Title: "excellent hospitality". Review: ✅ Trip Verified |  It's very grateful to SpiceJet for the service in flight. Everything is fine with excellent hospitality. Very politely behavior and warmly welcome from your cabin crew and all members.. Rating: 10.0/10. Reviewer: A Kajan. Date: 10th August 2024. Recommended: yes
 
 Review 5:
-Airline: SpiceJet. Title: "Service is very good". Review: Service is very good,  I am impressed with Miss Renu  who gave the best services ever. Thanks to Renu who is very sweet by her nature as well as her service. Rating: 9.0/10. Reviewer: Sanjay Patnaik. Date: 21st September 2023. Recommended: ye...""",
+Airline: SpiceJet. Title: "delayed both ways by many hours". Review: Not Verified |  Flight was delayed both ways by many hours. Poor service for the same price as other airlines like IndiGo. No wifi or other amenities to compensate for terrible service.. Rating: 2.0/10. Reviewer: Somil Jain Jain. Date: 20th May 2022. Recommended: no""",
 ]
 
 # Create dictionary for backward compatibility

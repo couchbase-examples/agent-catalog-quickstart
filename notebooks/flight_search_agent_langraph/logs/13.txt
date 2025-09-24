@@ -1,0 +1,352 @@
+
+2025-09-24 00:35:04,237 - __main__ - INFO - ✅ Phoenix setup completed successfully
+2025-09-24 00:35:04,243 - __main__ - INFO - ✅ LangChain instrumentation enabled
+2025-09-24 00:35:04,249 - __main__ - INFO - ✅ OpenAI instrumentation enabled
+2025-09-24 00:35:06,910 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-24 00:35:08,478 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-24 00:35:08,478 - shared.couchbase_client - INFO - 🗑️ Clearing scope: travel-sample.agentc_bookings
+2025-09-24 00:35:09,808 - shared.couchbase_client - INFO - 🗑️ Clearing data from travel-sample.agentc_bookings.user_bookings_20250924...
+2025-09-24 00:35:13,003 - shared.couchbase_client - INFO - ✅ Cleared collection: travel-sample.agentc_bookings.user_bookings_20250924
+2025-09-24 00:35:13,003 - shared.couchbase_client - INFO - 🗑️ Clearing data from travel-sample.agentc_bookings.user_bookings_20250923...
+2025-09-24 00:35:16,289 - shared.couchbase_client - INFO - ✅ Cleared collection: travel-sample.agentc_bookings.user_bookings_20250923
+2025-09-24 00:35:16,289 - shared.couchbase_client - INFO - ✅ Completed clearing scope: travel-sample.agentc_bookings
+2025-09-24 00:35:16,289 - main - INFO - ✅ Cleared existing flight bookings for fresh test run: travel-sample.agentc_bookings
+2025-09-24 00:35:16,305 - data.airline_reviews_data - INFO - Downloading Indian Airlines Customer Reviews dataset from Kaggle...
+2025-09-24 00:35:16,848 - data.airline_reviews_data - INFO - Loading reviews from /home/kaustav/.cache/kagglehub/datasets/jagathratchakan/indian-airlines-customer-reviews/versions/1/Indian_Domestic_Airline.csv
+2025-09-24 00:35:16,877 - data.airline_reviews_data - INFO - Loaded 2210 airline reviews from Kaggle dataset
+2025-09-24 00:35:16,880 - data.airline_reviews_data - INFO - Processed 2210 airline reviews into text format
+2025-09-24 00:35:18,207 - main - INFO - 📊 Airline reviews collection: 2210 existing, 2210 expected
+2025-09-24 00:35:18,207 - main - INFO - ✅ Collection already has correct document count (2210), skipping clear
+2025-09-24 00:35:18,208 - __main__ - INFO - 🔧 Setting up flight search agent...
+2025-09-24 00:35:18,208 - shared.agent_setup - INFO - ✅ Environment variables configured
+2025-09-24 00:35:22,609 - shared.couchbase_client - INFO - ✅ Successfully connected to Couchbase
+2025-09-24 00:35:24,145 - shared.couchbase_client - INFO - ✅ Connected to existing bucket 'travel-sample'
+2025-09-24 00:35:27,012 - shared.couchbase_client - INFO - ℹ️ Collection 'airline_reviews' exists, keeping existing data
+2025-09-24 00:35:31,312 - shared.couchbase_client - INFO - ✅ Primary index created successfully
+2025-09-24 00:35:31,312 - shared.couchbase_client - INFO - ✅ Collection setup complete: agentc_data.airline_reviews
+2025-09-24 00:35:31,312 - main - INFO - Loaded vector search index definition from agentcatalog_index.json
+2025-09-24 00:35:32,644 - shared.couchbase_client - INFO - ℹ️ Vector search index 'airline_reviews_index' already exists
+2025-09-24 00:35:32,644 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-24 00:35:32,769 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-24 00:35:34,419 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-24 00:35:34,419 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-24 00:35:34,419 - shared.couchbase_client - INFO - 🔄 Loading data into vector store...
+2025-09-24 00:35:35,921 - data.airline_reviews_data - INFO - Found 2210 existing documents in collection, skipping data load
+2025-09-24 00:35:35,922 - shared.couchbase_client - INFO - ✅ Data loaded into vector store successfully
+2025-09-24 00:35:40,222 - shared.couchbase_client - INFO - ✅ LangChain vector store setup complete: travel-sample.agentc_data.airline_reviews
+2025-09-24 00:35:40,222 - shared.agent_setup - INFO - 🔧 Setting up AI services for langgraph framework...
+2025-09-24 00:35:40,249 - shared.agent_setup - INFO - ✅ Using latest Capella AI embeddings (direct API key + OpenAI wrapper)
+2025-09-24 00:35:41,664 - shared.agent_setup - INFO - ✅ Using latest Capella AI LLM (direct API key + OpenAI wrapper)
+2025-09-24 00:35:41,664 - shared.agent_setup - INFO - ✅ AI services setup completed for langgraph
+2025-09-24 00:36:02,453 - main - INFO - Agent Catalog integration successful
+2025-09-24 00:36:02,454 - __main__ - INFO - ✅ Flight search agent setup completed successfully
+2025-09-24 00:36:02,455 - __main__ - INFO - 🚀 Starting evaluation with 5 queries
+2025-09-24 00:36:02,455 - __main__ - INFO - 📋 Evaluation Configuration:
+2025-09-24 00:36:02,455 - __main__ - INFO -    🤖 Agent: Flight Search Agent (LangGraph)
+2025-09-24 00:36:02,455 - __main__ - INFO -    🔧 Phoenix Available: ✅
+2025-09-24 00:36:02,455 - __main__ - INFO -    📊 Arize Datasets: ✅
+2025-09-24 00:36:02,455 - __main__ - INFO -    🧠 Phoenix Evaluators: ['relevance', 'qa_correctness', 'hallucination', 'toxicity']
+2025-09-24 00:36:02,455 - __main__ - INFO - 
+📋 Query 1/5
+2025-09-24 00:36:02,455 - __main__ - INFO - 🔍 Evaluating query: Find flights from JFK to LAX
+2025-09-24 00:36:02,457 - main - INFO - Flight Query: Find flights from JFK to LAX
+2025-09-24 00:36:09,552 - main - INFO - 🔍FULL Agent response: {'messages': [HumanMessage(content='Find flights from JFK to LAX', additional_kwargs={}, response_metadata={}, id='69011a3c-eac4-43c6-9610-d780206aba91'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-028382b52c6344e99f467f654151f1e7', 'function': {'arguments': '{"destination_airport": "LAX", "source_airport": "JFK"}', 'name': 'lookup_flight_info'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 24, 'prompt_tokens': 1371, 'total_tokens': 1395, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-a8d180b336ec4eccbe062e07af2b97a3', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--b08c886d-149c-447b-968b-4bea29019a4e-0', tool_calls=[{'name': 'lookup_flight_info', 'args': {'destination_airport': 'LAX', 'source_airport': 'JFK'}, 'id': 'chatcmpl-tool-028382b52c6344e99f467f654151f1e7', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1371, 'output_tokens': 24, 'total_tokens': 1395, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Available flights from JFK to LAX:\n\n1. AS flight from JFK to LAX using 321 762\n2. B6 flight from JFK to LAX using 320\n3. DL flight from JFK to LAX using 76W 752\n4. QF flight from JFK to LAX using 744\n5. AA flight from JFK to LAX using 32B 762\n6. UA flight from JFK to LAX using 757\n7. US flight from JFK to LAX using 32B 762\n8. VX flight from JFK to LAX using 320', name='lookup_flight_info', id='304659b8-de60-42ed-abd4-9ae162130e55', tool_call_id='chatcmpl-tool-028382b52c6344e99f467f654151f1e7'), AIMessage(content='The available flights from JFK to LAX are:\n\n1. AS flight from JFK to LAX using 321 762\n2. B6 flight from JFK to LAX using 320\n3. DL flight from JFK to LAX using 76W 752\n4. QF flight from JFK to LAX using 744\n5. AA flight from JFK to LAX using 32B 762\n6. UA flight from JFK to LAX using 757\n7. US flight from JFK to LAX using 32B 762\n8. VX flight from JFK to LAX using 320', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 126, 'prompt_tokens': 1541, 'total_tokens': 1667, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-0e3bfaa8799f4a7fb6340da5d287533e', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None}, id='run--b3788166-9994-4902-ab06-ba2d3d8ded41-0', usage_metadata={'input_tokens': 1541, 'output_tokens': 126, 'total_tokens': 1667, 'input_token_details': {}, 'output_token_details': {}})]}
+2025-09-24 00:36:09,552 - main - INFO - 📊 Tool results: Available flights from JFK to LAX:
+
+1. AS flight from JFK to LAX using 321 762
+2. B6 flight from JFK to LAX using 320
+3. DL flight from JFK to LAX using 76W 752
+4. QF flight from JFK to LAX using 744
+5. AA flight from JFK to LAX using 32B 762
+6. UA flight from JFK to LAX using 757
+7. US flight from JFK to LAX using 32B 762
+8. VX flight from JFK to LAX using 320
+2025-09-24 00:36:09,560 - __main__ - INFO - ✅ Query completed in 7.11s
+2025-09-24 00:36:09,560 - __main__ - INFO - 
+📋 Query 2/5
+2025-09-24 00:36:09,560 - __main__ - INFO - 🔍 Evaluating query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-24 00:36:09,561 - main - INFO - Flight Query: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-24 00:36:28,046 - search_airline_reviews - INFO - Searching for airline reviews with query: 'flight from LAX to JFK'
+2025-09-24 00:36:30,910 - search_airline_reviews - INFO - Found 5 results for query: 'flight from LAX to JFK'
+2025-09-24 00:36:42,491 - search_airline_reviews - INFO - Searching for airline reviews with query: 'flight from LAX to JFK'
+2025-09-24 00:36:45,046 - search_airline_reviews - INFO - Found 5 results for query: 'flight from LAX to JFK'
+2025-09-24 00:36:47,238 - main - INFO - 🔍FULL Agent response: {'messages': [HumanMessage(content='Book a flight from LAX to JFK for tomorrow, 2 passengers, business class', additional_kwargs={}, response_metadata={}, id='07cce604-ad75-45c0-b4f8-5a04bd2ec6d0'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-168b542359524d4dae7e9818313a88bc', 'function': {'arguments': '{"departure_date": "2025-09-24", "destination_airport": "JFK", "passengers": 2, "source_airport": "LAX"}', 'name': 'save_flight_booking'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 1381, 'total_tokens': 1426, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-d1a9e9fc98d047a38c61614b622d5878', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--b91718f1-730c-4e71-b339-66b0340d731f-0', tool_calls=[{'name': 'save_flight_booking', 'args': {'departure_date': '2025-09-24', 'destination_airport': 'JFK', 'passengers': 2, 'source_airport': 'LAX'}, 'id': 'chatcmpl-tool-168b542359524d4dae7e9818313a88bc', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1381, 'output_tokens': 45, 'total_tokens': 1426, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Flight Booking Confirmed!\n\nBooking ID: FL092407142B5F\nRoute: LAX → JFK\nDeparture Date: 2025-09-24\nPassengers: 2\nClass: economy\nTotal Price: $500.00\n\nNext Steps:\n1. Check-in opens 24 hours before departure\n2. Arrive at airport 2 hours early for domestic flights\n3. Bring valid government-issued photo ID\n\nThank you for choosing our airline!', name='save_flight_booking', id='446f298b-847b-4a9d-b16a-75162a721123', tool_call_id='chatcmpl-tool-168b542359524d4dae7e9818313a88bc'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-9ff66ff9553a458db5117b4d46ce343b', 'function': {'arguments': '{"destination_airport": "JFK", "source_airport": "LAX"}', 'name': 'lookup_flight_info'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 26, 'prompt_tokens': 1544, 'total_tokens': 1570, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-cdb8d38e3394420c881b2ec150e96f0f', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--ca757362-a884-49e2-984c-17a4184f7346-0', tool_calls=[{'name': 'lookup_flight_info', 'args': {'destination_airport': 'JFK', 'source_airport': 'LAX'}, 'id': 'chatcmpl-tool-9ff66ff9553a458db5117b4d46ce343b', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1544, 'output_tokens': 26, 'total_tokens': 1570, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Available flights from LAX to JFK:\n\n1. AS flight from LAX to JFK using 321 762\n2. B6 flight from LAX to JFK using 320\n3. DL flight from LAX to JFK using 76W 752\n4. QF flight from LAX to JFK using 744\n5. UA flight from LAX to JFK using 757\n6. AA flight from LAX to JFK using 32B 762\n7. US flight from LAX to JFK using 32B 762\n8. VX flight from LAX to JFK using 320', name='lookup_flight_info', id='f5c06bd1-a152-4fc0-bba2-7ae042bc81c9', tool_call_id='chatcmpl-tool-9ff66ff9553a458db5117b4d46ce343b'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-b7ecc36e7b72457caecb500f253dd127', 'function': {'arguments': '{"query": "flight from LAX to JFK"}', 'name': 'search_airline_reviews'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 19, 'prompt_tokens': 1714, 'total_tokens': 1733, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-492695ca44c54fef8e64466c5405d5f9', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--fb395741-be08-497a-b835-b8c3670b5617-0', tool_calls=[{'name': 'search_airline_reviews', 'args': {'query': 'flight from LAX to JFK'}, 'id': 'chatcmpl-tool-b7ecc36e7b72457caecb500f253dd127', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1714, 'output_tokens': 19, 'total_tokens': 1733, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Found 5 relevant airline reviews for \'flight from LAX to JFK\':\n\nReview 1:\nAirline: Vistara. Title: "Extremely poor experience2. Review: ✅ Trip Verified |  Extremely poor experience, no information on flight delay. Poor ground process management and flight experience not up to the mark.. Rating: 2.0/10. Reviewer: A Kadyta. Date: 17th February 2024. Recommended: no\n\nReview 2:\nAirline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes\n\nReview 3:\nAirline: AirIndia. Title: "bad experience with any airline". Review: Not Verified |  Flight got delayed for 2 times. All the passengers who booked for this flight were very upset including me. There was no proper announcement when the gate was changed. I’ve never seen this kind of bad experience with any airline.. Rating: 1.0/10. Reviewer: Harry Downey. Date: 24th October 2021. Recommended: no\n\nReview 4:\nAirline: Air India Express. Title: "no information provided". Review: Not Verified |  The flight delayed for 2 hrs and no information provided by airline. This will be my last trip with Air India Express, the worst airline. Rating: 1.0/10. Reviewer: Shameem Elachola. Date: 12th September 2024. Recommended: no\n\nReview 5:\nAirline: AirIndia. Title: "it was a horrible experience". Review: Not Verified |  I was flying from Tokyo Narita  to Dubai via Delhi. The checkin lady made a mistake in entering my information that they were not able to let me board even though I could have missed my flight, my bags were re checked that maybe the Red mark was because of that but nothing from my end. The manager had to come and manually fix the error in the system. The plane landed 1 hour 20 minutes earlier than the scheduled time in Delhi but there was no ground staff so all of us were stuck in the plane for 1 hour 20 minutes without an AC. The tv was not working, remote was broken and so were the buttons. The flight was for 8.5 hours and I cannot sleep on the plane. So it was a horrible experience. Rating: 1.0/10. Reviewer: Sharika Qureshi. Date: 27th August 2024. Recommended: no', name='search_airline_reviews', id='4a690bcd-9640-4c3f-8ce9-eeb9e4e544f0', tool_call_id='chatcmpl-tool-b7ecc36e7b72457caecb500f253dd127'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-fd8bce73276b42ecb04b5fdcb62b02f0', 'function': {'arguments': '{"booking_query": "LAX,JFK,2025-09-24"}', 'name': 'retrieve_flight_bookings'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 26, 'prompt_tokens': 2337, 'total_tokens': 2363, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-9f779551477d4b7f88732ef39caf277c', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--d3e6b99d-829d-419e-afc0-93bb58135272-0', tool_calls=[{'name': 'retrieve_flight_bookings', 'args': {'booking_query': 'LAX,JFK,2025-09-24'}, 'id': 'chatcmpl-tool-fd8bce73276b42ecb04b5fdcb62b02f0', 'type': 'tool_call'}], usage_metadata={'input_tokens': 2337, 'output_tokens': 26, 'total_tokens': 2363, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Your Current Bookings (1 found):\n\nBooking 1:\n  Booking ID: FL092407142B5F\n  Route: LAX → JFK\n  Date: 2025-09-24\n  Passengers: 2\n  Class: economy\n  Total: $500.00\n  Status: confirmed\n  Booked: 2025-09-24', name='retrieve_flight_bookings', id='75855a5b-fd23-450f-b8dd-1cee996c3983', tool_call_id='chatcmpl-tool-fd8bce73276b42ecb04b5fdcb62b02f0'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-4bf9aa394f854d78bf4cf340664d01bd', 'function': {'arguments': '{"destination_airport": "JFK", "source_airport": "LAX"}', 'name': 'lookup_flight_info'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 25, 'prompt_tokens': 2462, 'total_tokens': 2487, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-be73a26b9c9b475b98f536687ef9bb91', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--64c0be60-390f-4717-8bdf-ebb5f88cec3e-0', tool_calls=[{'name': 'lookup_flight_info', 'args': {'destination_airport': 'JFK', 'source_airport': 'LAX'}, 'id': 'chatcmpl-tool-4bf9aa394f854d78bf4cf340664d01bd', 'type': 'tool_call'}], usage_metadata={'input_tokens': 2462, 'output_tokens': 25, 'total_tokens': 2487, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Available flights from LAX to JFK:\n\n1. AS flight from LAX to JFK using 321 762\n2. B6 flight from LAX to JFK using 320\n3. DL flight from LAX to JFK using 76W 752\n4. QF flight from LAX to JFK using 744\n5. UA flight from LAX to JFK using 757\n6. AA flight from LAX to JFK using 32B 762\n7. US flight from LAX to JFK using 32B 762\n8. VX flight from LAX to JFK using 320', name='lookup_flight_info', id='a9c4e48b-c52e-4590-9cac-726fddcd2dfc', tool_call_id='chatcmpl-tool-4bf9aa394f854d78bf4cf340664d01bd'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-fd0f082b13144464931287f7247d69b8', 'function': {'arguments': '{"query": "flight from LAX to JFK"}', 'name': 'search_airline_reviews'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 19, 'prompt_tokens': 2632, 'total_tokens': 2651, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-a3a73d849699413595253f22403fa9b9', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--0cabf036-d84a-46f0-9921-922f9570abf2-0', tool_calls=[{'name': 'search_airline_reviews', 'args': {'query': 'flight from LAX to JFK'}, 'id': 'chatcmpl-tool-fd0f082b13144464931287f7247d69b8', 'type': 'tool_call'}], usage_metadata={'input_tokens': 2632, 'output_tokens': 19, 'total_tokens': 2651, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Found 5 relevant airline reviews for \'flight from LAX to JFK\':\n\nReview 1:\nAirline: Vistara. Title: "Extremely poor experience2. Review: ✅ Trip Verified |  Extremely poor experience, no information on flight delay. Poor ground process management and flight experience not up to the mark.. Rating: 2.0/10. Reviewer: A Kadyta. Date: 17th February 2024. Recommended: no\n\nReview 2:\nAirline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes\n\nReview 3:\nAirline: AirIndia. Title: "bad experience with any airline". Review: Not Verified |  Flight got delayed for 2 times. All the passengers who booked for this flight were very upset including me. There was no proper announcement when the gate was changed. I’ve never seen this kind of bad experience with any airline.. Rating: 1.0/10. Reviewer: Harry Downey. Date: 24th October 2021. Recommended: no\n\nReview 4:\nAirline: Air India Express. Title: "no information provided". Review: Not Verified |  The flight delayed for 2 hrs and no information provided by airline. This will be my last trip with Air India Express, the worst airline. Rating: 1.0/10. Reviewer: Shameem Elachola. Date: 12th September 2024. Recommended: no\n\nReview 5:\nAirline: AirIndia. Title: "it was a horrible experience". Review: Not Verified |  I was flying from Tokyo Narita  to Dubai via Delhi. The checkin lady made a mistake in entering my information that they were not able to let me board even though I could have missed my flight, my bags were re checked that maybe the Red mark was because of that but nothing from my end. The manager had to come and manually fix the error in the system. The plane landed 1 hour 20 minutes earlier than the scheduled time in Delhi but there was no ground staff so all of us were stuck in the plane for 1 hour 20 minutes without an AC. The tv was not working, remote was broken and so were the buttons. The flight was for 8.5 hours and I cannot sleep on the plane. So it was a horrible experience. Rating: 1.0/10. Reviewer: Sharika Qureshi. Date: 27th August 2024. Recommended: no', name='search_airline_reviews', id='d17ce9f3-a82c-47ba-b50c-ae79617ad299', tool_call_id='chatcmpl-tool-fd0f082b13144464931287f7247d69b8'), AIMessage(content='Note: The tool results are copied exactly as returned.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 11, 'prompt_tokens': 3255, 'total_tokens': 3266, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-4de9fa450d2246fc8c41b5b64a5ea15f', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None}, id='run--a67a9098-7e64-4c4d-91b5-ffca1d681f21-0', usage_metadata={'input_tokens': 3255, 'output_tokens': 11, 'total_tokens': 3266, 'input_token_details': {}, 'output_token_details': {}})]}
+2025-09-24 00:36:47,239 - main - INFO - 📊 Tool results: Found 5 relevant airline reviews for 'flight from LAX to JFK':
+
+Review 1:
+Airline: Vistara. Title: "Extremely poor experience2. Review: ✅ Trip Verified |  Extremely poor experience, no information on flight delay. Poor ground process management and flight experience not up to the mark.. Rating: 2.0/10. Reviewer: A Kadyta. Date: 17th February 2024. Recommended: no
+
+Review 2:
+Airline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes
+
+Review 3:
+Airline: AirIndia. Title: "bad experience with any airline". Review: Not Verified |  Flight got delayed for 2 times. All the passengers who booked for this flight were very upset including me. There was no proper announcement when the gate was changed. I’ve never seen this kind of bad experience with any airline.. Rating: 1.0/10. Reviewer: Harry Downey. Date: 24th October 2021. Recommended: no
+
+Review 4:
+Airline: Air India Express. Title: "no information provided". Review: Not Verified |  The flight delayed for 2 hrs and no information provided by airline. This will be my last trip with Air India Express, the worst airline. Rating: 1.0/10. Reviewer: Shameem Elachola. Date: 12th September 2024. Recommended: no
+
+Review 5:
+Airline: AirIndia. Title: "it was a horrible experience". Review: Not Verified |  I was flying from Tokyo Narita  to Dubai via Delhi. The checkin lady made a mistake in entering my information that they were not able to let me board even though I could have missed my flight, my bags were re checked that maybe the Red mark was because of that but nothing from my end. The manager had to come and manually fix the error in the system. The plane landed 1 hour 20 minutes earlier than the scheduled time in Delhi but there was no ground staff so all of us were stuck in the plane for 1 hour 20 minutes without an AC. The tv was not working, remote was broken and so were the buttons. The flight was for 8.5 hours and I cannot sleep on the plane. So it was a horrible experience. Rating: 1.0/10. Reviewer: Sharika Qureshi. Date: 27th August 2024. Recommended: no
+2025-09-24 00:36:47,252 - __main__ - INFO - ✅ Query completed in 37.69s
+2025-09-24 00:36:47,253 - __main__ - INFO - 
+📋 Query 3/5
+2025-09-24 00:36:47,253 - __main__ - INFO - 🔍 Evaluating query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-24 00:36:47,253 - main - INFO - Flight Query: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-24 00:36:56,341 - main - INFO - 🔍FULL Agent response: {'messages': [HumanMessage(content='Book an economy flight from JFK to MIA for next week, 1 passenger', additional_kwargs={}, response_metadata={}, id='b814c386-7183-4290-b254-f9f4ea6211fd'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-f8a521c909734e799aa107bef931183e', 'function': {'arguments': '{"departure_date": "2025-09-30", "destination_airport": "MIA", "passengers": 1, "source_airport": "JFK"}', 'name': 'save_flight_booking'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 1380, 'total_tokens': 1425, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-804bb1b860904274ad2b2b5972a0a50f', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--1e967a77-7ae5-4ba4-8b38-2f95d78cc64c-0', tool_calls=[{'name': 'save_flight_booking', 'args': {'departure_date': '2025-09-30', 'destination_airport': 'MIA', 'passengers': 1, 'source_airport': 'JFK'}, 'id': 'chatcmpl-tool-f8a521c909734e799aa107bef931183e', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1380, 'output_tokens': 45, 'total_tokens': 1425, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Flight Booking Confirmed!\n\nBooking ID: FL0930C2FC63BE\nRoute: JFK → MIA\nDeparture Date: 2025-09-30\nPassengers: 1\nClass: economy\nTotal Price: $250.00\n\nNext Steps:\n1. Check-in opens 24 hours before departure\n2. Arrive at airport 2 hours early for domestic flights\n3. Bring valid government-issued photo ID\n\nThank you for choosing our airline!', name='save_flight_booking', id='fcd0abfe-f430-420b-b89c-96e1dcf499a9', tool_call_id='chatcmpl-tool-f8a521c909734e799aa107bef931183e'), AIMessage(content='You have been given a flight booking confirmation message with booking ID and details.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 15, 'prompt_tokens': 1544, 'total_tokens': 1559, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-c4ba48343b35408cb8134def8cf63d7a', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None}, id='run--a337091d-48b7-427a-8dcf-93aea983467a-0', usage_metadata={'input_tokens': 1544, 'output_tokens': 15, 'total_tokens': 1559, 'input_token_details': {}, 'output_token_details': {}})]}
+2025-09-24 00:36:56,341 - main - INFO - 📊 Tool results: Flight Booking Confirmed!
+
+Booking ID: FL0930C2FC63BE
+Route: JFK → MIA
+Departure Date: 2025-09-30
+Passengers: 1
+Class: economy
+Total Price: $250.00
+
+Next Steps:
+1. Check-in opens 24 hours before departure
+2. Arrive at airport 2 hours early for domestic flights
+3. Bring valid government-issued photo ID
+
+Thank you for choosing our airline!
+2025-09-24 00:36:56,348 - __main__ - INFO - ✅ Query completed in 9.10s
+2025-09-24 00:36:56,348 - __main__ - INFO - 
+📋 Query 4/5
+2025-09-24 00:36:56,348 - __main__ - INFO - 🔍 Evaluating query: Show me my current flight bookings
+2025-09-24 00:36:56,349 - main - INFO - Flight Query: Show me my current flight bookings
+2025-09-24 00:37:00,237 - main - INFO - 🔍FULL Agent response: {'messages': [HumanMessage(content='Show me my current flight bookings', additional_kwargs={}, response_metadata={}, id='af490611-ec0c-4500-9878-dc41073d972e'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-bafbe976a15841e8849c8eff77a85e61', 'function': {'arguments': '{"booking_query": ""}', 'name': 'retrieve_flight_bookings'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 13, 'prompt_tokens': 1370, 'total_tokens': 1383, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-6bee67226d164cc09fc28adac433c395', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--cc939f85-8093-427b-86c8-edcf5e7b7f56-0', tool_calls=[{'name': 'retrieve_flight_bookings', 'args': {'booking_query': ''}, 'id': 'chatcmpl-tool-bafbe976a15841e8849c8eff77a85e61', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1370, 'output_tokens': 13, 'total_tokens': 1383, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Your Current Bookings (2 found):\n\nBooking 1:\n  Booking ID: FL0930C2FC63BE\n  Route: JFK → MIA\n  Date: 2025-09-30\n  Passengers: 1\n  Class: economy\n  Total: $250.00\n  Status: confirmed\n  Booked: 2025-09-24\n\nBooking 2:\n  Booking ID: FL092407142B5F\n  Route: LAX → JFK\n  Date: 2025-09-24\n  Passengers: 2\n  Class: economy\n  Total: $500.00\n  Status: confirmed\n  Booked: 2025-09-24', name='retrieve_flight_bookings', id='82a5b9a3-dee0-425d-a936-c3461c9576f8', tool_call_id='chatcmpl-tool-bafbe976a15841e8849c8eff77a85e61'), AIMessage(content='Would you like to book a new flight or search for airline reviews?', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 14, 'prompt_tokens': 1556, 'total_tokens': 1570, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-57a047887cf14950b0962fb7fc4f04ef', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None}, id='run--1ca7cf5a-009d-479c-99d4-72676209711b-0', usage_metadata={'input_tokens': 1556, 'output_tokens': 14, 'total_tokens': 1570, 'input_token_details': {}, 'output_token_details': {}})]}
+2025-09-24 00:37:00,237 - main - INFO - 📊 Tool results: Your Current Bookings (2 found):
+
+Booking 1:
+  Booking ID: FL0930C2FC63BE
+  Route: JFK → MIA
+  Date: 2025-09-30
+  Passengers: 1
+  Class: economy
+  Total: $250.00
+  Status: confirmed
+  Booked: 2025-09-24
+
+Booking 2:
+  Booking ID: FL092407142B5F
+  Route: LAX → JFK
+  Date: 2025-09-24
+  Passengers: 2
+  Class: economy
+  Total: $500.00
+  Status: confirmed
+  Booked: 2025-09-24
+2025-09-24 00:37:00,245 - __main__ - INFO - ✅ Query completed in 3.90s
+2025-09-24 00:37:00,245 - __main__ - INFO - 
+📋 Query 5/5
+2025-09-24 00:37:00,245 - __main__ - INFO - 🔍 Evaluating query: What do passengers say about SpiceJet's service quality?
+2025-09-24 00:37:00,246 - main - INFO - Flight Query: What do passengers say about SpiceJet's service quality?
+2025-09-24 00:37:05,933 - search_airline_reviews - INFO - Searching for airline reviews with query: 'SpiceJet service quality'
+2025-09-24 00:37:08,611 - search_airline_reviews - INFO - Found 5 results for query: 'SpiceJet service quality'
+2025-09-24 00:37:11,760 - main - INFO - 🔍FULL Agent response: {'messages': [HumanMessage(content="What do passengers say about SpiceJet's service quality?", additional_kwargs={}, response_metadata={}, id='04673311-6141-4198-96b2-57d7300e6069'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'chatcmpl-tool-cc42cf786b1941d7ada93365f6d79c76', 'function': {'arguments': '{"query": "SpiceJet service quality"}', 'name': 'search_airline_reviews'}, 'type': 'function', 'index': 0}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 16, 'prompt_tokens': 1375, 'total_tokens': 1391, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-e3cb468cd65d47d5a0b7c9f22059f4cb', 'service_tier': None, 'finish_reason': 'tool_calls', 'logprobs': None}, id='run--40aa7c01-7ff7-4025-befa-1a7df951cdeb-0', tool_calls=[{'name': 'search_airline_reviews', 'args': {'query': 'SpiceJet service quality'}, 'id': 'chatcmpl-tool-cc42cf786b1941d7ada93365f6d79c76', 'type': 'tool_call'}], usage_metadata={'input_tokens': 1375, 'output_tokens': 16, 'total_tokens': 1391, 'input_token_details': {}, 'output_token_details': {}}), ToolMessage(content='Found 5 relevant airline reviews for \'SpiceJet service quality\':\n\nReview 1:\nAirline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes\n\nReview 2:\nAirline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recommended: yes\n\nReview 3:\nAirline: SpiceJet. Title: "Excellent service". Review: ✅ Trip Verified |  Excellent service by the ground staff courteous beyond expectations always willing to help in the real sense and not lipservice i will recommend to all whom I know. Rating: 10.0/10. Reviewer: Ramanathan Ramchandra. Date: 1st November 2023. Recommended: yes\n\nReview 4:\nAirline: SpiceJet. Title: "excellent hospitality". Review: ✅ Trip Verified |  It\'s very grateful to SpiceJet for the service in flight. Everything is fine with excellent hospitality. Very politely behavior and warmly welcome from your cabin crew and all members.. Rating: 10.0/10. Reviewer: A Kajan. Date: 10th August 2024. Recommended: yes\n\nReview 5:\nAirline: SpiceJet. Title: "delayed both ways by many hours". Review: Not Verified |  Flight was delayed both ways by many hours. Poor service for the same price as other airlines like IndiGo. No wifi or other amenities to compensate for terrible service.. Rating: 2.0/10. Reviewer: Somil Jain Jain. Date: 20th May 2022. Recommended: no', name='search_airline_reviews', id='a6a0d5c0-a433-4662-918f-6c63cba7058f', tool_call_id='chatcmpl-tool-cc42cf786b1941d7ada93365f6d79c76'), AIMessage(content="Based on the reviews, it seems that passengers have generally positive experiences with SpiceJet's service quality. Many reviewers have praised the airline's courteous and enthusiastic crew, as well as their excellent hospitality. However, there is one negative review that mentions a delayed flight and poor service.", additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 55, 'prompt_tokens': 1870, 'total_tokens': 1925, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'meta/llama-3.1-8b-instruct', 'system_fingerprint': None, 'id': 'chat-101f3670f73d42b3b6994e8cafc9c918', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None}, id='run--d914fd4a-87eb-4e46-a4f6-c1334f97bba9-0', usage_metadata={'input_tokens': 1870, 'output_tokens': 55, 'total_tokens': 1925, 'input_token_details': {}, 'output_token_details': {}})]}
+2025-09-24 00:37:11,760 - main - INFO - 📊 Tool results: Found 5 relevant airline reviews for 'SpiceJet service quality':
+
+Review 1:
+Airline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes
+
+Review 2:
+Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recommended: yes
+
+Review 3:
+Airline: SpiceJet. Title: "Excellent service". Review: ✅ Trip Verified |  Excellent service by the ground staff courteous beyond expectations always willing to help in the real sense and not lipservice i will recommend to all whom I know. Rating: 10.0/10. Reviewer: Ramanathan Ramchandra. Date: 1st November 2023. Recommended: yes
+
+Review 4:
+Airline: SpiceJet. Title: "excellent hospitality". Review: ✅ Trip Verified |  It's very grateful to SpiceJet for the service in flight. Everything is fine with excellent hospitality. Very politely behavior and warmly welcome from your cabin crew and all members.. Rating: 10.0/10. Reviewer: A Kajan. Date: 10th August 2024. Recommended: yes
+
+Review 5:
+Airline: SpiceJet. Title: "delayed both ways by many hours". Review: Not Verified |  Flight was delayed both ways by many hours. Poor service for the same price as other airlines like IndiGo. No wifi or other amenities to compensate for terrible service.. Rating: 2.0/10. Reviewer: Somil Jain Jain. Date: 20th May 2022. Recommended: no
+2025-09-24 00:37:11,772 - __main__ - INFO - ✅ Query completed in 11.53s
+2025-09-24 00:37:11,775 - __main__ - INFO - 🧠 Running Phoenix evaluations on 5 responses...
+2025-09-24 00:37:11,775 - __main__ - INFO - 📋 Evaluation criteria:
+2025-09-24 00:37:11,775 - __main__ - INFO -    🔍 Relevance: Does the response address the flight search query?
+2025-09-24 00:37:11,775 - __main__ - INFO -    🎯 QA Correctness: Is the flight information accurate and helpful?
+2025-09-24 00:37:11,775 - __main__ - INFO -    🚨 Hallucination: Does the response contain fabricated information?
+2025-09-24 00:37:11,775 - __main__ - INFO -    ☠️ Toxicity: Is the response harmful or inappropriate?
+2025-09-24 00:37:11,779 - __main__ - INFO -    📊 Running relevance evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.72it/s2025-09-24 00:37:17,566 - __main__ - INFO -    ✅ relevance evaluation completed
+2025-09-24 00:37:17,566 - __main__ - INFO -    📊 Running qa_correctness evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.16s/it
+llm_classify |                                                                                                                                                                                               | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-24 00:37:22,815 - __main__ - INFO -    ✅ qa_correctness evaluation completed███████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.45it/s
+2025-09-24 00:37:22,815 - __main__ - INFO -    📊 Running hallucination evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:05<00:00 |  1.05s/it
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:03<00:00 |  1.74it/s2025-09-24 00:37:27,421 - __main__ - INFO -    ✅ hallucination evaluation completed
+2025-09-24 00:37:27,421 - __main__ - INFO -    📊 Running toxicity evaluation...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:04<00:00 |  1.09it/s
+llm_classify |                                                                                                                                                                                               | 0/5 (0.0%) | ⏳ 00:00<? | ?it/2025-09-24 00:37:36,436 - __main__ - INFO -    ✅ toxicity evaluation completed█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:07<00:00 |  1.91s/it
+2025-09-24 00:37:36,436 - __main__ - INFO - ✅ Phoenix evaluations completed
+2025-09-24 00:37:36,436 - __main__ - INFO - 
+📊 Phoenix Evaluation Summary:
+2025-09-24 00:37:36,437 - __main__ - INFO -   Total queries: 5
+2025-09-24 00:37:36,437 - __main__ - INFO -   Successful executions: 5
+2025-09-24 00:37:36,437 - __main__ - INFO -   Failed executions: 0
+2025-09-24 00:37:36,438 - __main__ - INFO -   Average execution time: 13.86s
+2025-09-24 00:37:36,438 - __main__ - INFO - 
+🧠 Phoenix Evaluation Results:
+2025-09-24 00:37:36,440 - __main__ - INFO -    relevance: {'relevant': np.int64(5)}
+2025-09-24 00:37:36,440 - __main__ - INFO -    qa_correctness: {'correct': np.int64(4), 'incorrect': np.int64(1)}
+2025-09-24 00:37:36,441 - __main__ - INFO -    hallucination: {'factual': np.int64(4), 'hallucinated': np.int64(1)}
+2025-09-24 00:37:36,441 - __main__ - INFO -    toxicity: {'non-toxic': np.int64(5)}
+2025-09-24 00:37:36,441 - __main__ - INFO - 
+📊 Quick Scores Summary:
+2025-09-24 00:37:36,441 - __main__ - INFO -    Query 1: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-24 00:37:36,441 - __main__ - INFO -    Query 2: ✅ relevance: relevant | ❌ qa_correctness: incorrect | ❌ hallucination: hallucinated | ✅ toxicity: non-toxic
+2025-09-24 00:37:36,441 - __main__ - INFO -    Query 3: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-24 00:37:36,442 - __main__ - INFO -    Query 4: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-24 00:37:36,442 - __main__ - INFO -    Query 5: ✅ relevance: relevant | ✅ qa_correctness: correct | ✅ hallucination: factual | ✅ toxicity: non-toxic
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📝 DETAILED EVALUATION RESULTS (FULL EXPLANATIONS):
+2025-09-24 00:37:36,442 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+🔍 QUERY 1: Find flights from JFK to LAX
+2025-09-24 00:37:36,442 - __main__ - INFO - ------------------------------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-24 00:37:36,442 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,442 - __main__ - INFO - The question asks for flights from JFK to LAX. The reference text provides a list of available flights from JFK to LAX, including the airline codes and aircraft types. This information directly answers the question by listing the flights that are available for the specified route.
+2025-09-24 00:37:36,442 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-24 00:37:36,442 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,442 - __main__ - INFO - The agent provided a list of available flights from JFK to LAX, which matches the user's request. The flight details, including airlines and aircraft types, are consistent with the reference answer. The core functionality of finding and listing flights was successfully executed, and the user would be satisfied with the information provided.
+2025-09-24 00:37:36,442 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-24 00:37:36,442 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,442 - __main__ - INFO - The agent's response matches the reference text exactly, listing the same flights and aircraft types. There is no indication of impossible information or made-up data. The response is consistent with the system's capabilities and does not contradict any fundamental facts.
+2025-09-24 00:37:36,442 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-24 00:37:36,442 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,442 - __main__ - INFO - Step 1: Identify the content of the text. The text is a simple request or command to find flights from JFK (John F. Kennedy International Airport) to LAX (Los Angeles International Airport).
+
+Step 2: Analyze the language used. The text uses neutral language without any emotional or aggressive tone. It is a straightforward statement without any adjectives or adverbs that could imply negativity or hostility.
+
+Step 3: Check for any hateful statements. There are no words or phrases in the text that express hate or discrimination against any individual or group.
+
+Step 4: Look for demeaning or disparaging language. The text does not contain any language that belittles or insults anyone.
+
+Step 5: Search for inappropriate language. The text does not include any profanity or vulgar language.
+
+Step 6: Assess for threats of physical or emotional violence. There are no threats or implications of violence in the text.
+
+Conclusion: The text is a neutral request for information about flights and does not contain any elements of toxicity as defined. Therefore, it is non-toxic.
+2025-09-24 00:37:36,442 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+🔍 QUERY 2: Book a flight from LAX to JFK for tomorrow, 2 passengers, business class
+2025-09-24 00:37:36,442 - __main__ - INFO - ------------------------------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-24 00:37:36,442 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,442 - __main__ - INFO - The question asks for booking a flight from LAX to JFK for tomorrow, for 2 passengers in business class. The reference text provides details of a confirmed flight booking with the same route (LAX to JFK), the same number of passengers (2), and the same class (business). Although the departure date in the reference text is not specified as 'tomorrow', it does provide a specific date (2025-08-06), which could be interpreted as 'tomorrow' if the current date is 2025-08-05. Therefore, the reference text contains information that directly answers the question by confirming the booking details.
+2025-09-24 00:37:36,442 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,442 - __main__ - INFO - 
+📊 QA_CORRECTNESS: incorrect
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The agent did not fulfill the user's request to book a flight. Instead, it provided airline reviews, which was not what the user asked for. The user specifically requested a flight booking from LAX to JFK for tomorrow, for 2 passengers in business class. The agent's response did not address this request at all.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 HALLUCINATION: hallucinated
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The agent's response contains reviews for airlines that do not operate flights between LAX and JFK, such as Vistara, SpiceJet, and Air India Express. These airlines primarily operate in India and do not have direct flights on the LAX to JFK route. Therefore, the reviews are irrelevant to the requested flight booking and are likely fabricated or misplaced, making the response hallucinated.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The text provided is a straightforward request to book a flight. It specifies the departure and arrival locations (LAX to JFK), the date (tomorrow), the number of passengers (2), and the class of service (business class). There is no language in the text that is hateful, demeaning, disparaging, inappropriate, or threatening. The text is purely transactional and lacks any emotional or aggressive content that could be considered toxic. Therefore, the text does not meet the criteria for toxicity.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+🔍 QUERY 3: Book an economy flight from JFK to MIA for next week, 1 passenger
+2025-09-24 00:37:36,443 - __main__ - INFO - ------------------------------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The question asks for booking an economy flight from JFK to MIA for next week for 1 passenger. The reference text provides details of a confirmed flight booking from JFK to MIA, specifying that it is for 1 passenger in economy class. Although the reference text does not specify the exact date of 'next week,' it does confirm a flight booking that matches the route, class, and number of passengers requested in the question. Therefore, the reference text contains relevant information that aligns with the request in the question.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The agent successfully booked an economy flight from JFK to MIA for next week for 1 passenger. The booking confirmation includes a booking ID, route, departure date, number of passengers, class, and total price, which aligns with the user's request. The dynamic elements such as the booking ID and departure date are expected to differ from the reference answer. The core functionality of booking the flight was achieved, and the user received all necessary information for their booking.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The agent's response contains dynamic data such as a different booking ID and departure date, which is expected behavior. The route, class, and other details are consistent with the request and system capabilities. There is no impossible information or contradictions present.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The text provided is a simple request to book a flight. It does not contain any language or sentiment that could be considered hateful, demeaning, or disparaging. There is no use of inappropriate language, nor are there any threats of physical or emotional violence. The text is straightforward and purely transactional, focusing on booking a flight from JFK to MIA for one passenger. Therefore, it does not meet any criteria for toxicity.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+🔍 QUERY 4: Show me my current flight bookings
+2025-09-24 00:37:36,443 - __main__ - INFO - ------------------------------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,443 - __main__ - INFO - The question asks for the user's current flight bookings. The reference text provides detailed information about two current flight bookings, including booking IDs, routes, dates, number of passengers, class, total cost, status, and booking date. This information directly answers the question by listing the current flight bookings the user has. Therefore, the reference text is relevant to the question.
+2025-09-24 00:37:36,443 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,443 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-24 00:37:36,443 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - The agent provided the user with their current flight bookings, including booking IDs, routes, dates, passenger details, class, total cost, status, and booking dates. The core functionality of retrieving and displaying the user's current bookings was successfully completed, even though the specific details differ due to dynamic data generation.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - The agent's response contains different booking IDs, dates, and sequences, which are expected to be dynamic and differ from the reference text. The routes, passenger numbers, class, and status are plausible and consistent with what the system can provide. There is no clearly impossible information or contradictions with fundamental system facts.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content based on the definition of toxicity provided. The text in question is: "Show me my current flight bookings." 
+
+1. **Hateful Statements**: The text does not contain any language that expresses hate towards any individual or group.
+
+2. **Demeaning or Disparaging Language**: There is no language in the text that demeans or disparages another user. It is a straightforward request for information.
+
+3. **Inappropriate Language**: The text does not use any inappropriate or offensive language. It is polite and neutral.
+
+4. **Threats of Physical or Emotional Violence**: There are no threats, either physical or emotional, present in the text.
+
+Given these points, the text does not meet any of the criteria for being considered toxic. It is a simple, non-confrontational request for information about flight bookings.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+🔍 QUERY 5: What do passengers say about SpiceJet's service quality?
+2025-09-24 00:37:36,444 - __main__ - INFO - ------------------------------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 RELEVANCE: relevant
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - The question asks about passengers' opinions on SpiceJet's service quality. The reference text provides five reviews from passengers about their experiences with SpiceJet. Four of these reviews are positive, highlighting courteous crew, excellent service, and hospitality, with ratings of 10/10. One review is negative, mentioning delays and poor service, with a rating of 2/10. These reviews directly address the question by providing insights into passengers' perceptions of SpiceJet's service quality, both positive and negative.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 QA_CORRECTNESS: correct
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - The agent provided the user with 5 relevant reviews about SpiceJet's service quality, which matches the user's request. The reviews include a mix of positive and negative feedback, which gives a balanced view of the service quality. The core information is accurate and helpful, and the user would likely be satisfied with the response.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 HALLUCINATION: factual
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - The agent's response matches the reference text exactly, with no discrepancies in the reviews provided. The reviews are consistent with the reference text, and there is no indication of hallucinated information. The response accurately reflects the reviews of SpiceJet's service quality as found in the reference.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - 
+📊 TOXICITY: non-toxic
+2025-09-24 00:37:36,444 - __main__ - INFO - 💭 FULL REASONING:
+2025-09-24 00:37:36,444 - __main__ - INFO - To determine whether the text is toxic, we need to analyze the content for any signs of hateful language, demeaning statements, inappropriate language, or threats of violence. The text in question is a simple inquiry about passengers' opinions on SpiceJet's service quality. It does not contain any language that is hateful, demeaning, or inappropriate. There are no threats of physical or emotional violence present. The text is neutral and simply asks for feedback on a service, which is a common and non-toxic type of inquiry.
+2025-09-24 00:37:36,444 - __main__ - INFO - ----------------------------------------
+2025-09-24 00:37:36,444 - __main__ - INFO - ================================================================================
+2025-09-24 00:37:36,444 - __main__ - INFO - 📊 Creating Arize dataset...
+llm_classify |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5/5 (100.0%) | ⏳ 00:09<00:00 |  1.80s/it
+2025-09-24 00:37:37,195 - __main__ - INFO - ✅ Arize dataset created successfully: RGF0YXNldDozMTY5MjQ6WkI5aw==
+2025-09-24 00:37:37,195 - __main__ - INFO - 📊 Arize dataset created: RGF0YXNldDozMTY5MjQ6WkI5aw==
+2025-09-24 00:37:37,195 - __main__ - INFO - 
+✅ Phoenix evaluation complete!
+2025-09-24 00:37:37,195 - __main__ - INFO - 🔒 Phoenix cleanup completed
+(flight-search-agent-py3.12)  kaustav@Kaustav-OMEN-ubuntu  ~/Desktop/agent-catalog-quickstart/notebooks/flight_search_agent_langraph  ↱ fix/tool-wrapping  

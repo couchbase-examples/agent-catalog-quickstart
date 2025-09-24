@@ -173,11 +173,12 @@ def parse_and_validate_date(departure_date: str) -> tuple[datetime.date, str]:
                 raise ValueError("Date must be in YYYY-MM-DD format. Example: 2024-12-25")
             dep_date = datetime.datetime.strptime(departure_date, "%Y-%m-%d").date()
         
-        # Check if date is in the future (allow today for demo purposes)
-        if dep_date < datetime.date.today():
-            today = datetime.date.today().strftime('%Y-%m-%d')
-            tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-            raise ValueError(f"Departure date must be in the future. Today is {today}. Please use a date like {tomorrow}")
+        # Allow booking for today and future dates (demo purposes)
+        today_date = datetime.date.today()
+        logger.info(f"🗓️ Date validation: dep_date={dep_date}, today={today_date}, comparison={dep_date < today_date}")
+        if dep_date < today_date:
+            today = today_date.strftime('%Y-%m-%d')
+            raise ValueError(f"Departure date cannot be in the past. Today is {today}. Please use today's date or later.")
         
         return dep_date, departure_date
     
@@ -331,58 +332,72 @@ Thank you for choosing our airline!"""
 
 
 @agentc.catalog.tool
-def save_flight_booking(booking_input: str) -> str:
+def save_flight_booking(source_airport: str, destination_airport: str, departure_date: str,
+                       passengers: int = 1, flight_class: str = "economy") -> str:
     """
     Save a flight booking to Couchbase database.
 
-    Input format: "source_airport,destination_airport,date"
-    Example: "JFK,LAX,2024-12-25"
+    Args:
+        source_airport: 3-letter airport code (e.g. JFK)
+        destination_airport: 3-letter airport code (e.g. LAX)
+        departure_date: Date in YYYY-MM-DD format
+        passengers: Number of passengers (1-10, default: 1)
+        flight_class: Flight class - economy, business, or first (default: economy)
 
-    - source_airport: 3-letter airport code (e.g. JFK)
-    - destination_airport: 3-letter airport code (e.g. LAX)
-    - date: YYYY-MM-DD format
-
-    Checks for duplicate bookings before creating new ones.
+    Returns:
+        Booking confirmation message with booking ID and details
     """
     try:
+        # Log parameters to debug flight_class extraction
+        logger.info(f"🎯 Booking parameters: source={source_airport}, dest={destination_airport}, date={departure_date}, passengers={passengers}, flight_class={flight_class}")
+
         # Validate database connection
         if cluster is None:
             return "Database connection unavailable. Unable to save booking. Please try again later."
-        
-        # Parse and validate input
-        structured_input, original_input, _, _ = parse_booking_input(booking_input)
-        source_airport, destination_airport, departure_date = validate_booking_parts(structured_input)
+
+        # Validate inputs with proper type checking
         source_airport, destination_airport = validate_airport_codes(source_airport, destination_airport)
+
+        # Validate passenger count
+        if not isinstance(passengers, int) or passengers < 1 or passengers > 10:
+            return "Error: Number of passengers must be between 1 and 10"
+
+        # Validate flight class
+        valid_classes = ["economy", "business", "first"]
+        if flight_class.lower() not in valid_classes:
+            return f"Error: Flight class must be one of: {', '.join(valid_classes)}"
+        flight_class = flight_class.lower()
+
+        # Parse and validate date
         dep_date, departure_date = parse_and_validate_date(departure_date)
-        
+
         # Setup database collection
         bucket_name = os.getenv("CB_BUCKET", "travel-sample")
         scope_name = "agentc_bookings"
         collection_name = f"user_bookings_{datetime.date.today().strftime('%Y%m%d')}"
         _ensure_collection_exists(bucket_name, scope_name, collection_name)
-        
+
         # Check for duplicates
         duplicate_error = check_duplicate_booking(
             source_airport, destination_airport, departure_date,
             bucket_name, scope_name, collection_name)
         if duplicate_error:
             return duplicate_error
-        
-        # Parse passenger details and calculate pricing
-        passengers, flight_class = parse_passenger_details(original_input)
+
+        # Calculate pricing
         total_price = calculate_price(flight_class, passengers)
-        
+
         # Create and save booking
         booking_id = f"FL{dep_date.strftime('%m%d')}{str(uuid.uuid4())[:8].upper()}"
         booking_data = create_booking_record(
             booking_id, source_airport, destination_airport,
             departure_date, passengers, flight_class, total_price)
         save_booking_to_db(booking_data, bucket_name, scope_name, collection_name)
-        
+
         return format_booking_confirmation(booking_data)
-    
+
     except ValueError as e:
         return f"Error: {str(e)}"
     except Exception as e:
         logger.exception(f"Booking processing error: {e}")
-        return "Booking could not be processed. Please try again with format: 'source_airport,destination_airport,date' (e.g., 'JFK,LAX,2024-12-25')"
+        return f"Booking could not be processed: {str(e)}"
