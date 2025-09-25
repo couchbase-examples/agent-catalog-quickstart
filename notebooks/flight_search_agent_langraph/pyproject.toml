@@ -21,7 +21,7 @@ dependencies = [
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",
     
     # CLI and utilities
-    "nest-asyncio (>=1.6.0,<2.0.0)",
+    "nest-asyncio>=1.6.0,<2.0.0",
     
     # Data processing
     "kagglehub>=0.2.0,<1.0.0",
