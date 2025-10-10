@@ -142,27 +142,46 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                     try:
                         logger.info(f"🔧 Tool {name} called with raw input: {repr(tool_input)}")
 
-                        # Robust input sanitization to handle ReAct format artifacts
+                        # Enhanced input sanitization to handle ReAct format artifacts and duplications
                         if isinstance(tool_input, str):
                             # Remove ReAct format artifacts that get mixed into input
                             clean_input = tool_input.strip()
-                            
+
                             # Remove common ReAct artifacts
                             artifacts_to_remove = [
-                                '\nObservation', 'Observation', '\nThought:', 'Thought:', 
+                                '\nObservation', 'Observation', '\nThought:', 'Thought:',
                                 '\nAction:', 'Action:', '\nAction Input:', 'Action Input:',
                                 '\nFinal Answer:', 'Final Answer:'
                             ]
-                            
+
                             for artifact in artifacts_to_remove:
                                 if artifact in clean_input:
                                     clean_input = clean_input.split(artifact)[0]
-                            
+
                             # Clean up quotes and whitespace
                             clean_input = clean_input.strip().strip("\"'").strip()
+
+                            # Fix common duplication patterns (e.g., "JFK,LAX LAX" -> "JFK,LAX")
+                            words = clean_input.split()
+                            if len(words) > 1:
+                                # Remove duplicate consecutive words
+                                cleaned_words = [words[0]]
+                                for word in words[1:]:
+                                    if word != cleaned_words[-1]:
+                                        cleaned_words.append(word)
+                                clean_input = " ".join(cleaned_words)
+
+                            # For airport code patterns, fix duplications like "JFK,LAX LAX"
+                            if "," in clean_input and len(clean_input.split()) > 1:
+                                parts = clean_input.split(",")
+                                if len(parts) == 2:
+                                    first_part = parts[0].strip()
+                                    second_part = parts[1].strip().split()[0]  # Take only first word after comma
+                                    clean_input = f"{first_part},{second_part}"
+
                             # Normalize whitespace
                             clean_input = " ".join(clean_input.split())
-                            
+
                             tool_input = clean_input
 
                         logger.info(f"🧹 Tool {name} cleaned input: {repr(tool_input)}")
@@ -209,8 +228,17 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                             result = original_tool.func(booking_input=tool_input)
 
                         elif name == "retrieve_flight_bookings":
-                            # Handle empty input for "all bookings"
-                            if not tool_input or tool_input.lower() in ["", "all", "none"]:
+                            # Enhanced handling of empty input for "all bookings"
+                            # Check for various forms of "empty" input
+                            empty_indicators = [
+                                "", "all", "none", "show all", "get all", "empty",
+                                "empty string", "blank", "nothing", ":"
+                            ]
+
+                            if (not tool_input or
+                                tool_input.strip() == "" or
+                                tool_input.lower().strip() in empty_indicators or
+                                len(tool_input.strip()) <= 2):
                                 result = original_tool.func(booking_query="")
                             else:
                                 result = original_tool.func(booking_query=tool_input)

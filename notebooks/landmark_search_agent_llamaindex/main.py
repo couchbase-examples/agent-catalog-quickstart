@@ -166,13 +166,13 @@ def create_llamaindex_agent(catalog, span):
 
         logger.info("Loaded system prompt from Agent Catalog")
 
-        # Create ReAct agent with reasonable iteration limit
+        # Create ReAct agent with increased iteration limit for search refinement
         agent = ReActAgent.from_tools(
             tools=tools,
             llm=Settings.llm,
             verbose=True,  # Keep on for debugging
             system_prompt=system_prompt,
-            max_iterations=4,  # Allow one tool call and finalization without warnings
+            max_iterations=6,  # Allow search refinement without hitting limits
         )
 
         logger.info("LlamaIndex ReAct agent created successfully")
@@ -203,7 +203,7 @@ def setup_landmark_agent():
 
     # Setup collection
     client.setup_collection(
-        os.environ["CB_SCOPE"], 
+        os.environ["CB_SCOPE"],
         os.environ["CB_COLLECTION"],
         clear_existing_data=False  # Let data loader decide based on count check
     )

@@ -136,7 +136,7 @@ cp .env.sample .env
 - `notebooks/hotel_search_agent_langchain/.env`
 - `notebooks/landmark_search_agent_llamaindex/.env`
 
-For complete environment configuration examples (Capella vs Local), see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md#environment-configuration-examples)**.
+For complete environment configuration examples (Capella vs Local), see **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#environment-configuration-examples)**.
 
 ## Usage
 
@@ -181,7 +181,7 @@ python main.py "Find hotels in Paris with free breakfast"
 
 ## Troubleshooting
 
-Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**
 
 ### Quick Fixes
 
@@ -192,7 +192,7 @@ Having issues? Check our comprehensive troubleshooting guide: **[TROUBLESHOOTING
 - CLI not found after script: restart your shell or run `export PATH="$PATH:$HOME/.local/bin"`; rerun `bash scripts/setup.sh --yes` if needed.
 - Submodule issues: run `git submodule update --init --recursive` to initialize the agent-catalog dependency.
 
-For detailed solutions, environment configuration examples, and debugging commands, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**.
+For detailed solutions, environment configuration examples, and debugging commands, see **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
 ## Development
 

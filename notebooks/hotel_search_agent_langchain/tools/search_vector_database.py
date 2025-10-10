@@ -30,7 +30,7 @@ import dotenv
 
 # Use direct OpenAI embeddings approach - same as working notebook
 from langchain_openai import OpenAIEmbeddings
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 
 dotenv.load_dotenv()
 
@@ -99,7 +99,7 @@ def search_vector_database(query: str) -> str:
             return "ERROR: No embeddings service available"
 
         # Setup vector store
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name="travel-sample",
             scope_name="agentc_data",

@@ -14,7 +14,7 @@ import couchbase.cluster
 import couchbase.exceptions
 import couchbase.options
 import dotenv
-from langchain_couchbase.vectorstores import CouchbaseVectorStore
+from langchain_couchbase.vectorstores import CouchbaseSearchVectorStore
 from tqdm import tqdm
 
 # Load environment variables
@@ -215,7 +215,7 @@ def load_hotel_data_to_couchbase(
         hotel_texts = get_hotel_texts()
 
         # Setup vector store for the target collection
-        vector_store = CouchbaseVectorStore(
+        vector_store = CouchbaseSearchVectorStore(
             cluster=cluster,
             bucket_name=bucket_name,
             scope_name=scope_name,

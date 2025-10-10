@@ -15,7 +15,6 @@ The implementation integrates with the existing Agent Catalog infrastructure
 while extending it with Arize AI capabilities for production monitoring.
 """
 
-import json
 import logging
 import os
 import socket
@@ -27,12 +26,11 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
-import agentc
 import pandas as pd
 import nest_asyncio
 
-# Apply nest_asyncio to handle nested event loops in Jupyter/async environments
-nest_asyncio.apply()
+# Import nest_asyncio but DON'T apply it yet - we'll apply after Phoenix startup
+# This avoids the loop_factory asyncio conflict with Phoenix/uvicorn
 
 # Suppress SQLAlchemy warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="sqlalchemy")
@@ -63,10 +61,6 @@ try:
     from openinference.instrumentation.langchain import LangChainInstrumentor
     from openinference.instrumentation.openai import OpenAIInstrumentor
     from phoenix.evals import (
-        HALLUCINATION_PROMPT_RAILS_MAP,
-        HALLUCINATION_PROMPT_TEMPLATE,
-        QA_PROMPT_RAILS_MAP,
-        QA_PROMPT_TEMPLATE,
         RAG_RELEVANCY_PROMPT_RAILS_MAP,
         RAG_RELEVANCY_PROMPT_TEMPLATE,
         TOXICITY_PROMPT_RAILS_MAP,
@@ -77,7 +71,6 @@ try:
         RelevanceEvaluator,
         ToxicityEvaluator,
         llm_classify,
-        run_evals,
     )
     from phoenix.otel import register
 
@@ -373,9 +366,14 @@ class ArizeHotelSupportEvaluator:
 
             logger.info("✅ Phoenix evaluators initialized")
 
-            # Setup Phoenix if available
+            # Setup Phoenix with delayed nest_asyncio fix
             if self.phoenix_manager.start_phoenix():
                 self.phoenix_manager.setup_instrumentation()
+
+                # Apply nest_asyncio AFTER Phoenix startup to avoid loop_factory conflicts
+                logger.info("🔄 Applying nest_asyncio after Phoenix startup...")
+                nest_asyncio.apply()
+                logger.info("✅ nest_asyncio applied successfully after Phoenix")
 
         except Exception as e:
             logger.warning(f"⚠️ Phoenix evaluators setup failed: {e}")

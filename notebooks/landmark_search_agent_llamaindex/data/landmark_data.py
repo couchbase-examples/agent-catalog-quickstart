@@ -159,15 +159,24 @@ def load_landmark_data_to_couchbase(
         count_query = (
             f"SELECT COUNT(*) as count FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
         )
-        count_result = cluster.query(count_query)
-        count_row = list(count_result)[0]
-        existing_count = count_row["count"]
+        logger.info(f"Checking existing document count with query: {count_query}")
+
+        try:
+            count_result = cluster.query(count_query)
+            count_row = list(count_result)[0]
+            existing_count = count_row["count"]
+            logger.info(f"Found {existing_count} existing documents in {bucket_name}.{scope_name}.{collection_name}")
+        except Exception as count_error:
+            logger.warning(f"Error checking document count, assuming collection is empty: {count_error}")
+            existing_count = 0
 
         if existing_count > 0:
             logger.info(
-                f"Found {existing_count} existing documents in collection, skipping data load"
+                f"✅ Found {existing_count} existing documents in collection, skipping data load"
             )
             return
+
+        logger.info(f"🔄 No existing documents found, proceeding with data load...")
 
         # Get the source landmarks from travel-sample
         landmarks = load_landmark_data_from_travel_sample()
@@ -208,9 +217,10 @@ def load_landmark_data_to_couchbase(
             documents.append(document)
 
         # Use IngestionPipeline to process documents with embeddings
+        # NOTE: Removed SentenceSplitter as it was causing massive data loss
         logger.info(f"Processing documents with ingestion pipeline...")
         pipeline = IngestionPipeline(
-            transformations=[SentenceSplitter(chunk_size=800, chunk_overlap=100), embeddings],
+            transformations=[embeddings],  # Only embeddings, no chunking
             vector_store=vector_store,
         )
 
@@ -219,8 +229,11 @@ def load_landmark_data_to_couchbase(
         total_batches = (len(documents) + batch_size - 1) // batch_size
 
         logger.info(f"Processing {len(documents)} documents in {total_batches} batches...")
-        
-        # Process in batches
+
+        # Process in batches with error handling
+        successful_batches = 0
+        failed_batches = 0
+
         for i in tqdm(
             range(0, len(documents), batch_size),
             desc="Loading batches",
@@ -228,7 +241,31 @@ def load_landmark_data_to_couchbase(
             total=total_batches,
         ):
             batch = documents[i : i + batch_size]
-            pipeline.run(documents=batch)
+            try:
+                pipeline.run(documents=batch)
+                successful_batches += 1
+            except Exception as e:
+                logger.error(f"Error processing batch {i//batch_size + 1}: {e}")
+                failed_batches += 1
+
+        logger.info(f"Batch processing complete: {successful_batches} successful, {failed_batches} failed")
+
+        # Verify documents were actually stored
+        try:
+            verification_query = (
+                f"SELECT COUNT(*) as final_count FROM `{bucket_name}`.`{scope_name}`.`{collection_name}`"
+            )
+            verification_result = cluster.query(verification_query)
+            final_count = list(verification_result)[0]["final_count"]
+            logger.info(f"✅ Verification: {final_count} documents confirmed in target collection")
+
+            if final_count != len(documents):
+                logger.warning(f"⚠️ Data loss detected: Expected {len(documents)}, found {final_count}")
+            else:
+                logger.info(f"🎉 Perfect data integrity: All {len(documents)} documents successfully stored")
+
+        except Exception as e:
+            logger.error(f"❌ Error verifying document count: {e}")
 
         logger.info(
             f"Successfully loaded {len(documents)} landmark documents to vector store"

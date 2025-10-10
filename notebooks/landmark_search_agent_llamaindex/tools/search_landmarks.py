@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 
+
 def get_cluster_connection():
     """Get a fresh cluster connection for each request."""
     try:
@@ -105,9 +106,9 @@ def search_landmarks(query: str, limit: int = 5) -> str:
             vector_store=vector_store, embed_model=Settings.embed_model
         )
 
-        # Perform pure semantic search using the raw query
-        retriever = index.as_retriever(similarity_top_k=limit)
+        # Perform semantic search using the raw query - let vector search work naturally
         raw_query = (query or "").strip()
+        retriever = index.as_retriever(similarity_top_k=limit)
         nodes = retriever.retrieve(raw_query)
 
         # Log search info

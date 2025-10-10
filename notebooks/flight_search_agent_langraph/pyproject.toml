@@ -14,15 +14,18 @@ dependencies = [
     "agentc-langchain @ ../../agent-catalog/libs/agentc_integrations/langchain",
     "agentc-langgraph @ ../../agent-catalog/libs/agentc_integrations/langgraph",
     # Observability and monitoring
-    "arize>=7.48.1,<8.0.0",
-    "arize-otel>=0.9.0,<1.0.0",
-    "arize-phoenix[evals]>=11.0.0",
+    "arize>=7.51.0,<8.0.0",
+    "arize-phoenix>=11.37.0,<12.0.0",
+    "arize-phoenix-evals>=2.2.0,<3.0.0",
     "openinference-instrumentation-langchain>=0.1.29,<0.2.0",
     "openinference-instrumentation-openai>=0.1.18,<0.2.0",
     
     # CLI and utilities
-    "nest-asyncio (>=1.6.0,<2.0.0)",
-    
+    "nest-asyncio>=1.6.0,<2.0.0",
+
+    # uvicorn version constraint for Phoenix LoopSetupType compatibility
+    "uvicorn>=0.29.0,<0.30.0",
+
     # Data processing
     "kagglehub>=0.2.0,<1.0.0",
     "pandas>=2.0.0,<3.0.0",

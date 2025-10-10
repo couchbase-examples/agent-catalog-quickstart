@@ -28,9 +28,9 @@ FLIGHT_REFERENCE_ANSWERS = [
     # Query 2: Flight booking LAX to JFK for tomorrow, 2 passengers, business class
     """Flight Booking Confirmed!
 
-Booking ID: FL08061563CACD
+Booking ID: FL09251563CACD
 Route: LAX → JFK
-Departure Date: 2025-08-06
+Departure Date: 2025-09-25
 Passengers: 2
 Class: business
 Total Price: $1500.00
@@ -45,9 +45,9 @@ Thank you for choosing our airline!""",
     # Query 3: Flight booking JFK to MIA for next week
     """Flight Booking Confirmed!
 
-Booking ID: FL08124E7B9C2A
+Booking ID: FL10014E7B9C2A
 Route: JFK → MIA
-Departure Date: 2025-08-12
+Departure Date: 2025-10-01
 Passengers: 1
 Class: economy
 Total Price: $250.00
@@ -63,42 +63,42 @@ Thank you for choosing our airline!""",
     """Your Current Bookings (2 found):
 
 Booking 1:
-  Booking ID: FL08061563CACD
+  Booking ID: FL09251563CACD
   Route: LAX → JFK
-  Date: 2025-08-06
+  Date: 2025-09-25
   Passengers: 2
   Class: business
   Total: $1500.00
   Status: confirmed
-  Booked: 2025-08-05
+  Booked: 2025-09-24
 
 Booking 2:
-  Booking ID: FL08124E7B9C2A
+  Booking ID: FL10014E7B9C2A
   Route: JFK → MIA
-  Date: 2025-08-12
+  Date: 2025-10-01
   Passengers: 1
   Class: economy
   Total: $250.00
   Status: confirmed
-  Booked: 2025-08-05""",
+  Booked: 2025-09-24""",
 
     # Query 5: SpiceJet service quality reviews
-    """Found 5 relevant airline reviews for 'SpiceJet service':
+    """Found 5 relevant airline reviews for 'SpiceJet service quality':
 
 Review 1:
-Airline: SpiceJet. Title: "Service is impeccable". Review: ✅ Trip Verified | Much better than airbus models. Even the basic economy class has ambient lighting. Better personal air vents and better spotlights. Even overhead storage bins are good. Service is impeccable with proper care taken of guests...
+Airline: SpiceJet. Title: "Great travel experience". Review: ✅ Trip Verified |  Marvelous courteous crew who took good care of all passengers. They should be rewarded for the patience shown towards the unruly ones. Great travel experience.. Rating: 10.0/10. Reviewer: Ranjita Pandey. Date: 18th April 2024. Recommended: yes
 
 Review 2:
-Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recom...
+Airline: SpiceJet. Title: "good service by the crew". Review: ✅ Trip Verified | I have had good service by the crew. It was amazing, the crew was very enthusiastic and warm welcome. It was one of the best services in my experience.. Rating: 10.0/10. Reviewer: K Mansour. Date: 10th August 2024. Recommended: yes
 
 Review 3:
-Airline: SpiceJet. Title: "outstanding service I experienced". Review: Not Verified |  I wanted to take a moment to express my sincere thanks for the outstanding service I experienced on my recent flight from Pune to Delhi. SG-8937. From the moment I boarded, the warmth and friendliness of the air h...
+Airline: SpiceJet. Title: "delayed both ways by many hours". Review: Not Verified |  Flight was delayed both ways by many hours. Poor service for the same price as other airlines like IndiGo. No wifi or other amenities to compensate for terrible service.. Rating: 2.0/10. Reviewer: Somil Jain Jain. Date: 20th May 2022. Recommended: no
 
 Review 4:
-Airline: SpiceJet. Title: "efficient and warm onboard service". Review: ✅ Trip Verified |  New Delhi to Kolkata. Delighted with the prompt, efficient and warm onboard service provided by the crew. Appreciate their efforts towards customer centricity.. Rating: 10.0/10. Reviewer: Debashis Roy. Date: 2...
+Airline: SpiceJet. Title: "Excellent service". Review: ✅ Trip Verified |  Excellent service by the ground staff courteous beyond expectations always willing to help in the real sense and not lipservice i will recommend to all whom I know. Rating: 10.0/10. Reviewer: Ramanathan Ramchandra. Date: 1st November 2023. Recommended: yes
 
 Review 5:
-Airline: SpiceJet. Title: "Service is very good". Review: Service is very good,  I am impressed with Miss Renu  who gave the best services ever. Thanks to Renu who is very sweet by her nature as well as her service. Rating: 9.0/10. Reviewer: Sanjay Patnaik. Date: 21st September 2023. Recommended: ye...""",
+Airline: SpiceJet. Title: "hospitality service given". Review: ✅ Trip Verified |  Seats are comparable if compare to other budget airlines. Cabin crews are friendly and hospitality service given with smiles. Very happy and enjoy experience.. Rating: 8.0/10. Reviewer: A Bameen. Date: 20th March 2022. Recommended: yes""",
 ]
 
 # Create dictionary for backward compatibility
