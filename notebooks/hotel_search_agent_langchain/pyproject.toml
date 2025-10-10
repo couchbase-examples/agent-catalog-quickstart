@@ -23,7 +23,10 @@ dependencies = [
     
     # CLI and utilities
     "nest-asyncio>=1.6.0,<2.0.0",
-    
+
+    # uvicorn version constraint for Phoenix LoopSetupType compatibility
+    "uvicorn>=0.29.0,<0.30.0",
+
     # Data processing
     "pandas>=2.0.0,<3.0.0",
     
