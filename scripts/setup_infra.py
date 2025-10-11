@@ -1,4 +1,3 @@
-
 import os
 from dotenv import load_dotenv
 
@@ -6,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # --- Credentials from Environment ---
-CAPELLA_API_SECRET = os.getenv("CAPELLA_API_SECRET")
+MANAGEMENT_API_KEY = os.getenv("MANAGEMENT_API_KEY")
 ORGANIZATION_ID = os.getenv("ORGANIZATION_ID")
 
 # --- Configuration for this Tutorial ---
@@ -17,8 +16,8 @@ EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Snowflake/snowflake-ar
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 
 # Validate required environment variables
-if not CAPELLA_API_SECRET:
-    raise ValueError("Missing required environment variable: CAPELLA_API_SECRET")
+if not MANAGEMENT_API_KEY:
+    raise ValueError("Missing required environment variable: MANAGEMENT_API_KEY")
 
 # Allow auto-detection of organization ID if not provided
 if not ORGANIZATION_ID:
@@ -28,10 +27,10 @@ if not ORGANIZATION_ID:
 import httpx
 import time
 
-# Use the base URL from the OpenAPI specification
-API_BASE_URL = "https://cloudapi.cloud.couchbase.com"
+# Correct sandbox API URL - use cloudapi subdomain
+API_BASE_URL = "https://cloudapi.sbx-29.sandbox.nonprod-project-avengers.com"
 HEADERS = {
-    "Authorization": f"Bearer {CAPELLA_API_SECRET}",
+    "Authorization": f"Bearer {MANAGEMENT_API_KEY}",
     "Content-Type": "application/json"
 }
 
@@ -101,6 +100,7 @@ def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds:
                 if status in ["healthy", "ready", "deployed", "running"]:
                     print(f"✅ {resource_type} is ready!")
                     return data
+                print(f"   Current status: {status}")
             time.sleep(20)
         except Exception as e:
             print(f"   ... still waiting (error polling: {e})")
@@ -230,40 +230,57 @@ def create_db_user(org_id, proj_id, cluster_id, username):
         raise Exception(f"Failed to create DB user. Status: {response.status_code}, Response: {response.text}")
 
 def create_ai_model(org_id, model_name, deployment_name, model_type="embedding"):
-    """Deploys a new AI model using the Management API."""
-    # Note: AI Services endpoint may vary - check current API documentation
+    """Deploys a new AI model using the AI Services API v4."""
     endpoint = f"/v4/organizations/{org_id}/aiServices/models"
 
-    # Determine provider based on model name
-    if "nvidia" in model_name.lower():
-        provider = "nvidia"
-    elif "meta-llama" in model_name.lower():
-        provider = "meta"
-    elif "snowflake" in model_name.lower():
-        provider = "snowflake"
-    elif "intfloat" in model_name.lower():
-        provider = "huggingface"
-    elif "deepseek" in model_name.lower():
-        provider = "deepseek"
-    else:
-        provider = "unknown"
-
+    # Build the payload according to v4 API spec
     payload = {
         "name": deployment_name,
-        "type": model_type,
-        "provider": provider,
-        "model": model_name,
-        "configuration": {
+        "catalogModelName": model_name,  # Use catalogModelName instead of model
+        "cloudConfig": {
+            "provider": "aws",
             "region": "us-east-1",
-            "compute": "standard"
+            "compute": {
+                "cpu": 4,
+                "ram": 16
+            }
         }
     }
+    
+    # Add model-type specific configurations
+    if model_type == "embedding":
+        # Embeddings may have specific settings
+        pass
+    elif model_type == "llm":
+        # LLMs may have specific settings like quantization
+        payload["quantization"] = "fullPrecision"
+        payload["optimization"] = "throughput"
+    
+    print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
+    
     with httpx.Client(headers=HEADERS, timeout=60) as client:
         response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
+    
     if response.status_code == 202:
         model_id = response.json().get("id")
         print(f"   {model_type.title()} model '{deployment_name}' deployment job submitted. Model ID: {model_id}")
         return model_id
+    elif response.status_code == 422:
+        # Model may already exist
+        error_text = response.text.lower()
+        if "already exists" in error_text or "duplicate" in error_text:
+            print(f"   Model '{deployment_name}' may already exist. Attempting to find it...")
+            # List existing models
+            with httpx.Client(headers=HEADERS, timeout=30) as client:
+                list_response = client.get(f"{API_BASE_URL}{endpoint}")
+            if list_response.status_code == 200:
+                models = list_response.json().get('data', [])
+                for model in models:
+                    if model.get('name') == deployment_name:
+                        model_id = model.get('id')
+                        print(f"   Found existing model. Model ID: {model_id}")
+                        return model_id
+        raise Exception(f"Failed to create {model_type} model. Status: {response.status_code}, Response: {response.text}")
     else:
         raise Exception(f"Failed to create {model_type} model '{deployment_name}'. Status: {response.status_code}, Response: {response.text}")
     
@@ -323,8 +340,8 @@ try:
     # Set AI model endpoints and credentials
     os.environ["CAPELLA_API_EMBEDDING_ENDPOINT"] = embedding_endpoint
     os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
-    os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = CAPELLA_API_SECRET
-    os.environ["CAPELLA_API_LLM_KEY"] = CAPELLA_API_SECRET
+    os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = MANAGEMENT_API_KEY
+    os.environ["CAPELLA_API_LLM_KEY"] = MANAGEMENT_API_KEY
     os.environ["CAPELLA_API_EMBEDDING_MODEL"] = EMBEDDING_MODEL_NAME
     os.environ["CAPELLA_API_LLM_MODEL"] = LLM_MODEL_NAME
     
