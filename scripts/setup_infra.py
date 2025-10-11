@@ -96,11 +96,20 @@ def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds:
                 response = client.get(f"{API_BASE_URL}{check_url}")
             if response.status_code == 200:
                 data = response.json()
-                status = data.get("status", {}).get("state", data.get("currentState", "")).lower()
+                
+                # For AI models, check different status fields
+                if "aiServices/models" in check_url:
+                    # AI models use 'currentState' field
+                    status = data.get("currentState", "").lower()
+                else:
+                    # Clusters use nested status.state
+                    status = data.get("status", {}).get("state", data.get("currentState", "")).lower()
+                
+                print(f"   Current status: {status}")
+                
                 if status in ["healthy", "ready", "deployed", "running"]:
                     print(f"✅ {resource_type} is ready!")
                     return data
-                print(f"   Current status: {status}")
             time.sleep(20)
         except Exception as e:
             print(f"   ... still waiting (error polling: {e})")
@@ -235,20 +244,22 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
 
     # First, check if model already exists
     print(f"   Checking if model '{deployment_name}' already exists...")
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        list_response = client.get(f"{API_BASE_URL}{endpoint}")
-    
-    if list_response.status_code == 200:
-        models = list_response.json().get('data', [])
-        for model in models:
-            if model.get('name') == deployment_name:
-                model_id = model.get('id')
-                print(f"   ✅ Model '{deployment_name}' already exists. Model ID: {model_id}")
-                return model_id
+    try:
+        with httpx.Client(headers=HEADERS, timeout=30) as client:
+            list_response = client.get(f"{API_BASE_URL}{endpoint}")
+        
+        if list_response.status_code == 200:
+            models = list_response.json().get('data', [])
+            for model in models:
+                if model.get('name') == deployment_name:
+                    model_id = model.get('id')
+                    status = model.get('currentState', model.get('status', 'unknown'))
+                    print(f"   ✅ Model '{deployment_name}' already exists (Status: {status}). Model ID: {model_id}")
+                    return model_id
+    except Exception as e:
+        print(f"   Warning: Could not check existing models: {e}")
 
     # Set compute size based on model type
-    # Embedding models need Medium (48 vCPUs, 192GB GPU)
-    # LLM models use Small (4 vCPUs, 48GB GPU)
     if model_type == "embedding":
         cpu = 48
         gpu_memory = 192
@@ -271,7 +282,7 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     }
     
     if model_type == "llm":
-        payload["quantization"] = "fullPrecision"
+        payload["quantization"] = "fp16"  # Changed from "fullPrecision"
         payload["optimization"] = "throughput"
     
     print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
@@ -284,6 +295,19 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
         model_id = response.json().get("id")
         print(f"   {model_type.title()} model '{deployment_name}' deployment job submitted. Model ID: {model_id}")
         return model_id
+    elif response.status_code == 400 and "duplicate name" in response.text.lower():
+        # Model exists but wasn't found in the list - fetch it again
+        print(f"   Model with name '{deployment_name}' already exists. Fetching it...")
+        with httpx.Client(headers=HEADERS, timeout=30) as client:
+            list_response = client.get(f"{API_BASE_URL}{endpoint}")
+        if list_response.status_code == 200:
+            models = list_response.json().get('data', [])
+            for model in models:
+                if model.get('name') == deployment_name:
+                    model_id = model.get('id')
+                    print(f"   ✅ Found model. Model ID: {model_id}")
+                    return model_id
+        raise Exception(f"Model exists but could not retrieve it. Response: {response.text}")
     elif response.status_code == 422:
         error_text = response.text.lower()
         if "already exists" in error_text or "duplicate" in error_text:
@@ -300,7 +324,7 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
         raise Exception(f"Failed to create {model_type} model. Status: {response.status_code}, Response: {response.text}")
     else:
         raise Exception(f"Failed to create {model_type} model '{deployment_name}'. Status: {response.status_code}, Response: {response.text}")
-    
+
     
 print("--- 🚀 Starting Automated Capella Environment Setup ---")
 
@@ -334,11 +358,11 @@ try:
     print("\n[5/6] Deploying AI Models...")
 
     # Deploy Embedding Model
-    print("   Deploying embedding model...")
-    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
-    embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
-    embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model")
-    embedding_endpoint = embedding_details.get("connectionString", "")
+    # print("   Deploying embedding model...")
+    # embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
+    # embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
+    # embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model")
+    # embedding_endpoint = embedding_details.get("connectionString", "")
 
     # Deploy LLM Model
     print("   Deploying LLM model...")
