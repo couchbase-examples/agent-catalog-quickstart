@@ -12,8 +12,8 @@ ORGANIZATION_ID = os.getenv("ORGANIZATION_ID")
 PROJECT_NAME = os.getenv("PROJECT_NAME", "Agent-Hub-Project")
 CLUSTER_NAME = os.getenv("CLUSTER_NAME", "agent-hub-flight-cluster")
 DB_USERNAME = os.getenv("DB_USERNAME", "agent_app_user")
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Snowflake/snowflake-arctic-embed-l-v2.0")
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "nvidia/nv-embedqa-mistral-7b-v2")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta/llama-3.1-8b-instruct")
 
 # Validate required environment variables
 if not MANAGEMENT_API_KEY:
@@ -233,22 +233,49 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     """Deploys a new AI model using the AI Services API v4."""
     endpoint = f"/v4/organizations/{org_id}/aiServices/models"
 
-    # Build the payload according to v4 API spec
+    # First, check if model already exists
+    print(f"   Checking if model '{deployment_name}' already exists...")
+    with httpx.Client(headers=HEADERS, timeout=30) as client:
+        list_response = client.get(f"{API_BASE_URL}{endpoint}")
+    
+    if list_response.status_code == 200:
+        models = list_response.json().get('data', [])
+        for model in models:
+            if model.get('name') == deployment_name:
+                model_id = model.get('id')
+                print(f"   ✅ Model '{deployment_name}' already exists. Model ID: {model_id}")
+                return model_id
+
+    # Set compute size based on model type
+    # Embedding models need Medium (48 vCPUs, 192GB GPU)
+    # LLM models use Small (4 vCPUs, 48GB GPU)
+    if model_type == "embedding":
+        cpu = 48
+        gpu_memory = 192
+    else:
+        cpu = 4
+        gpu_memory = 48
+
+    # Build the payload
     payload = {
         "name": deployment_name,
         "catalogModelName": model_name,
         "cloudConfig": {
             "provider": "aws",
-            "region": "us-east-1"
+            "region": "us-east-1",
+            "compute": {
+                "cpu": cpu,
+                "gpuMemory": gpu_memory
+            }
         }
     }
     
-    # Add model-type specific configurations
     if model_type == "llm":
         payload["quantization"] = "fullPrecision"
         payload["optimization"] = "throughput"
     
     print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
+    print(f"   Using compute: {cpu} vCPUs, {gpu_memory}GB GPU")
     
     with httpx.Client(headers=HEADERS, timeout=60) as client:
         response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
@@ -258,11 +285,9 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
         print(f"   {model_type.title()} model '{deployment_name}' deployment job submitted. Model ID: {model_id}")
         return model_id
     elif response.status_code == 422:
-        # Model may already exist
         error_text = response.text.lower()
         if "already exists" in error_text or "duplicate" in error_text:
-            print(f"   Model '{deployment_name}' may already exist. Attempting to find it...")
-            # List existing models
+            print(f"   Model '{deployment_name}' already exists. Fetching details...")
             with httpx.Client(headers=HEADERS, timeout=30) as client:
                 list_response = client.get(f"{API_BASE_URL}{endpoint}")
             if list_response.status_code == 200:
