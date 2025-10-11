@@ -28,7 +28,7 @@ import httpx
 import time
 
 # Correct sandbox API URL - use cloudapi subdomain
-API_BASE_URL = "https://cloudapi.sbx-29.sandbox.nonprod-project-avengers.com"
+API_BASE_URL = "https://cloudapi.sbx-30.sandbox.nonprod-project-avengers.com"
 HEADERS = {
     "Authorization": f"Bearer {MANAGEMENT_API_KEY}",
     "Content-Type": "application/json"
@@ -236,23 +236,15 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     # Build the payload according to v4 API spec
     payload = {
         "name": deployment_name,
-        "catalogModelName": model_name,  # Use catalogModelName instead of model
+        "catalogModelName": model_name,
         "cloudConfig": {
             "provider": "aws",
-            "region": "us-east-1",
-            "compute": {
-                "cpu": 4,
-                "ram": 16
-            }
+            "region": "us-east-1"
         }
     }
     
     # Add model-type specific configurations
-    if model_type == "embedding":
-        # Embeddings may have specific settings
-        pass
-    elif model_type == "llm":
-        # LLMs may have specific settings like quantization
+    if model_type == "llm":
         payload["quantization"] = "fullPrecision"
         payload["optimization"] = "throughput"
     
