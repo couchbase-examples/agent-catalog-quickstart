@@ -15,6 +15,22 @@ DB_USERNAME = os.getenv("DB_USERNAME", "agent_app_user")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "nvidia/nv-embedqa-mistral-7b-v2")
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta/llama-3.1-8b-instruct")
 
+# Model compute sizes
+# Extra Small: 4/24, Small: 4/48, Medium: 48/192
+# Large: 192/320, Extra Large: 192/640 (may not be available in sandbox)
+EMBEDDING_MODEL_CPU = int(os.getenv("EMBEDDING_MODEL_CPU", "4"))
+EMBEDDING_MODEL_GPU_MEMORY = int(os.getenv("EMBEDDING_MODEL_GPU_MEMORY", "24"))
+LLM_MODEL_CPU = int(os.getenv("LLM_MODEL_CPU", "4"))
+LLM_MODEL_GPU_MEMORY = int(os.getenv("LLM_MODEL_GPU_MEMORY", "48"))
+
+# LLM configuration options
+LLM_QUANTIZATION = os.getenv("LLM_QUANTIZATION", "fp16")  # fp16, fp32, int4, int8, bf16
+LLM_OPTIMIZATION = os.getenv("LLM_OPTIMIZATION", "throughput")  # throughput, latency
+LLM_BATCHING_ENABLED = os.getenv("LLM_BATCHING_ENABLED", "false").lower() == "true"
+
+# Optional: Embedding configuration
+EMBEDDING_DIMENSIONS = os.getenv("EMBEDDING_DIMENSIONS","2048")  # Optional, model default if not set
+
 # Validate required environment variables
 if not MANAGEMENT_API_KEY:
     raise ValueError("Missing required environment variable: MANAGEMENT_API_KEY")
@@ -267,13 +283,13 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     except Exception as e:
         print(f"   Warning: Could not check existing models: {e}")
 
-    # Set compute size based on model type
+    # Set compute size based on model type from environment variables
     if model_type == "embedding":
-        cpu = 4
-        gpu_memory = 24
+        cpu = EMBEDDING_MODEL_CPU
+        gpu_memory = EMBEDDING_MODEL_GPU_MEMORY
     else:
-        cpu = 4
-        gpu_memory = 48
+        cpu = LLM_MODEL_CPU
+        gpu_memory = LLM_MODEL_GPU_MEMORY
 
     # Build the payload
     payload = {
@@ -290,8 +306,12 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     }
     
     if model_type == "llm":
-        payload["quantization"] = "fp16"  # Changed from "fullPrecision"
-        payload["optimization"] = "throughput"
+        payload["quantization"] = LLM_QUANTIZATION
+        payload["optimization"] = LLM_OPTIMIZATION
+        if LLM_BATCHING_ENABLED:
+            payload["isBatchingEnabled"] = True
+    elif model_type == "embedding" and EMBEDDING_DIMENSIONS:
+        payload["dimensions"] = int(EMBEDDING_DIMENSIONS)
     
     print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
     print(f"   Using compute: {cpu} vCPUs, {gpu_memory}GB GPU")
@@ -333,7 +353,7 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     else:
         raise Exception(f"Failed to create {model_type} model '{deployment_name}'. Status: {response.status_code}, Response: {response.text}")
 
-def create_ai_api_key(org_id, embedding_model_id, llm_model_id, region="us-east-1"):
+def create_ai_api_key(org_id, region="us-east-1"):
     """Creates an API key for accessing the AI models."""
     endpoint = f"/v4/organizations/{org_id}/aiServices/models/apiKeys"
     
@@ -343,6 +363,7 @@ def create_ai_api_key(org_id, embedding_model_id, llm_model_id, region="us-east-
         "description": "API key for agent hub models",
         "expiry": 180,
         "allowedCIDRs": ["0.0.0.0/0"],
+
         "region": region
     }
     
@@ -353,24 +374,14 @@ def create_ai_api_key(org_id, embedding_model_id, llm_model_id, region="us-east-
     
     if response.status_code == 201:
         data = response.json()
-        api_key = data.get("token")
+        api_key = data.get("token")  # This is the actual API key token
         key_id = data.get("id")
-        print(f"   ✅ API key created successfully. Key ID: {key_id}")
+        print(f"   ✅ API key created successfully.")
+        print(f"   Key ID: {key_id}")
+        print(f"   Token: {api_key[:20]}..." if api_key else "   Token: (not found in response)")
         return api_key
     else:
-        # Check if key already exists
-        print(f"   Failed to create API key. Status: {response.status_code}")
-        print(f"   Checking for existing API keys...")
-        with httpx.Client(headers=HEADERS, timeout=30) as client:
-            list_response = client.get(f"{API_BASE_URL}{endpoint}")
-        if list_response.status_code == 200:
-            keys = list_response.json().get('data', [])
-            for key in keys:
-                if key.get('name') == "agent-hub-api-key":
-                    print(f"   ✅ Using existing API key: {key.get('keyId')}")
-                    # Can't retrieve the token for existing keys
-                    return "existing_key_token_not_retrievable"
-        raise Exception(f"Failed to create or find API key. Response: {response.text}")
+        raise Exception(f"Failed to create API key. Status: {response.status_code}, Response: {response.text}")
 
     
 print("--- 🚀 Starting Automated Capella Environment Setup ---")
@@ -406,26 +417,21 @@ try:
 
     # Deploy Embedding Model
     print("   Deploying embedding model...")
-    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model-4", "embedding")
+    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
     embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
     embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model", None)
     embedding_endpoint = embedding_details.get("connectionString", "")
 
     # Deploy LLM Model
-    # print("   Deploying LLM model...")
-    # llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
-    # llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
-    # llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
-    # llm_endpoint = llm_details.get("connectionString", "")
+    print("   Deploying LLM model...")
+    llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
+    llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
+    llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
+    llm_endpoint = llm_details.get("connectionString", "")
 
-    # Skip LLM for now (takes 3-4 hours)
-    print("\n   ⏭️  Skipping LLM deployment for now...")
-    llm_model_id = None
-    llm_endpoint = None
-    
     # 6. Create API Key for Models
     print("\n[6/7] Creating API Key for AI Models...")
-    api_key = create_ai_api_key(organization_id, embedding_model_id, llm_model_id)    
+    api_key = create_ai_api_key(organization_id)    
 
     # 6. Set Environment Variables for the Notebook
     print("\n[6/6] Configuring Environment for this Notebook Session...")
@@ -436,7 +442,7 @@ try:
 
     # Set AI model endpoints and credentials
     os.environ["CAPELLA_API_EMBEDDING_ENDPOINT"] = embedding_endpoint
-    # os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
+    os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
 
     os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = api_key
     os.environ["CAPELLA_API_LLM_KEY"] = api_key
