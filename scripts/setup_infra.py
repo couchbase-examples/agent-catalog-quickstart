@@ -86,11 +86,19 @@ def test_api_connection(org_id):
     except Exception as e:
         print(f"   ❌ Connection failed: {e}")
 
-def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds: int = 900):
+def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds: int = None):
     """Polls a Capella endpoint until the resource is in a 'healthy' or 'ready' state."""
     start_time = time.time()
-    print(f"   Waiting for {resource_type} to become ready... (this can take several minutes)")
-    while time.time() - start_time < timeout_seconds:
+    if timeout_seconds is None:
+        print(f"   Waiting for {resource_type} to become ready... (no timeout, will wait indefinitely)")
+    else:
+        print(f"   Waiting for {resource_type} to become ready... (timeout: {timeout_seconds}s)")
+    
+    while True:
+        # Check timeout if specified
+        if timeout_seconds is not None and (time.time() - start_time) > timeout_seconds:
+            raise Exception(f"Timeout: {resource_type} was not ready within {timeout_seconds} seconds.")
+        
         try:
             with httpx.Client(headers=HEADERS, timeout=30) as client:
                 response = client.get(f"{API_BASE_URL}{check_url}")
@@ -99,13 +107,15 @@ def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds:
                 
                 # For AI models, check different status fields
                 if "aiServices/models" in check_url:
-                    # AI models use 'currentState' field
-                    status = data.get("currentState", "").lower()
+                    # Status is inside the "model" object
+                    model_data = data.get("model", {})
+                    status = model_data.get("currentState", "unknown").lower()
                 else:
                     # Clusters use nested status.state
-                    status = data.get("status", {}).get("state", data.get("currentState", "")).lower()
+                    status = data.get("status", {}).get("state", data.get("currentState", "unknown")).lower()
                 
-                print(f"   Current status: {status}")
+                elapsed = int(time.time() - start_time)
+                print(f"   Current status: {status} (elapsed: {elapsed}s)")
                 
                 if status in ["healthy", "ready", "deployed", "running"]:
                     print(f"✅ {resource_type} is ready!")
@@ -114,7 +124,6 @@ def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds:
         except Exception as e:
             print(f"   ... still waiting (error polling: {e})")
             time.sleep(20)
-    raise Exception(f"Timeout: {resource_type} was not ready within {timeout_seconds} seconds.")
 
 def get_or_create_project(org_id, project_name):
     """Finds a project by name or creates it if it doesn't exist."""
@@ -261,8 +270,8 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
 
     # Set compute size based on model type
     if model_type == "embedding":
-        cpu = 48
-        gpu_memory = 192
+        cpu = 4
+        gpu_memory = 24
     else:
         cpu = 4
         gpu_memory = 48
@@ -325,6 +334,45 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
     else:
         raise Exception(f"Failed to create {model_type} model '{deployment_name}'. Status: {response.status_code}, Response: {response.text}")
 
+def create_ai_api_key(org_id, embedding_model_id, llm_model_id, region="us-east-1"):
+    """Creates an API key for accessing the AI models."""
+    endpoint = f"/v4/organizations/{org_id}/aiServices/models/apiKeys"
+    
+    # 180 days expiry
+    payload = {
+        "name": "agent-hub-api-key",
+        "description": "API key for agent hub models",
+        "expiry": 180,
+        "allowedCIDRs": ["0.0.0.0/0"],
+        "region": region
+    }
+    
+    print(f"   Creating API key for models in region {region}...")
+    
+    with httpx.Client(headers=HEADERS, timeout=60) as client:
+        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
+    
+    if response.status_code == 201:
+        data = response.json()
+        api_key = data.get("token")
+        key_id = data.get("id")
+        print(f"   ✅ API key created successfully. Key ID: {key_id}")
+        return api_key
+    else:
+        # Check if key already exists
+        print(f"   Failed to create API key. Status: {response.status_code}")
+        print(f"   Checking for existing API keys...")
+        with httpx.Client(headers=HEADERS, timeout=30) as client:
+            list_response = client.get(f"{API_BASE_URL}{endpoint}")
+        if list_response.status_code == 200:
+            keys = list_response.json().get('data', [])
+            for key in keys:
+                if key.get('name') == "agent-hub-api-key":
+                    print(f"   ✅ Using existing API key: {key.get('keyId')}")
+                    # Can't retrieve the token for existing keys
+                    return "existing_key_token_not_retrievable"
+        raise Exception(f"Failed to create or find API key. Response: {response.text}")
+
     
 print("--- 🚀 Starting Automated Capella Environment Setup ---")
 
@@ -343,7 +391,7 @@ try:
     print("\n[2/6] Deploying Capella Free Tier Cluster...")
     cluster_id = create_free_tier_cluster(organization_id, project_id, CLUSTER_NAME)
     cluster_check_url = f"/v4/organizations/{organization_id}/projects/{project_id}/clusters/{cluster_id}"
-    cluster_details = wait_for_resource_ready(cluster_check_url, "Cluster")
+    cluster_details = wait_for_resource_ready(cluster_check_url, "Cluster", None)
     cluster_conn_string = cluster_details.get("connectionString")
 
     # 3. Load Sample Data
@@ -358,19 +406,28 @@ try:
     print("\n[5/6] Deploying AI Models...")
 
     # Deploy Embedding Model
-    # print("   Deploying embedding model...")
-    # embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
-    # embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
-    # embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model")
-    # embedding_endpoint = embedding_details.get("connectionString", "")
+    print("   Deploying embedding model...")
+    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
+    embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
+    embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model", None)
+    embedding_endpoint = embedding_details.get("connectionString", "")
 
     # Deploy LLM Model
-    print("   Deploying LLM model...")
-    llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
-    llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
-    llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
-    llm_endpoint = llm_details.get("connectionString", "")
+    # print("   Deploying LLM model...")
+    # llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
+    # llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
+    # llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
+    # llm_endpoint = llm_details.get("connectionString", "")
+
+    # Skip LLM for now (takes 3-4 hours)
+    print("\n   ⏭️  Skipping LLM deployment for now...")
+    llm_model_id = None
+    llm_endpoint = None
     
+    # 6. Create API Key for Models
+    print("\n[6/7] Creating API Key for AI Models...")
+    api_key = create_ai_api_key(organization_id, embedding_model_id, llm_model_id)    
+
     # 6. Set Environment Variables for the Notebook
     print("\n[6/6] Configuring Environment for this Notebook Session...")
     os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"
@@ -380,9 +437,11 @@ try:
 
     # Set AI model endpoints and credentials
     os.environ["CAPELLA_API_EMBEDDING_ENDPOINT"] = embedding_endpoint
-    os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
-    os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = MANAGEMENT_API_KEY
-    os.environ["CAPELLA_API_LLM_KEY"] = MANAGEMENT_API_KEY
+    # os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
+
+    os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = api_key
+    os.environ["CAPELLA_API_LLM_KEY"] = api_key
+    
     os.environ["CAPELLA_API_EMBEDDING_MODEL"] = EMBEDDING_MODEL_NAME
     os.environ["CAPELLA_API_LLM_MODEL"] = LLM_MODEL_NAME
     
