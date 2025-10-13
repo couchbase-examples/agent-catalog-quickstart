@@ -105,11 +105,10 @@ def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds:
             if response.status_code == 200:
                 data = response.json()
                 
-                # For AI models, check different status fields
+                # For AI models, check status field
                 if "aiServices/models" in check_url:
-                    # Status is inside the "model" object
                     model_data = data.get("model", {})
-                    status = model_data.get("currentState", "unknown").lower()
+                    status = model_data.get("status", "unknown").lower()
                 else:
                     # Clusters use nested status.state
                     status = data.get("status", {}).get("state", data.get("currentState", "unknown")).lower()
@@ -407,7 +406,7 @@ try:
 
     # Deploy Embedding Model
     print("   Deploying embedding model...")
-    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
+    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model-4", "embedding")
     embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
     embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model", None)
     embedding_endpoint = embedding_details.get("connectionString", "")
