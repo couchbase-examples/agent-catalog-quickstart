@@ -199,6 +199,38 @@ def create_free_tier_cluster(org_id, proj_id, name):
     else:
         raise Exception(f"Failed to create cluster. Status: {response.status_code}, Response: {response.text}")
 
+def add_allowed_cidr(org_id, proj_id, cluster_id, cidr="0.0.0.0/0"):
+    """Adds an allowed CIDR to the cluster to enable network access."""
+    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/allowedcidrs"
+    
+    payload = {
+        "cidr": cidr,
+        "comment": "Allow access for agent hub development"
+    }
+    
+    print(f"   Adding allowed CIDR {cidr} to cluster...")
+    
+    with httpx.Client(headers=HEADERS, timeout=30) as client:
+        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
+    
+    if response.status_code == 201:
+        print(f"   ✅ Successfully added allowed CIDR: {cidr}")
+        return response.json()
+    elif response.status_code == 422:
+        # Check if CIDR already exists
+        print(f"   Checking if CIDR already exists...")
+        with httpx.Client(headers=HEADERS, timeout=30) as client:
+            list_response = client.get(f"{API_BASE_URL}{endpoint}")
+        if list_response.status_code == 200:
+            cidrs = list_response.json().get('data', [])
+            for existing_cidr in cidrs:
+                if existing_cidr.get('cidr') == cidr:
+                    print(f"   ✅ CIDR {cidr} already exists")
+                    return existing_cidr
+        raise Exception(f"Failed to add allowed CIDR. Response: {response.text}")
+    else:
+        raise Exception(f"Failed to add allowed CIDR. Status: {response.status_code}, Response: {response.text}")
+
 def load_travel_sample(org_id, proj_id, cluster_id):
     """Loads the travel-sample bucket into the specified cluster."""
     endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/sampleBuckets"
@@ -394,26 +426,30 @@ try:
     test_api_connection(organization_id)
 
     # 1. Get or Create Project
-    print("\n[1/6] Finding or Creating Capella Project...")
+    print("\n[1/7] Finding or Creating Capella Project...")
     project_id = get_or_create_project(organization_id, PROJECT_NAME)
 
     # 2. Create and Wait for Cluster
-    print("\n[2/6] Deploying Capella Free Tier Cluster...")
+    print("\n[2/7] Deploying Capella Free Tier Cluster...")
     cluster_id = create_free_tier_cluster(organization_id, project_id, CLUSTER_NAME)
     cluster_check_url = f"/v4/organizations/{organization_id}/projects/{project_id}/clusters/{cluster_id}"
     cluster_details = wait_for_resource_ready(cluster_check_url, "Cluster", None)
     cluster_conn_string = cluster_details.get("connectionString")
 
-    # 3. Load Sample Data
-    print("\n[3/6] Loading 'travel-sample' Dataset...")
+    # 3. Add allowed CIDR for cluster access
+    print("\n[3/7] Configuring Cluster Network Access...")
+    add_allowed_cidr(organization_id, project_id, cluster_id)
+
+    # 4. Load Sample Data
+    print("\n[4/7] Loading 'travel-sample' Dataset...")
     load_travel_sample(organization_id, project_id, cluster_id)
 
-    # 4. Create Database User
-    print("\n[4/6] Creating Database Credentials...")
+    # 5. Create Database User
+    print("\n[5/7] Creating Database Credentials...")
     db_password = create_db_user(organization_id, project_id, cluster_id, DB_USERNAME)
 
-    # 5. Deploy AI Models
-    print("\n[5/6] Deploying AI Models...")
+    # 6. Deploy AI Models
+    print("\n[6/7] Deploying AI Models...")
 
     # Deploy Embedding Model
     print("   Deploying embedding model...")
@@ -432,12 +468,12 @@ try:
     llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
     llm_endpoint = llm_details.get("connectionString", "")
 
-    # 6. Create API Key for Models
-    print("\n[6/7] Creating API Key for AI Models...")
-    api_key = create_ai_api_key(organization_id)    
+    # 7. Create API Key for Models
+    print("\n[7/7] Creating API Key for AI Models...")
+    api_key = create_ai_api_key(organization_id)
 
-    # 6. Set Environment Variables for the Notebook
-    print("\n[6/6] Configuring Environment for this Notebook Session...")
+    # 8. Set Environment Variables for the Notebook
+    print("\n✅ Configuring Environment for this Notebook Session...")
     os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"
     os.environ["CB_USERNAME"] = DB_USERNAME
     os.environ["CB_PASSWORD"] = db_password
