@@ -24,12 +24,12 @@ LLM_MODEL_CPU = int(os.getenv("LLM_MODEL_CPU", "4"))
 LLM_MODEL_GPU_MEMORY = int(os.getenv("LLM_MODEL_GPU_MEMORY", "48"))
 
 # LLM configuration options
-LLM_QUANTIZATION = os.getenv("LLM_QUANTIZATION", "fp16")  # fp16, fp32, int4, int8, bf16
-LLM_OPTIMIZATION = os.getenv("LLM_OPTIMIZATION", "throughput")  # throughput, latency
-LLM_BATCHING_ENABLED = os.getenv("LLM_BATCHING_ENABLED", "false").lower() == "true"
+# LLM_QUANTIZATION = os.getenv("LLM_QUANTIZATION", "fp16")  # fp16, fp32, int4, int8, bf16
+# LLM_OPTIMIZATION = os.getenv("LLM_OPTIMIZATION", "throughput")  # throughput, latency
+# LLM_BATCHING_ENABLED = os.getenv("LLM_BATCHING_ENABLED", "false").lower() == "true"
 
 # Optional: Embedding configuration
-EMBEDDING_DIMENSIONS = os.getenv("EMBEDDING_DIMENSIONS","2048")  # Optional, model default if not set
+# EMBEDDING_DIMENSIONS = os.getenv("EMBEDDING_DIMENSIONS","2048")  # Optional, model default if not set
 
 # Validate required environment variables
 if not MANAGEMENT_API_KEY:
@@ -305,13 +305,13 @@ def create_ai_model(org_id, model_name, deployment_name, model_type="embedding")
         }
     }
     
-    if model_type == "llm":
-        payload["quantization"] = LLM_QUANTIZATION
-        payload["optimization"] = LLM_OPTIMIZATION
-        if LLM_BATCHING_ENABLED:
-            payload["isBatchingEnabled"] = True
-    elif model_type == "embedding" and EMBEDDING_DIMENSIONS:
-        payload["dimensions"] = int(EMBEDDING_DIMENSIONS)
+    # if model_type == "embedding" and EMBEDDING_DIMENSIONS:
+    #     payload["dimensions"] = int(EMBEDDING_DIMENSIONS)
+    # elif model_type == "llm":
+    #     payload["quantization"] = LLM_QUANTIZATION
+    #     payload["optimization"] = LLM_OPTIMIZATION
+    #     if LLM_BATCHING_ENABLED:
+    #         payload["isBatchingEnabled"] = True
     
     print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
     print(f"   Using compute: {cpu} vCPUs, {gpu_memory}GB GPU")
@@ -421,6 +421,9 @@ try:
     embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
     embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model", None)
     embedding_endpoint = embedding_details.get("connectionString", "")
+    embedding_dimensions = embedding_details.get("model", {}).get("config", {}).get("dimensions")
+    print(f"   Model dimensions: {embedding_dimensions}")
+
 
     # Deploy LLM Model
     print("   Deploying LLM model...")
