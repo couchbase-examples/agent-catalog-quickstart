@@ -44,7 +44,7 @@ import httpx
 import time
 
 # Correct sandbox API URL - use cloudapi subdomain
-API_BASE_URL = "https://cloudapi.sbx-30.sandbox.nonprod-project-avengers.com"
+API_BASE_URL = os.getenv("API_BASE_URL", "cloudapi.cloud.couchbase.com")
 HEADERS = {
     "Authorization": f"Bearer {MANAGEMENT_API_KEY}",
     "Content-Type": "application/json"
