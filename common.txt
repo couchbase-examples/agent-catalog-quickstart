@@ -1,0 +1,65 @@
+
+import os
+print(os.getcwd())
+----
+
+# this is just one we need to get the all the tools,prompts and agentcatalog_index.json in the relatives places as per the project. below is just one example
+!mkdir prompts && cd prompts && \
+wget https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/prompts/flight_search_assistant.yaml
+
+----
+# come to base directory
+
+# Depends on each toml requirements. heres the hotel example:
+%pip install -q \
+    "pydantic>=2.0.0,<3.0.0" \
+    "python-dotenv>=1.0.0,<2.0.0" \
+    "pandas>=2.0.0,<3.0.0" \
+    "tqdm>=4.64.0,<5.0.0" \
+    "langchain-couchbase>=0.2.5,<0.3.0" \
+    "langchain-openai>=0.3.13,<0.4.0" \
+    "langchain-nvidia-ai-endpoints>=0.3.0,<0.4.0" \
+    "arize>=5.0.0" \
+    "arize-otel>=0.7.0,<1.0.0" \
+    "arize-phoenix[evals]>=11.0.0" \
+    "openinference-instrumentation-openai>=0.1.18,<0.2.0" \
+    "openinference-instrumentation-langchain>=0.1.29,<0.2.0"
+------
+
+!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl
+!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl
+!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl
+!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_langchain-0.2.5a2-py3-none-any.whl
+!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_langgraph-0.2.5a2-py3-none-any.whl
+
+# just for show
+# !pip install -q /content/agentc_core-*.whl
+# !pip install -q /content/agentc_cli-*.whl
+# !pip install -q /content/agentc-*.whl
+# !pip install -q /content/agentc_langchain-*.whl
+# !pip install -q /content/agentc_langgraph-*.whl
+------
+
+
+!git init
+
+------
+
+!git add .
+!git config --global user.email "kaustav.ghosh@couchbase.com"
+!git config --global user.name "Kaustav Ghosh"
+!git commit -m "initial commit"
+
+------
+
+!agentc init
+
+-----
+
+!agentc index .
+
+-----
+
+!agentc publish
+
+-----

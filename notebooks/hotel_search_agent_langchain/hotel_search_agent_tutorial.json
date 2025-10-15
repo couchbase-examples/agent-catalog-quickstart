@@ -14,6 +14,320 @@
       ]
     },
     {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import os\n",
+        "print(os.getcwd())\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Download required resources for the hotel search agent\n",
+        "!mkdir -p prompts\n",
+        "!wget -O prompts/hotel_search_assistant.yaml https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/prompts/hotel_search_assistant.yaml\n",
+        "!mkdir -p tools\n",
+        "!wget -O tools/__init__.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/tools/__init__.py\n",
+        "!wget -O tools/tools.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/tools/tools.py\n",
+        "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/agentcatalog_index.json\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "%pip install -q \\\n",
+        "    \"pydantic>=2.0.0,<3.0.0\" \\\n",
+        "    \"python-dotenv>=1.0.0,<2.0.0\" \\\n",
+        "    \"pandas>=2.0.0,<3.0.0\" \\\n",
+        "    \"nest-asyncio>=1.6.0,<2.0.0\" \\\n",
+        "    \"uvicorn>=0.29.0,<0.30.0\" \\\n",
+        "    \"httpx>=0.24.0,<1.0.0\" \\\n",
+        "    \"langchain-couchbase>=0.2.4,<0.5.0\" \\\n",
+        "    \"langchain-openai>=0.3.11,<0.4.0\" \\\n",
+        "    \"langchain-nvidia-ai-endpoints>=0.3.13,<0.4.0\" \\\n",
+        "    \"arize>=7.51.0,<8.0.0\" \\\n",
+        "    \"arize-phoenix>=11.37.0,<12.0.0\" \\\n",
+        "    \"arize-phoenix-evals>=2.2.0,<3.0.0\" \\\n",
+        "    \"openinference-instrumentation-langchain>=0.1.29,<0.2.0\" \\\n",
+        "    \"openinference-instrumentation-openai>=0.1.18,<0.2.0\"\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_langchain-0.2.5a2-py3-none-any.whl\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!git init\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!git add .\n",
+        "!git config --global user.email \"your.email@example.com\"\n",
+        "!git config --global user.name \"Your Name\"\n",
+        "!git commit -m \"initial commit\"\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc init\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc index .\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc publish\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 🚀 Educational Infrastructure Setup\n",
+        "\n",
+        "**This cell uses the `couchbase-infrastructure` package to provision your Couchbase Capella infrastructure step-by-step.**\n",
+        "\n",
+        "### What It Does (Educational Approach):\n",
+        "1. **Interactive Credentials** - Securely collects your API key using `getpass` (Google Colab compatible)\n",
+        "2. **Creates Capella Project** - Sets up your cloud database project\n",
+        "3. **Provisions Free Tier Cluster** - Deploys a Couchbase cluster on AWS\n",
+        "4. **Configures Network Access** - Sets up allowlists for connectivity\n",
+        "5. **Loads travel-sample Data** - Imports the sample hotel dataset\n",
+        "6. **Creates Database User** - Generates credentials with appropriate permissions\n",
+        "7. **Deploys AI Models** - Provisions embedding and LLM models for the agent\n",
+        "8. **Creates API Keys** - Generates keys for AI model access\n",
+        "9. **Sets Environment Variables** - Configures all required variables for subsequent cells\n",
+        "\n",
+        "### Prerequisites:\n",
+        "- Get your `MANAGEMENT_API_KEY` from [Capella Console](https://cloud.couchbase.com) → Settings → API Keys\n",
+        "- **No `.env` file needed** - This notebook uses interactive prompts (Google Colab compatible)\n",
+        "\n",
+        "### After Running:\n",
+        "All environment variables will be set and ready for the hotel search agent cells below.\n",
+        "\n",
+        "**Package Documentation**: https://pypi.org/project/couchbase-infrastructure/\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Install the couchbase-infrastructure package\n",
+        "!pip install -q couchbase-infrastructure\n",
+        "\n",
+        "import os\n",
+        "from getpass import getpass\n",
+        "\n",
+        "print(\"=\" * 70)\n",
+        "print(\"🚀 Couchbase Capella Infrastructure Setup\")\n",
+        "print(\"=\" * 70)\n",
+        "\n",
+        "# Import the infrastructure package\n",
+        "from couchbase_infrastructure import CapellaConfig, CapellaClient\n",
+        "from couchbase_infrastructure.resources import (\n",
+        "    create_project,\n",
+        "    create_cluster,\n",
+        "    add_allowed_cidr,\n",
+        "    load_sample_data,\n",
+        "    create_database_user,\n",
+        "    deploy_ai_model,\n",
+        "    create_ai_api_key,\n",
+        ")\n",
+        "\n",
+        "# Step 1: Collect credentials interactively\n",
+        "print(\"\\n📋 Step 1: Collecting Credentials\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "management_api_key = getpass(\"Enter your MANAGEMENT_API_KEY (hidden): \")\n",
+        "if not management_api_key:\n",
+        "    raise ValueError(\"MANAGEMENT_API_KEY is required!\")\n",
+        "\n",
+        "organization_id = input(\"Enter ORGANIZATION_ID (press Enter to auto-detect): \").strip() or None\n",
+        "project_name = input(\"Enter PROJECT_NAME (press Enter for 'Agent-Hub-Project'): \").strip() or \"Agent-Hub-Project\"\n",
+        "cluster_name = input(\"Enter CLUSTER_NAME (press Enter for 'agent-hub-hotel-cluster'): \").strip() or \"agent-hub-hotel-cluster\"\n",
+        "db_username = input(\"Enter DB_USERNAME (press Enter for 'agent_app_user'): \").strip() or \"agent_app_user\"\n",
+        "db_password = getpass(\"Enter DB_PASSWORD (hidden, press Enter for auto-generated): \").strip() or None\n",
+        "\n",
+        "print(\"\\n✅ Credentials collected successfully!\")\n",
+        "\n",
+        "# Step 2: Initialize configuration\n",
+        "print(\"\\n🔧 Step 2: Initializing Configuration\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "config = CapellaConfig(\n",
+        "    MANAGEMENT_API_KEY=management_api_key,\n",
+        "    ORGANIZATION_ID=organization_id,\n",
+        "    PROJECT_NAME=project_name,\n",
+        "    CLUSTER_NAME=cluster_name,\n",
+        "    DB_USERNAME=db_username,\n",
+        "    DB_PASSWORD=db_password,\n",
+        ")\n",
+        "print(\"✅ Configuration initialized\")\n",
+        "\n",
+        "# Step 3: Test API connection\n",
+        "print(\"\\n🔌 Step 3: Testing Capella API Connection\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "client = CapellaClient(config)\n",
+        "if not client.test_connection():\n",
+        "    raise ConnectionError(\"Failed to connect to Capella API. Check your MANAGEMENT_API_KEY.\")\n",
+        "print(\"✅ API connection successful\")\n",
+        "\n",
+        "# Step 4: Get or detect organization ID\n",
+        "print(\"\\n🏢 Step 4: Getting Organization ID\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "org_id = client.get_organization_id()\n",
+        "print(f\"✅ Organization ID: {org_id}\")\n",
+        "\n",
+        "# Step 5: Create or get project\n",
+        "print(\"\\n📁 Step 5: Creating Capella Project\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "project_id = create_project(client, org_id, config.PROJECT_NAME)\n",
+        "print(f\"✅ Project ID: {project_id}\")\n",
+        "\n",
+        "# Step 6: Create free-tier cluster\n",
+        "print(\"\\n☁️ Step 6: Creating Free-Tier Cluster (10-15 minutes)\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "cluster_id = create_cluster(client, org_id, project_id, config.CLUSTER_NAME)\n",
+        "print(f\"✅ Cluster ID: {cluster_id}\")\n",
+        "\n",
+        "# Step 7: Configure network access\n",
+        "print(\"\\n🌐 Step 7: Configuring Network Access (CIDR Allowlist)\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "current_ip = client.get_current_ip()\n",
+        "print(f\"Your IP: {current_ip}\")\n",
+        "add_allowed_cidr(client, org_id, project_id, cluster_id, cidr=f\"{current_ip}/32\")\n",
+        "print(\"✅ Network access configured\")\n",
+        "\n",
+        "# Step 8: Load travel-sample data\n",
+        "print(\"\\n📦 Step 8: Loading travel-sample Bucket\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "load_sample_data(client, org_id, project_id, cluster_id, bucket_name=\"travel-sample\")\n",
+        "print(\"✅ Sample data loaded\")\n",
+        "\n",
+        "# Step 9: Create database user\n",
+        "print(\"\\n👤 Step 9: Creating Database User\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "db_creds = create_database_user(\n",
+        "    client, org_id, project_id, cluster_id,\n",
+        "    username=config.DB_USERNAME,\n",
+        "    password=config.DB_PASSWORD\n",
+        ")\n",
+        "print(f\"✅ Database user: {db_creds['username']}\")\n",
+        "\n",
+        "# Step 10: Deploy AI models\n",
+        "print(\"\\n🤖 Step 10: Deploying AI Models\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "embedding_model = deploy_ai_model(\n",
+        "    client, org_id, project_id, cluster_id,\n",
+        "    model_name=config.EMBEDDING_MODEL_NAME,\n",
+        "    model_type=\"embedding\"\n",
+        ")\n",
+        "llm_model = deploy_ai_model(\n",
+        "    client, org_id, project_id, cluster_id,\n",
+        "    model_name=config.LLM_MODEL_NAME,\n",
+        "    model_type=\"llm\"\n",
+        ")\n",
+        "print(f\"✅ Embedding model: {embedding_model['name']}\")\n",
+        "print(f\"✅ LLM model: {llm_model['name']}\")\n",
+        "\n",
+        "# Step 11: Create AI API keys\n",
+        "print(\"\\n🔑 Step 11: Creating AI API Keys\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "embedding_key = create_ai_api_key(\n",
+        "    client, org_id, project_id, cluster_id,\n",
+        "    key_name=f\"{config.CLUSTER_NAME}-embedding-key\"\n",
+        ")\n",
+        "llm_key = create_ai_api_key(\n",
+        "    client, org_id, project_id, cluster_id,\n",
+        "    key_name=f\"{config.CLUSTER_NAME}-llm-key\"\n",
+        ")\n",
+        "print(\"✅ API keys created\")\n",
+        "\n",
+        "# Step 12: Set environment variables for subsequent cells\n",
+        "print(\"\\n🔧 Step 12: Setting Environment Variables\")\n",
+        "print(\"-\" * 70)\n",
+        "\n",
+        "cluster_endpoint = client.get_cluster_endpoint(org_id, project_id, cluster_id)\n",
+        "ai_endpoint = client.get_ai_endpoint(org_id, project_id, cluster_id)\n",
+        "\n",
+        "os.environ['CB_CONN_STRING'] = cluster_endpoint\n",
+        "os.environ['CB_USERNAME'] = db_creds['username']\n",
+        "os.environ['CB_PASSWORD'] = db_creds['password']\n",
+        "os.environ['CB_BUCKET'] = 'travel-sample'\n",
+        "os.environ['CAPELLA_API_ENDPOINT'] = ai_endpoint\n",
+        "os.environ['CAPELLA_API_EMBEDDINGS_KEY'] = embedding_key\n",
+        "os.environ['CAPELLA_API_LLM_KEY'] = llm_key\n",
+        "os.environ['CAPELLA_API_EMBEDDING_MODEL'] = embedding_model['name']\n",
+        "os.environ['CAPELLA_API_LLM_MODEL'] = llm_model['name']\n",
+        "\n",
+        "print(\"✅ Environment variables configured:\")\n",
+        "print(f\"   - CB_CONN_STRING: {os.environ['CB_CONN_STRING']}\")\n",
+        "print(f\"   - CB_USERNAME: {os.environ['CB_USERNAME']}\")\n",
+        "print(f\"   - CB_BUCKET: {os.environ['CB_BUCKET']}\")\n",
+        "print(f\"   - CAPELLA_API_ENDPOINT: {os.environ['CAPELLA_API_ENDPOINT']}\")\n",
+        "print(f\"   - CAPELLA_API_EMBEDDING_MODEL: {os.environ['CAPELLA_API_EMBEDDING_MODEL']}\")\n",
+        "print(f\"   - CAPELLA_API_LLM_MODEL: {os.environ['CAPELLA_API_LLM_MODEL']}\")\n",
+        "\n",
+        "print(\"\\n\" + \"=\" * 70)\n",
+        "print(\"✅ Infrastructure Setup Complete!\")\n",
+        "print(\"=\" * 70)\n",
+        "print(\"\\nYou can now proceed with the hotel search agent cells below.\")\n"
+      ]
+    },
+    {
       "cell_type": "markdown",
       "metadata": {
         "vscode": {
@@ -28,7 +342,7 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 1,
+      "execution_count": null,
       "metadata": {},
       "outputs": [],
       "source": [
@@ -101,17 +415,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 2,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:31:49,189 - __main__ - INFO - ✅ Environment variables configured\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def setup_environment():\n",
         "    \"\"\"Setup default environment variables for agent operations.\"\"\"\n",
@@ -273,7 +579,7 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 3,
+      "execution_count": null,
       "metadata": {},
       "outputs": [],
       "source": [
@@ -537,7 +843,7 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 4,
+      "execution_count": null,
       "metadata": {},
       "outputs": [],
       "source": [
@@ -809,7 +1115,7 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 5,
+      "execution_count": null,
       "metadata": {},
       "outputs": [],
       "source": [
@@ -926,40 +1232,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 6,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:31:50,621 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.\n",
-            "2025-09-11 13:31:50,621 - agentc_core.catalog.catalog - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.\n",
-            "2025-09-11 13:31:50,675 - agentc_core.activity.span - INFO - Using both a local auditor and a remote auditor.\n",
-            "2025-09-11 13:31:50,675 - __main__ - INFO - ✅ Environment variables configured\n",
-            "2025-09-11 13:32:08,418 - __main__ - INFO - Successfully connected to Couchbase\n",
-            "2025-09-11 13:32:08,419 - __main__ - INFO - 🔧 Setting up Priority 1 AI services for langchain framework...\n",
-            "2025-09-11 13:32:08,419 - __main__ - INFO - 🔧 Endpoint: https://hm6yblbdkwamqjlq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-11 13:32:08,420 - __main__ - INFO - 🔧 Model: nvidia/llama-3.2-nv-embedqa-1b-v2\n",
-            "2025-09-11 13:32:08,420 - __main__ - INFO - 🔧 API Base: https://hm6yblbdkwamqjlq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-11 13:32:08,744 - __main__ - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
-            "2025-09-11 13:32:08,744 - __main__ - INFO - 🔧 LLM Endpoint: https://hm6yblbdkwamqjlq.ai.sandbox.nonprod-project-avengers.com\n",
-            "2025-09-11 13:32:08,744 - __main__ - INFO - 🔧 LLM Model: meta-llama/Llama-3.1-8B-Instruct\n",
-            "2025-09-11 13:32:08,745 - __main__ - INFO - 🔧 LLM API Base: https://hm6yblbdkwamqjlq.ai.sandbox.nonprod-project-avengers.com/v1\n",
-            "2025-09-11 13:32:10,136 - __main__ - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
-            "2025-09-11 13:32:10,137 - __main__ - INFO - ✅ Priority 1 AI services setup completed for langchain\n",
-            "2025-09-11 13:32:11,630 - __main__ - INFO - Connected to bucket 'travel-sample'\n",
-            "2025-09-11 13:32:14,158 - __main__ - INFO - Collection 'hotel_data' exists, keeping existing data...\n",
-            "2025-09-11 13:32:18,421 - __main__ - INFO - Primary index created successfully\n",
-            "2025-09-11 13:32:18,423 - __main__ - INFO - Collection setup complete\n",
-            "2025-09-11 13:32:18,428 - __main__ - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
-            "2025-09-11 13:32:19,618 - __main__ - INFO - Vector search index 'hotel_data_index' already exists\n",
-            "2025-09-11 13:32:20,896 - __main__ - INFO - Found 917 existing documents in collection, skipping data load\n",
-            "2025-09-11 13:32:20,897 - __main__ - INFO - Hotel data loaded into vector store successfully\n",
-            "2025-09-11 13:32:21,004 - __main__ - INFO - LangChain ReAct agent created successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def setup_hotel_support_agent():\n",
         "    \"\"\"Setup the hotel support agent with Agent Catalog integration.\"\"\"\n",
@@ -1017,45 +1292,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 7,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:32:21,021 - __main__ - INFO - Testing Hotel Data Loading from travel-sample\n",
-            "2025-09-11 13:32:21,021 - __main__ - INFO - ==================================================\n",
-            "2025-09-11 13:32:23,929 - __main__ - INFO - ✅ Hotel count in travel-sample.inventory.hotel: 917\n",
-            "2025-09-11 13:32:26,336 - __main__ - INFO - Loading hotel data from travel-sample.inventory.hotel...\n",
-            "2025-09-11 13:32:29,298 - __main__ - INFO - Loaded 917 hotels from travel-sample.inventory.hotel\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "Processing hotels: 100%|██████████| 917/917 [00:00<00:00, 155715.66it/s]"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:32:29,323 - __main__ - INFO - Generated 917 hotel text embeddings\n",
-            "2025-09-11 13:32:29,325 - __main__ - INFO - ✅ Generated 917 hotel texts for embeddings\n",
-            "2025-09-11 13:32:29,326 - __main__ - INFO - ✅ First hotel text sample: 'La Mirande Hotel in Avignon, France. Address: 4 place de la Mirande,F- AVIGNON. State: Provence-Alpes-Côte d'Azur. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Descri...\n",
-            "2025-09-11 13:32:29,326 - __main__ - INFO - ✅ Data loading test completed successfully\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def run_hotel_query(query: str, agent):\n",
         "    \"\"\"Run a single hotel query with error handling.\"\"\"\n",
@@ -1118,116 +1357,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 8,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:32:29,341 - __main__ - INFO - 🏨 Hotel Query: Find hotels in Giverny with free breakfast\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"hotels in Giverny with free breakfast\"\n",
-            "Observation\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/hotel_search_agent_langchain/tools/search_vector_database.py:102: LangChainDeprecationWarning: The class `CouchbaseVectorStore` was deprecated in LangChain 0.3.0 and will be removed in 1.0.0. An updated version of the class exists in the :class:`~langchain-couchbase package and should be used instead. To use it run `pip install -U :class:`~langchain-couchbase` and import as `from :class:`~langchain_couchbase.vectorstores import CouchbaseSearchVectorStore``.\n",
-            "  vector_store = CouchbaseVectorStore(\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Le Clos Fleuri in Giverny, France. Address: 5 rue de la Dîme. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity. Danielle speaks fluent English having spent many years in Australia.. Type: hotel. Title: Giverny. Phone: +33 2 32 21 36 51. Vacancy: Yes. Coordinates: 49.0763077, 1.5234464. Reviews: 3 customer reviews available. Review 1: Very basic place to stay with adjoining buildings still run down from Katrina. If you have a car and looking for good value this is perfect. Complimentary Breakfast is adequate for what you pay. Overa.... Review 2: the bed were never cleaned, the same linens were on the bed. i would like a refund of $265.36. the office people who checked you in were not the friendly people either. they did not tell me just what .... Public likes: 7 likes (Score: 0.462)\n",
-            "\n",
-            "HOTEL_2: The Robins in Giverny, France. Address: 6 rue aux Juifs. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round.. Type: hotel. Title: Giverny. Price: 60 / 70 euros. Vacancy: Yes. Also known as: Les Rouges Gorges. Coordinates: 49.078069, 1.520866. Reviews: 5 customer reviews available. Review 1: Staff need a bit of a refresher in customer service...we couldn't get a safe and there were 6 of us - \"sorry, none left\" and not too helpful, the location was terrific but the staff let us down...no w.... Review 2: We ended up choosing the Holiday Inn because it had a combination of a low price and a really convenient location. It's close to some great restaurants and just far enough from Bourbon street so that ... (Score: 0.446)\n",
-            "\n",
-            "HOTEL_3: Château du Bosc Theroulde in Bosc-Guérard-Saint-Adrien, France. Address: Route du Bosc Theroulde - 76710 Bosc Theroulde. State: Haute-Normandie. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: B&B 8 miles from the city center,within easy access from the A-28-A29-A151 motorways, this is an elegant Napoleon III style building in a fully secured walled park of 4 ha.. Type: hotel. Title: Rouen. Price: 80€. Check-in: 15.00. Check-out: 12.00. Phone: +33 2 35 81 35 54. Coordinates: 49.55, 1.116667. Public likes: 7 likes (Score: 0.444)\n",
-            "\n",
-            "HOTEL_4: Le Bas Manoir in Bretteville-sur-Odon, France. Address: 1 Route de Verson. State: Basse-Normandie. Directions: On the west side of the perifirique.. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: High quality B&B with two rooms. Ensuite bathrooms, Free WiFi,access to garden, deliciuos breakfast. 18th century estate.. Type: hotel. Title: Caen. Price: €110. Phone: +33 6 07 86 65 25. Email: lebas.manoir@hotmail.fr. Coordinates: 49.16096, -0.42509. Reviews: 3 customer reviews available. Review 1: New York City: Comfort Inn Midtown Date: Sept. 26 - 30, 2006 Reviewer: Trip Advisor Member, Burlington,Canada This hotel provides very good value for the money. The room was $162 per night. The staff .... Review 2: Just came back from a long week-end in NYC. I agree with everybody. Almost everything was perfect about this hotel (location, cleanliness, friendly staff, small but workable room, decent breakfast, st... (Score: 0.438)\n",
-            "\n",
-            "HOTEL_5: Chateau Royal de Saint-Saturnin in Saint-Saturnin, France. Address: Place de l'Ormeau, 63450 - Saint-Saturnin. State: Auvergne. Free breakfast: Yes. Free internet: No. Free parking: No. Pets allowed: No. Description: 13th century chateau-hotel in the Volcano Regional Park. Table d'hote restaurant, large car park, all rooms have en-suite bathrooms.. Type: hotel. Title: Puy-de-Dôme. Price: €150-190. Phone: +33 4 73 39 39 64. Email: SaturninILA@ila-chateau.com. Vacancy: Yes. Coordinates: 45.65874, 3.09258. Reviews: 8 customer reviews available. Review 1: A Little Gem I can only re-iterate what the other reviews on here say.The reception staff are friendly and very helpful. On check in, they asked if it was our first time in New York (it was) and then .... Review 2: the great Casablanca Hotel My daughter and I have stayed at the Casablanca every January for the past 4 years as part of our Girls' Weekend in NYC. We love everything about the hotel. The staff is ver... (Score: 0.429)\n",
-            "\n",
-            "HOTEL_6: Hotel Bleu France in Éragny, France. Address: Rue des Pinsons. State: Île-de-France. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: A very comfortable room with TV, sat, Free WIFI.. Type: hotel. Title: Eragny. Price: 59€. Check-in: 13:00. Check-out: 12:00. Phone: +33 130378600. Also known as: Hotel Bleu France. Coordinates: 49.019423, 2.096865. Reviews: 7 customer reviews available. Review 1: I stayed at Paradise Point last weekend for the 2010 Bayfair Airguard Championship Unlimited Hydroplane Race. Because I was on an extremely tight time frame, I needed help leaving Sunday after the rac.... Review 2: My husband and I just returned home from an 8 night stay at Paradise Point. We live in San Diego and have stayed in many hotels/resorts on Mission Bay within the past 2 years. This was our favorite. T.... Public likes: 6 likes (Score: 0.426)\u001b[0m\u001b[32;1m\u001b[1;3mI now have the search results and can provide a final answer.\n",
-            "\n",
-            "Final Answer:\n",
-            "\n",
-            "1. **Le Clos Fleuri**\n",
-            "   - Address: 5 rue de la Dîme, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Phone: +33 2 32 21 36 51\n",
-            "   - Vacancy: Yes\n",
-            "   - Coordinates: 49.0763077, 1.5234464\n",
-            "   - Reviews: 3 customer reviews available\n",
-            "\n",
-            "2. **The Robins**\n",
-            "   - Address: 6 rue aux Juifs, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: No\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Price: 60 / 70 euros\n",
-            "   - Vacancy: Yes\n",
-            "   - Also known as: Les Rouges Gorges\n",
-            "   - Coordinates: 49.078069, 1.520866\n",
-            "   - Reviews: 5 customer reviews available\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:32:58,895 - __main__ - INFO - 🤖 AI Response: 1. **Le Clos Fleuri**\n",
-            "   - Address: 5 rue de la Dîme, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Phone: +33 2 32 21 36 51\n",
-            "   - Vacancy: Yes\n",
-            "   - Coordinates: 49.0763077, 1.5234464\n",
-            "   - Reviews: 3 customer reviews available\n",
-            "\n",
-            "2. **The Robins**\n",
-            "   - Address: 6 rue aux Juifs, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: No\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Price: 60 / 70 euros\n",
-            "   - Vacancy: Yes\n",
-            "   - Also known as: Les Rouges Gorges\n",
-            "   - Coordinates: 49.078069, 1.520866\n",
-            "   - Reviews: 5 customer reviews available\n",
-            "2025-09-11 13:32:58,895 - __main__ - INFO - ✅ Query completed successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "result1 = run_hotel_query(\"Find hotels in Giverny with free breakfast\", agent)\n"
       ]
@@ -1247,50 +1379,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 9,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:32:58,916 - __main__ - INFO - 🏨 Hotel Query: I need a hotel in Glossop with free internet access\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"hotel in Glossop with free internet access\"\n",
-            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Avondale Guest House in Glossop, United Kingdom. Address: 28 Woodhead Road. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Mobile: +44 7784 764969. Type: hotel. Title: Glossop. Phone: +44 1457 853132. Vacancy: Yes. Coordinates: 53.449979, -1.945284. Reviews: 7 customer reviews available. Review 1: I tagged along on my husband's work trip (not expensed) and had a great time. I think we made the perfect choice. PROS: 1. Location is fantastic. If you head out the back entrance you are a block from.... Review 2: I lived in New Orleans while completing my residency at Ochsner, but this was prior to The Ritz coming into existence there. A very close friend recommended that I stay there several years ago. Now I .... Public likes: 5 likes (Score: 0.427)\n",
-            "\n",
-            "HOTEL_2: The George Hotel in Glossop, United Kingdom. Address: Norfolk Street. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area.. Type: hotel. Title: Glossop. Price: From £35.00 (single) or £60.00 (double). Phone: +44 1457 855449. Vacancy: Yes. Coordinates: 53.444331, -1.948299. Reviews: 6 customer reviews available. Review 1: Everyone I met at the hotel made me feel very welcome and comfortable from the moment I arrived. This was my second trip to New Orleans and the best expierence ever. The room I had was a little crampe.... Review 2: 4 of us stayed here for the Cardinalâ€™s/Saintâ€™s game. As frequent visitors to NOLA, we decided to try something other than the 'Quarter. We recalled this gem from a stay last year. It is located in.... Public likes: 3 likes (Score: 0.408)\n",
-            "\n",
-            "HOTEL_3: Windy Harbour Farm Hotel in Padfield, United Kingdom. Address: Woodhead Road. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Woodhead Rd, Glossop. Type: hotel. Title: Glossop. Phone: +44 1457 853107. Coordinates: 53.46327, -1.943125. Reviews: 8 customer reviews available. Review 1: We just got back from staying in New Orleans at the Avenue Garden Hotel. We were very impressed with the hotel. With paying such a cheap rate ($59/night), I was a little nervous about what we'd get be.... Review 2: This is one of the nicest hotels that i have stayed in. It is idealy located on St. Charles and the staff is great. The room was very nice, clean, and spacious. I will definatly be back. i have been v.... Public likes: 9 likes (Score: 0.403)\n",
-            "\n",
-            "HOTEL_4: The Bulls Head in Glossop, United Kingdom. Address: 102 Church Street, Old Glossop. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Public House, Restaurant & Guest House. Mobile: +44 7876 744061. Restaurant and bar. Tel: +44 1457 853291.. Type: hotel. Title: Glossop. Phone: +44 1457 866957. Coordinates: 53.450704, -1.939014. Reviews: 1 customer reviews available. Review 1: Very nice facility - the room was gorgeous, as was the center courtyard and main lobby. The concierge and doorman were a great help too. Bourban was just around the corner and we could walk or catch t.... Public likes: 8 likes (Score: 0.392)\n",
-            "\n",
-            "HOTEL_5: Mickleover Court Hotel in None, United Kingdom. Address: Etwall Road. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Menzies Hotel. Type: hotel. Title: Derby. Phone: +44 1332 521234. Coordinates: 52.901551, -1.55071. Reviews: 8 customer reviews available. Review 1: This was probably the smallest room I stayed in on my recent California trip but proves that size isn't everything. They crammed a lot into the spotless room - desk, armchairs, small table as well as .... Review 2: Stayed here for several nights while attending a business conference. Location is awesome - right in the center of town. The nightly rate was very affordable, especially in light of the conference in .... Public likes: 7 likes (Score: 0.374)\n",
-            "\n",
-            "HOTEL_6: The Old House in Derbyshire, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: B&B accommodation, 600 yards from Pennine Way.. Type: hotel. Title: Crowden-in-Longdendale. Price: £35 pppn (double sharing). Phone: +44 1457 857527. Email: oldhouse@torside.co.uk. Vacancy: Yes. Coordinates: 53.4777, -1.9267. Public likes: 1 likes (Score: 0.373)\u001b[0m2025-09-11 13:33:12,261 - __main__ - WARNING - Parsing error occurred: Could not parse LLM output: `Action: Filter results to match the requested location exactly\n",
-            "\n",
-            "Observation`\n",
-            "For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE \n",
-            "\u001b[32;1m\u001b[1;3mCould not parse LLM output: `Action: Filter results to match the requested location exactly\n",
-            "\n",
-            "Observation`\n",
-            "For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE \u001b[0mI need to use the correct format. Let me start over:\n",
-            "\n",
-            "Thought: I need to search for hotels using the search_vector_database tool\n",
-            "Action: search_vector_database\n",
-            "Action Input: \u001b[32;1m\u001b[1;3m\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:33:12,264 - __main__ - INFO - 🤖 AI Response: Agent stopped due to iteration limit or time limit.\n",
-            "2025-09-11 13:33:12,264 - __main__ - INFO - ✅ Query completed successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "result2 = run_hotel_query(\"I need a hotel in Glossop with free internet access\", agent)\n"
       ]
@@ -1310,95 +1401,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 10,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:33:12,283 - __main__ - INFO - 🏨 Hotel Query: Show me hotels in Helensburgh with free breakfast\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"Helensburgh hotels with free breakfast\"\n",
-            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Imperial Hotel in Helensburgh, United Kingdom. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: In the centre of town on the sea front.. Type: hotel. Title: Helensburgh. Phone: +44 1436 672320. Coordinates: 56.00308, -4.73468. Reviews: 2 customer reviews available. Review 1: we stated at this hotel for only one nite and wished we had stayed here on a previous trip. The staff at check in are fantastic, the hotel is modern, clean, comfortable, and has a fantastic free inter.... Review 2: Ibis on Bencoolen street would steal your heart (and not your money) and leave memories to cherish no sooner you enter the Hotel. The staff at reception very courteous at the reception was real quick ... (Score: 0.551)\n",
-            "\n",
-            "HOTEL_2: County Lodge Hotel in Helensburgh, United Kingdom. Address: Old Luss Road, Helensburgh, G84 7BH.. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Nearly 1 mile east of the town centre, near Colgrain Station.. Type: hotel. Title: Helensburgh. Price: Rooms £40-£55. Phone: +44 1436 672034. Coordinates: 55.99884, -4.71354. Public likes: 1 likes (Score: 0.511)\n",
-            "\n",
-            "HOTEL_3: Oban Bay Hotel in None, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn. Type: hotel. Title: Oban. Coordinates: 56.41966, -5.47965. Public likes: 9 likes (Score: 0.480)\n",
-            "\n",
-            "HOTEL_4: Commodore Hotel in Helensburgh, United Kingdom. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre.. Type: hotel. Title: Helensburgh. Phone: +44 1436 676924. Coordinates: 56.00481, -4.74472. Reviews: 2 customer reviews available. Review 1: this is my second time to stay in ibis hotel bencoolen. the first time i was with my husband and young daughter, and i hardly noticed the lack of space. but this time my second daughter tagged along, .... Review 2: We found the hotel Ibis to be a very clean modern hotel, the facilities and room we had were very clean and roomy enough, the food was excellent along with the service, we found the staff to be very f... (Score: 0.474)\n",
-            "\n",
-            "HOTEL_5: Oban Youth Hostel in None, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: A SYHA hostel. 4, 6 and 8 bed dormitories housed in a large Victorian building, on the Esplanade. Great sea views. Within easy walking distance of the town centre.. Type: hotel. Title: Oban. Vacancy: Yes. Coordinates: 56.41991, -5.48011. Public likes: 6 likes (Score: 0.457)\n",
-            "\n",
-            "HOTEL_6: Argyll Hotel in Argyll and Bute, United Kingdom. Address: Front Street, Inveraray, PA32 8XB. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Fabulous rooms overlooking Loch Fyne, costing £39 - 79 per person.. Type: hotel. Title: Inveraray. Phone: +44 1499 302466. Vacancy: Yes. Coordinates: 56.23171, -5.07382. Reviews: 5 customer reviews available. Review 1: We arrived at 4am after a delayed flight - and the staff couldn't have been more helpful - we were shown to our room quickly and all the staff continued to be attentive and helpful throughout our stay.... Review 2: The hotel is really new, construction is needed to maintain the property quality and certain level of service but the job should be done after 10:00hrs as you could hear drilling / hammering from \"09:.... Public likes: 3 likes (Score: 0.455)\u001b[0m\u001b[32;1m\u001b[1;3mFinal Answer:\n",
-            "\n",
-            "**Hotels in Helensburgh with Free Breakfast**\n",
-            "\n",
-            "1. **County Lodge Hotel**\n",
-            "   - Address: Old Luss Road, Helensburgh, G84 7BH\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Nearly 1 mile east of the town centre, near Colgrain Station\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Price: Rooms £40-£55\n",
-            "   - Phone: +44 1436 672034\n",
-            "   - Coordinates: 55.99884, -4.71354\n",
-            "   - Public likes: 1 likes (Score: 0.511)\n",
-            "\n",
-            "2. **Commodore Hotel**\n",
-            "   - Address: 112-117 West Clyde Street, Helensburgh, G84 8ES\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: No\n",
-            "   - Pets allowed: Yes\n",
-            "   - Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Phone: +44 1436 676924\n",
-            "   - Coordinates: 56.00481, -4.74472\n",
-            "   - Reviews: 2 customer reviews available.\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:33:37,289 - __main__ - INFO - 🤖 AI Response: **Hotels in Helensburgh with Free Breakfast**\n",
-            "\n",
-            "1. **County Lodge Hotel**\n",
-            "   - Address: Old Luss Road, Helensburgh, G84 7BH\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Nearly 1 mile east of the town centre, near Colgrain Station\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Price: Rooms £40-£55\n",
-            "   - Phone: +44 1436 672034\n",
-            "   - Coordinates: 55.99884, -4.71354\n",
-            "   - Public likes: 1 likes (Score: 0.511)\n",
-            "\n",
-            "2. **Commodore Hotel**\n",
-            "   - Address: 112-117 West Clyde Street, Helensburgh, G84 8ES\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: No\n",
-            "   - Pets allowed: Yes\n",
-            "   - Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Phone: +44 1436 676924\n",
-            "   - Coordinates: 56.00481, -4.74472\n",
-            "   - Reviews: 2 customer reviews available.\n",
-            "2025-09-11 13:33:37,291 - __main__ - INFO - ✅ Query completed successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "result3 = run_hotel_query(\"Show me hotels in Helensburgh with free breakfast\", agent)\n"
       ]
@@ -1414,19 +1419,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 11,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:33:37,781 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
-            "2025-09-11 13:33:37,790 - phoenix.inferences.inferences - INFO - Dataset: phoenix_inferences_a3c809d5-940e-41bb-8581-c58f54a9fd3f initialized\n",
-            "2025-09-11 13:33:40,124 - __main__ - INFO - ✅ Phoenix dependencies available\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Phoenix evaluation dependencies and configuration\n",
         "import json\n",
@@ -1555,192 +1550,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 12,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:33:42,184 - __main__ - INFO - 🔧 Setting up Phoenix observability...\n",
-            "2025-09-11 13:33:42,189 - phoenix.config - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
-            "❗️ The launch_app `port` parameter is deprecated and will be removed in a future release. Use the `PHOENIX_PORT` environment variable instead.\n",
-            "2025-09-11 13:33:42,282 - alembic.runtime.migration - INFO - Context impl SQLiteImpl.\n",
-            "2025-09-11 13:33:42,283 - alembic.runtime.migration - INFO - Will assume transactional DDL.\n",
-            "2025-09-11 13:33:42,301 - alembic.runtime.migration - INFO - Running upgrade  -> cf03bd6bae1d, init\n",
-            "2025-09-11 13:33:42,337 - alembic.runtime.migration - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets\n",
-            "2025-09-11 13:33:42,344 - alembic.runtime.migration - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table\n",
-            "2025-09-11 13:33:42,346 - alembic.runtime.migration - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens\n",
-            "2025-09-11 13:33:42,351 - alembic.runtime.migration - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table\n",
-            "2025-09-11 13:33:42,359 - alembic.runtime.migration - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables\n",
-            "2025-09-11 13:33:42,364 - alembic.runtime.migration - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations\n",
-            "2025-09-11 13:33:42,543 - alembic.runtime.migration - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table\n",
-            "2025-09-11 13:33:42,548 - alembic.runtime.migration - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts\n",
-            "2025-09-11 13:33:42,557 - alembic.runtime.migration - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.\n",
-            "2025-09-11 13:33:42,564 - alembic.runtime.migration - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables\n",
-            "2025-09-11 13:33:42,571 - phoenix.server.app - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)\n",
-            "🌍 To view the Phoenix app in your browser, visit http://localhost:6007/\n",
-            "📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix\n",
-            "2025-09-11 13:33:42,786 - __main__ - INFO - 🌐 Phoenix UI: http://localhost:6007/\n",
-            "🔭 OpenTelemetry Tracing Details 🔭\n",
-            "|  Phoenix Project: hotel-search-agent-evaluation\n",
-            "|  Span Processor: SimpleSpanProcessor\n",
-            "|  Collector Endpoint: http://localhost:6007/v1/traces\n",
-            "|  Transport: HTTP + protobuf\n",
-            "|  Transport Headers: {}\n",
-            "|  \n",
-            "|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.\n",
-            "|  \n",
-            "|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.\n",
-            "|  \n",
-            "|  `register` has set this TracerProvider as the global OpenTelemetry default.\n",
-            "|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.\n",
-            "\n",
-            "2025-09-11 13:33:42,807 - __main__ - INFO - ✅ Phoenix setup completed successfully\n",
-            "2025-09-11 13:33:42,812 - __main__ - INFO - ✅ LangChain instrumentation enabled\n",
-            "2025-09-11 13:33:42,815 - __main__ - INFO - ✅ OpenAI instrumentation enabled\n",
-            "2025-09-11 13:33:42,815 - __main__ - INFO - 🔍 Query 1: Find hotels in Giverny with free breakfast\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"hotels in Giverny with free breakfast\"\n",
-            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Le Clos Fleuri in Giverny, France. Address: 5 rue de la Dîme. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity. Danielle speaks fluent English having spent many years in Australia.. Type: hotel. Title: Giverny. Phone: +33 2 32 21 36 51. Vacancy: Yes. Coordinates: 49.0763077, 1.5234464. Reviews: 3 customer reviews available. Review 1: Very basic place to stay with adjoining buildings still run down from Katrina. If you have a car and looking for good value this is perfect. Complimentary Breakfast is adequate for what you pay. Overa.... Review 2: the bed were never cleaned, the same linens were on the bed. i would like a refund of $265.36. the office people who checked you in were not the friendly people either. they did not tell me just what .... Public likes: 7 likes (Score: 0.462)\n",
-            "\n",
-            "HOTEL_2: The Robins in Giverny, France. Address: 6 rue aux Juifs. State: Haute-Normandie. Directions: 27620 Giverny. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm. In the summer you will have breakfast in the garden under the canopy of the bread oven. Dogs admitted. Open all year round.. Type: hotel. Title: Giverny. Price: 60 / 70 euros. Vacancy: Yes. Also known as: Les Rouges Gorges. Coordinates: 49.078069, 1.520866. Reviews: 5 customer reviews available. Review 1: Staff need a bit of a refresher in customer service...we couldn't get a safe and there were 6 of us - \"sorry, none left\" and not too helpful, the location was terrific but the staff let us down...no w.... Review 2: We ended up choosing the Holiday Inn because it had a combination of a low price and a really convenient location. It's close to some great restaurants and just far enough from Bourbon street so that ... (Score: 0.446)\n",
-            "\n",
-            "HOTEL_3: Château du Bosc Theroulde in Bosc-Guérard-Saint-Adrien, France. Address: Route du Bosc Theroulde - 76710 Bosc Theroulde. State: Haute-Normandie. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: B&B 8 miles from the city center,within easy access from the A-28-A29-A151 motorways, this is an elegant Napoleon III style building in a fully secured walled park of 4 ha.. Type: hotel. Title: Rouen. Price: 80€. Check-in: 15.00. Check-out: 12.00. Phone: +33 2 35 81 35 54. Coordinates: 49.55, 1.116667. Public likes: 7 likes (Score: 0.444)\n",
-            "\n",
-            "HOTEL_4: Le Bas Manoir in Bretteville-sur-Odon, France. Address: 1 Route de Verson. State: Basse-Normandie. Directions: On the west side of the perifirique.. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: No. Description: High quality B&B with two rooms. Ensuite bathrooms, Free WiFi,access to garden, deliciuos breakfast. 18th century estate.. Type: hotel. Title: Caen. Price: €110. Phone: +33 6 07 86 65 25. Email: lebas.manoir@hotmail.fr. Coordinates: 49.16096, -0.42509. Reviews: 3 customer reviews available. Review 1: New York City: Comfort Inn Midtown Date: Sept. 26 - 30, 2006 Reviewer: Trip Advisor Member, Burlington,Canada This hotel provides very good value for the money. The room was $162 per night. The staff .... Review 2: Just came back from a long week-end in NYC. I agree with everybody. Almost everything was perfect about this hotel (location, cleanliness, friendly staff, small but workable room, decent breakfast, st... (Score: 0.438)\n",
-            "\n",
-            "HOTEL_5: Chateau Royal de Saint-Saturnin in Saint-Saturnin, France. Address: Place de l'Ormeau, 63450 - Saint-Saturnin. State: Auvergne. Free breakfast: Yes. Free internet: No. Free parking: No. Pets allowed: No. Description: 13th century chateau-hotel in the Volcano Regional Park. Table d'hote restaurant, large car park, all rooms have en-suite bathrooms.. Type: hotel. Title: Puy-de-Dôme. Price: €150-190. Phone: +33 4 73 39 39 64. Email: SaturninILA@ila-chateau.com. Vacancy: Yes. Coordinates: 45.65874, 3.09258. Reviews: 8 customer reviews available. Review 1: A Little Gem I can only re-iterate what the other reviews on here say.The reception staff are friendly and very helpful. On check in, they asked if it was our first time in New York (it was) and then .... Review 2: the great Casablanca Hotel My daughter and I have stayed at the Casablanca every January for the past 4 years as part of our Girls' Weekend in NYC. We love everything about the hotel. The staff is ver... (Score: 0.429)\n",
-            "\n",
-            "HOTEL_6: Hotel Bleu France in Éragny, France. Address: Rue des Pinsons. State: Île-de-France. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: A very comfortable room with TV, sat, Free WIFI.. Type: hotel. Title: Eragny. Price: 59€. Check-in: 13:00. Check-out: 12:00. Phone: +33 130378600. Also known as: Hotel Bleu France. Coordinates: 49.019423, 2.096865. Reviews: 7 customer reviews available. Review 1: I stayed at Paradise Point last weekend for the 2010 Bayfair Airguard Championship Unlimited Hydroplane Race. Because I was on an extremely tight time frame, I needed help leaving Sunday after the rac.... Review 2: My husband and I just returned home from an 8 night stay at Paradise Point. We live in San Diego and have stayed in many hotels/resorts on Mission Bay within the past 2 years. This was our favorite. T.... Public likes: 6 likes (Score: 0.426)\u001b[0m\u001b[32;1m\u001b[1;3mI now have the search results and can provide a final answer.\n",
-            "\n",
-            "Final Answer:\n",
-            "\n",
-            "1. **Le Clos Fleuri**\n",
-            "   - Address: 5 rue de la Dîme, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Situated near the church and just a few minutes walking distance from Monet's gardens and the Museum of Impressionisms, you will find Danielle and Claude's home, surrounded by a large magnificent garden, where you will find a haven of peace and tranquillity.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Phone: +33 2 32 21 36 51\n",
-            "   - Vacancy: Yes\n",
-            "   - Coordinates: 49.0763077, 1.5234464\n",
-            "   - Reviews: 3 customer reviews available\n",
-            "\n",
-            "2. **The Robins**\n",
-            "   - Address: 6 rue aux Juifs, 27620 Giverny, France\n",
-            "   - State: Haute-Normandie\n",
-            "   - Free breakfast: No\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: The rustic style of the renovation - stones and exposed beams - and the vintage countryside decoration give these several-hundred-year-old cute little houses a Bohemian charm.\n",
-            "   - Type: hotel\n",
-            "   - Title: Giverny\n",
-            "   - Price: 60 / 70 euros\n",
-            "   - Vacancy: Yes\n",
-            "   - Also known as: Les Rouges Gorges\n",
-            "   - Coordinates: 49.078069, 1.520866\n",
-            "   - Reviews: 5 customer reviews available\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:33:58,596 - __main__ - INFO - 🔍 Query 2: I need a hotel in Glossop with free internet access\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"hotel in Glossop with free internet access\"\n",
-            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Avondale Guest House in Glossop, United Kingdom. Address: 28 Woodhead Road. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Mobile: +44 7784 764969. Type: hotel. Title: Glossop. Phone: +44 1457 853132. Vacancy: Yes. Coordinates: 53.449979, -1.945284. Reviews: 7 customer reviews available. Review 1: I tagged along on my husband's work trip (not expensed) and had a great time. I think we made the perfect choice. PROS: 1. Location is fantastic. If you head out the back entrance you are a block from.... Review 2: I lived in New Orleans while completing my residency at Ochsner, but this was prior to The Ritz coming into existence there. A very close friend recommended that I stay there several years ago. Now I .... Public likes: 5 likes (Score: 0.427)\n",
-            "\n",
-            "HOTEL_2: The George Hotel in Glossop, United Kingdom. Address: Norfolk Street. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Set in the centre of town, this hotel makes an ideal base for a visit to  the area.. Type: hotel. Title: Glossop. Price: From £35.00 (single) or £60.00 (double). Phone: +44 1457 855449. Vacancy: Yes. Coordinates: 53.444331, -1.948299. Reviews: 6 customer reviews available. Review 1: Everyone I met at the hotel made me feel very welcome and comfortable from the moment I arrived. This was my second trip to New Orleans and the best expierence ever. The room I had was a little crampe.... Review 2: 4 of us stayed here for the Cardinalâ€™s/Saintâ€™s game. As frequent visitors to NOLA, we decided to try something other than the 'Quarter. We recalled this gem from a stay last year. It is located in.... Public likes: 3 likes (Score: 0.408)\n",
-            "\n",
-            "HOTEL_3: Windy Harbour Farm Hotel in Padfield, United Kingdom. Address: Woodhead Road. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: Woodhead Rd, Glossop. Type: hotel. Title: Glossop. Phone: +44 1457 853107. Coordinates: 53.46327, -1.943125. Reviews: 8 customer reviews available. Review 1: We just got back from staying in New Orleans at the Avenue Garden Hotel. We were very impressed with the hotel. With paying such a cheap rate ($59/night), I was a little nervous about what we'd get be.... Review 2: This is one of the nicest hotels that i have stayed in. It is idealy located on St. Charles and the staff is great. The room was very nice, clean, and spacious. I will definatly be back. i have been v.... Public likes: 9 likes (Score: 0.403)\n",
-            "\n",
-            "HOTEL_4: The Bulls Head in Glossop, United Kingdom. Address: 102 Church Street, Old Glossop. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Public House, Restaurant & Guest House. Mobile: +44 7876 744061. Restaurant and bar. Tel: +44 1457 853291.. Type: hotel. Title: Glossop. Phone: +44 1457 866957. Coordinates: 53.450704, -1.939014. Reviews: 1 customer reviews available. Review 1: Very nice facility - the room was gorgeous, as was the center courtyard and main lobby. The concierge and doorman were a great help too. Bourban was just around the corner and we could walk or catch t.... Public likes: 8 likes (Score: 0.392)\n",
-            "\n",
-            "HOTEL_5: Mickleover Court Hotel in None, United Kingdom. Address: Etwall Road. Free breakfast: No. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Menzies Hotel. Type: hotel. Title: Derby. Phone: +44 1332 521234. Coordinates: 52.901551, -1.55071. Reviews: 8 customer reviews available. Review 1: This was probably the smallest room I stayed in on my recent California trip but proves that size isn't everything. They crammed a lot into the spotless room - desk, armchairs, small table as well as .... Review 2: Stayed here for several nights while attending a business conference. Location is awesome - right in the center of town. The nightly rate was very affordable, especially in light of the conference in .... Public likes: 7 likes (Score: 0.374)\n",
-            "\n",
-            "HOTEL_6: The Old House in Derbyshire, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: B&B accommodation, 600 yards from Pennine Way.. Type: hotel. Title: Crowden-in-Longdendale. Price: £35 pppn (double sharing). Phone: +44 1457 857527. Email: oldhouse@torside.co.uk. Vacancy: Yes. Coordinates: 53.4777, -1.9267. Public likes: 1 likes (Score: 0.373)\u001b[0m2025-09-11 13:34:13,169 - __main__ - WARNING - Parsing error occurred: Could not parse LLM output: `Action: Filter results to match the requested location exactly\n",
-            "\n",
-            "Observation`\n",
-            "For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE \n",
-            "\u001b[32;1m\u001b[1;3mCould not parse LLM output: `Action: Filter results to match the requested location exactly\n",
-            "\n",
-            "Observation`\n",
-            "For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE \u001b[0mI need to use the correct format. Let me start over:\n",
-            "\n",
-            "Thought: I need to search for hotels using the search_vector_database tool\n",
-            "Action: search_vector_database\n",
-            "Action Input: \u001b[32;1m\u001b[1;3m\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:34:13,180 - __main__ - INFO - 🔍 Query 3: Show me hotels in Helensburgh with free breakfast\n",
-            "\n",
-            "\n",
-            "\u001b[1m> Entering new AgentExecutor chain...\u001b[0m\n",
-            "\u001b[32;1m\u001b[1;3mThought: I should search for hotels matching the user's request \n",
-            "Action: search_vector_database \n",
-            "Action Input: \"Helensburgh hotels with free breakfast\"\n",
-            "Observation\u001b[0m\u001b[36;1m\u001b[1;3mFOUND_6_HOTELS:\n",
-            "HOTEL_1: Imperial Hotel in Helensburgh, United Kingdom. Address: 12-14 West Clyde St,Helensburgh, G84 8SQ.. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: No. Description: In the centre of town on the sea front.. Type: hotel. Title: Helensburgh. Phone: +44 1436 672320. Coordinates: 56.00308, -4.73468. Reviews: 2 customer reviews available. Review 1: we stated at this hotel for only one nite and wished we had stayed here on a previous trip. The staff at check in are fantastic, the hotel is modern, clean, comfortable, and has a fantastic free inter.... Review 2: Ibis on Bencoolen street would steal your heart (and not your money) and leave memories to cherish no sooner you enter the Hotel. The staff at reception very courteous at the reception was real quick ... (Score: 0.551)\n",
-            "\n",
-            "HOTEL_2: County Lodge Hotel in Helensburgh, United Kingdom. Address: Old Luss Road, Helensburgh, G84 7BH.. Free breakfast: Yes. Free internet: Yes. Free parking: Yes. Pets allowed: No. Description: Nearly 1 mile east of the town centre, near Colgrain Station.. Type: hotel. Title: Helensburgh. Price: Rooms £40-£55. Phone: +44 1436 672034. Coordinates: 55.99884, -4.71354. Public likes: 1 likes (Score: 0.511)\n",
-            "\n",
-            "HOTEL_3: Oban Bay Hotel in None, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Corran Esplanade, Oban, PA34 5AE, +44 1631 562051. Rooms from £47 ppn. Type: hotel. Title: Oban. Coordinates: 56.41966, -5.47965. Public likes: 9 likes (Score: 0.480)\n",
-            "\n",
-            "HOTEL_4: Commodore Hotel in Helensburgh, United Kingdom. Address: 112-117 West Clyde Street, Helensburgh, G84 8ES. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre.. Type: hotel. Title: Helensburgh. Phone: +44 1436 676924. Coordinates: 56.00481, -4.74472. Reviews: 2 customer reviews available. Review 1: this is my second time to stay in ibis hotel bencoolen. the first time i was with my husband and young daughter, and i hardly noticed the lack of space. but this time my second daughter tagged along, .... Review 2: We found the hotel Ibis to be a very clean modern hotel, the facilities and room we had were very clean and roomy enough, the food was excellent along with the service, we found the staff to be very f... (Score: 0.474)\n",
-            "\n",
-            "HOTEL_5: Oban Youth Hostel in None, United Kingdom. Free breakfast: Yes. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: A SYHA hostel. 4, 6 and 8 bed dormitories housed in a large Victorian building, on the Esplanade. Great sea views. Within easy walking distance of the town centre.. Type: hotel. Title: Oban. Vacancy: Yes. Coordinates: 56.41991, -5.48011. Public likes: 6 likes (Score: 0.457)\n",
-            "\n",
-            "HOTEL_6: Argyll Hotel in Argyll and Bute, United Kingdom. Address: Front Street, Inveraray, PA32 8XB. Free breakfast: No. Free internet: Yes. Free parking: No. Pets allowed: Yes. Description: Fabulous rooms overlooking Loch Fyne, costing £39 - 79 per person.. Type: hotel. Title: Inveraray. Phone: +44 1499 302466. Vacancy: Yes. Coordinates: 56.23171, -5.07382. Reviews: 5 customer reviews available. Review 1: We arrived at 4am after a delayed flight - and the staff couldn't have been more helpful - we were shown to our room quickly and all the staff continued to be attentive and helpful throughout our stay.... Review 2: The hotel is really new, construction is needed to maintain the property quality and certain level of service but the job should be done after 10:00hrs as you could hear drilling / hammering from \"09:.... Public likes: 3 likes (Score: 0.455)\u001b[0m\u001b[32;1m\u001b[1;3mFinal Answer:\n",
-            "\n",
-            "**Hotels in Helensburgh with Free Breakfast**\n",
-            "\n",
-            "1. **County Lodge Hotel**\n",
-            "   - Address: Old Luss Road, Helensburgh, G84 7BH\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: Yes\n",
-            "   - Pets allowed: No\n",
-            "   - Description: Nearly 1 mile east of the town centre, near Colgrain Station\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Price: Rooms £40-£55\n",
-            "   - Phone: +44 1436 672034\n",
-            "   - Coordinates: 55.99884, -4.71354\n",
-            "   - Public likes: 1 likes (Score: 0.511)\n",
-            "\n",
-            "2. **Commodore Hotel**\n",
-            "   - Address: 112-117 West Clyde Street, Helensburgh, G84 8ES\n",
-            "   - Free breakfast: Yes\n",
-            "   - Free internet: Yes\n",
-            "   - Free parking: No\n",
-            "   - Pets allowed: Yes\n",
-            "   - Description: The biggest hotel in town with rooms from £55. Refurbished in about 2004. On the sea front about 1/2 mile from the town centre\n",
-            "   - Type: hotel\n",
-            "   - Title: Helensburgh\n",
-            "   - Phone: +44 1436 676924\n",
-            "   - Coordinates: 56.00481, -4.74472\n",
-            "   - Reviews: 2 customer reviews available.\u001b[0m\n",
-            "\n",
-            "\u001b[1m> Finished chain.\u001b[0m\n",
-            "2025-09-11 13:34:27,475 - __main__ - INFO - 📊 Collected 3 responses for evaluation\n",
-            "2025-09-11 13:34:27,476 - __main__ - INFO - 🚀 Phoenix UI: http://localhost:6007/\n",
-            "2025-09-11 13:34:27,476 - __main__ - INFO - 💡 Visit Phoenix UI for detailed traces\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Phoenix evaluation demo\n",
         "if ARIZE_AVAILABLE:\n",
@@ -1789,148 +1601,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 13,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:34:27,506 - __main__ - INFO - 🔍 Running comprehensive Phoenix evaluations...\n",
-            "2025-09-11 13:34:27,520 - __main__ - INFO - 📊 Prepared 3 queries for Phoenix evaluation\n",
-            "2025-09-11 13:34:27,521 - __main__ - INFO - 🔍 Running Relevance Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "404e22ff1f7a4bf19350cec2d2ce0f80",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:34:36,062 - __main__ - INFO - ✅ Relevance Evaluation Results:\n",
-            "2025-09-11 13:34:36,065 - __main__ - INFO -    Query: Find hotels in Giverny with free breakfast\n",
-            "2025-09-11 13:34:36,066 - __main__ - INFO -    Relevance: relevant\n",
-            "2025-09-11 13:34:36,067 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:36,068 - __main__ - INFO -    Query: I need a hotel in Glossop with free internet access\n",
-            "2025-09-11 13:34:36,068 - __main__ - INFO -    Relevance: relevant\n",
-            "2025-09-11 13:34:36,069 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:36,070 - __main__ - INFO -    Query: Show me hotels in Helensburgh with free breakfast\n",
-            "2025-09-11 13:34:36,070 - __main__ - INFO -    Relevance: relevant\n",
-            "2025-09-11 13:34:36,071 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:36,072 - __main__ - INFO - 🔍 Running QA Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "6e3343d16fda43d39b31d9ee44c3ceaa",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:34:45,168 - __main__ - INFO - ✅ QA Evaluation Results:\n",
-            "2025-09-11 13:34:45,170 - __main__ - INFO -    Query: Find hotels in Giverny with free breakfast\n",
-            "2025-09-11 13:34:45,171 - __main__ - INFO -    QA Score: incorrect\n",
-            "2025-09-11 13:34:45,171 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:45,172 - __main__ - INFO -    Query: I need a hotel in Glossop with free internet access\n",
-            "2025-09-11 13:34:45,173 - __main__ - INFO -    QA Score: incorrect\n",
-            "2025-09-11 13:34:45,174 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:45,175 - __main__ - INFO -    Query: Show me hotels in Helensburgh with free breakfast\n",
-            "2025-09-11 13:34:45,175 - __main__ - INFO -    QA Score: correct\n",
-            "2025-09-11 13:34:45,176 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:45,177 - __main__ - INFO - 🔍 Running Hallucination Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "e2980a88d8a040adb8bc3648dbcb6271",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:34:52,792 - __main__ - INFO - ✅ Hallucination Evaluation Results:\n",
-            "2025-09-11 13:34:52,794 - __main__ - INFO -    Query: Find hotels in Giverny with free breakfast\n",
-            "2025-09-11 13:34:52,794 - __main__ - INFO -    Hallucination: hallucinated\n",
-            "2025-09-11 13:34:52,795 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:52,796 - __main__ - INFO -    Query: I need a hotel in Glossop with free internet access\n",
-            "2025-09-11 13:34:52,797 - __main__ - INFO -    Hallucination: hallucinated\n",
-            "2025-09-11 13:34:52,798 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:52,798 - __main__ - INFO -    Query: Show me hotels in Helensburgh with free breakfast\n",
-            "2025-09-11 13:34:52,799 - __main__ - INFO -    Hallucination: hallucinated\n",
-            "2025-09-11 13:34:52,799 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:52,800 - __main__ - INFO - 🔍 Running Toxicity Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "97dc72c0599b427aacbfac92d1699f15",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 13:34:59,254 - __main__ - INFO - ✅ Toxicity Evaluation Results:\n",
-            "2025-09-11 13:34:59,255 - __main__ - INFO -    Query: Find hotels in Giverny with free breakfast\n",
-            "2025-09-11 13:34:59,255 - __main__ - INFO -    Toxicity: non-toxic\n",
-            "2025-09-11 13:34:59,255 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:59,255 - __main__ - INFO -    Query: I need a hotel in Glossop with free internet access\n",
-            "2025-09-11 13:34:59,255 - __main__ - INFO -    Toxicity: non-toxic\n",
-            "2025-09-11 13:34:59,256 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:59,256 - __main__ - INFO -    Query: Show me hotels in Helensburgh with free breakfast\n",
-            "2025-09-11 13:34:59,256 - __main__ - INFO -    Toxicity: non-toxic\n",
-            "2025-09-11 13:34:59,256 - __main__ - INFO -    ------------------------------\n",
-            "2025-09-11 13:34:59,256 - __main__ - INFO - \n",
-            "📊 Phoenix Evaluation Summary:\n",
-            "2025-09-11 13:34:59,257 - __main__ - INFO -   Relevance: {'relevant': np.int64(3)}\n",
-            "2025-09-11 13:34:59,258 - __main__ - INFO -   QA Correctness: {'incorrect': np.int64(2), 'correct': np.int64(1)}\n",
-            "2025-09-11 13:34:59,259 - __main__ - INFO -   Hallucination: {'hallucinated': np.int64(3)}\n",
-            "2025-09-11 13:34:59,259 - __main__ - INFO -   Toxicity: {'non-toxic': np.int64(3)}\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Run comprehensive Phoenix evaluations with lenient templates\n",
         "if ARIZE_AVAILABLE and len(demo_results) > 0:\n",
@@ -2064,7 +1737,7 @@
   ],
   "metadata": {
     "kernelspec": {
-      "display_name": ".venv",
+      "display_name": "Python 3",
       "language": "python",
       "name": "python3"
     },
@@ -2078,7 +1751,7 @@
       "name": "python",
       "nbconvert_exporter": "python",
       "pygments_lexer": "ipython3",
-      "version": "3.12.11"
+      "version": "3.12.3"
     }
   },
   "nbformat": 4,

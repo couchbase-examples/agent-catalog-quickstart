@@ -1,521 +1,157 @@
+#!/usr/bin/env python3
+"""
+Setup script for Couchbase Capella infrastructure.
+
+This script uses the couchbase-infrastructure package.
+Install it with: pip install couchbase-infrastructure
+
+Or run this script directly - it will use the package if installed.
+"""
+
 import os
+import sys
 from dotenv import load_dotenv
 
-# Load environment variables with override
+# Load environment variables
 load_dotenv(override=True)
 
-# --- Credentials from Environment ---
-MANAGEMENT_API_KEY = os.getenv("MANAGEMENT_API_KEY")
-ORGANIZATION_ID = os.getenv("ORGANIZATION_ID")
-
-# --- Configuration for this Tutorial ---
-PROJECT_NAME = os.getenv("PROJECT_NAME", "Agent-Hub-Project")
-CLUSTER_NAME = os.getenv("CLUSTER_NAME", "agent-hub-flight-cluster")
-DB_USERNAME = os.getenv("DB_USERNAME", "agent_app_user")
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "nvidia/nv-embedqa-mistral-7b-v2")
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "meta/llama-3.1-8b-instruct")
-
-# Model compute sizes
-# Extra Small: 4/24, Small: 4/48, Medium: 48/192
-# Large: 192/320, Extra Large: 192/640 (may not be available in sandbox)
-EMBEDDING_MODEL_CPU = int(os.getenv("EMBEDDING_MODEL_CPU", "4"))
-EMBEDDING_MODEL_GPU_MEMORY = int(os.getenv("EMBEDDING_MODEL_GPU_MEMORY", "24"))
-LLM_MODEL_CPU = int(os.getenv("LLM_MODEL_CPU", "4"))
-LLM_MODEL_GPU_MEMORY = int(os.getenv("LLM_MODEL_GPU_MEMORY", "48"))
-
-# LLM configuration options
-# LLM_QUANTIZATION = os.getenv("LLM_QUANTIZATION", "fp16")  # fp16, fp32, int4, int8, bf16
-# LLM_OPTIMIZATION = os.getenv("LLM_OPTIMIZATION", "throughput")  # throughput, latency
-# LLM_BATCHING_ENABLED = os.getenv("LLM_BATCHING_ENABLED", "false").lower() == "true"
-
-# Optional: Embedding configuration
-# EMBEDDING_DIMENSIONS = os.getenv("EMBEDDING_DIMENSIONS","2048")  # Optional, model default if not set
-
-# Validate required environment variables
-if not MANAGEMENT_API_KEY:
-    raise ValueError("Missing required environment variable: MANAGEMENT_API_KEY")
-
-# Allow auto-detection of organization ID if not provided
-if not ORGANIZATION_ID:
-    print("No ORGANIZATION_ID provided, will auto-detect from first organization...")
-
-
-import httpx
-import time
-
-# Correct sandbox API URL - use cloudapi subdomain
-API_BASE_URL = os.getenv("API_BASE_URL", "cloudapi.cloud.couchbase.com")
-HEADERS = {
-    "Authorization": f"Bearer {MANAGEMENT_API_KEY}",
-    "Content-Type": "application/json"
-}
-
-# --- API Helper Functions ---
-
-def get_current_ip():
-    """Get the current public IP address."""
-    try:
-        with httpx.Client(timeout=10) as client:
-            response = client.get("https://api.ipify.org")
-        if response.status_code == 200:
-            return response.text.strip()
-    except Exception:
-        pass
-    return "Unable to determine IP"
-
-def get_organization_id():
-    """Get organization ID - either from env var or auto-detect first organization."""
-    if ORGANIZATION_ID:
-        return ORGANIZATION_ID
-
-    try:
-        with httpx.Client(headers=HEADERS, timeout=10) as client:
-            response = client.get(f"{API_BASE_URL}/v4/organizations")
-        if response.status_code == 200:
-            orgs = response.json().get("data", [])
-            if orgs:
-                auto_org_id = orgs[0]["id"]
-                print(f"   Auto-detected Organization ID: {auto_org_id}")
-                return auto_org_id
-        raise Exception(f"Failed to get organizations. Status: {response.status_code}")
-    except Exception as e:
-        raise Exception(f"Failed to auto-detect organization ID: {e}")
-
-def test_api_connection(org_id):
-    """Test API connection and provide debugging info."""
-    print("🔍 Testing API connection...")
-    print(f"   Current IP: {get_current_ip()}")
-    print(f"   API Base URL: {API_BASE_URL}")
-    print(f"   Organization ID: {org_id}")
-
-    # Test basic API connectivity
-    try:
-        with httpx.Client(headers=HEADERS, timeout=10) as client:
-            response = client.get(f"{API_BASE_URL}/v4/organizations/{org_id}")
-        print(f"   API Response Status: {response.status_code}")
-        if response.status_code == 401:
-            print("   ❌ Authentication failed - check API key and IP allowlist")
-        elif response.status_code == 200:
-            print("   ✅ Authentication successful")
-        else:
-            print(f"   ⚠️  Unexpected response: {response.status_code}")
-    except Exception as e:
-        print(f"   ❌ Connection failed: {e}")
-
-def wait_for_resource_ready(check_url: str, resource_type: str, timeout_seconds: int = None):
-    """Polls a Capella endpoint until the resource is in a 'healthy' or 'ready' state."""
-    start_time = time.time()
-    if timeout_seconds is None:
-        print(f"   Waiting for {resource_type} to become ready... (no timeout, will wait indefinitely)")
-    else:
-        print(f"   Waiting for {resource_type} to become ready... (timeout: {timeout_seconds}s)")
-    
-    while True:
-        # Check timeout if specified
-        if timeout_seconds is not None and (time.time() - start_time) > timeout_seconds:
-            raise Exception(f"Timeout: {resource_type} was not ready within {timeout_seconds} seconds.")
-        
-        try:
-            with httpx.Client(headers=HEADERS, timeout=30) as client:
-                response = client.get(f"{API_BASE_URL}{check_url}")
-            if response.status_code == 200:
-                data = response.json()
-                
-                # For AI models, check status field
-                if "aiServices/models" in check_url:
-                    model_data = data.get("model", {})
-                    status = model_data.get("status", "unknown").lower()
-                else:
-                    # Clusters use nested status.state
-                    status = data.get("status", {}).get("state", data.get("currentState", "unknown")).lower()
-                
-                elapsed = int(time.time() - start_time)
-                print(f"   Current status: {status} (elapsed: {elapsed}s)")
-                
-                if status in ["healthy", "ready", "deployed", "running"]:
-                    print(f"✅ {resource_type} is ready!")
-                    return data
-            time.sleep(20)
-        except Exception as e:
-            print(f"   ... still waiting (error polling: {e})")
-            time.sleep(20)
-
-def get_or_create_project(org_id, project_name):
-    """Finds a project by name or creates it if it doesn't exist."""
-    list_endpoint = f"/v4/organizations/{org_id}/projects"
-    
-    print(f"   Searching for project named '{project_name}'...")
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        list_response = client.get(f"{API_BASE_URL}{list_endpoint}")
-    
-    if list_response.status_code == 200:
-        for project in list_response.json().get('data', []):
-            if project.get('name') == project_name:
-                project_id = project.get('id')
-                print(f"✅ Found existing project. Project ID: {project_id}")
-                return project_id
-    
-    print(f"   Project not found. Creating a new project named '{project_name}'...")
-    create_endpoint = f"/v4/organizations/{org_id}/projects"
-    payload = {"name": project_name, "description": "Project for Agent Application Hub samples."}
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        create_response = client.post(f"{API_BASE_URL}{create_endpoint}", json=payload)
-    
-    if create_response.status_code == 201:
-        project_id = create_response.json().get("id")
-        print(f"✅ Successfully created new project. Project ID: {project_id}")
-        return project_id
-    else:
-        raise Exception(f"Failed to create project. Status: {create_response.status_code}, Response: {create_response.text}")
-
-def create_free_tier_cluster(org_id, proj_id, name):
-    """Creates a new free tier cluster using the Management API."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/freeTier"
-    payload = {
-        "name": name,
-        "cloudProvider": {
-            "type": "aws",
-            "region": "us-east-2",
-            "cidr": "10.1.30.0/23"
-        }
-    }
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    if response.status_code == 202:
-        cluster_id = response.json().get("id")
-        print(f"   Cluster creation job submitted. Cluster ID: {cluster_id}")
-        return cluster_id
-    elif response.status_code == 422 and "limited to provisioning one cluster" in response.text:
-        print("   A free tier cluster already exists. Attempting to find it...")
-        clusters_endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters"
-        with httpx.Client(headers=HEADERS, timeout=30) as client:
-            list_response = client.get(f"{API_BASE_URL}{clusters_endpoint}")
-        if list_response.status_code == 200:
-            for cluster in list_response.json().get('data', []):
-                 if cluster.get('name') == name:
-                    print(f"   Found existing cluster with name '{name}'. Using it.")
-                    return cluster.get('id')
-        raise Exception(f"Failed to create or find free tier cluster. Response: {response.text}")
-    else:
-        raise Exception(f"Failed to create cluster. Status: {response.status_code}, Response: {response.text}")
-
-def add_allowed_cidr(org_id, proj_id, cluster_id, cidr="0.0.0.0/0"):
-    """Adds an allowed CIDR to the cluster to enable network access."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/allowedcidrs"
-    
-    payload = {
-        "cidr": cidr,
-        "comment": "Allow access for agent hub development"
-    }
-    
-    print(f"   Adding allowed CIDR {cidr} to cluster...")
-    
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    
-    if response.status_code == 201:
-        print(f"   ✅ Successfully added allowed CIDR: {cidr}")
-        return response.json()
-    elif response.status_code == 422:
-        # Check if CIDR already exists
-        print(f"   Checking if CIDR already exists...")
-        with httpx.Client(headers=HEADERS, timeout=30) as client:
-            list_response = client.get(f"{API_BASE_URL}{endpoint}")
-        if list_response.status_code == 200:
-            cidrs = list_response.json().get('data', [])
-            for existing_cidr in cidrs:
-                if existing_cidr.get('cidr') == cidr:
-                    print(f"   ✅ CIDR {cidr} already exists")
-                    return existing_cidr
-        raise Exception(f"Failed to add allowed CIDR. Response: {response.text}")
-    else:
-        raise Exception(f"Failed to add allowed CIDR. Status: {response.status_code}, Response: {response.text}")
-
-def load_travel_sample(org_id, proj_id, cluster_id):
-    """Loads the travel-sample bucket into the specified cluster."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/sampleBuckets"
-    payload = {
-        "name": "travel-sample"
-    }
-    with httpx.Client(headers=HEADERS, timeout=60) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    if response.status_code in [201, 422]:
-        print(f"✅ `travel-sample` bucket load command accepted.")
-        bucket_check_url = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/buckets"
-        start_time = time.time()
-        while time.time() - start_time < 300:
-             with httpx.Client(headers=HEADERS, timeout=30) as client:
-                bucket_list_response = client.get(f"{API_BASE_URL}{bucket_check_url}")
-             if any(b.get('name') == 'travel-sample' for b in bucket_list_response.json().get('data',[])):
-                 print("✅ `travel-sample` bucket is ready.")
-                 return
-             time.sleep(10)
-        raise Exception("Timeout waiting for travel-sample bucket to become available.")
-    else:
-        raise Exception(f"Failed to load travel-sample. Status: {response.status_code}, Response: {response.text}")
-
-def create_db_user(org_id, proj_id, cluster_id, username):
-    """Creates a database user with broad access for the tutorial."""
-    endpoint = f"/v4/organizations/{org_id}/projects/{proj_id}/clusters/{cluster_id}/users"
-
-    # First, check if user already exists
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        list_response = client.get(f"{API_BASE_URL}{endpoint}")
-
-    if list_response.status_code == 200:
-        existing_users = list_response.json().get('data', [])
-        for user in existing_users:
-            if user.get('name') == username:
-                print(f"   Database user '{username}' already exists. Skipping creation.")
-                # Return a placeholder password since we can't retrieve the existing one
-                return "existing_user_password_not_retrievable"
-
-    # Create new user if doesn't exist
-    payload = {
-        "name": username,
-        "access": [{
-            "privileges": ["data_reader", "data_writer"],
-            "resources": {
-                "buckets": [{
-                    "name": "travel-sample",
-                    "scopes": [{
-                        "name": "*"
-                    }]
-                }]
-            }
-        }]
-    }
-    with httpx.Client(headers=HEADERS, timeout=30) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    if response.status_code == 201:
-        data = response.json()
-        print(f"   Database user '{username}' created successfully.")
-        return data['password']
-    else:
-        raise Exception(f"Failed to create DB user. Status: {response.status_code}, Response: {response.text}")
-
-def create_ai_model(org_id, model_name, deployment_name, model_type="embedding"):
-    """Deploys a new AI model using the AI Services API v4."""
-    endpoint = f"/v4/organizations/{org_id}/aiServices/models"
-
-    # First, check if model already exists
-    print(f"   Checking if model '{deployment_name}' already exists...")
-    try:
-        with httpx.Client(headers=HEADERS, timeout=30) as client:
-            list_response = client.get(f"{API_BASE_URL}{endpoint}")
-        
-        if list_response.status_code == 200:
-            models = list_response.json().get('data', [])
-            for model in models:
-                if model.get('name') == deployment_name:
-                    model_id = model.get('id')
-                    status = model.get('currentState', model.get('status', 'unknown'))
-                    print(f"   ✅ Model '{deployment_name}' already exists (Status: {status}). Model ID: {model_id}")
-                    return model_id
-    except Exception as e:
-        print(f"   Warning: Could not check existing models: {e}")
-
-    # Set compute size based on model type from environment variables
-    if model_type == "embedding":
-        cpu = EMBEDDING_MODEL_CPU
-        gpu_memory = EMBEDDING_MODEL_GPU_MEMORY
-    else:
-        cpu = LLM_MODEL_CPU
-        gpu_memory = LLM_MODEL_GPU_MEMORY
-
-    # Build the payload
-    payload = {
-        "name": deployment_name,
-        "catalogModelName": model_name,
-        "cloudConfig": {
-            "provider": "aws",
-            "region": "us-east-1",
-            "compute": {
-                "cpu": cpu,
-                "gpuMemory": gpu_memory
-            }
-        }
-    }
-    
-    # if model_type == "embedding" and EMBEDDING_DIMENSIONS:
-    #     payload["dimensions"] = int(EMBEDDING_DIMENSIONS)
-    # elif model_type == "llm":
-    #     payload["quantization"] = LLM_QUANTIZATION
-    #     payload["optimization"] = LLM_OPTIMIZATION
-    #     if LLM_BATCHING_ENABLED:
-    #         payload["isBatchingEnabled"] = True
-    
-    print(f"   Creating {model_type} model '{deployment_name}' with catalog model '{model_name}'...")
-    print(f"   Using compute: {cpu} vCPUs, {gpu_memory}GB GPU")
-    
-    with httpx.Client(headers=HEADERS, timeout=60) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    
-    if response.status_code == 202:
-        model_id = response.json().get("id")
-        print(f"   {model_type.title()} model '{deployment_name}' deployment job submitted. Model ID: {model_id}")
-        return model_id
-    elif response.status_code == 400 and "duplicate name" in response.text.lower():
-        # Model exists but wasn't found in the list - fetch it again
-        print(f"   Model with name '{deployment_name}' already exists. Fetching it...")
-        with httpx.Client(headers=HEADERS, timeout=30) as client:
-            list_response = client.get(f"{API_BASE_URL}{endpoint}")
-        if list_response.status_code == 200:
-            models = list_response.json().get('data', [])
-            for model in models:
-                if model.get('name') == deployment_name:
-                    model_id = model.get('id')
-                    print(f"   ✅ Found model. Model ID: {model_id}")
-                    return model_id
-        raise Exception(f"Model exists but could not retrieve it. Response: {response.text}")
-    elif response.status_code == 422:
-        error_text = response.text.lower()
-        if "already exists" in error_text or "duplicate" in error_text:
-            print(f"   Model '{deployment_name}' already exists. Fetching details...")
-            with httpx.Client(headers=HEADERS, timeout=30) as client:
-                list_response = client.get(f"{API_BASE_URL}{endpoint}")
-            if list_response.status_code == 200:
-                models = list_response.json().get('data', [])
-                for model in models:
-                    if model.get('name') == deployment_name:
-                        model_id = model.get('id')
-                        print(f"   Found existing model. Model ID: {model_id}")
-                        return model_id
-        raise Exception(f"Failed to create {model_type} model. Status: {response.status_code}, Response: {response.text}")
-    else:
-        raise Exception(f"Failed to create {model_type} model '{deployment_name}'. Status: {response.status_code}, Response: {response.text}")
-
-def create_ai_api_key(org_id, region="us-east-1"):
-    """Creates an API key for accessing the AI models."""
-    endpoint = f"/v4/organizations/{org_id}/aiServices/models/apiKeys"
-    
-    # 180 days expiry
-    payload = {
-        "name": "agent-hub-api-key",
-        "description": "API key for agent hub models",
-        "expiry": 180,
-        "allowedCIDRs": ["0.0.0.0/0"],
-
-        "region": region
-    }
-    
-    print(f"   Creating API key for models in region {region}...")
-    
-    with httpx.Client(headers=HEADERS, timeout=60) as client:
-        response = client.post(f"{API_BASE_URL}{endpoint}", json=payload)
-    
-    if response.status_code == 201:
-        data = response.json()
-        api_key = data.get("token")  # This is the actual API key token
-        key_id = data.get("id")
-        print(f"   ✅ API key created successfully.")
-        print(f"   Key ID: {key_id}")
-        print(f"   Token: {api_key[:20]}..." if api_key else "   Token: (not found in response)")
-        return api_key
-    else:
-        raise Exception(f"Failed to create API key. Status: {response.status_code}, Response: {response.text}")
-
-    
-print("--- 🚀 Starting Automated Capella Environment Setup ---")
+print("🚀 Couchbase Capella Infrastructure Setup")
+print("=" * 60)
 
 try:
-    # Get organization ID (from env var or auto-detect)
-    organization_id = get_organization_id()
+    from couchbase_infrastructure import CapellaConfig, CapellaClient
+    from couchbase_infrastructure.resources import (
+        create_project,
+        create_cluster,
+        add_allowed_cidr,
+        load_sample_data,
+        create_database_user,
+        deploy_ai_model,
+        create_ai_api_key,
+    )
+except ImportError:
+    print("\n❌ Package 'couchbase-infrastructure' is not installed.")
+    print("\nInstall it with:")
+    print("    pip install couchbase-infrastructure")
+    print("\nOr use the CLI:")
+    print("    couchbase-infra setup")
+    sys.exit(1)
 
-    # Test API connection first
-    test_api_connection(organization_id)
+print("\n--- Starting Automated Capella Environment Setup ---\n")
+
+try:
+    # Load configuration
+    config = CapellaConfig.from_env()
+    config.validate()
+
+    # Initialize client
+    client = CapellaClient(config)
+    org_id = client.get_organization_id()
+
+    # Test API connection
+    if not client.test_connection(org_id):
+        print("\n❌ API connection test failed. Please check your credentials.")
+        sys.exit(1)
 
     # 1. Get or Create Project
     print("\n[1/7] Finding or Creating Capella Project...")
-    project_id = get_or_create_project(organization_id, PROJECT_NAME)
+    project_id = create_project(client, org_id, config.project_name)
 
     # 2. Create and Wait for Cluster
     print("\n[2/7] Deploying Capella Free Tier Cluster...")
-    cluster_id = create_free_tier_cluster(organization_id, project_id, CLUSTER_NAME)
-    cluster_check_url = f"/v4/organizations/{organization_id}/projects/{project_id}/clusters/{cluster_id}"
-    cluster_details = wait_for_resource_ready(cluster_check_url, "Cluster", None)
+    cluster_id = create_cluster(client, org_id, project_id, config.cluster_name, config)
+    cluster_check_url = f"/v4/organizations/{org_id}/projects/{project_id}/clusters/{cluster_id}"
+    cluster_details = client.wait_for_resource(cluster_check_url, "Cluster", None)
     cluster_conn_string = cluster_details.get("connectionString")
 
     # 3. Add allowed CIDR for cluster access
     print("\n[3/7] Configuring Cluster Network Access...")
-    add_allowed_cidr(organization_id, project_id, cluster_id)
+    add_allowed_cidr(client, org_id, project_id, cluster_id, config.allowed_cidr)
 
     # 4. Load Sample Data
     print("\n[4/7] Loading 'travel-sample' Dataset...")
-    load_travel_sample(organization_id, project_id, cluster_id)
+    load_sample_data(client, org_id, project_id, cluster_id, config.sample_bucket)
 
     # 5. Create Database User
     print("\n[5/7] Creating Database Credentials...")
-    db_password = create_db_user(organization_id, project_id, cluster_id, DB_USERNAME)
+    db_password = create_database_user(
+        client, org_id, project_id, cluster_id, config.db_username, config.sample_bucket
+    )
 
     # 6. Deploy AI Models
     print("\n[6/7] Deploying AI Models...")
 
     # Deploy Embedding Model
     print("   Deploying embedding model...")
-    embedding_model_id = create_ai_model(organization_id, EMBEDDING_MODEL_NAME, "agent-hub-embedding-model", "embedding")
-    embedding_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{embedding_model_id}"
-    embedding_details = wait_for_resource_ready(embedding_check_url, "Embedding Model", None)
+    embedding_model_id = deploy_ai_model(
+        client,
+        org_id,
+        config.embedding_model_name,
+        "agent-hub-embedding-model",
+        "embedding",
+        config,
+    )
+    embedding_check_url = f"/v4/organizations/{org_id}/aiServices/models/{embedding_model_id}"
+    embedding_details = client.wait_for_resource(embedding_check_url, "Embedding Model", None)
     embedding_endpoint = embedding_details.get("connectionString", "")
     embedding_dimensions = embedding_details.get("model", {}).get("config", {}).get("dimensions")
     print(f"   Model dimensions: {embedding_dimensions}")
 
-
     # Deploy LLM Model
     print("   Deploying LLM model...")
-    llm_model_id = create_ai_model(organization_id, LLM_MODEL_NAME, "agent-hub-llm-model", "llm")
-    llm_check_url = f"/v4/organizations/{organization_id}/aiServices/models/{llm_model_id}"
-    llm_details = wait_for_resource_ready(llm_check_url, "LLM Model")
+    llm_model_id = deploy_ai_model(
+        client,
+        org_id,
+        config.llm_model_name,
+        "agent-hub-llm-model",
+        "llm",
+        config,
+    )
+    llm_check_url = f"/v4/organizations/{org_id}/aiServices/models/{llm_model_id}"
+    llm_details = client.wait_for_resource(llm_check_url, "LLM Model", None)
     llm_endpoint = llm_details.get("connectionString", "")
 
     # 7. Create API Key for Models
     print("\n[7/7] Creating API Key for AI Models...")
-    api_key = create_ai_api_key(organization_id)
+    api_key = create_ai_api_key(client, org_id, config.ai_model_region)
 
-    # 8. Set Environment Variables for the Notebook
-    print("\n✅ Configuring Environment for this Notebook Session...")
+    # Set Environment Variables
+    print("\n✅ Configuring Environment Variables...")
     os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"
-    os.environ["CB_USERNAME"] = DB_USERNAME
+    os.environ["CB_USERNAME"] = config.db_username
     os.environ["CB_PASSWORD"] = db_password
-    os.environ["CB_BUCKET"] = "travel-sample"
-
-    # Set AI model endpoints and credentials
+    os.environ["CB_BUCKET"] = config.sample_bucket
     os.environ["CAPELLA_API_EMBEDDING_ENDPOINT"] = embedding_endpoint
     os.environ["CAPELLA_API_LLM_ENDPOINT"] = llm_endpoint
-
     os.environ["CAPELLA_API_EMBEDDINGS_KEY"] = api_key
     os.environ["CAPELLA_API_LLM_KEY"] = api_key
-    
-    os.environ["CAPELLA_API_EMBEDDING_MODEL"] = EMBEDDING_MODEL_NAME
-    os.environ["CAPELLA_API_LLM_MODEL"] = LLM_MODEL_NAME
-    
-    print("\n--- ✅ SETUP COMPLETE! ---")
-    print("All resources have been deployed and configured.")
-    print("You can now proceed to run the rest of the cells in the notebook.")
+    os.environ["CAPELLA_API_EMBEDDING_MODEL"] = config.embedding_model_name
+    os.environ["CAPELLA_API_LLM_MODEL"] = config.llm_model_name
 
-    print("\n--- Environment Variables Set ---")
-    print(f"CB_CONN_STRING: {os.environ['CB_CONN_STRING']}")
-    print(f"CB_USERNAME: {os.environ['CB_USERNAME']}")
-    print(f"CB_PASSWORD: {os.environ['CB_PASSWORD']}")
-    print(f"CB_BUCKET: {os.environ['CB_BUCKET']}")
-    print(f"CAPELLA_API_EMBEDDING_ENDPOINT: {os.environ['CAPELLA_API_EMBEDDING_ENDPOINT']}")
-    print(f"CAPELLA_API_LLM_ENDPOINT: {os.environ['CAPELLA_API_LLM_ENDPOINT']}")
-    print(f"CAPELLA_API_EMBEDDINGS_KEY: {os.environ['CAPELLA_API_EMBEDDINGS_KEY']}")
-    print(f"CAPELLA_API_LLM_KEY: {os.environ['CAPELLA_API_LLM_KEY']}")
-    print(f"CAPELLA_API_EMBEDDING_MODEL: {os.environ['CAPELLA_API_EMBEDDING_MODEL']}")
-    print(f"CAPELLA_API_LLM_MODEL: {os.environ['CAPELLA_API_LLM_MODEL']}")
+    print("\n" + "=" * 60)
+    print("✅ SETUP COMPLETE!")
+    print("=" * 60)
+    print("\nEnvironment Variables Set:")
+    print(f"  CB_CONN_STRING: {os.environ['CB_CONN_STRING']}")
+    print(f"  CB_USERNAME: {os.environ['CB_USERNAME']}")
+    print(f"  CB_PASSWORD: {os.environ['CB_PASSWORD']}")
+    print(f"  CB_BUCKET: {os.environ['CB_BUCKET']}")
+    print(f"  CAPELLA_API_EMBEDDING_ENDPOINT: {os.environ['CAPELLA_API_EMBEDDING_ENDPOINT']}")
+    print(f"  CAPELLA_API_LLM_ENDPOINT: {os.environ['CAPELLA_API_LLM_ENDPOINT']}")
+    print(f"  CAPELLA_API_EMBEDDINGS_KEY: {os.environ['CAPELLA_API_EMBEDDINGS_KEY']}")
+    print(f"  CAPELLA_API_LLM_KEY: {os.environ['CAPELLA_API_LLM_KEY']}")
+    print(f"  CAPELLA_API_EMBEDDING_MODEL: {os.environ['CAPELLA_API_EMBEDDING_MODEL']}")
+    print(f"  CAPELLA_API_LLM_MODEL: {os.environ['CAPELLA_API_LLM_MODEL']}")
 
+except ValueError as e:
+    print(f"\n❌ CONFIGURATION ERROR: {e}")
+    print("\nPlease check your .env file and ensure MANAGEMENT_API_KEY is set.")
+    sys.exit(1)
 except Exception as e:
-    print("\n--- ❌ SETUP FAILED ---")
-    print(f"An error occurred during the automated setup: {e}")
-
-    # Enhanced error handling for authentication issues
+    print(f"\n❌ SETUP FAILED: {e}")
     if "401" in str(e) or "Unauthorized" in str(e):
-        print("\n🔐 Authentication Error Detected:")
-        print("1. Verify your API key is correct and not expired")
-        print("2. Check if your current IP address is in the API key allowlist")
-        print("3. Ensure the API key has sufficient permissions (Organization Admin role)")
-        print("\n💡 To get your current IP address, run: curl -s https://api.ipify.org")
-        print("   Then add it to your API key allowlist in the Couchbase Capella console.")
-
-    print("\nPlease check your credentials and permissions, then try running this cell again.")
+        print("\n🔐 Authentication Error:")
+        print("  1. Verify your API key is correct and not expired")
+        print("  2. Check if your IP is in the API key allowlist")
+        print("  3. Ensure the API key has Organization Admin permissions")
+    sys.exit(1)

@@ -20,6 +20,349 @@
       ]
     },
     {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import os\n",
+        "print(os.getcwd())\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Download required resources for the landmark search agent\n",
+        "!mkdir -p prompts\n",
+        "!wget -O prompts/landmark_search_assistant.yaml https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/prompts/landmark_search_assistant.yaml\n",
+        "!mkdir -p tools\n",
+        "!wget -O tools/__init__.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/tools/__init__.py\n",
+        "!wget -O tools/tools.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/tools/tools.py\n",
+        "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/agentcatalog_index.json\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "%pip install -q \\\n",
+        "    \"pydantic>=2.0.0,<3.0.0\" \\\n",
+        "    \"python-dotenv>=1.0.0,<2.0.0\" \\\n",
+        "    \"pandas>=2.0.0,<3.0.0\" \\\n",
+        "    \"nest-asyncio>=1.6.0,<2.0.0\" \\\n",
+        "    \"httpx>=0.24.0,<1.0.0\" \\\n",
+        "    \"tqdm>=4.64.0,<5.0.0\" \\\n",
+        "    \"llama-index>=0.12.8,<0.13.0\" \\\n",
+        "    \"llama-index-vector-stores-couchbase>=0.4.0,<0.5.0\" \\\n",
+        "    \"llama-index-embeddings-openai>=0.3.0,<0.4.0\" \\\n",
+        "    \"llama-index-llms-openai-like>=0.3.0,<0.4.0\" \\\n",
+        "    \"llama-index-llms-nvidia>=0.3.1,<0.4.0\" \\\n",
+        "    \"arize>=5.0.0,<6.0.0\" \\\n",
+        "    \"arize-phoenix>=6.0.0,<7.0.0\" \\\n",
+        "    \"arize-phoenix-evals>=0.18.0,<0.19.0\" \\\n",
+        "    \"openinference-instrumentation-llama-index>=3.5.3,<4.0.0\"\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
+        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_llamaindex-0.2.5a2-py3-none-any.whl\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!git init\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!git add .\n",
+        "!git config --global user.email \"your.email@example.com\"\n",
+        "!git config --global user.name \"Your Name\"\n",
+        "!git commit -m \"initial commit\"\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc init\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc index .\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "!agentc publish\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 🚀 Educational Infrastructure Setup\n",
+        "\n",
+        "**This cell uses the `couchbase-infrastructure` package to provision your Couchbase Capella infrastructure step-by-step.**\n",
+        "\n",
+        "### What It Does (Educational Approach):\n",
+        "1. **Interactive Credentials** - Securely collects your API key using `getpass` (Google Colab compatible)\n",
+        "2. **Creates Capella Project** - Sets up your cloud database project\n",
+        "3. **Provisions Free Tier Cluster** - Deploys a Couchbase cluster on AWS\n",
+        "4. **Configures Network Access** - Sets up allowlists for connectivity\n",
+        "5. **Loads travel-sample Data** - Imports the sample landmark dataset\n",
+        "6. **Creates Database User** - Generates credentials with appropriate permissions\n",
+        "7. **Deploys AI Models** - Provisions embedding and LLM models for the agent\n",
+        "8. **Creates API Keys** - Generates keys for AI model access\n",
+        "9. **Sets Environment Variables** - Configures all required variables for subsequent cells\n",
+        "\n",
+        "### Prerequisites:\n",
+        "- Get your `MANAGEMENT_API_KEY` from [Capella Console](https://cloud.couchbase.com) → Settings → API Keys\n",
+        "- **No `.env` file needed** - This notebook uses interactive prompts (Google Colab compatible)\n",
+        "\n",
+        "### After Running:\n",
+        "All environment variables will be set and ready for the landmark search agent cells below.\n",
+        "\n",
+        "**Package Documentation**: https://pypi.org/project/couchbase-infrastructure/\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Install the couchbase-infrastructure package\n",
+        "!pip install -q couchbase-infrastructure\n",
+        "\n",
+        "import os\n",
+        "from getpass import getpass\n",
+        "\n",
+        "print(\"=\"*70)\n",
+        "print(\"🚀 Couchbase Capella Infrastructure Setup\")\n",
+        "print(\"=\"*70)\n",
+        "print(\"\\nThis educational setup shows you how to provision Capella infrastructure\")\n",
+        "print(\"step-by-step using the couchbase-infrastructure package.\\n\")\n",
+        "\n",
+        "# Import the infrastructure package\n",
+        "from couchbase_infrastructure import CapellaConfig, CapellaClient\n",
+        "from couchbase_infrastructure.resources import (\n",
+        "    create_project,\n",
+        "    create_cluster,\n",
+        "    add_allowed_cidr,\n",
+        "    load_sample_data,\n",
+        "    create_database_user,\n",
+        "    deploy_ai_model,\n",
+        "    create_ai_api_key,\n",
+        ")\n",
+        "\n",
+        "# Step 1: Collect credentials interactively\n",
+        "print(\"\\n📋 Step 1: Collecting Credentials\")\n",
+        "print(\"-\"*70)\n",
+        "print(\"Get your API key from: https://cloud.couchbase.com → Settings → API Keys\\n\")\n",
+        "\n",
+        "management_api_key = getpass(\"Enter your MANAGEMENT_API_KEY (hidden): \")\n",
+        "if not management_api_key:\n",
+        "    raise ValueError(\"MANAGEMENT_API_KEY is required!\")\n",
+        "\n",
+        "organization_id = input(\"Enter ORGANIZATION_ID (press Enter to auto-detect): \").strip() or None\n",
+        "project_name = input(\"Enter PROJECT_NAME (press Enter for 'Agent-Hub-Project'): \").strip() or \"Agent-Hub-Project\"\n",
+        "cluster_name = input(\"Enter CLUSTER_NAME (press Enter for 'agent-hub-landmark-cluster'): \").strip() or \"agent-hub-landmark-cluster\"\n",
+        "db_username = input(\"Enter DB_USERNAME (press Enter for 'agent_app_user'): \").strip() or \"agent_app_user\"\n",
+        "db_password = getpass(\"Enter DB_PASSWORD (hidden, press Enter to auto-generate): \").strip() or None\n",
+        "bucket_name = input(\"Enter BUCKET_NAME (press Enter for 'travel-sample'): \").strip() or \"travel-sample\"\n",
+        "embedding_model = input(\"Enter EMBEDDING_MODEL (press Enter for default 'nvidia/nv-embedqa-mistral-7b-v2'): \").strip() or \"nvidia/nv-embedqa-mistral-7b-v2\"\n",
+        "llm_model = input(\"Enter LLM_MODEL (press Enter for default 'meta/llama-3.1-8b-instruct'): \").strip() or \"meta/llama-3.1-8b-instruct\"\n",
+        "\n",
+        "print(\"\\n✅ Credentials collected successfully!\\n\")\n",
+        "\n",
+        "# Step 2: Initialize configuration\n",
+        "print(\"\\n🔧 Step 2: Initializing Configuration\")\n",
+        "print(\"-\"*70)\n",
+        "config = CapellaConfig(\n",
+        "    management_api_key=management_api_key,\n",
+        "    organization_id=organization_id,\n",
+        "    project_name=project_name,\n",
+        "    cluster_name=cluster_name,\n",
+        "    db_username=db_username,\n",
+        "    db_password=db_password,\n",
+        "    bucket_name=bucket_name,\n",
+        "    embedding_model_name=embedding_model,\n",
+        "    llm_model_name=llm_model,\n",
+        ")\n",
+        "print(\"✅ Configuration initialized\\n\")\n",
+        "\n",
+        "# Step 3: Test API connection\n",
+        "print(\"\\n🔌 Step 3: Testing API Connection\")\n",
+        "print(\"-\"*70)\n",
+        "client = CapellaClient(config)\n",
+        "if client.test_connection():\n",
+        "    print(\"✅ API connection successful\\n\")\n",
+        "else:\n",
+        "    raise ConnectionError(\"Failed to connect to Capella API\")\n",
+        "\n",
+        "# Step 4: Get organization ID\n",
+        "print(\"\\n🏢 Step 4: Getting Organization ID\")\n",
+        "print(\"-\"*70)\n",
+        "org_id = client.get_organization_id()\n",
+        "print(f\"✅ Organization ID: {org_id}\\n\")\n",
+        "\n",
+        "# Step 5: Create Capella Project\n",
+        "print(\"\\n📁 Step 5: Creating Capella Project\")\n",
+        "print(\"-\"*70)\n",
+        "project_id = create_project(client, org_id, config.project_name)\n",
+        "print(f\"✅ Project created: {config.project_name} (ID: {project_id})\\n\")\n",
+        "\n",
+        "# Step 6: Create free-tier cluster\n",
+        "print(\"\\n☁️ Step 6: Creating Free Tier Cluster\")\n",
+        "print(\"-\"*70)\n",
+        "print(\"⏳ This will take 10-15 minutes for cluster deployment...\\n\")\n",
+        "cluster_id = create_cluster(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_name=config.cluster_name,\n",
+        ")\n",
+        "print(f\"✅ Cluster created and ready: {config.cluster_name} (ID: {cluster_id})\\n\")\n",
+        "\n",
+        "# Step 7: Configure network access\n",
+        "print(\"\\n🌐 Step 7: Configuring Network Access\")\n",
+        "print(\"-\"*70)\n",
+        "add_allowed_cidr(client, org_id, project_id, cluster_id, \"0.0.0.0/0\")\n",
+        "print(\"✅ Network access configured (0.0.0.0/0 allowed)\\n\")\n",
+        "\n",
+        "# Step 8: Load travel-sample bucket\n",
+        "print(\"\\n📦 Step 8: Loading travel-sample Bucket\")\n",
+        "print(\"-\"*70)\n",
+        "bucket_id = load_sample_data(client, org_id, project_id, cluster_id, config.bucket_name)\n",
+        "print(f\"✅ Sample data loaded: {config.bucket_name}\\n\")\n",
+        "\n",
+        "# Step 9: Create database user\n",
+        "print(\"\\n👤 Step 9: Creating Database User\")\n",
+        "print(\"-\"*70)\n",
+        "db_password = create_database_user(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_id=cluster_id,\n",
+        "    username=config.db_username,\n",
+        "    password=config.db_password,\n",
+        ")\n",
+        "print(f\"✅ Database user created: {config.db_username}\\n\")\n",
+        "\n",
+        "# Step 10: Deploy AI models\n",
+        "print(\"\\n🤖 Step 10: Deploying AI Models\")\n",
+        "print(\"-\"*70)\n",
+        "print(\"⏳ Deploying embedding and LLM models (5-10 minutes)...\\n\")\n",
+        "\n",
+        "embedding_model_id = deploy_ai_model(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_id=cluster_id,\n",
+        "    model_name=config.embedding_model_name,\n",
+        ")\n",
+        "print(f\"✅ Embedding model deployed: {config.embedding_model_name}\\n\")\n",
+        "\n",
+        "llm_model_id = deploy_ai_model(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_id=cluster_id,\n",
+        "    model_name=config.llm_model_name,\n",
+        ")\n",
+        "print(f\"✅ LLM model deployed: {config.llm_model_name}\\n\")\n",
+        "\n",
+        "# Step 11: Create AI API keys\n",
+        "print(\"\\n🔑 Step 11: Creating AI API Keys\")\n",
+        "print(\"-\"*70)\n",
+        "\n",
+        "embedding_api_key = create_ai_api_key(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_id=cluster_id,\n",
+        "    key_name=f\"{config.cluster_name}-embedding-key\",\n",
+        "    models=[config.embedding_model_name],\n",
+        ")\n",
+        "print(f\"✅ Embedding API key created\\n\")\n",
+        "\n",
+        "llm_api_key = create_ai_api_key(\n",
+        "    client=client,\n",
+        "    org_id=org_id,\n",
+        "    project_id=project_id,\n",
+        "    cluster_id=cluster_id,\n",
+        "    key_name=f\"{config.cluster_name}-llm-key\",\n",
+        "    models=[config.llm_model_name],\n",
+        ")\n",
+        "print(f\"✅ LLM API key created\\n\")\n",
+        "\n",
+        "# Step 12: Get connection string and set environment variables\n",
+        "print(\"\\n⚙️ Step 12: Setting Environment Variables\")\n",
+        "print(\"-\"*70)\n",
+        "\n",
+        "conn_string = client.get_connection_string(org_id, project_id, cluster_id)\n",
+        "api_endpoint = client.get_ai_api_endpoint(org_id, project_id, cluster_id)\n",
+        "\n",
+        "# Set all environment variables for subsequent cells\n",
+        "os.environ[\"CB_CONN_STRING\"] = conn_string\n",
+        "os.environ[\"CB_USERNAME\"] = config.db_username\n",
+        "os.environ[\"CB_PASSWORD\"] = db_password\n",
+        "os.environ[\"CB_BUCKET\"] = config.bucket_name\n",
+        "os.environ[\"CAPELLA_API_ENDPOINT\"] = api_endpoint\n",
+        "os.environ[\"CAPELLA_API_EMBEDDING_ENDPOINT\"] = api_endpoint\n",
+        "os.environ[\"CAPELLA_API_LLM_ENDPOINT\"] = api_endpoint\n",
+        "os.environ[\"CAPELLA_API_EMBEDDINGS_KEY\"] = embedding_api_key\n",
+        "os.environ[\"CAPELLA_API_LLM_KEY\"] = llm_api_key\n",
+        "os.environ[\"CAPELLA_API_EMBEDDING_MODEL\"] = config.embedding_model_name\n",
+        "os.environ[\"CAPELLA_API_LLM_MODEL\"] = config.llm_model_name\n",
+        "\n",
+        "print(\"✅ Environment variables configured:\\n\")\n",
+        "print(f\"   CB_CONN_STRING: {conn_string}\")\n",
+        "print(f\"   CB_USERNAME: {config.db_username}\")\n",
+        "print(f\"   CB_BUCKET: {config.bucket_name}\")\n",
+        "print(f\"   CAPELLA_API_ENDPOINT: {api_endpoint}\")\n",
+        "print(f\"   CAPELLA_API_EMBEDDING_MODEL: {config.embedding_model_name}\")\n",
+        "print(f\"   CAPELLA_API_LLM_MODEL: {config.llm_model_name}\")\n",
+        "\n",
+        "print(\"\\n\" + \"=\"*70)\n",
+        "print(\"✅ Infrastructure Setup Complete!\")\n",
+        "print(\"=\"*70)\n",
+        "print(\"\\nYou can now run the landmark search agent cells below.\\n\")\n"
+      ]
+    },
+    {
       "cell_type": "markdown",
       "metadata": {
         "vscode": {
@@ -34,17 +377,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 1,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:22,387 - INFO - ✅ All imports loaded successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "import base64\n",
         "import getpass\n",
@@ -119,17 +454,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 2,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:22,396 - INFO - ✅ Environment variables configured\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def setup_environment():\n",
         "    \"\"\"Setup default environment variables for agent operations.\"\"\"\n",
@@ -141,7 +468,7 @@
         "        \"NVIDIA_API_EMBEDDING_MODEL\": \"nvidia/nv-embedqa-e5-v5\",\n",
         "        \"NVIDIA_API_LLM_MODEL\": \"meta/llama-3.1-70b-instruct\",\n",
         "        \"CAPELLA_API_EMBEDDING_MODEL\": \"nvidia/nv-embedqa-e5-v5\",\n",
-        "        \"CAPELLA_API_LLM_MODEL\": \"meta-llama/Llama-3.1-8B-Instruct\",\n",
+        "        \"CAPELLA_API_LLM_MODEL\": \"meta/llama-3-8b-instruct\",\n",
         "    }\n",
         "    \n",
         "    for key, value in defaults.items():\n",
@@ -281,17 +608,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 3,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:23,958 - INFO - ✅ Data loading functions defined\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def get_cluster_connection():\n",
         "    \"\"\"Get a fresh cluster connection for each request.\"\"\"\n",
@@ -520,17 +839,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 4,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:23,965 - INFO - ✅ Query functions defined\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Landmark search queries (based on travel-sample data)\n",
         "LANDMARK_SEARCH_QUERIES = [\n",
@@ -586,17 +897,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 5,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:23,976 - INFO - ✅ CouchbaseClient class defined\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "class CouchbaseClient:\n",
         "    \"\"\"Centralized Couchbase client for all database operations.\"\"\"\n",
@@ -761,17 +1064,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 6,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:23,985 - INFO - ✅ Agent creation functions defined\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def create_llamaindex_agent(catalog, span):\n",
         "    \"\"\"Create LlamaIndex ReAct agent with landmark search tool from Agent Catalog.\"\"\"\n",
@@ -897,68 +1192,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 7,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:49:24,009 - INFO - 🚀 Setting up complete landmark search agent...\n",
-            "2025-09-11 01:49:24,022 - INFO - ✅ Environment variables configured\n",
-            "2025-09-11 01:49:24,182 - INFO - A local catalog and a remote catalog have been found. Building a chained tool catalog.\n",
-            "2025-09-11 01:49:24,182 - INFO - A local catalog and a remote catalog have been found. Building a chained prompt catalog.\n",
-            "2025-09-11 01:49:24,231 - INFO - Using both a local auditor and a remote auditor.\n",
-            "2025-09-11 01:49:24,232 - INFO - 🔧 Setting up Priority 1 AI services for llamaindex framework...\n",
-            "2025-09-11 01:49:24,232 - INFO - ✅ Using Priority 1: Capella AI embeddings (OpenAI wrapper)\n",
-            "2025-09-11 01:49:25,904 - INFO - ✅ Using Priority 1: Capella AI LLM (OpenAI wrapper)\n",
-            "2025-09-11 01:49:25,904 - INFO - ✅ Priority 1 AI services setup completed for llamaindex\n",
-            "2025-09-11 01:49:31,067 - INFO - Successfully connected to Couchbase\n",
-            "2025-09-11 01:49:32,549 - INFO - Connected to bucket 'travel-sample'\n",
-            "2025-09-11 01:49:34,975 - INFO - Collection 'landmark_data' exists, clearing data...\n",
-            "2025-09-11 01:49:34,977 - INFO - Clearing data from travel-sample.agentc_data.landmark_data...\n",
-            "2025-09-11 01:49:41,625 - INFO - Collection cleared successfully, 0 documents remaining\n",
-            "2025-09-11 01:49:45,851 - INFO - Primary index created successfully\n",
-            "2025-09-11 01:49:45,853 - INFO - Collection setup complete\n",
-            "2025-09-11 01:49:45,857 - INFO - Loaded vector search index definition from agentcatalog_index.json\n",
-            "2025-09-11 01:49:47,250 - INFO - Vector search index 'landmark_data_index' already exists\n",
-            "2025-09-11 01:49:52,177 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
-            "2025-09-11 01:49:52,178 - INFO - Processing landmark documents...\n",
-            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 1700802.57landmarks/s]\n",
-            "2025-09-11 01:49:55,857 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
-            "2025-09-11 01:50:01,538 - INFO - Loading landmark data from travel-sample.inventory.landmark...\n",
-            "2025-09-11 01:50:01,539 - INFO - Processing landmark documents...\n",
-            "Loading landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 4693402.16landmarks/s]\n",
-            "2025-09-11 01:50:04,145 - INFO - Loaded 4495 landmarks from travel-sample.inventory.landmark\n",
-            "2025-09-11 01:50:04,147 - INFO - Generating landmark text embeddings...\n",
-            "Processing landmarks: 100%|██████████| 4495/4495 [00:00<00:00, 258957.44landmarks/s]\n",
-            "2025-09-11 01:50:04,166 - INFO - Generated 4495 landmark text embeddings\n",
-            "2025-09-11 01:50:07,784 - INFO - Creating 4495 LlamaIndex Documents...\n",
-            "2025-09-11 01:50:07,850 - INFO - Processing documents with ingestion pipeline...\n",
-            "2025-09-11 01:50:07,947 - INFO - Processing 4495 documents in 180 batches...\n",
-            "Loading batches: 100%|██████████| 180/180 [03:22<00:00,  1.13s/batch]\n",
-            "2025-09-11 01:53:30,777 - INFO - Successfully loaded 4495 landmark documents to vector store\n",
-            "2025-09-11 01:53:30,777 - INFO - Landmark data loaded into vector store successfully\n",
-            "2025-09-11 01:53:30,810 - INFO - Loaded search_landmarks tool from AgentC\n",
-            "2025-09-11 01:53:30,810 - INFO - Loaded 1 tools from Agent Catalog\n",
-            "2025-09-11 01:53:30,848 - INFO - Loaded system prompt from Agent Catalog\n",
-            "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/llama_index/core/agent/react/base.py:154: DeprecationWarning: Call to deprecated class ReActAgent. (ReActAgent has been rewritten and replaced by llama_index.core.agent.workflow.ReActAgent.\n",
-            "\n",
-            "This implementation will be removed in a v0.13.0 and the new implementation will be promoted to the `from llama_index.core.agent import ReActAgent` path.\n",
-            "\n",
-            "See the docs for more information: https://docs.llamaindex.ai/en/stable/understanding/agent/)\n",
-            "  return cls(\n",
-            "/Users/kaustavghosh/Desktop/agent-catalog-quickstart/notebooks/landmark_search_agent_llamaindex/.venv/lib/python3.12/site-packages/deprecated/classic.py:184: DeprecationWarning: Call to deprecated class AgentRunner. (AgentRunner has been deprecated and is not maintained.\n",
-            "\n",
-            "This implementation will be removed in a v0.13.0.\n",
-            "\n",
-            "See the docs for more information on updated agent usage: https://docs.llamaindex.ai/en/stable/understanding/agent/)\n",
-            "  return old_new1(cls, *args, **kwargs)\n",
-            "2025-09-11 01:53:30,852 - INFO - LlamaIndex ReAct agent created successfully\n",
-            "2025-09-11 01:53:30,852 - INFO - ✅ Landmark search agent setup completed!\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Setup the landmark search agent\n",
         "logger.info(\"🚀 Setting up complete landmark search agent...\")\n",
@@ -981,21 +1217,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 8,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:53:30,861 - INFO - Testing Landmark Data Loading from travel-sample\n",
-            "2025-09-11 01:53:30,861 - INFO - ==================================================\n",
-            "2025-09-11 01:53:38,589 - INFO - ✅ Landmark count in travel-sample.inventory.landmark: 4495\n",
-            "2025-09-11 01:53:38,590 - INFO - ✅ Data loading functions are working correctly\n",
-            "2025-09-11 01:53:38,590 - INFO - ✅ Data loading test completed successfully\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "def run_landmark_query(query: str, agent):\n",
         "    \"\"\"Run a single landmark query with error handling.\"\"\"\n",
@@ -1057,96 +1281,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 9,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:53:38,599 - INFO - 🏛️ Landmark Query: Find museums and galleries in Glasgow\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "> Running step 0e348a2f-cab4-44b6-afae-d0f7053e0af9. Step input: Find museums and galleries in Glasgow\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': 'museums and galleries in Glasgow', 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:53:50,594 - INFO - Search query: 'museums and galleries in Glasgow' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 4 landmarks matching 'museums and galleries in Glasgow':\n",
-            "\n",
-            "1. **The Tron Theatre**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 63 Trongate.\n",
-            "   📞 Phone: +44 141 552 4267.\n",
-            "   🌐 Website: http://www.tron.co.uk/.\n",
-            "   📝 Description: Specialises in contemporary works..\n",
-            "\n",
-            "2. **Kelvingrove Art Gallery and Museum**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: Argyle Street.\n",
-            "   📞 Phone: +44 141 276 9599.\n",
-            "   🌐 Website: http://www.glasgowlife.org.uk/museums/kelvingrove/.\n",
-            "   🕒 Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: Next door to the Kelvingrove Lawn Bowls Centre. The city's grandest public museum, with one of the finest civic collections in Europe housed within this Glasgow Victorian landmark. The collection is quite varied, with artworks, biological displays and anthropological artifacts. The museum as a whole is well-geared towards children and families and has a cafe..\n",
-            "\n",
-            "3. **Riverside Museum**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 100 Pointhouse Place.\n",
-            "   📞 Phone: +44 141 287 2720.\n",
-            "   🌐 Website: http://www.glasgowlife.org.uk/museums/riverside/.\n",
-            "   🕒 Hours: M-Th and Sa 10:00-17:00, F and Su 11:00-17:00.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: A recently reopened museum with an excellent collection of vehicles and models to tell the story of transport by land and sea, with a unique Glasgow flavour. Besides the usual rail locomotives, buses, trams, cars and planes, the museum also includes a recreated subway station and a street scene of old Glasgow. &lt;!--This museum is also listed on the [[Urban Rail]] page, please update there with any major changes. --&gt;.\n",
-            "\n",
-            "4. **Centre for Contemporary Arts**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 350 Sauchiehall Street.\n",
-            "   📞 Phone: +44 141 352 4900.\n",
-            "   🌐 Website: http://www.cca-glasgow.com/.\n",
-            "   📝 Description: Shows films, though it's primarily an art gallery..\n",
-            "\u001b[0m> Running step a5184655-7161-4e52-9cd0-9859a6551148. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:53:52,459 - INFO - 🤖 AI Response: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts.\n",
-            "2025-09-11 01:53:52,460 - INFO - ✅ Query completed successfully\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts.\n",
-            "\u001b[0m"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Test 1: Museums and Galleries in Glasgow\n",
         "result1 = run_landmark_query(\"Find museums and galleries in Glasgow\", agent)\n"
@@ -1154,105 +1291,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 10,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:53:52,465 - INFO - 🏛️ Landmark Query: Show me restaurants serving Asian cuisine\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "> Running step c9c32ba5-a369-4702-8300-f96a8ebf49d8. Step input: Show me restaurants serving Asian cuisine\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': 'Asian restaurants', 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:12,721 - INFO - Search query: 'Asian restaurants' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Asian restaurants':\n",
-            "\n",
-            "1. **New Canton**\n",
-            "   📍 Location: Whittier, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 13015 Philadelphia St, Whittier, CA 90601.\n",
-            "   📞 Phone: +1 562 698-7315.\n",
-            "   🌐 Website: http://www.newcantonchineserestaurant.com/.\n",
-            "   📝 Description: A Chinese restaurant.\n",
-            "\n",
-            "2. **World Curry**\n",
-            "   📍 Location: San Diego, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1433 Garnet Ave.\n",
-            "   🌐 Website: http://www.worldcurry.com/.\n",
-            "   📝 Description: Great variety of world curries and great happy hour beverage deals..\n",
-            "\n",
-            "3. **Pearl Chinese Seafood**\n",
-            "   📍 Location: San Diego, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 11666 Avena Pl.\n",
-            "   📞 Phone: +1 858 487-3388.\n",
-            "   🌐 Website: http://pearlchinesesd.com/.\n",
-            "   🕒 Hours: M-F 11AM-10:30PM, Sa-Su 9AM-10:30PM.\n",
-            "   📝 Description: Good Cantonese (Chinese) dim sum with a good view of Webb Park..\n",
-            "\n",
-            "4. **La Cita**\n",
-            "   📍 Location: Los Angeles, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Drink.\n",
-            "   🏠 Address: 336 S Hill St.\n",
-            "   📞 Phone: +1 213 687-7111.\n",
-            "   🌐 Website: http://lacitabar.com.\n",
-            "   🕒 Hours: 10AM-2AM daily.\n",
-            "   📝 Description: Curious mix of Latinos and hipsters..\n",
-            "\n",
-            "5. **So Asia**\n",
-            "   📍 Location: Camberley, United Kingdom\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 69 High St.\n",
-            "   📞 Phone: +44 1276 29078.\n",
-            "   🌐 Website: http://www.soasia.co.uk/.\n",
-            "   📝 Description: Eat as much as you like buffet style restaurant with an excellent choice of Chinese, Thai and Indian foods..\n",
-            "\u001b[0m> Running step 50f825aa-d0f8-435a-9940-a715802e21f2. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:14,589 - INFO - 🤖 AI Response: Here are 5 restaurants serving Asian cuisine: New Canton, World Curry, Pearl Chinese Seafood, La Cita, and So Asia.\n",
-            "2025-09-11 01:54:14,589 - INFO - ✅ Query completed successfully\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: Here are 5 restaurants serving Asian cuisine: New Canton, World Curry, Pearl Chinese Seafood, La Cita, and So Asia.\n",
-            "\u001b[0m"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Test 2: Asian Restaurants\n",
         "result2 = run_landmark_query(\"Show me restaurants serving Asian cuisine\", agent)\n"
@@ -1260,104 +1301,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 11,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:14,599 - INFO - 🏛️ Landmark Query: Tell me about Monet's House\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "> Running step 52ae3441-0799-4d81-a61c-78e76975a2e3. Step input: Tell me about Monet's House\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': \"Monet's House\", 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:29,177 - INFO - Search query: 'Monet's House' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Monet's House':\n",
-            "\n",
-            "1. **Monet's House**\n",
-            "   📍 Location: Giverny, France\n",
-            "   🗺️ State: Haute-Normandie. Alternative name: Fondation Claude Monet.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 84 rue Claude Monet.\n",
-            "   📞 Phone: +33 232512821.\n",
-            "   🌐 Website: http://www.fondation-monet.com/.\n",
-            "   🕒 Hours: open April-October Mo-Su 9:30-18:00.\n",
-            "   💰 Price: €9, $5 students, €4 4.00 disabled, under-7s free.\n",
-            "   📝 Description: the house is quietly eccentric and highly interesting in an Orient-influenced style, and includes Monet's collection of [http://www.intermonet.com/japan/ Japanese prints]. There are no original Monet paintings on the site - the real drawcard, is the gardens around the house - the [http://giverny-impression.com/category/water-garden/ water garden] with the [http://www.intermonet.com/oeuvre/pontjapo.htm Japanese bridge], [http://giverny-impression.com/tag/weeping-willow/ weeping willows] and [http://giverny-impression.com/tag/water-lily/ waterlilies] is now somewhat iconic. Monet's house has the obligatory gift-store attached, designed to help you part with your money in exchange for all manner of things Impressionist. [http://giverny.org/gardens/fcm/ticket/ e-tickets] can now be purchased o..\n",
-            "\n",
-            "2. **La Gare**\n",
-            "   📍 Location: Santa Rosa, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 208 Wilson Street.\n",
-            "   📞 Phone: +1 707-528-4355.\n",
-            "   🌐 Website: http://www.lagarerestaurant.com/.\n",
-            "   📝 Description: French/Swiss cuisine. Local favorite..\n",
-            "\n",
-            "3. **Musée Marmottan**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 2 rue Louis-Boilly, 16th.\n",
-            "   📞 Phone: +33 1 44 96 50 33.\n",
-            "   🌐 Website: http://www.marmottan.com.\n",
-            "   🕒 Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing.\n",
-            "   📝 Description: Monet's best works are in this charming museum, which contains the largest Monet collection in the world as well as works by Renoir, Manet, Berthe, Caillebotte and Gauguin..\n",
-            "\n",
-            "4. **Hanawa**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 26, rue Bayard.\n",
-            "   📞 Phone: +33 1 56 62 70 70.\n",
-            "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
-            "\n",
-            "5. **Kymin**\n",
-            "   📍 Location: Monmouthshire, United Kingdom\n",
-            "   🎯 Activity: See.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: Impressive view of Monmouth and the surrounding countryside..\n",
-            "\u001b[0m> Running step 48c48d89-3d7a-4eb4-8c65-7daee95685dd. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:31,971 - INFO - 🤖 AI Response: Monet's House, also known as the Fondation Claude Monet, is located in Giverny, France. It is a house museum that showcases the life and work of the famous French Impressionist painter Claude Monet. The house is a quiet and eccentric, Orient-influenced style, and it includes Monet's collection of Japanese prints. However, there are no original Monet paintings on the site. The main attraction is the beautiful gardens around the house, which feature a water garden with a Japanese bridge, weeping willows, and waterlilies, all of which were a source of inspiration for Monet's paintings. Visitors can purchase e-tickets online and explore the house and gardens during the open season from April to October.\n",
-            "2025-09-11 01:54:31,972 - INFO - ✅ Query completed successfully\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: Monet's House, also known as the Fondation Claude Monet, is located in Giverny, France. It is a house museum that showcases the life and work of the famous French Impressionist painter Claude Monet. The house is a quiet and eccentric, Orient-influenced style, and it includes Monet's collection of Japanese prints. However, there are no original Monet paintings on the site. The main attraction is the beautiful gardens around the house, which feature a water garden with a Japanese bridge, weeping willows, and waterlilies, all of which were a source of inspiration for Monet's paintings. Visitors can purchase e-tickets online and explore the house and gardens during the open season from April to October.\n",
-            "\u001b[0m"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Test 3: Specific Landmark\n",
         "result3 = run_landmark_query(\"Tell me about Monet's House\", agent)\n"
@@ -1374,17 +1320,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 12,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:31,984 - INFO - ✅ Lenient evaluation templates defined (THESE WERE MISSING!)\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Lenient QA evaluation template\n",
         "LENIENT_QA_PROMPT_TEMPLATE = \"\"\"\n",
@@ -1488,75 +1426,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 13,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:32,040 - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
-            "2025-09-11 01:54:32,070 - INFO - Dataset: phoenix_inferences_9938afe0-681b-4712-9253-0e38ad4b0747 initialized\n",
-            "2025-09-11 01:54:33,951 - INFO - ✅ Phoenix evaluation components available\n",
-            "2025-09-11 01:54:33,952 - INFO - 📋 Ensuring phoenix working directory: /Users/kaustavghosh/.phoenix\n",
-            "2025-09-11 01:54:34,027 - INFO - Context impl SQLiteImpl.\n",
-            "2025-09-11 01:54:34,027 - INFO - Will assume transactional DDL.\n",
-            "2025-09-11 01:54:34,052 - INFO - Running upgrade  -> cf03bd6bae1d, init\n",
-            "2025-09-11 01:54:34,101 - INFO - Running upgrade cf03bd6bae1d -> 10460e46d750, datasets\n",
-            "2025-09-11 01:54:34,108 - INFO - Running upgrade 10460e46d750 -> 3be8647b87d8, add token columns to spans table\n",
-            "2025-09-11 01:54:34,110 - INFO - Running upgrade 3be8647b87d8 -> cd164e83824f, users and tokens\n",
-            "2025-09-11 01:54:34,115 - INFO - Running upgrade cd164e83824f -> 4ded9e43755f, create project_session table\n",
-            "2025-09-11 01:54:34,123 - INFO - Running upgrade 4ded9e43755f -> bc8fea3c2bc8, Add prompt tables\n",
-            "2025-09-11 01:54:34,128 - INFO - Running upgrade bc8fea3c2bc8 -> 2f9d1a65945f, Annotation config migrations\n",
-            "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total\n",
-            "  next(self.gen)\n",
-            "/opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency\n",
-            "  next(self.gen)\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "❗️ The launch_app `port` parameter is deprecated and will be removed in a future release. Use the `PHOENIX_PORT` environment variable instead.\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:34,189 - INFO - Running upgrade 2f9d1a65945f -> bb8139330879, create project trace retention policies table\n",
-            "2025-09-11 01:54:34,194 - INFO - Running upgrade bb8139330879 -> 8a3764fe7f1a, change jsonb to json for prompts\n",
-            "2025-09-11 01:54:34,204 - INFO - Running upgrade 8a3764fe7f1a -> 6a88424799fe, Add auth_method column to users table and migrate existing authentication data.\n",
-            "2025-09-11 01:54:34,426 - INFO - Running upgrade 6a88424799fe -> a20694b15f82, Cost-related tables\n",
-            "2025-09-11 01:54:34,434 - INFO - Server umap params: UMAPParameters(min_dist=0.0, n_neighbors=30, n_samples=500)\n",
-            "2025-09-11 01:54:34,642 - INFO - 🚀 Phoenix UI available at http://localhost:6006/\n",
-            "2025-09-11 01:54:34,684 - INFO - ✅ LlamaIndex instrumentation enabled\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "🌍 To view the Phoenix app in your browser, visit http://localhost:6006/\n",
-            "📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix\n",
-            "🔭 OpenTelemetry Tracing Details 🔭\n",
-            "|  Phoenix Project: landmark-search-agent-evaluation\n",
-            "|  Span Processor: SimpleSpanProcessor\n",
-            "|  Collector Endpoint: http://localhost:6006/v1/traces\n",
-            "|  Transport: HTTP + protobuf\n",
-            "|  Transport Headers: {}\n",
-            "|  \n",
-            "|  Using a default SpanProcessor. `add_span_processor` will overwrite this default.\n",
-            "|  \n",
-            "|  ⚠️ WARNING: It is strongly advised to use a BatchSpanProcessor in production environments.\n",
-            "|  \n",
-            "|  `register` has set this TracerProvider as the global OpenTelemetry default.\n",
-            "|  To disable this behavior, call `register` with `set_global_tracer_provider=False`.\n",
-            "\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "# Import Phoenix evaluation components\n",
         "try:\n",
@@ -1618,272 +1490,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 14,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:34,690 - INFO - 🔍 Running Phoenix evaluation demo with lenient templates...\n",
-            "2025-09-11 01:54:34,702 - INFO - ✅ Evaluator LLM initialized\n",
-            "2025-09-11 01:54:34,702 - INFO - 🔍 Running evaluation query 1: Find museums and galleries in Glasgow\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "> Running step a2ad4249-7106-4d58-b8d6-ecba902849de. Step input: Find museums and galleries in Glasgow\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': 'museums and galleries in Glasgow', 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:55,565 - INFO - Search query: 'museums and galleries in Glasgow' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 4 landmarks matching 'museums and galleries in Glasgow':\n",
-            "\n",
-            "1. **The Tron Theatre**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 63 Trongate.\n",
-            "   📞 Phone: +44 141 552 4267.\n",
-            "   🌐 Website: http://www.tron.co.uk/.\n",
-            "   📝 Description: Specialises in contemporary works..\n",
-            "\n",
-            "2. **Kelvingrove Art Gallery and Museum**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: Argyle Street.\n",
-            "   📞 Phone: +44 141 276 9599.\n",
-            "   🌐 Website: http://www.glasgowlife.org.uk/museums/kelvingrove/.\n",
-            "   🕒 Hours: M-Th, Sa 10AM-5PM; F, Su 11AM-5PM.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: Next door to the Kelvingrove Lawn Bowls Centre. The city's grandest public museum, with one of the finest civic collections in Europe housed within this Glasgow Victorian landmark. The collection is quite varied, with artworks, biological displays and anthropological artifacts. The museum as a whole is well-geared towards children and families and has a cafe..\n",
-            "\n",
-            "3. **Riverside Museum**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 100 Pointhouse Place.\n",
-            "   📞 Phone: +44 141 287 2720.\n",
-            "   🌐 Website: http://www.glasgowlife.org.uk/museums/riverside/.\n",
-            "   🕒 Hours: M-Th and Sa 10:00-17:00, F and Su 11:00-17:00.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: A recently reopened museum with an excellent collection of vehicles and models to tell the story of transport by land and sea, with a unique Glasgow flavour. Besides the usual rail locomotives, buses, trams, cars and planes, the museum also includes a recreated subway station and a street scene of old Glasgow. &lt;!--This museum is also listed on the [[Urban Rail]] page, please update there with any major changes. --&gt;.\n",
-            "\n",
-            "4. **Centre for Contemporary Arts**\n",
-            "   📍 Location: Glasgow, United Kingdom\n",
-            "   🎯 Activity: Do.\n",
-            "   🏠 Address: 350 Sauchiehall Street.\n",
-            "   📞 Phone: +44 141 352 4900.\n",
-            "   🌐 Website: http://www.cca-glasgow.com/.\n",
-            "   📝 Description: Shows films, though it's primarily an art gallery..\n",
-            "\u001b[0m> Running step e83adb96-177e-4d23-b19d-ca6b062fe6c0. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:54:57,450 - INFO - ✅ Query 1 completed successfully\n",
-            "2025-09-11 01:54:57,450 - INFO - 🔍 Running evaluation query 2: Show me restaurants serving Asian cuisine\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts.\n",
-            "\u001b[0m> Running step f40fccf4-ff22-414a-8069-f4048fe0f462. Step input: Show me restaurants serving Asian cuisine\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': 'Asian restaurants', 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:11,019 - INFO - Search query: 'Asian restaurants' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Asian restaurants':\n",
-            "\n",
-            "1. **New Canton**\n",
-            "   📍 Location: Whittier, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 13015 Philadelphia St, Whittier, CA 90601.\n",
-            "   📞 Phone: +1 562 698-7315.\n",
-            "   🌐 Website: http://www.newcantonchineserestaurant.com/.\n",
-            "   📝 Description: A Chinese restaurant.\n",
-            "\n",
-            "2. **World Curry**\n",
-            "   📍 Location: San Diego, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 1433 Garnet Ave.\n",
-            "   🌐 Website: http://www.worldcurry.com/.\n",
-            "   📝 Description: Great variety of world curries and great happy hour beverage deals..\n",
-            "\n",
-            "3. **Pearl Chinese Seafood**\n",
-            "   📍 Location: San Diego, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 11666 Avena Pl.\n",
-            "   📞 Phone: +1 858 487-3388.\n",
-            "   🌐 Website: http://pearlchinesesd.com/.\n",
-            "   🕒 Hours: M-F 11AM-10:30PM, Sa-Su 9AM-10:30PM.\n",
-            "   📝 Description: Good Cantonese (Chinese) dim sum with a good view of Webb Park..\n",
-            "\n",
-            "4. **La Cita**\n",
-            "   📍 Location: Los Angeles, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Drink.\n",
-            "   🏠 Address: 336 S Hill St.\n",
-            "   📞 Phone: +1 213 687-7111.\n",
-            "   🌐 Website: http://lacitabar.com.\n",
-            "   🕒 Hours: 10AM-2AM daily.\n",
-            "   📝 Description: Curious mix of Latinos and hipsters..\n",
-            "\n",
-            "5. **So Asia**\n",
-            "   📍 Location: Camberley, United Kingdom\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 69 High St.\n",
-            "   📞 Phone: +44 1276 29078.\n",
-            "   🌐 Website: http://www.soasia.co.uk/.\n",
-            "   📝 Description: Eat as much as you like buffet style restaurant with an excellent choice of Chinese, Thai and Indian foods..\n",
-            "\u001b[0m> Running step 1ac38cfb-e409-4b88-b1b0-df52417b3e30. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:12,702 - INFO - ✅ Query 2 completed successfully\n",
-            "2025-09-11 01:55:12,702 - INFO - 🔍 Running evaluation query 3: Tell me about Monet's House\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: Here are some restaurants serving Asian cuisine: New Canton, World Curry, Pearl Chinese Seafood, La Cita, and So Asia.\n",
-            "\u001b[0m> Running step 3f470f5f-2432-42e0-98dd-8d06bf28871f. Step input: Tell me about Monet's House\n",
-            "\u001b[1;3;38;5;200mThought: The current language of the user is: English. I need to use a tool to help me answer the question.\n",
-            "Action: search_landmarks\n",
-            "Action Input: {'query': \"Monet's House\", 'limit': 5}\n",
-            "\u001b[0m"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:25,736 - INFO - Search query: 'Monet's House' found 5 results\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;34mObservation: Found 5 landmarks matching 'Monet's House':\n",
-            "\n",
-            "1. **Monet's House**\n",
-            "   📍 Location: Giverny, France\n",
-            "   🗺️ State: Haute-Normandie. Alternative name: Fondation Claude Monet.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 84 rue Claude Monet.\n",
-            "   📞 Phone: +33 232512821.\n",
-            "   🌐 Website: http://www.fondation-monet.com/.\n",
-            "   🕒 Hours: open April-October Mo-Su 9:30-18:00.\n",
-            "   💰 Price: €9, $5 students, €4 4.00 disabled, under-7s free.\n",
-            "   📝 Description: the house is quietly eccentric and highly interesting in an Orient-influenced style, and includes Monet's collection of [http://www.intermonet.com/japan/ Japanese prints]. There are no original Monet paintings on the site - the real drawcard, is the gardens around the house - the [http://giverny-impression.com/category/water-garden/ water garden] with the [http://www.intermonet.com/oeuvre/pontjapo.htm Japanese bridge], [http://giverny-impression.com/tag/weeping-willow/ weeping willows] and [http://giverny-impression.com/tag/water-lily/ waterlilies] is now somewhat iconic. Monet's house has the obligatory gift-store attached, designed to help you part with your money in exchange for all manner of things Impressionist. [http://giverny.org/gardens/fcm/ticket/ e-tickets] can now be purchased o..\n",
-            "\n",
-            "2. **La Gare**\n",
-            "   📍 Location: Santa Rosa, United States\n",
-            "   🗺️ State: California.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 208 Wilson Street.\n",
-            "   📞 Phone: +1 707-528-4355.\n",
-            "   🌐 Website: http://www.lagarerestaurant.com/.\n",
-            "   📝 Description: French/Swiss cuisine. Local favorite..\n",
-            "\n",
-            "3. **Musée Marmottan**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: See.\n",
-            "   🏠 Address: 2 rue Louis-Boilly, 16th.\n",
-            "   📞 Phone: +33 1 44 96 50 33.\n",
-            "   🌐 Website: http://www.marmottan.com.\n",
-            "   🕒 Hours: 11am-9pm Tues; 11am-6pm Wed-Sun. Last entry 30 min before closing.\n",
-            "   📝 Description: Monet's best works are in this charming museum, which contains the largest Monet collection in the world as well as works by Renoir, Manet, Berthe, Caillebotte and Gauguin..\n",
-            "\n",
-            "4. **Hanawa**\n",
-            "   📍 Location: Paris, France\n",
-            "   🗺️ State: Île-de-France.\n",
-            "   🎯 Activity: Eat.\n",
-            "   🏠 Address: 26, rue Bayard.\n",
-            "   📞 Phone: +33 1 56 62 70 70.\n",
-            "   📝 Description: Great sushi in a nice atmosphere, extensive menu..\n",
-            "\n",
-            "5. **Kymin**\n",
-            "   📍 Location: Monmouthshire, United Kingdom\n",
-            "   🎯 Activity: See.\n",
-            "   💰 Price: Free.\n",
-            "   📝 Description: Impressive view of Monmouth and the surrounding countryside..\n",
-            "\u001b[0m> Running step 6a50af0e-e9cd-41b5-98a8-08dca865f989. Step input: None\n"
-          ]
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:28,190 - INFO - ✅ Query 3 completed successfully\n",
-            "2025-09-11 01:55:28,191 - INFO - 📊 Collected 3 responses for evaluation\n",
-            "2025-09-11 01:55:28,192 - INFO - Query: Find museums and galleries in Glasgow\n",
-            "2025-09-11 01:55:28,192 - INFO - Response: The museums and galleries found in Glasgow are The Tron Theatre, Kelvingrove Art Gallery and Museum, Riverside Museum, and Centre for Contemporary Arts....\n",
-            "2025-09-11 01:55:28,193 - INFO - Success: True\n",
-            "2025-09-11 01:55:28,193 - INFO - --------------------------------------------------\n",
-            "2025-09-11 01:55:28,193 - INFO - Query: Show me restaurants serving Asian cuisine\n",
-            "2025-09-11 01:55:28,193 - INFO - Response: Here are some restaurants serving Asian cuisine: New Canton, World Curry, Pearl Chinese Seafood, La Cita, and So Asia....\n",
-            "2025-09-11 01:55:28,194 - INFO - Success: True\n",
-            "2025-09-11 01:55:28,194 - INFO - --------------------------------------------------\n",
-            "2025-09-11 01:55:28,194 - INFO - Query: Tell me about Monet's House\n",
-            "2025-09-11 01:55:28,195 - INFO - Response: The most famous Monet's House is located in Giverny, France, and it is a museum showcasing the life and work of the famous artist Claude Monet. The house is a quiet and eccentric Orient-influenced sty...\n",
-            "2025-09-11 01:55:28,195 - INFO - Success: True\n",
-            "2025-09-11 01:55:28,196 - INFO - --------------------------------------------------\n",
-            "2025-09-11 01:55:28,196 - INFO - 💡 Visit Phoenix UI at http://localhost:6006/ to see detailed traces\n"
-          ]
-        },
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "\u001b[1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer\n",
-            "Answer: The most famous Monet's House is located in Giverny, France, and it is a museum showcasing the life and work of the famous artist Claude Monet. The house is a quiet and eccentric Orient-influenced style, and it includes Monet's collection of Japanese prints. However, the real drawcard is the beautiful gardens around the house, which feature a water garden with a Japanese bridge, weeping willows, and waterlilies. The gardens are now iconic and a must-see for any art lover or nature enthusiast.\n",
-            "\u001b[0m"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "if PHOENIX_AVAILABLE:\n",
         "    logger.info(\"🔍 Running Phoenix evaluation demo with lenient templates...\")\n",
@@ -1968,140 +1577,9 @@
     },
     {
       "cell_type": "code",
-      "execution_count": 15,
+      "execution_count": null,
       "metadata": {},
-      "outputs": [
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:28,206 - INFO - 🔍 Running comprehensive Phoenix evaluations with LENIENT templates...\n",
-            "2025-09-11 01:55:28,207 - INFO - 📊 Prepared 3 queries for Phoenix evaluation\n",
-            "2025-09-11 01:55:28,207 - INFO - 🔍 Running Relevance Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "a1bdc882e7094cba9f3997f3e8a60aca",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:34,820 - INFO - ✅ Relevance evaluation completed\n",
-            "2025-09-11 01:55:34,820 - INFO - 🔍 Running QA Evaluation with LENIENT template...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "44371ed2e6f34cb3b79115b04c82b60d",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:38,391 - INFO - ✅ QA evaluation completed with LENIENT template\n",
-            "2025-09-11 01:55:38,391 - INFO - 🔍 Running Hallucination Evaluation with LENIENT template...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "cbc8f04e257b4d6197aa2761a652be43",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:42,786 - INFO - ✅ Hallucination evaluation completed with LENIENT template\n",
-            "2025-09-11 01:55:42,786 - INFO - 🔍 Running Toxicity Evaluation...\n"
-          ]
-        },
-        {
-          "data": {
-            "application/vnd.jupyter.widget-view+json": {
-              "model_id": "8f5f81ed7d7b4309a22d9f4d9f21e227",
-              "version_major": 2,
-              "version_minor": 0
-            },
-            "text/plain": [
-              "llm_classify |          | 0/3 (0.0%) | ⏳ 00:00<? | ?it/s"
-            ]
-          },
-          "metadata": {},
-          "output_type": "display_data"
-        },
-        {
-          "name": "stderr",
-          "output_type": "stream",
-          "text": [
-            "2025-09-11 01:55:48,496 - INFO - ✅ Toxicity evaluation completed\n",
-            "2025-09-11 01:55:48,497 - INFO - 📊 EVALUATION SUMMARY\n",
-            "2025-09-11 01:55:48,497 - INFO - ==================================================\n",
-            "2025-09-11 01:55:48,497 - INFO - Query 1: Find museums and galleries in Glasgow\n",
-            "2025-09-11 01:55:48,498 - INFO -   relevance: relevant\n",
-            "2025-09-11 01:55:48,498 - INFO -     Reason: The question asks for museums and galleries located in Glasgow. The reference text provides a list o...\n",
-            "2025-09-11 01:55:48,498 - INFO -   qa_correctness: correct\n",
-            "2025-09-11 01:55:48,499 - INFO -     Reason: The AI response correctly identifies several museums and galleries in Glasgow, including the Kelving...\n",
-            "2025-09-11 01:55:48,499 - INFO -   hallucination: hallucinated\n",
-            "2025-09-11 01:55:48,499 - INFO -     Reason: The AI response lists The Tron Theatre and Centre for Contemporary Arts, which are not typically cat...\n",
-            "2025-09-11 01:55:48,500 - INFO -   toxicity: non-toxic\n",
-            "2025-09-11 01:55:48,500 - INFO -     Reason: To determine whether the text is toxic, we need to evaluate it against the criteria for toxicity: ha...\n",
-            "2025-09-11 01:55:48,500 - INFO -   ----------------------------------------\n",
-            "2025-09-11 01:55:48,501 - INFO - Query 2: Show me restaurants serving Asian cuisine\n",
-            "2025-09-11 01:55:48,501 - INFO -   relevance: relevant\n",
-            "2025-09-11 01:55:48,501 - INFO -     Reason: The question asks for restaurants serving Asian cuisine. The reference text provides a list of sever...\n",
-            "2025-09-11 01:55:48,501 - INFO -   qa_correctness: correct\n",
-            "2025-09-11 01:55:48,502 - INFO -     Reason: The AI response successfully provided a list of restaurants serving Asian cuisine, which was the use...\n",
-            "2025-09-11 01:55:48,502 - INFO -   hallucination: factual\n",
-            "2025-09-11 01:55:48,502 - INFO -     Reason: The AI response lists restaurant names that are plausible and could exist in various locations. The ...\n",
-            "2025-09-11 01:55:48,503 - INFO -   toxicity: non-toxic\n",
-            "2025-09-11 01:55:48,503 - INFO -     Reason: To determine whether the text is toxic, we need to evaluate it against the criteria for toxicity: ha...\n",
-            "2025-09-11 01:55:48,503 - INFO -   ----------------------------------------\n",
-            "2025-09-11 01:55:48,504 - INFO - Query 3: Tell me about Monet's House\n",
-            "2025-09-11 01:55:48,504 - INFO -   relevance: relevant\n",
-            "2025-09-11 01:55:48,504 - INFO -     Reason: The question asks for information about Monet's House. The reference text provides detailed informat...\n",
-            "2025-09-11 01:55:48,505 - INFO -   qa_correctness: correct\n",
-            "2025-09-11 01:55:48,505 - INFO -     Reason: The AI response provides accurate and relevant information about Monet's House, including its locati...\n",
-            "2025-09-11 01:55:48,505 - INFO -   hallucination: factual\n",
-            "2025-09-11 01:55:48,506 - INFO -     Reason: The AI response provides plausible information about Monet's House, which is consistent with the ref...\n",
-            "2025-09-11 01:55:48,506 - INFO -   toxicity: non-toxic\n",
-            "2025-09-11 01:55:48,507 - INFO -     Reason: To determine whether the text is toxic or not, we need to analyze the content based on the definitio...\n",
-            "2025-09-11 01:55:48,507 - INFO -   ----------------------------------------\n",
-            "2025-09-11 01:55:48,507 - INFO - ✅ All Phoenix evaluations completed successfully!\n",
-            "2025-09-11 01:55:48,507 - INFO - 🎯 KEY SUCCESS: Lenient templates now work correctly!\n"
-          ]
-        }
-      ],
+      "outputs": [],
       "source": [
         "if PHOENIX_AVAILABLE and evaluator_llm and len(demo_results) > 0:\n",
         "    logger.info(\"🔍 Running comprehensive Phoenix evaluations with LENIENT templates...\")\n",
