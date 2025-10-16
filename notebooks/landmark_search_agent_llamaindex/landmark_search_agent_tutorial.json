@@ -39,8 +39,7 @@
         "!mkdir -p prompts\n",
         "!wget -O prompts/landmark_search_assistant.yaml https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/prompts/landmark_search_assistant.yaml\n",
         "!mkdir -p tools\n",
-        "!wget -O tools/__init__.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/tools/__init__.py\n",
-        "!wget -O tools/tools.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/tools/tools.py\n",
+        "!wget -O tools/search_landmarks.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/tools/search_landmarks.py\n",
         "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/landmark_search_agent_llamaindex/agentcatalog_index.json\n"
       ]
     },
@@ -74,10 +73,10 @@
       "metadata": {},
       "outputs": [],
       "source": [
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_llamaindex-0.2.5a2-py3-none-any.whl\n"
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_llamaindex-0.2.5a2-py3-none-any.whl\n"
       ]
     },
     {
@@ -126,6 +125,16 @@
       "outputs": [],
       "source": [
         "!agentc publish\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Install the couchbase-infrastructure package\n",
+        "%pip install -q couchbase-infrastructure"
       ]
     },
     {

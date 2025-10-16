@@ -20,7 +20,7 @@
       "outputs": [],
       "source": [
         "import os\n",
-        "print(os.getcwd())\n"
+        "print(os.getcwd())"
       ]
     },
     {
@@ -33,8 +33,7 @@
         "!mkdir -p prompts\n",
         "!wget -O prompts/hotel_search_assistant.yaml https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/prompts/hotel_search_assistant.yaml\n",
         "!mkdir -p tools\n",
-        "!wget -O tools/__init__.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/tools/__init__.py\n",
-        "!wget -O tools/tools.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/tools/tools.py\n",
+        "!wget -O tools/search_vector_database.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/tools/search_vector_database.py\n",
         "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/hotel_search_agent_langchain/agentcatalog_index.json\n"
       ]
     },
@@ -67,10 +66,10 @@
       "metadata": {},
       "outputs": [],
       "source": [
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
-        "!pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_langchain-0.2.5a2-py3-none-any.whl\n"
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_core-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_cli-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc-0.2.5a2-py3-none-any.whl\n",
+        "%pip install -q https://github.com/couchbaselabs/agent-catalog/releases/download/v0.2.5a2/agentc_langchain-0.2.5a2-py3-none-any.whl\n"
       ]
     },
     {
@@ -122,6 +121,16 @@
       ]
     },
     {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "# Install the couchbase-infrastructure package\n",
+        "%pip install -q couchbase-infrastructure"
+      ]
+    },
+    {
       "cell_type": "markdown",
       "metadata": {},
       "source": [
@@ -156,8 +165,6 @@
       "metadata": {},
       "outputs": [],
       "source": [
-        "# Install the couchbase-infrastructure package\n",
-        "!pip install -q couchbase-infrastructure\n",
         "\n",
         "import os\n",
         "from getpass import getpass\n",
