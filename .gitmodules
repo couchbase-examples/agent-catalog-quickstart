@@ -1,3 +1,6 @@
 [submodule "agent-catalog"]
 	path = agent-catalog
 	url = https://github.com/couchbaselabs/agent-catalog.git
+[submodule "couchbase-infrastructure"]
+	path = couchbase-infrastructure
+	url = https://github.com/couchbaselabs/couchbase-infrastructure.git
