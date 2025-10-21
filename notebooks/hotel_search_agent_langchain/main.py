@@ -207,7 +207,7 @@ Action Input: hotels matching user search criteria"""
             tools=tools,
             verbose=True,
             handle_parsing_errors=handle_parsing_error,  # Use custom error handler
-            max_iterations=2,  # STRICT: 1 tool call + 1 Final Answer only
+            max_iterations=3,  # Allow: 1 tool call + Final Answer (+ recovery iteration if needed)
             early_stopping_method="force",  # Force stop
             return_intermediate_steps=True,  # For better debugging
         )
