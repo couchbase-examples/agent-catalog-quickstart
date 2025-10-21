@@ -195,11 +195,11 @@ def setup_hotel_support_agent():
         def handle_parsing_error(error) -> str:
             """Custom error handler for parsing errors that guides agent back to ReAct format."""
             logger.warning(f"Parsing error occurred: {error}")
-            return """I need to use the correct format. Let me start over:
+            return """I need to use the correct format. Let me try again with the proper ReAct format.
 
-Thought: I need to search for hotels using the search_vector_database tool
+Thought: I need to search for hotels matching the user's requirements
 Action: search_vector_database
-Action Input: """
+Action Input: hotels matching user search criteria"""
 
         agent = create_react_agent(llm, tools, custom_prompt)
         agent_executor = AgentExecutor(

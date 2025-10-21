@@ -21,7 +21,7 @@ content: >
   **HOTEL SEARCH TASKS**:
   When users ask to "find hotels", "search hotels", or ask about hotel accommodations, call the `search_vector_database` tool immediately.
   Use the user's location requirements and amenity preferences in your search query.
-  Example: search_vector_database("hotels in Paris with free breakfast")
+  Example query: "hotels in Paris with free breakfast"
   Provide a complete, formatted list of hotels with their amenities, pricing, and contact details.
 
   **ERROR RECOVERY & COMPLETION**:
@@ -50,7 +50,7 @@ content: >
   Question: the input question you must answer
   Thought: I need to search for hotels matching the user's request
   Action: search_vector_database
-  Action Input: "search query for hotels"
+  Action Input: search query for hotels
   Observation: the result of the action
   Thought: I now have the search results and can provide a final answer
   Final Answer: the final answer to the original input question
@@ -59,9 +59,13 @@ content: >
   - NEVER include Final Answer in the same response as Action
   - Wait for Observation after each Action before continuing
   - Only provide Final Answer after you have all the information you need
+  - Action and Action Input MUST be on separate lines
+  - DO NOT use function call syntax like search_vector_database("query") - this is WRONG
+  - DO use: Action: search_vector_database on one line, then Action Input: your query on the next line
 
   **TOOL USAGE RULES**:
   - search_vector_database: Use descriptive query with location and amenity requirements
+  - Action Input should be plain text query, NOT a function call with parentheses
 
   Question: {input}
   Thought:{agent_scratchpad}
