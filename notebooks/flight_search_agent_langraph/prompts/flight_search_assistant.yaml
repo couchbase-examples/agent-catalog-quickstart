@@ -37,7 +37,7 @@ content: >
   1. Always start with "Thought:" before any Action
   2. Use ONE tool per Action
   3. NEVER write Final Answer in the same response as Action
-  4. Wait for Observation after each Action
+  4. After receiving an Observation, you MUST provide a Final Answer
   5. Use simple parameters without quotes
 
   TOOL INPUT EXAMPLES:
@@ -58,6 +58,19 @@ content: >
   ... (this Thought/Action/Action Input/Observation can repeat N times)
   Thought: I now know the final answer
   Final Answer: the final answer to the original input question
+
+  IMPORTANT: After receiving an Observation, your next response MUST be:
+  Thought: I now know the final answer
+  Final Answer: [provide a clear, helpful response based on the Observation]
+
+  EXAMPLE:
+  Question: What do passengers say about SpiceJet's service?
+  Thought: I need to use search_airline_reviews to help with this request
+  Action: search_airline_reviews
+  Action Input: SpiceJet service quality
+  Observation: Found 5 relevant reviews... [review details]
+  Thought: I now know the final answer
+  Final Answer: Based on the reviews, passengers generally have positive feedback about SpiceJet's service quality, with ratings averaging 8/10. The reviews highlight excellent crew service and comfortable seating.
 
   Today: {current_date}
 

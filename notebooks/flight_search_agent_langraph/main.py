@@ -147,16 +147,20 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                             # Remove ReAct format artifacts that get mixed into input
                             clean_input = tool_input.strip()
 
-                            # Remove common ReAct artifacts
+                            # Remove common ReAct artifacts - order matters, check longer patterns first
                             artifacts_to_remove = [
-                                '\nObservation', 'Observation', '\nThought:', 'Thought:',
-                                '\nAction:', 'Action:', '\nAction Input:', 'Action Input:',
-                                '\nFinal Answer:', 'Final Answer:'
+                                '\nObservation:', '\nObservation', 'Observation:', 'Observation',
+                                '\nThought:', 'Thought:',
+                                '\nAction:', 'Action:',
+                                '\nAction Input:', 'Action Input:',
+                                '\nFinal Answer:', 'Final Answer:',
+                                'Observ'  # Handle incomplete artifact
                             ]
 
                             for artifact in artifacts_to_remove:
                                 if artifact in clean_input:
-                                    clean_input = clean_input.split(artifact)[0]
+                                    # Split and take only the part before the artifact
+                                    clean_input = clean_input.split(artifact)[0].strip()
 
                             # Clean up quotes and whitespace
                             clean_input = clean_input.strip().strip("\"'").strip()
@@ -229,10 +233,10 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
                         elif name == "retrieve_flight_bookings":
                             # Enhanced handling of empty input for "all bookings"
-                            # Check for various forms of "empty" input
+                            # Check for various forms of "empty" input including ReAct artifacts
                             empty_indicators = [
                                 "", "all", "none", "show all", "get all", "empty",
-                                "empty string", "blank", "nothing", ":"
+                                "empty string", "blank", "nothing", ":", "observ"
                             ]
 
                             if (not tool_input or
@@ -300,8 +304,16 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
 
         # Custom parsing error handler - force stopping on parsing errors
         def handle_parsing_errors(error):
-            """Custom handler for parsing errors - force early termination."""
+            """Custom handler for parsing errors - force early termination with helpful responses."""
             error_msg = str(error)
+
+            # If LLM outputs include "Could not parse", extract any useful information
+            if "Could not parse LLM output" in error_msg:
+                # Check if there's a thought about having the answer
+                if "I now know" in error_msg or "final answer" in error_msg.lower():
+                    # LLM is trying to conclude - help it by forcing a Final Answer
+                    return "Final Answer: Based on the information retrieved, I have found the relevant results. Please see the details above."
+
             if "both a final answer and a parse-able action" in error_msg:
                 # Force early termination - return a reasonable response
                 return "Final Answer: I encountered a parsing error. Please reformulate your request."
@@ -310,14 +322,14 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
             else:
                 return f"Final Answer: I encountered an error processing your request. Please try again."
 
-        # Create agent executor - very strict: only 2 iterations max
+        # Create agent executor with reasonable iteration limit
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
             verbose=True,
             handle_parsing_errors=handle_parsing_errors,
-            max_iterations=2,  # STRICT: 1 tool call + 1 Final Answer only
-            early_stopping_method="force",  # Force stop
+            max_iterations=4,  # Allow up to 4 iterations for error recovery
+            early_stopping_method="force",  # Force stop if max reached
             return_intermediate_steps=True,
         )
 
