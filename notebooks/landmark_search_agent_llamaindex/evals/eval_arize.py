@@ -342,6 +342,9 @@ class LandmarkSearchEvaluator:
 
         logger.info(f"🔍 Evaluating query: {query}")
 
+        # Clear last result to prevent indexing bugs between queries
+        self._last_result = None
+
         start_time = time.time()
 
         try:

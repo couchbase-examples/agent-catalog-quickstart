@@ -172,7 +172,7 @@ def create_llamaindex_agent(catalog, span):
             llm=Settings.llm,
             verbose=True,  # Keep on for debugging
             system_prompt=system_prompt,
-            max_iterations=6,  # Allow search refinement without hitting limits
+            max_iterations=10,  # Increased from 6 to allow more reasoning steps and prevent iteration limit failures
         )
 
         logger.info("LlamaIndex ReAct agent created successfully")
