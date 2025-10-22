@@ -118,6 +118,12 @@ try:
 
     # Set Environment Variables
     print("\n✅ Configuring Environment Variables...")
+
+    # Ensure connection string has proper protocol
+    if not cluster_conn_string.startswith("couchbase://") and not cluster_conn_string.startswith("couchbases://"):
+        cluster_conn_string = f"couchbases://{cluster_conn_string}"
+        print(f"   Added protocol to connection string: {cluster_conn_string}")
+
     os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"
     os.environ["CB_USERNAME"] = config.db_username
     os.environ["CB_PASSWORD"] = db_password
