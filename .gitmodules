@@ -3,4 +3,4 @@
 	url = https://github.com/couchbaselabs/agent-catalog.git
 [submodule "couchbase-infrastructure"]
 	path = couchbase-infrastructure
-	url = https://github.com/couchbaselabs/couchbase-infrastructure.git
+	url = git@github.com:couchbaselabs/couchbase-infrastructure.git
