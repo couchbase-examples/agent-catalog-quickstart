@@ -14,7 +14,7 @@ debug/
 test_*.py
 test_*.ipynb
 debug_*.py
-.mcp.json
+.mcp.json.*
 
 # The quickstart folder
 .agent-catalog/
