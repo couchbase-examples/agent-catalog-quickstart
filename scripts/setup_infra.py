@@ -75,7 +75,8 @@ try:
     # 5. Create Database User
     print("\n[5/7] Creating Database Credentials...")
     db_password = create_database_user(
-        client, org_id, project_id, cluster_id, config.db_username, config.sample_bucket
+        client, org_id, project_id, cluster_id, config.db_username, config.sample_bucket,
+        recreate_if_exists=True  # Delete and recreate if exists to get fresh password
     )
 
     # 6. Deploy AI Models
