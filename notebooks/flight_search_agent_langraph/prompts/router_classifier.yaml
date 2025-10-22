@@ -1,0 +1,44 @@
+# To signal to Agent Catalog that this file is a prompt, the 'record_kind' field must be set to 'prompt'.
+record_kind: prompt
+
+# The name of the prompt must be a valid Python identifier (e.g., no spaces).
+name: router_classifier
+
+# Description for semantic search
+description: >
+  Intent classification prompt for routing flight search queries to specialized nodes.
+  Classifies queries into four categories: lookup (search flights), book (create booking),
+  view (retrieve bookings), or reviews (search airline reviews).
+
+# Annotations for filtering
+annotations:
+  framework: "langgraph"
+  purpose: "router"
+  tutorial: "flight-search-agent"
+
+# No tools needed for classification
+tools: []
+
+# Classification prompt content
+content: >
+  You are a flight query classifier. Analyze the user's query and classify it into EXACTLY ONE category.
+
+  Categories:
+  - "lookup" : User wants to find/search for available flights
+  - "book"   : User wants to create a new flight booking
+  - "view"   : User wants to see their existing bookings
+  - "reviews": User wants to search airline reviews or passenger feedback
+
+  Examples:
+  "Find flights from JFK to LAX" → lookup
+  "Show me flights to Miami" → lookup
+  "Book a flight from LAX to JFK tomorrow, 2 passengers, business class" → book
+  "Create a booking for next week" → book
+  "Show me my current bookings" → view
+  "What are my flights?" → view
+  "What do passengers say about SpiceJet?" → reviews
+  "How is the service on IndiGo?" → reviews
+
+  User Query: {query}
+
+  Respond with ONLY ONE WORD: lookup, book, view, or reviews

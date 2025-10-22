@@ -17,16 +17,11 @@ import agentc_langgraph.agent
 import agentc_langgraph.graph
 import dotenv
 import langchain_core.messages
-import langchain_core.runnables
-import langchain_openai.chat_models
 import langgraph.graph
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
 from couchbase.exceptions import KeyspaceNotFoundException
 from couchbase.options import ClusterOptions
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
-from langchain_core.tools import Tool
 from pydantic import SecretStr
 
 
@@ -76,77 +71,56 @@ class FlightSearchState(agentc_langgraph.agent.State):
     query: str
     resolved: bool
     search_results: list[dict]
+    route_decision: str  # Router's classification: "lookup", "book", "view", "reviews"
 
 
-class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
-    """Flight search agent using Agent Catalog tools and ReActAgent framework."""
+# ============================================================================
+# Helper Functions for Parameter Extraction
+# ============================================================================
 
-    def __init__(self, catalog: agentc.Catalog, span: agentc.Span, chat_model=None):
-        """Initialize the flight search agent."""
 
-        if chat_model is None:
-            # Fallback to OpenAI if no chat model provided
-            model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-            chat_model = langchain_openai.chat_models.ChatOpenAI(model=model_name, temperature=0.1)
+def extract_airports(query: str) -> dict:
+    """Extract source and destination airports from query using regex. Fails fast if not found."""
+    import re
 
-        super().__init__(
-            chat_model=chat_model, catalog=catalog, span=span, prompt_name="flight_search_assistant"
-        )
+    # ReAct-style logging for extraction
+    logger.info("Thought: I need to extract airport codes from the query using regex pattern matching")
+    logger.info("Action: extract_airports (regex pattern: \\b([A-Z]{3})\\b)")
+    logger.info(f"Action Input: {query}")
 
-    def _invoke(
-        self,
-        span: agentc.Span,
-        state: FlightSearchState,
-        config: langchain_core.runnables.RunnableConfig,
-    ) -> FlightSearchState:
-        """Handle flight search conversation using ReActAgent."""
+    # Extract 3-letter airport codes (e.g., "JFK to LAX", "from JFK to LAX", "Find flights JFK LAX")
+    airport_pattern = r'\b([A-Z]{3})\b'
+    airports = re.findall(airport_pattern, query.upper())
 
-        # Initialize conversation if this is the first message
-        if not state["messages"]:
-            initial_msg = langchain_core.messages.HumanMessage(content=state["query"])
-            state["messages"].append(initial_msg)
-            logger.info(f"Flight Query: {state['query']}")
+    if len(airports) >= 2:
+        result = {"source": airports[0], "dest": airports[1]}
+        logger.info(f"Observation: Successfully extracted - source_airport: {result['source']}, destination_airport: {result['dest']}")
+        return result
 
-        # Get prompt resource first - we'll need it for the ReAct agent
-        prompt_resource = self.catalog.find("prompt", name="flight_search_assistant")
+    # Fail fast - no fallbacks
+    logger.error(f"Observation: Failed to extract airport codes from query")
+    raise ValueError(
+        f"Could not extract airport codes from query: '{query}'. "
+        f"Please provide clear 3-letter airport codes (e.g., 'JFK to LAX' or 'Find flights from JFK to LAX')"
+    )
 
-        # Get tools from Agent Catalog with simplified discovery
-        tools = []
-        tool_names = [
-            "lookup_flight_info",
-            "save_flight_booking", 
-            "retrieve_flight_bookings",
-            "search_airline_reviews",
-        ]
 
-        for tool_name in tool_names:
-            try:
-                # Find tool using Agent Catalog
-                catalog_tool = self.catalog.find("tool", name=tool_name)
-                if catalog_tool:
-                    logger.info(f"✅ Found tool: {tool_name}")
-                else:
-                    logger.error(f"❌ Tool not found: {tool_name}")
-                    continue
+def extract_booking_details(query: str) -> str:
+    """Extract booking details from natural language and format for tool."""
+    # The save_flight_booking tool already handles natural language well
+    # Just pass the query as-is, it will extract what it needs
+    return query
 
-            except Exception as e:
-                logger.error(f"❌ Failed to find tool {tool_name}: {e}")
-                continue
 
-            # Create wrapper function to handle proper parameter parsing
-            def create_tool_wrapper(original_tool, name):
-                """Create a wrapper for Agent Catalog tools with robust input handling."""
+# ============================================================================
+# Router Node - Intent Classification
+# ============================================================================
 
-                def wrapper_func(tool_input: str) -> str:
-                    """Wrapper function that handles input parsing and error handling."""
-                    try:
-                        logger.info(f"🔧 Tool {name} called with raw input: {repr(tool_input)}")
 
-                        # Enhanced input sanitization to handle ReAct format artifacts and duplications
-                        if isinstance(tool_input, str):
-                            # Remove ReAct format artifacts that get mixed into input
-                            clean_input = tool_input.strip()
+def create_router_node(llm, catalog: agentc.Catalog):
+    """Create a router node function using Agent Catalog prompt."""
 
+<<<<<<< Updated upstream
                             # Remove common ReAct artifacts
                             artifacts_to_remove = [
                                 '\nObservation', 'Observation', '\nThought:', 'Thought:',
@@ -157,20 +131,25 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                             for artifact in artifacts_to_remove:
                                 if artifact in clean_input:
                                     clean_input = clean_input.split(artifact)[0]
+=======
+    def router_node(state: FlightSearchState) -> FlightSearchState:
+        """Classify user intent and set routing decision."""
 
-                            # Clean up quotes and whitespace
-                            clean_input = clean_input.strip().strip("\"'").strip()
+        # ReAct-style logging: Router classification
+        logger.info("Thought: I need to classify this query to route it to the correct specialized handler")
+        logger.info("Action: router_classifier")
+        logger.info(f"Action Input: {state['query']}")
+>>>>>>> Stashed changes
 
-                            # Fix common duplication patterns (e.g., "JFK,LAX LAX" -> "JFK,LAX")
-                            words = clean_input.split()
-                            if len(words) > 1:
-                                # Remove duplicate consecutive words
-                                cleaned_words = [words[0]]
-                                for word in words[1:]:
-                                    if word != cleaned_words[-1]:
-                                        cleaned_words.append(word)
-                                clean_input = " ".join(cleaned_words)
+        # Load classification prompt from Agent Catalog
+        prompt_resource = catalog.find("prompt", name="router_classifier")
+        classification_prompt = prompt_resource.content
 
+        # Invoke LLM for classification (state is a dict in LangGraph)
+        response = llm.invoke(classification_prompt.format(query=state["query"]))
+        decision = response.content.strip().lower()
+
+<<<<<<< Updated upstream
                             # For airport code patterns, fix duplications like "JFK,LAX LAX"
                             if "," in clean_input and len(clean_input.split()) > 1:
                                 parts = clean_input.split(",")
@@ -274,9 +253,18 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
                 name=tool_name,
                 description=tool_descriptions.get(tool_name, f"Tool for {tool_name.replace('_', ' ')}"),
                 func=create_tool_wrapper(catalog_tool, tool_name),
+=======
+        # Validate decision - fail fast if invalid
+        valid_categories = ["lookup", "book", "view", "reviews"]
+        if decision not in valid_categories:
+            raise ValueError(
+                f"Router returned invalid classification: '{decision}'. "
+                f"Expected one of: {valid_categories}. "
+                f"Query was: '{state['query']}'"
+>>>>>>> Stashed changes
             )
-            tools.append(langchain_tool)
 
+<<<<<<< Updated upstream
         # Use the Agent Catalog prompt content directly - get first result if it's a list
         if isinstance(prompt_resource, list):
             prompt_resource = prompt_resource[0]
@@ -339,8 +327,164 @@ class FlightSearchAgent(agentc_langgraph.agent.ReActAgent):
         assistant_msg = langchain_core.messages.AIMessage(content=response["output"])
         state["messages"].append(assistant_msg)
         state["resolved"] = True
+=======
+        state["route_decision"] = decision
+        logger.info(f"Observation: Classified as '{decision}' (routing to {decision}_flights/bookings/reviews node)")
+>>>>>>> Stashed changes
 
         return state
+
+    return router_node
+
+
+# ============================================================================
+# Specialized Node Functions - Direct Tool Calls
+# ============================================================================
+
+
+def create_lookup_flights_node(catalog: agentc.Catalog):
+    """Create a node for looking up available flights."""
+
+    def lookup_flights_node(state: FlightSearchState) -> FlightSearchState:
+        """Handle flight lookup queries with direct tool invocation. Fails fast on errors."""
+        logger.info(f"✈️  Lookup node processing: {state['query']}")
+
+        # Extract airports from query (fails fast if not found)
+        # This will log its own Thought/Action/Observation
+        airports = extract_airports(state["query"])
+
+        # ReAct-style logging: Tool invocation
+        logger.info("Thought: Now I'll search for available flights between these airports")
+        logger.info("Action: lookup_flight_info")
+        logger.info(f"Action Input: source_airport={airports['source']}, destination_airport={airports['dest']}")
+
+        # Get tool and call directly via Agent Catalog
+        tool = catalog.find("tool", name="lookup_flight_info")
+        response = tool.func(
+            source_airport=airports["source"],
+            destination_airport=airports["dest"]
+        )
+
+        # Show full observation
+        logger.info(f"Observation: {response}")
+
+        # Update state (state is a dict in LangGraph)
+        state["messages"].append(langchain_core.messages.AIMessage(content=response))
+        state["search_results"] = [response]
+        state["resolved"] = True
+        logger.info("✅ Lookup node completed successfully")
+
+        return state
+
+    return lookup_flights_node
+
+
+def create_book_flight_node(catalog: agentc.Catalog):
+    """Create a node for booking flights."""
+
+    def book_flight_node(state: FlightSearchState) -> FlightSearchState:
+        """Handle flight booking queries with direct tool invocation. Fails fast on errors."""
+        logger.info(f"📝 Book node processing: {state['query']}")
+
+        # ReAct-style logging: Extraction
+        logger.info("Thought: I need to extract booking details from the query")
+        logger.info("Action: extract_booking_details")
+        logger.info(f"Action Input: {state['query']}")
+
+        # Extract booking details
+        booking_input = extract_booking_details(state["query"])
+        logger.info(f"Observation: Extracted booking details: {booking_input}")
+
+        # ReAct-style logging: Tool invocation
+        logger.info("Thought: Now I'll create the flight booking with these details")
+        logger.info("Action: save_flight_booking")
+        logger.info(f"Action Input: {booking_input}")
+
+        # Get tool and call directly via Agent Catalog
+        tool = catalog.find("tool", name="save_flight_booking")
+        response = tool.func(booking_input=booking_input)
+
+        # Show full observation
+        logger.info(f"Observation: {response}")
+
+        # Update state (state is a dict in LangGraph)
+        state["messages"].append(langchain_core.messages.AIMessage(content=response))
+        state["search_results"] = [response]
+        state["resolved"] = True
+        logger.info("✅ Book node completed successfully")
+
+        return state
+
+    return book_flight_node
+
+
+def create_view_bookings_node(catalog: agentc.Catalog):
+    """Create a node for viewing existing bookings."""
+
+    def view_bookings_node(state: FlightSearchState) -> FlightSearchState:
+        """Handle view bookings queries with direct tool invocation. Fails fast on errors."""
+        logger.info(f"👀 View node processing: {state['query']}")
+
+        # ReAct-style logging: Tool invocation
+        logger.info("Thought: I'll retrieve all current flight bookings for the user")
+        logger.info("Action: retrieve_flight_bookings")
+        logger.info("Action Input: booking_query='' (empty string to get all bookings)")
+
+        # Get tool and call with empty query to get all bookings via Agent Catalog
+        tool = catalog.find("tool", name="retrieve_flight_bookings")
+        response = tool.func(booking_query="")
+
+        # Show full observation
+        logger.info(f"Observation: {response}")
+
+        # Update state (state is a dict in LangGraph)
+        state["messages"].append(langchain_core.messages.AIMessage(content=response))
+        state["search_results"] = [response]
+        state["resolved"] = True
+        logger.info("✅ View node completed successfully")
+
+        return state
+
+    return view_bookings_node
+
+
+def create_search_reviews_node(catalog: agentc.Catalog):
+    """Create a node for searching airline reviews."""
+
+    def search_reviews_node(state: FlightSearchState) -> FlightSearchState:
+        """Handle airline review search queries with direct tool invocation. Fails fast on errors."""
+        logger.info(f"⭐ Reviews node processing: {state['query']}")
+
+        # Use the query as-is for searching reviews
+        # The tool expects natural language like "SpiceJet service quality"
+        search_query = state["query"]
+
+        # ReAct-style logging: Tool invocation
+        logger.info("Thought: I'll search for airline reviews using vector similarity search")
+        logger.info("Action: search_airline_reviews")
+        logger.info(f"Action Input: query='{search_query}'")
+
+        # Get tool and call directly via Agent Catalog
+        tool = catalog.find("tool", name="search_airline_reviews")
+        response = tool.func(query=search_query)
+
+        # Show full observation
+        logger.info(f"Observation: {response}")
+
+        # Update state (state is a dict in LangGraph)
+        state["messages"].append(langchain_core.messages.AIMessage(content=response))
+        state["search_results"] = [response]
+        state["resolved"] = True
+        logger.info("✅ Reviews node completed successfully")
+
+        return state
+
+    return search_reviews_node
+
+
+# ============================================================================
+# FlightSearchGraph - Router-Based Architecture
+# ============================================================================
 
 
 class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
@@ -359,35 +503,56 @@ class FlightSearchGraph(agentc_langgraph.graph.GraphRunnable):
             query=query,
             resolved=False,
             search_results=[],
+            route_decision="",  # Will be set by router
         )
 
     def compile(self):
-        """Compile the LangGraph workflow."""
+        """Compile the LangGraph workflow with router-based architecture."""
 
-        # Build the flight search agent with catalog integration
-        search_agent = FlightSearchAgent(
-            catalog=self.catalog, span=self.span, chat_model=self.chat_model
-        )
+        # Create specialized node functions using Agent Catalog
+        router = create_router_node(self.chat_model, self.catalog)
+        lookup_node = create_lookup_flights_node(self.catalog)
+        book_node = create_book_flight_node(self.catalog)
+        view_node = create_view_bookings_node(self.catalog)
+        reviews_node = create_search_reviews_node(self.catalog)
 
-        # Create a wrapper function for the ReActAgent
-        def flight_search_node(state: FlightSearchState) -> FlightSearchState:
-            """Wrapper function for the flight search ReActAgent."""
-            return search_agent._invoke(
-                span=self.span,
-                state=state,
-                config={},  # Empty config for now
-            )
+        # Define routing logic based on classification
+        def route_query(state: FlightSearchState) -> str:
+            """Route to appropriate node based on classification."""
+            return state["route_decision"]
 
-        # Create a simple workflow graph for flight search
+        # Build the graph
         workflow = langgraph.graph.StateGraph(FlightSearchState)
 
-        # Add the flight search agent node using the wrapper function
-        workflow.add_node("flight_search", flight_search_node)
+        # Add all nodes
+        workflow.add_node("router", router)
+        workflow.add_node("lookup_flights", lookup_node)
+        workflow.add_node("book_flight", book_node)
+        workflow.add_node("view_bookings", view_node)
+        workflow.add_node("search_reviews", reviews_node)
 
-        # Set entry point and simple flow
-        workflow.set_entry_point("flight_search")
-        workflow.add_edge("flight_search", langgraph.graph.END)
+        # Set entry point to router
+        workflow.set_entry_point("router")
 
+        # Add conditional edges from router to specialized nodes
+        workflow.add_conditional_edges(
+            "router",
+            route_query,
+            {
+                "lookup": "lookup_flights",
+                "book": "book_flight",
+                "view": "view_bookings",
+                "reviews": "search_reviews",
+            },
+        )
+
+        # All specialized nodes end after execution
+        workflow.add_edge("lookup_flights", langgraph.graph.END)
+        workflow.add_edge("book_flight", langgraph.graph.END)
+        workflow.add_edge("view_bookings", langgraph.graph.END)
+        workflow.add_edge("search_reviews", langgraph.graph.END)
+
+        logger.info("✅ Router-based graph compiled successfully")
         return workflow.compile()
 
 
