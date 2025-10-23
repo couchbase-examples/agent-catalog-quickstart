@@ -144,7 +144,8 @@
         "!wget -O tools/save_flight_booking.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/tools/save_flight_booking.py\n",
         "!wget -O tools/search_airline_reviews.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/tools/search_airline_reviews.py\n",
         "!wget -O tools/schemas.py https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/tools/schemas.py\n",
-        "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/agentcatalog_index.json\n"
+        "!wget -O agentcatalog_index.json https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/agentcatalog_index.json\n",
+        "!wget -O .agentcignore https://raw.githubusercontent.com/couchbase-examples/agent-catalog-quickstart/refs/heads/main/notebooks/flight_search_agent_langraph/.agentcignore\n"
       ]
     },
     {
