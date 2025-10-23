@@ -16,32 +16,41 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-cluster = None
-try:
-    auth = PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"),
-        password=os.getenv("CB_PASSWORD", "password"),
-    )
-    options = ClusterOptions(auth)
+_cluster = None
 
-    # Use WAN profile for better timeout handling with remote clusters
-    options.apply_profile("wan_development")
 
-    cluster = Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        options,
-    )
-    cluster.wait_until_ready(timedelta(seconds=15))
-except CouchbaseException as e:
-    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
-    cluster = None
+def _get_cluster():
+    """Lazy connection to Couchbase cluster - only connects when needed."""
+    global _cluster
+    if _cluster is not None:
+        return _cluster
+
+    try:
+        auth = PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"),
+            password=os.getenv("CB_PASSWORD", "password"),
+        )
+        options = ClusterOptions(auth)
+
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+
+        _cluster = Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+            options,
+        )
+        _cluster.wait_until_ready(timedelta(seconds=15))
+        return _cluster
+    except CouchbaseException as e:
+        logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+        raise
 
 
 def _ensure_collection_exists(bucket_name: str, scope_name: str, collection_name: str):
     """Ensure the booking collection exists, create if it doesn't."""
     try:
         # Create scope if it doesn't exist
-        bucket = cluster.bucket(bucket_name)
+        bucket = _get_cluster().bucket(bucket_name)
         bucket_manager = bucket.collections()
 
         try:
@@ -69,7 +78,7 @@ def _ensure_collection_exists(bucket_name: str, scope_name: str, collection_name
 
         # Create primary index if it doesn't exist
         try:
-            cluster.query(
+            _get_cluster().query(
                 f"CREATE PRIMARY INDEX IF NOT EXISTS ON `{bucket_name}`.`{scope_name}`.`{collection_name}`"
             ).execute()
         except Exception:
@@ -123,7 +132,7 @@ def check_duplicate_booking(
     """
 
     try:
-        duplicate_result = cluster.query(
+        duplicate_result = _get_cluster().query(
             duplicate_check_query,
             source_airport=source_airport,
             destination_airport=destination_airport,
@@ -178,9 +187,9 @@ def save_booking_to_db(booking_data: dict, bucket_name: str, scope_name: str, co
     VALUES ($booking_id, $booking_data)
     """
 
-    cluster.query(insert_query,
-                booking_id=booking_data["booking_id"],
-                booking_data=booking_data).execute()
+    _get_cluster().query(insert_query,
+                         booking_id=booking_data["booking_id"],
+                         booking_data=booking_data).execute()
 
 
 def format_booking_confirmation(booking_data: dict) -> str:

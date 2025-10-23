@@ -16,24 +16,33 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-cluster = None
-try:
-    auth = PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"),
-        password=os.getenv("CB_PASSWORD", "password"),
-    )
-    options = ClusterOptions(auth)
+_cluster = None
 
-    # Use WAN profile for better timeout handling with remote clusters
-    options.apply_profile("wan_development")
 
-    cluster = Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"), options
-    )
-    cluster.wait_until_ready(timedelta(seconds=20))
-except CouchbaseException as e:
-    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
-    cluster = None
+def _get_cluster():
+    """Lazy connection to Couchbase cluster - only connects when needed."""
+    global _cluster
+    if _cluster is not None:
+        return _cluster
+
+    try:
+        auth = PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"),
+            password=os.getenv("CB_PASSWORD", "password"),
+        )
+        options = ClusterOptions(auth)
+
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+
+        _cluster = Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"), options
+        )
+        _cluster.wait_until_ready(timedelta(seconds=20))
+        return _cluster
+    except CouchbaseException as e:
+        logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+        raise
 
 
 def create_vector_store():
@@ -49,7 +58,7 @@ def create_vector_store():
 
         # Create vector store
         return CouchbaseSearchVectorStore(
-            cluster=cluster,
+            cluster=_get_cluster(),
             bucket_name=os.getenv("CB_BUCKET", "travel-sample"),
             scope_name=os.getenv("CB_SCOPE", "agentc_data"),
             collection_name=os.getenv("CB_COLLECTION", "airline_reviews"),
@@ -108,10 +117,6 @@ def search_airline_reviews(query: str) -> str:
         Formatted string with relevant airline reviews
     """
     try:
-        # Validate database connection
-        if cluster is None:
-            return "Database connection unavailable. Unable to search airline reviews. Please try again later."
-        
         # Validate query input
         if not query or not query.strip():
             return "Please provide a search query for airline reviews (e.g., 'food quality', 'seat comfort', 'service experience', 'delays')."

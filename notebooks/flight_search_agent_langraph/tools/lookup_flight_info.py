@@ -14,25 +14,34 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-cluster = None
-try:
-    auth = couchbase.auth.PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"),
-        password=os.getenv("CB_PASSWORD", "password")
-    )
-    options = couchbase.options.ClusterOptions(auth)
+_cluster = None
 
-    # Use WAN profile for better timeout handling with remote clusters
-    options.apply_profile("wan_development")
 
-    cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        options
-    )
-    cluster.wait_until_ready(timedelta(seconds=15))
-except couchbase.exceptions.CouchbaseException as e:
-    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
-    cluster = None
+def _get_cluster():
+    """Lazy connection to Couchbase cluster - only connects when needed."""
+    global _cluster
+    if _cluster is not None:
+        return _cluster
+
+    try:
+        auth = couchbase.auth.PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"),
+            password=os.getenv("CB_PASSWORD", "password")
+        )
+        options = couchbase.options.ClusterOptions(auth)
+
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+
+        _cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+            options
+        )
+        _cluster.wait_until_ready(timedelta(seconds=15))
+        return _cluster
+    except couchbase.exceptions.CouchbaseException as e:
+        logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+        raise
 
 
 @agentc.catalog.tool
@@ -48,10 +57,6 @@ def lookup_flight_info(source_airport: str, destination_airport: str) -> str:
         Formatted string with available flights
     """
     try:
-        # Validate database connection
-        if cluster is None:
-            return "Database connection unavailable. Please try again later."
-
         # Normalize inputs
         source_airport = source_airport.upper().strip()
         destination_airport = destination_airport.upper().strip()
@@ -70,7 +75,7 @@ def lookup_flight_info(source_airport: str, destination_airport: str) -> str:
         LIMIT 10
         """
 
-        result = cluster.query(query, source_airport=source_airport, destination_airport=destination_airport)
+        result = _get_cluster().query(query, source_airport=source_airport, destination_airport=destination_airport)
         flights = list(result.rows())
 
         if not flights:

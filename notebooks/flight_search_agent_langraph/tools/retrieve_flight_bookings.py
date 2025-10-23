@@ -15,25 +15,34 @@ dotenv.load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 # Agent Catalog imports this file once. To share Couchbase connections, use a global variable.
-cluster = None
-try:
-    auth = couchbase.auth.PasswordAuthenticator(
-        username=os.getenv("CB_USERNAME", "Administrator"),
-        password=os.getenv("CB_PASSWORD", "password"),
-    )
-    options = couchbase.options.ClusterOptions(auth)
-    
-    # Use WAN profile for better timeout handling with remote clusters
-    options.apply_profile("wan_development")
-    
-    cluster = couchbase.cluster.Cluster(
-        os.getenv("CB_CONN_STRING", "couchbase://localhost"),
-        options
-    )
-    cluster.wait_until_ready(timedelta(seconds=15))
-except couchbase.exceptions.CouchbaseException as e:
-    logger.error(f"Could not connect to Couchbase cluster: {e!s}")
-    cluster = None
+_cluster = None
+
+
+def _get_cluster():
+    """Lazy connection to Couchbase cluster - only connects when needed."""
+    global _cluster
+    if _cluster is not None:
+        return _cluster
+
+    try:
+        auth = couchbase.auth.PasswordAuthenticator(
+            username=os.getenv("CB_USERNAME", "Administrator"),
+            password=os.getenv("CB_PASSWORD", "password"),
+        )
+        options = couchbase.options.ClusterOptions(auth)
+
+        # Use WAN profile for better timeout handling with remote clusters
+        options.apply_profile("wan_development")
+
+        _cluster = couchbase.cluster.Cluster(
+            os.getenv("CB_CONN_STRING", "couchbase://localhost"),
+            options
+        )
+        _cluster.wait_until_ready(timedelta(seconds=15))
+        return _cluster
+    except couchbase.exceptions.CouchbaseException as e:
+        logger.error(f"Could not connect to Couchbase cluster: {e!s}")
+        raise
 
 
 def parse_booking_query(booking_query: str) -> dict:
@@ -131,9 +140,9 @@ def retrieve_flight_bookings(booking_query: str = "") -> str:
             WHERE booking.status = $status
             ORDER BY booking.booking_time DESC
             """
-            
-            result = cluster.query(query, status="confirmed")
-            
+
+            result = _get_cluster().query(query, status="confirmed")
+
         else:
             # Retrieve specific booking using parameterized query (secure)
             query = f"""
@@ -144,8 +153,8 @@ def retrieve_flight_bookings(booking_query: str = "") -> str:
             AND booking.departure_date = $date
             AND booking.status = $status
             """
-            
-            result = cluster.query(
+
+            result = _get_cluster().query(
                 query,
                 source_airport=search_params["source_airport"],
                 destination_airport=search_params["destination_airport"],
