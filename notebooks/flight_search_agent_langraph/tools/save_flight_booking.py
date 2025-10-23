@@ -233,10 +233,6 @@ def save_flight_booking(
         Booking confirmation message
     """
     try:
-        # Validate database connection
-        if cluster is None:
-            return "Database connection unavailable. Unable to save booking. Please try again later."
-
         # Normalize inputs
         source_airport = source_airport.upper()
         destination_airport = destination_airport.upper()

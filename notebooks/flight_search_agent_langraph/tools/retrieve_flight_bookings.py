@@ -120,10 +120,6 @@ def retrieve_flight_bookings(booking_query: str = "") -> str:
     - "JFK,LAX,2024-12-25" - Show booking for specific flight
     """
     try:
-        # Validate database connection
-        if cluster is None:
-            return "Database connection unavailable. Unable to retrieve bookings. Please try again later."
-        
         # Parse and validate input
         search_params = parse_booking_query(booking_query)
         
