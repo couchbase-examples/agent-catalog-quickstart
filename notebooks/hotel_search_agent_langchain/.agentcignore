@@ -1,5 +1,3 @@
 .venv/
 *.lock
 __pycache__/
-test_*.py
-debug_*.py
