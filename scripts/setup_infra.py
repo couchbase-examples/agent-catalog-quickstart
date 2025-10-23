@@ -22,7 +22,7 @@ try:
     from couchbase_infrastructure import CapellaConfig, CapellaClient
     from couchbase_infrastructure.resources import (
         create_project,
-        create_cluster,
+        create_developer_pro_cluster,
         add_allowed_cidr,
         load_sample_data,
         create_database_user,
@@ -58,8 +58,13 @@ try:
     project_id = create_project(client, org_id, config.project_name)
 
     # 2. Create and Wait for Cluster
-    print("\n[2/7] Deploying Capella Free Tier Cluster...")
-    cluster_id = create_cluster(client, org_id, project_id, config.cluster_name, config)
+    print("\n[2/7] Deploying Capella Developer Pro Cluster...")
+    cluster_id = create_developer_pro_cluster(
+        client, org_id, project_id, config.cluster_name,
+        cloud_provider=config.cluster_cloud_provider,
+        region=config.cluster_region,
+        cidr=config.cluster_cidr
+    )
     cluster_check_url = f"/v4/organizations/{org_id}/projects/{project_id}/clusters/{cluster_id}"
     cluster_details = client.wait_for_resource(cluster_check_url, "Cluster", None)
     cluster_conn_string = cluster_details.get("connectionString")
