@@ -95,22 +95,49 @@ AGENT_CATALOG_CONN_STRING = "couchbases://cb.xyz.sandbox.nonprod-project-avenger
 ```
 
 ### Implementation
+
+**CRITICAL: Add `?tls_verify=none` only ONCE, when setting the environment variable!**
+
 ```python
-# Set CB_CONN_STRING with TLS parameter
+# Step 1: Get connection string and add protocol (WITHOUT TLS parameter)
 cluster_conn_string = cluster_details.get("connectionString")
 if not cluster_conn_string.startswith("couchbase://") and not cluster_conn_string.startswith("couchbases://"):
-    cluster_conn_string = f"couchbases://{cluster_conn_string}?tls_verify=none"
+    cluster_conn_string = f"couchbases://{cluster_conn_string}"  # ✅ NO ?tls_verify=none here!
+    print(f"⚠️  Added protocol to connection string: {cluster_conn_string}")
 
-os.environ["CB_CONN_STRING"] = cluster_conn_string
+# Step 2: Set CB_CONN_STRING with TLS parameter (add it HERE, only once)
+os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"  # ✅ Add TLS param here
 
-# Strip TLS parameters for Agent Catalog
+# Step 3: Strip TLS parameters for Agent Catalog
 agent_catalog_conn_string = os.environ["CB_CONN_STRING"].split("?")[0]
 os.environ["AGENT_CATALOG_CONN_STRING"] = agent_catalog_conn_string
+```
+
+### Common Mistake: Double TLS Parameter
+
+**WRONG ❌:**
+```python
+# DON'T DO THIS - adds ?tls_verify=none TWICE!
+cluster_conn_string = f"couchbases://{cluster_conn_string}?tls_verify=none"  # ❌ Added here
+os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"     # ❌ Added AGAIN
+
+# Result: "couchbases://hostname?tls_verify=none?tls_verify=none"
+# Error: InvalidArgumentException: none?tls_verify=none is not a valid TLSVerifyMode option
+```
+
+**CORRECT ✅:**
+```python
+# Add protocol WITHOUT TLS parameter
+cluster_conn_string = f"couchbases://{cluster_conn_string}"              # ✅ Just protocol
+os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"  # ✅ Add TLS ONCE
+
+# Result: "couchbases://hostname?tls_verify=none"
 ```
 
 ### Why This Matters
 - **CB_CONN_STRING**: Couchbase Python SDK needs `?tls_verify=none` for non-production sandbox clusters
 - **AGENT_CATALOG_CONN_STRING**: agentc CLI handles TLS differently and fails with query parameters
+- **Double TLS Parameter**: Causes `InvalidArgumentException` - the parameter can only appear ONCE
 
 ---
 
@@ -450,6 +477,23 @@ from couchbase_infrastructure.resources import create_developer_pro_cluster
 **Cause**: Using old function name
 **Fix**: See [Import Statements](#10-import-statements)
 
+### 8. Double TLS Parameter (InvalidArgumentException)
+**Symptom**: `InvalidArgumentException: none?tls_verify=none is not a valid TLSVerifyMode option`
+**Cause**: Adding `?tls_verify=none` twice - once when adding protocol, once when setting environment variable
+**Example of Wrong Code**:
+```python
+# ❌ WRONG - double TLS parameter
+cluster_conn_string = f"couchbases://{cluster_conn_string}?tls_verify=none"  # Added once
+os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"     # Added twice!
+```
+**Fix**: Add `?tls_verify=none` only when setting the environment variable
+```python
+# ✅ CORRECT - single TLS parameter
+cluster_conn_string = f"couchbases://{cluster_conn_string}"              # Just protocol
+os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"  # Add TLS once
+```
+**See**: [Connection Strings](#3-connection-strings)
+
 ---
 
 ## Conversion Checklist
@@ -458,7 +502,8 @@ When converting a Python script to a Colab notebook, ensure:
 
 - [ ] Environment variables use `.get()` with defaults
 - [ ] Input prompts use `getpass.getpass()` with try/except
-- [ ] CB_CONN_STRING includes `?tls_verify=none`
+- [ ] CB_CONN_STRING includes `?tls_verify=none` (added ONCE when setting env var)
+- [ ] Protocol addition does NOT include `?tls_verify=none` (avoid double parameter)
 - [ ] AGENT_CATALOG_CONN_STRING excludes `?tls_verify=none`
 - [ ] create_database_user includes `recreate_if_exists=True`
 - [ ] Certificate upload section present
@@ -507,7 +552,9 @@ Convert the Python script {script_name}.py to a Colab notebook following these r
 
 1. Environment Variables:
    - Use os.environ.get() with empty string defaults for all optional variables
-   - Handle CB_CONN_STRING with "couchbases://...?tls_verify=none"
+   - CRITICAL: Add protocol WITHOUT TLS parameter first: cluster_conn_string = f"couchbases://{cluster_conn_string}"
+   - CRITICAL: Add ?tls_verify=none ONLY when setting env var: os.environ["CB_CONN_STRING"] = cluster_conn_string + "?tls_verify=none"
+   - DO NOT add ?tls_verify=none twice (causes InvalidArgumentException)
    - Handle AGENT_CATALOG_CONN_STRING without TLS parameters (strip with .split("?")[0])
 
 2. User Input:
