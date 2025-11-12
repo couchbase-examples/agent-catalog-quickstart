@@ -1481,11 +1481,7 @@
         "id": "9o8nYXX1yMLC"
       },
       "source": [
-        "### Optional: Configure OpenAI and Arize (Observability)\n",
-        "\n",
-        "Provide optional API keys for:\n",
-        "- **OpenAI**: Fallback LLM/embeddings if Capella AI is unavailable\n",
-        "- **Arize Phoenix**: Observability and evaluation platform"
+        "### Optional: Configure OpenAI and Arize (Observability)\n\nProvide optional API keys for:\n- **OpenAI**: Fallback LLM/embeddings if Capella AI is unavailable\n- **Arize Phoenix**: Observability and evaluation platform\n  - **ARIZE_SPACE_ID** and **ARIZE_API_KEY**: Required for logging evaluation data to Arize\n  - To get these credentials: Sign up at [arize.com](https://arize.com), then navigate to **Space Settings \u2192 API Key** to generate your API key. Your Space ID can be found in the URL after `/spaces/` when you visit the Arize platform (e.g., `U3BhY2U6NzU0`)"
       ]
     },
     {
