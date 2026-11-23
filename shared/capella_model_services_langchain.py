@@ -2,25 +2,24 @@
 """
 LangChain-specific Capella AI Model Services
 
-Custom implementations for Capella AI embeddings and LLM that handle:
-- input_type parameter for asymmetric embedding models
-- Correct URL construction (/v1 suffix)
-- Token limits and text truncation
-- LangChain framework compatibility
+LangChain adapters over the framework-neutral ``CapellaClient`` in ``capella_http.py``.
+
+The Capella wire protocol (``/v1`` URL handling, ``input_type`` for asymmetric
+embedding models, token-budget truncation, auth headers) lives in ``capella_http``;
+this module only converts between LangChain types and plain Python values.
 """
 
 import logging
-import math
-import os
 from typing import List, Optional, Any
 
-import httpx
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import Field, SecretStr
+
+from .capella_http import CapellaClient, completion_text, default_embedding_max_tokens, v1_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -44,90 +43,26 @@ class CapellaLangChainEmbeddings(Embeddings):
         **kwargs
     ):
         super().__init__(**kwargs)
-        self.api_key = api_key
-        # Ensure base_url has /v1 suffix for embeddings endpoint
-        self.base_url = base_url.rstrip('/') + '/v1' if not base_url.endswith('/v1') else base_url
+        self.client = CapellaClient(api_key=api_key, base_url=base_url)
         self.model = model
         self.input_type_for_query = input_type_for_query
         self.input_type_for_passage = input_type_for_passage
-        # Use environment variable with 512 as fallback
-        self.max_tokens = max_tokens or int(os.getenv("CAPELLA_API_EMBEDDING_MAX_TOKENS", "512"))
-        
-        # Check if this model needs input_type (nv-embedqa models)
-        self.needs_input_type = "nv-embedqa" in model.lower()
-        
+        self.max_tokens = max_tokens or default_embedding_max_tokens()
+
         logger.info("✅ Using direct Capella embeddings API key")
         logger.info(f"✅ Using Capella direct API for model: {model}")
 
-    def _estimate_token_count(self, text: str) -> int:
-        """Conservative token estimation using character count."""
-        # More conservative estimation for token counting
-        return math.ceil(len(text) / 3)  # ~3 chars per token
-
-    def _truncate_text(self, text: str) -> str:
-        """Truncate text to fit within token limits."""
-        estimated_tokens = self._estimate_token_count(text)
-        
-        if estimated_tokens <= self.max_tokens:
-            return text
-            
-        # Calculate max characters with safety buffer
-        max_chars = int(self.max_tokens * 3 * 0.8)  # 0.8 safety buffer
-        truncated = text[:max_chars]
-        
-        # Log truncation details
-        logger.warning(f"⚠️ Truncated text from {len(text)} to {len(truncated)} characters (estimated {estimated_tokens} → {self._estimate_token_count(truncated)} tokens)")
-        logger.info(f"📏 Text truncated: {len(text)} → {len(truncated)} chars, est. tokens: {self._estimate_token_count(truncated)}")
-        
-        return truncated
-
-    def _make_embedding_request(self, texts: List[str], input_type: Optional[str] = None) -> List[List[float]]:
-        """Make embedding request to Capella API."""
-        try:
-            # Truncate texts to fit token limits
-            truncated_texts = [self._truncate_text(text) for text in texts]
-            
-            # Prepare request data
-            data = {
-                "model": self.model,
-                "input": truncated_texts,
-            }
-            
-            # Add input_type if model requires it and type is specified
-            if self.needs_input_type and input_type:
-                data["input_type"] = input_type
-                logger.debug(f"🔧 Using input_type: {input_type} for {len(texts)} texts")
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            # Make API call
-            with httpx.Client(timeout=30) as client:
-                logger.debug(f"📡 Making embedding request for {len(texts)} texts")
-                response = client.post(
-                    f"{self.base_url}/embeddings",
-                    json=data,
-                    headers=headers
-                )
-                response.raise_for_status()
-                
-                result = response.json()
-                return [item["embedding"] for item in result["data"]]
-                
-        except Exception as e:
-            logger.error(f"❌ Capella embeddings API call failed: {e}")
-            raise
-
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Embed a list of documents (passages)."""
-        return self._make_embedding_request(texts, self.input_type_for_passage)
+        return self.client.embed(
+            self.model, texts, self.input_type_for_passage, self.max_tokens
+        )
 
     def embed_query(self, text: str) -> List[float]:
         """Embed a single query."""
-        result = self._make_embedding_request([text], self.input_type_for_query)
-        return result[0]
+        return self.client.embed(
+            self.model, [text], self.input_type_for_query, self.max_tokens
+        )[0]
 
 
 class CapellaLangChainLLM(BaseChatModel):
@@ -149,10 +84,8 @@ class CapellaLangChainLLM(BaseChatModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Ensure base_url has /v1 suffix for chat endpoint
-        if not self.base_url.endswith('/v1'):
-            self.base_url = self.base_url.rstrip('/') + '/v1'
-        
+        self.base_url = v1_base_url(self.base_url)
+
         logger.info("✅ Using direct Capella LLM API key")
         logger.info(f"✅ Using Capella direct API for LLM: {self.model}")
 
@@ -169,57 +102,27 @@ class CapellaLangChainLLM(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         """Generate chat response."""
-        try:
-            # Convert messages to API format
-            api_messages = []
-            for message in messages:
-                if isinstance(message, HumanMessage):
-                    api_messages.append({"role": "user", "content": message.content})
-                elif isinstance(message, AIMessage):
-                    api_messages.append({"role": "assistant", "content": message.content})
-                else:
-                    # Default to user for other message types
-                    api_messages.append({"role": "user", "content": message.content})
-            
-            # Prepare request data
-            data = {
-                "model": self.model,
-                "messages": api_messages,
-                "temperature": self.temperature,
-                **kwargs
+        api_messages = [
+            {
+                "role": "assistant" if isinstance(message, AIMessage) else "user",
+                "content": message.content,
             }
-            
-            if self.max_tokens:
-                data["max_tokens"] = self.max_tokens
-            
-            if stop:
-                data["stop"] = stop
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key.get_secret_value()}",
-                "Content-Type": "application/json"
-            }
-            
-            # Make API call
-            with httpx.Client(timeout=60) as client:
-                logger.debug(f"📡 Making LLM request with {len(api_messages)} messages")
-                response = client.post(
-                    f"{self.base_url}/chat/completions",
-                    json=data,
-                    headers=headers
-                )
-                response.raise_for_status()
-                
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                
-                return ChatResult(
-                    generations=[ChatGeneration(message=AIMessage(content=content))]
-                )
-                
-        except Exception as e:
-            logger.error(f"❌ Capella LLM API call failed: {e}")
-            raise
+            for message in messages
+        ]
+
+        params = dict(kwargs)
+        if self.max_tokens:
+            params["max_tokens"] = self.max_tokens
+        if stop:
+            params["stop"] = stop
+
+        client = CapellaClient(api_key=self.api_key.get_secret_value(), base_url=self.base_url)
+        response = client.chat(
+            self.model, api_messages, temperature=self.temperature, timeout=60, **params
+        )
+        return ChatResult(
+            generations=[ChatGeneration(message=AIMessage(content=completion_text(response)))]
+        )
 
     def _stream(self, messages, stop=None, run_manager=None, **kwargs):
         """Fallback to non-streaming for Capella LLM."""
